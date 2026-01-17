@@ -406,3 +406,275 @@ func TestGetPendingRequests_Empty(t *testing.T) {
 	assert.Empty(t, requests)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestGetHistoryList(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	id1 := uuid.New()
+	id2 := uuid.New()
+	createdAt1 := time.Now()
+	createdAt2 := time.Now().Add(-1 * time.Hour)
+
+	// 総件数のクエリ
+	countRows := sqlmock.NewRows([]string{"count"}).AddRow(2)
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM analysis_requests`).
+		WithArgs(StatusCompleted).
+		WillReturnRows(countRows)
+
+	// 履歴一覧のクエリ
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(id1, "/uploads/test1.jpg", createdAt1, 500.0, 20.0, 15.0, 60.0).
+		AddRow(id2, "/uploads/test2.jpg", createdAt2, 300.0, 10.0, 8.0, 40.0)
+
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+		WithArgs(StatusCompleted, 20, 0).
+		WillReturnRows(rows)
+
+	// 実行
+	items, total, err := repo.GetHistoryList(ctx, 1, 20)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, 2, total)
+	assert.Len(t, items, 2)
+	assert.Equal(t, id1, items[0].ID)
+	assert.Equal(t, 500.0, items[0].TotalCalories)
+	assert.Equal(t, id2, items[1].ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetHistoryList_Pagination(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	// 総件数のクエリ
+	countRows := sqlmock.NewRows([]string{"count"}).AddRow(50)
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM analysis_requests`).
+		WithArgs(StatusCompleted).
+		WillReturnRows(countRows)
+
+	// 2ページ目を取得（offset = 20）
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+		WithArgs(StatusCompleted, 20, 20).
+		WillReturnRows(rows)
+
+	// 実行
+	items, total, err := repo.GetHistoryList(ctx, 2, 20)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, 50, total)
+	assert.Empty(t, items)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetHistoryList_InvalidPage(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	// 総件数のクエリ
+	countRows := sqlmock.NewRows([]string{"count"}).AddRow(10)
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM analysis_requests`).
+		WithArgs(StatusCompleted).
+		WillReturnRows(countRows)
+
+	// page < 1 は 1 にフォールバック
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+		WithArgs(StatusCompleted, 20, 0).
+		WillReturnRows(rows)
+
+	// 実行（page = 0）
+	items, total, err := repo.GetHistoryList(ctx, 0, 20)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, 10, total)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetHistoryDetail(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+	createdAt := time.Now()
+
+	foods := []gemini.NutritionInfo{
+		{
+			Name:            "白米",
+			EstimatedAmount: "150g",
+			Calories:        252,
+			Protein:         3.8,
+			Fat:             0.5,
+			Carbohydrates:   55.7,
+		},
+	}
+	foodsJSON, _ := json.Marshal(foods)
+
+	// モック設定
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "foods", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(requestID, "/uploads/test.jpg", createdAt, foodsJSON, 252.0, 3.8, 0.5, 55.7)
+
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.foods`).
+		WithArgs(requestID, StatusCompleted).
+		WillReturnRows(rows)
+
+	// 実行
+	detail, err := repo.GetHistoryDetail(ctx, requestID)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.NotNil(t, detail)
+	assert.Equal(t, requestID, detail.ID)
+	assert.Equal(t, "/uploads/test.jpg", detail.ImagePath)
+	assert.Equal(t, 252.0, detail.TotalCalories)
+	assert.Len(t, detail.Foods, 1)
+	assert.Equal(t, "白米", detail.Foods[0].Name)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetHistoryDetail_NotFound(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+
+	// モック設定 - 結果なし
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.foods`).
+		WithArgs(requestID, StatusCompleted).
+		WillReturnError(sql.ErrNoRows)
+
+	// 実行
+	detail, err := repo.GetHistoryDetail(ctx, requestID)
+
+	// 検証
+	assert.Error(t, err)
+	assert.Nil(t, detail)
+	assert.Contains(t, err.Error(), "履歴が見つかりません")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteHistory(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+	imagePath := "/uploads/test.jpg"
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 画像パスの取得
+	imageRows := sqlmock.NewRows([]string{"image_path"}).AddRow(imagePath)
+	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnRows(imageRows)
+
+	// analysis_results の削除
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(requestID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// analysis_requests の削除
+	mock.ExpectExec(`DELETE FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
+
+	// 実行
+	err := repo.DeleteHistory(ctx, requestID)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteHistory_NotFound(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 画像パスの取得 - 結果なし
+	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnError(sql.ErrNoRows)
+
+	// トランザクションロールバック
+	mock.ExpectRollback()
+
+	// 実行
+	err := repo.DeleteHistory(ctx, requestID)
+
+	// 検証
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "履歴が見つかりません")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteHistory_ResultsDeleteError(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+	imagePath := "/uploads/test.jpg"
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 画像パスの取得
+	imageRows := sqlmock.NewRows([]string{"image_path"}).AddRow(imagePath)
+	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnRows(imageRows)
+
+	// analysis_results の削除 - エラー
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(requestID).
+		WillReturnError(sql.ErrConnDone)
+
+	// トランザクションロールバック
+	mock.ExpectRollback()
+
+	// 実行
+	err := repo.DeleteHistory(ctx, requestID)
+
+	// 検証
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "分析結果の削除に失敗")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
