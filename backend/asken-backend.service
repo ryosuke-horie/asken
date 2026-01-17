@@ -1,0 +1,16 @@
+[Unit]
+Description=Asken Backend API Service
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/exedev/asken/backend
+Environment=DATABASE_URL=postgres://asken:asken@localhost:5432/asken?sslmode=disable
+ExecStart=/usr/local/go/bin/go run ./cmd/server
+Restart=on-failure
+RestartSec=5
+User=exedev
+
+[Install]
+WantedBy=multi-user.target
