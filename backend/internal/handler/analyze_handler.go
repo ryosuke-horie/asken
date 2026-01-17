@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/asken/backend/internal/repository"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
 )
 
@@ -24,12 +25,14 @@ type FoodService interface {
 // AnalyzeHandler は画像分析エンドポイントのハンドラー
 type AnalyzeHandler struct {
 	foodService FoodService
+	repository  repository.AnalysisRepository
 }
 
 // NewAnalyzeHandler は新しいAnalyzeHandlerを作成
-func NewAnalyzeHandler(foodService FoodService) *AnalyzeHandler {
+func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRepository) *AnalyzeHandler {
 	return &AnalyzeHandler{
 		foodService: foodService,
+		repository:  repository,
 	}
 }
 
@@ -62,45 +65,43 @@ func (h *AnalyzeHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. 一時保存: /tmp/asken/uploads/{uuid}.{ext}
-	tempPath, err := saveTemporaryFile(file, header)
+	// 3. 永続保存: uploads/{uuid}.{ext}（ワーカーが処理後に削除）
+	permanentPath, err := savePermanentFile(file, header)
 	if err != nil {
 		log.Printf("Error saving file: %v", err)
 		http.Error(w, "ファイルの保存に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("File saved to: %s", tempPath)
+	log.Printf("File saved permanently to: %s", permanentPath)
 
-	// 6. defer でアップロードファイル削除
-	defer func() {
-		if err := os.Remove(tempPath); err != nil {
-			log.Printf("Error removing temp file: %v", err)
-		} else {
-			log.Printf("Temp file removed: %s", tempPath)
-		}
-	}()
-
-	// 4. FoodService.AnalyzeFoodImage() 呼び出し
-	log.Printf("Starting food analysis for: %s", tempPath)
-	result, err := h.foodService.AnalyzeFoodImage(r.Context(), tempPath)
+	// 4. リポジトリに分析リクエストを登録
+	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath)
 	if err != nil {
-		log.Printf("Analysis error: %v", err)
-		http.Error(w, fmt.Sprintf("分析に失敗しました: %v", err), http.StatusInternalServerError)
+		log.Printf("Error creating analysis request: %v", err)
+		// ファイル削除
+		os.Remove(permanentPath)
+		http.Error(w, "分析リクエストの作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Analysis completed successfully. Found %d foods", len(result.Foods))
+	log.Printf("Analysis request created with ID: %s", analysisID)
 
-	// 5. JSON レスポンス返却
+	// 5. 202 Accepted レスポンスを返却
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(result); err != nil {
+	w.WriteHeader(http.StatusAccepted)
+
+	response := map[string]string{
+		"analysis_id": analysisID.String(),
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error encoding response: %v", err)
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Response sent successfully")
+	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
 }
 
 // validateImageFile はファイルのバリデーションを行う
@@ -149,8 +150,8 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 	return nil
 }
 
-// saveTemporaryFile はファイルを一時ディレクトリに保存
-func saveTemporaryFile(file multipart.File, header *multipart.FileHeader) (string, error) {
+// savePermanentFile はファイルを永続的に保存（ワーカーが処理後に削除）
+func savePermanentFile(file multipart.File, header *multipart.FileHeader) (string, error) {
 	// UUIDを生成してファイル名を作成（ディレクトリトラバーサル対策）
 	fileID := uuid.New().String()
 	ext := filepath.Ext(header.Filename)
