@@ -249,9 +249,205 @@ Gemini CLIを使った**非対話的な画像分析**は十分に実現可能で
 
 ---
 
-## 7. 付録
+## 7. 推奨: 2ステップアプローチ
 
-### 7.1 ディレクトリ構成
+### 7.1 概要
+
+Gemini CLIを使う際は、**1回の実行につき1つのタスク**に集中させることで、精度と保守性が向上します。
+
+**分離アプローチの利点**:
+- ✅ 各ステップの責任が明確
+- ✅ エラーハンドリングが簡単
+- ✅ デバッグしやすい
+- ✅ テストしやすい
+- ✅ 各ステップの結果をキャッシュ可能
+- ✅ PostgreSQLとの連携がスムーズ
+
+### 7.2 処理フロー
+
+```
+┌─────────┐
+│  画像   │
+└────┬────┘
+     │
+     ▼
+┌─────────────────────────────────┐
+│ ステップ1: 食材分類            │
+│ (Gemini CLI)                    │
+│ - 食材名の特定                  │
+│ - 量の推定                       │
+└────┬────────────────────────────┘
+     │ JSON: [{name, amount}]
+     ▼
+┌─────────────────────────────────┐
+│ ステップ2: 栄養素算出          │
+│ (PostgreSQL → Gemini CLI)       │
+│ 1. DBで食材を検索               │
+│ 2. ヒット → DB値を使用          │
+│ 3. ミス → Geminiで推定          │
+└────┬────────────────────────────┘
+     │ JSON: [{name, amount, calories, nutrients}]
+     ▼
+┌─────────────────────────────────┐
+│  最終結果                       │
+└─────────────────────────────────┘
+```
+
+### 7.3 ステップ1: 食材分類
+
+**目的**: 画像から食材名と推定量のみを抽出
+
+**プロンプト**:
+```
+この画像に写っている食材や料理を特定し、各食材の名前と推定量（グラム数または個数）を
+JSON形式のリストで出力してください。
+
+出力フォーマット:
+[
+  {
+    "name": "食材名",
+    "estimated_amount": "推定量（例: 100g, 3切れ, 1杯）"
+  }
+]
+
+カロリーや栄養素の情報は不要です。食材の特定と量の推定のみを行ってください。
+```
+
+**実行例**:
+```bash
+cd experiments/gemini-cli
+go run scripts/step1_classify.go
+```
+
+**出力例**:
+```json
+[
+  {
+    "name": "刺身盛り合わせ（ブリまたはハマチ）",
+    "estimated_amount": "8切れ"
+  },
+  {
+    "name": "白身魚のカルパッチョ（玉ねぎ添え）",
+    "estimated_amount": "1皿 (魚約10切れ、玉ねぎ約1/4個)"
+  }
+]
+```
+
+### 7.4 ステップ2: 栄養素算出
+
+**目的**: 食材リストから栄養素とカロリーを算出
+
+**処理の優先順位**:
+1. **PostgreSQL検索** (最優先)
+   - 食品マスタDBから正確なデータを取得
+   - `Source: "database"`
+2. **Gemini推定** (フォールバック)
+   - DBにない食材のみGeminiで推定
+   - `Source: "gemini"`
+
+**プロンプト**:
+```
+以下の食材リストについて、それぞれのカロリーと栄養素（タンパク質、脂質、炭水化物）を
+推定してJSON形式で出力してください。
+
+食材リスト:
+[...]
+
+出力フォーマット:
+[
+  {
+    "name": "食材名",
+    "estimated_amount": "推定量",
+    "calories_kcal": カロリー数値,
+    "protein_g": タンパク質グラム数,
+    "fat_g": 脂質グラム数,
+    "carbohydrates_g": 炭水化物グラム数
+  }
+]
+
+一般的な食品成分表に基づいて、妥当な値を推定してください。
+```
+
+**実行例**:
+```bash
+cd experiments/gemini-cli
+go run scripts/step2_nutrition.go
+```
+
+**出力例**:
+```json
+[
+  {
+    "name": "刺身盛り合わせ（ブリまたはハマチ）",
+    "estimated_amount": "8切れ",
+    "calories_kcal": 360,
+    "protein_g": 30.0,
+    "fat_g": 24.6,
+    "carbohydrates_g": 0.4,
+    "source": "gemini"
+  }
+]
+```
+
+### 7.5 2ステップを連続実行
+
+```bash
+cd experiments/gemini-cli
+./scripts/run_two_steps.sh
+```
+
+**実行時間**:
+- ステップ1: 約30-40秒
+- ステップ2: 約30-40秒
+- 合計: 約60-80秒
+
+### 7.6 実装サンプル
+
+**ファイル構成**:
+```
+experiments/gemini-cli/scripts/
+├── step1_classify.go      # 食材分類
+├── step2_nutrition.go     # 栄養素算出
+├── run_two_steps.sh       # 連続実行スクリプト
+└── main.go                # 統合版（参考用）
+```
+
+**サンプルコード**: `experiments/gemini-cli/scripts/` を参照
+
+### 7.7 PostgreSQL連携の実装イメージ
+
+```go
+// ステップ2の実装イメージ（PostgreSQL連携）
+func CalculateNutrition(foods []FoodItem) ([]NutritionInfo, error) {
+    var results []NutritionInfo
+
+    for _, food := range foods {
+        // まずDBで検索
+        nutrition, err := SearchNutritionFromDatabase(food.Name, food.EstimatedAmount)
+        if err == nil && nutrition != nil {
+            nutrition.Source = "database"
+            results = append(results, *nutrition)
+            continue
+        }
+
+        // DBにない場合のみGeminiで推定
+        nutrition, err = EstimateWithGemini(food)
+        if err != nil {
+            return nil, err
+        }
+        nutrition.Source = "gemini"
+        results = append(results, *nutrition)
+    }
+
+    return results, nil
+}
+```
+
+---
+
+## 8. 付録
+
+### 8.1 ディレクトリ構成
 
 ```
 experiments/gemini-cli/
@@ -262,14 +458,20 @@ experiments/gemini-cli/
 ├── results/             # 実行結果
 │   ├── test_jpg_result.json
 │   ├── test_heic_result.json
-│   └── golang_result.json
+│   ├── golang_result.json
+│   ├── step1_classify_result.json
+│   └── step2_nutrition_result.json
 ├── scripts/             # サンプルコード
-│   ├── main.go
+│   ├── main.go               # 統合版（参考用）
+│   ├── step1_classify.go     # ステップ1: 食材分類
+│   ├── step2_nutrition.go    # ステップ2: 栄養素算出
+│   ├── run_two_steps.sh      # 2ステップ連続実行
 │   └── go.mod
+├── README.md            # クイックスタートガイド
 └── REPORT.md            # このレポート
 ```
 
-### 7.2 参考資料
+### 8.2 参考資料
 
 - [Gemini CLI GitHub Repository](https://github.com/google-gemini/gemini-cli)
 - [Gemini API Documentation](https://ai.google.dev/gemini-api/docs)
