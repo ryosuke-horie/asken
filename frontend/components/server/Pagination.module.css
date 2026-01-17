@@ -1,0 +1,34 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.button,
+.pageButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #333;
+  background: white;
+  transition: background 0.2s;
+}
+
+.button:hover,
+.pageButton:hover {
+  background: #f0f0f0;
+}
+
+.pageButton.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pages {
+  display: flex;
+  gap: 0.5rem;
+}

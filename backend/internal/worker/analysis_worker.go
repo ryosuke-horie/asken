@@ -126,13 +126,5 @@ func (w *AnalysisWorker) processRequest(ctx context.Context, request repository.
 
 	log.Printf("Result saved successfully for request: %s", request.ID)
 
-	// 4. 画像ファイル削除（成功時のみ）
-	if err := os.Remove(request.ImagePath); err != nil {
-		log.Printf("Warning: Failed to remove image file %s: %v", request.ImagePath, err)
-		// ファイル削除失敗は致命的ではないため、続行
-	} else {
-		log.Printf("Image file removed: %s", request.ImagePath)
-	}
-
 	return nil
 }
