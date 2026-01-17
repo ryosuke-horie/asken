@@ -1,0 +1,30 @@
+.nutritionDisplay {
+  margin-top: 40px;
+}
+
+.nutritionTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.nutritionTable th,
+.nutritionTable td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.nutritionTable thead th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
+
+.totalRow {
+  background-color: #e3f2fd;
+  font-weight: bold;
+}
+
+.totalRow td {
+  border-top: 2px solid #1565c0;
+}
