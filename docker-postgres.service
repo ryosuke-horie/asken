@@ -1,0 +1,15 @@
+[Unit]
+Description=Asken Postgres via Docker Compose
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/exedev/asken
+ExecStart=/usr/bin/docker compose up -d postgres
+ExecStop=/usr/bin/docker compose stop postgres
+RemainAfterExit=yes
+User=exedev
+
+[Install]
+WantedBy=multi-user.target

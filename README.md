@@ -73,16 +73,156 @@ npm install
 
 ## 起動方法
 
-### 1. バックエンド起動
+### 本番環境（systemd + Docker 利用）
+
+今回、以下の構成で本番運用できるようにしました：
+
+- PostgreSQL: Docker Compose + systemd
+- バックエンド API: Go サーバー（systemd サービス）
+- フロントエンド: Next.js 本番ビルド + `next start`（systemd サービス）
+
+#### 1. PostgreSQL コンテナの常時起動
+
+Docker Compose 定義は `docker-compose.yml` にあり、Postgres サービスは `postgres` です。
+
+systemd ユニット `/etc/systemd/system/docker-postgres.service` を作成し、起動・自動起動設定を行いました。
+
+```ini
+[Unit]
+Description=Asken Postgres via Docker Compose
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/exedev/asken
+ExecStart=/usr/bin/docker compose up -d postgres
+ExecStop=/usr/bin/docker compose stop postgres
+RemainAfterExit=yes
+User=exedev
+
+[Install]
+WantedBy=multi-user.target
+```
+
+有効化と起動:
+
+```bash
+sudo systemctl enable docker-postgres
+sudo systemctl start docker-postgres
+
+# 状態確認
+systemctl status docker-postgres
+```
+
+#### 2. バックエンド API サービス
+
+Go サーバーを systemd 管理にしました。ユニットは `/etc/systemd/system/asken-backend.service` です。
+
+```ini
+[Unit]
+Description=Asken Backend API Service
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/exedev/asken/backend
+Environment=DATABASE_URL=postgres://asken:asken@localhost:5432/asken?sslmode=disable
+ExecStart=/usr/local/go/bin/go run ./cmd/server
+Restart=on-failure
+RestartSec=5
+User=exedev
+
+[Install]
+WantedBy=multi-user.target
+```
+
+有効化と起動:
+
+```bash
+sudo systemctl enable asken-backend
+sudo systemctl start asken-backend
+
+# 状態確認
+systemctl status asken-backend
+```
+
+API は `http://localhost:8080` / `https://asken.exe.xyz:8080` で待ち受けます。
+
+#### 3. フロントエンド（本番モード）
+
+Next.js アプリを `npm run build` + `npm start` で本番実行するように systemd 化しました。
+
+`/etc/systemd/system/asken-frontend.service`:
+
+```ini
+[Unit]
+Description=Asken Frontend Next.js Service (Production)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/exedev/asken/frontend
+ExecStartPre=/usr/bin/npm install
+ExecStartPre=/usr/bin/npm run build
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+User=exedev
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target
+```
+
+有効化と起動:
+
+```bash
+sudo systemctl enable asken-frontend
+sudo systemctl restart asken-frontend
+
+# 状態確認
+systemctl status asken-frontend
+```
+
+フロントエンドは `http://localhost:3000` / `https://asken.exe.xyz:3000` からアクセス可能です。
+
+#### 4. 全体の起動・停止
+
+```bash
+# 起動
+sudo systemctl start docker-postgres
+sudo systemctl start asken-backend
+sudo systemctl start asken-frontend
+
+# 停止
+sudo systemctl stop asken-frontend
+sudo systemctl stop asken-backend
+sudo systemctl stop docker-postgres
+
+# 再起動
+sudo systemctl restart docker-postgres
+sudo systemctl restart asken-backend
+sudo systemctl restart asken-frontend
+```
+
+### ローカル開発モード
+
+従来通り、手動で起動して開発することもできます。
+
+#### 1. バックエンド起動
 
 ```bash
 cd backend
+export DATABASE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
 go run cmd/server/main.go
 ```
 
 サーバーが `http://localhost:8080` で起動します。
 
-### 2. フロントエンド起動
+#### 2. フロントエンド起動
 
 ```bash
 cd frontend
@@ -91,7 +231,7 @@ npm run dev
 
 フロントエンドが `http://localhost:3000` で起動します。
 
-### 3. ブラウザでアクセス
+#### 3. ブラウザでアクセス
 
 `http://localhost:3000` にアクセスして、画像をアップロードします。
 
