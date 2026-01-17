@@ -133,13 +133,22 @@ func main() {
 	}
 }
 
+// allowedOrigins は許可するオリジンのリスト
+var allowedOrigins = []string{
+	"http://localhost:3000",
+	"http://localhost:3001",
+	"https://asken.exe.xyz:3000",
+}
+
 // enableCORS はCORSヘッダーを追加するミドルウェア
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// localhost:3000とlocalhost:3001からのリクエストを許可
 		origin := r.Header.Get("Origin")
-		if origin == "http://localhost:3000" || origin == "http://localhost:3001" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")

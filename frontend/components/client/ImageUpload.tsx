@@ -6,6 +6,8 @@ import NutritionDisplay from './NutritionDisplay'
 import { saveAnalysisId, getAnalysisId, clearAnalysisId } from '@/lib/storage'
 import styles from './ImageUpload.module.css'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+
 type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 interface StatusResponse {
@@ -72,7 +74,7 @@ export default function ImageUpload() {
   // ステータスチェック
   const checkStatus = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/analyze/${id}`)
+      const response = await fetch(`${API_BASE_URL}/api/analyze/${id}`)
 
       if (!response.ok) {
         throw new Error(`ステータス取得に失敗しました (${response.status})`)
@@ -164,7 +166,7 @@ export default function ImageUpload() {
       formData.append('image', selectedFile)
 
       // POST /api/analyze（202 Accepted を期待）
-      const response = await fetch('http://localhost:8080/api/analyze', {
+      const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         body: formData,
       })
