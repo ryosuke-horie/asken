@@ -1,9 +1,19 @@
 'use client'
 
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useEffect, useState, useRef } from 'react'
 import { AnalysisResult } from '@/types/nutrition'
 import NutritionDisplay from './NutritionDisplay'
+import { saveAnalysisId, getAnalysisId, clearAnalysisId } from '@/lib/storage'
 import styles from './ImageUpload.module.css'
+
+type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
+interface StatusResponse {
+  status: AnalysisStatus
+  message?: string
+  result?: AnalysisResult
+  error?: string
+}
 
 export default function ImageUpload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -11,6 +21,9 @@ export default function ImageUpload() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [analysisId, setAnalysisId] = useState<string | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string>('')
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -48,6 +61,92 @@ export default function ImageUpload() {
     }
   }
 
+  // ポーリング停止
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+  }
+
+  // ステータスチェック
+  const checkStatus = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/analyze/${id}`)
+
+      if (!response.ok) {
+        throw new Error(`ステータス取得に失敗しました (${response.status})`)
+      }
+
+      const data: StatusResponse = await response.json()
+
+      switch (data.status) {
+        case 'pending':
+          setStatusMessage('分析リクエストを受け付けました...')
+          break
+
+        case 'processing':
+          setStatusMessage('分析処理中です...')
+          break
+
+        case 'completed':
+          setStatusMessage('分析が完了しました')
+          setResult(data.result || null)
+          setIsLoading(false)
+          stopPolling()
+          clearAnalysisId()
+          setAnalysisId(null)
+          break
+
+        case 'failed':
+          setError(data.error || '分析に失敗しました')
+          setIsLoading(false)
+          stopPolling()
+          clearAnalysisId()
+          setAnalysisId(null)
+          break
+      }
+    } catch (err) {
+      console.error('Status check error:', err)
+      setError(err instanceof Error ? err.message : '予期しないエラーが発生しました')
+      setIsLoading(false)
+      stopPolling()
+      clearAnalysisId()
+      setAnalysisId(null)
+    }
+  }
+
+  // ポーリング開始
+  const startPolling = (id: string) => {
+    // 既存のポーリングを停止
+    stopPolling()
+
+    // 即座に1回チェック
+    checkStatus(id)
+
+    // 2秒間隔でポーリング
+    pollingIntervalRef.current = setInterval(() => {
+      checkStatus(id)
+    }, 2000)
+  }
+
+  // コンポーネントマウント時にlocalStorageから復旧
+  useEffect(() => {
+    const savedAnalysisId = getAnalysisId()
+    if (savedAnalysisId) {
+      console.log('Resuming analysis:', savedAnalysisId)
+      setAnalysisId(savedAnalysisId)
+      setIsLoading(true)
+      setStatusMessage('分析を再開しています...')
+      startPolling(savedAnalysisId)
+    }
+
+    // クリーンアップ
+    return () => {
+      stopPolling()
+    }
+  }, [])
+
   const handleUpload = async () => {
     if (!selectedFile) {
       setError('画像ファイルを選択してください')
@@ -56,44 +155,45 @@ export default function ImageUpload() {
 
     setIsLoading(true)
     setError(null)
+    setResult(null)
+    setStatusMessage('アップロード中...')
 
     try {
       // FormData作成
       const formData = new FormData()
       formData.append('image', selectedFile)
 
-      // POST /api/analyze（タイムアウト180秒）
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 180000)
-
+      // POST /api/analyze（202 Accepted を期待）
       const response = await fetch('http://localhost:8080/api/analyze', {
         method: 'POST',
         body: formData,
-        signal: controller.signal,
       })
-
-      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Server error:', response.status, errorText)
-        throw new Error(`分析に失敗しました (${response.status}): ${errorText}`)
+        throw new Error(`アップロードに失敗しました (${response.status}): ${errorText}`)
       }
 
-      const data: AnalysisResult = await response.json()
-      setResult(data)
+      // analysis_idを取得
+      const data: { analysis_id: string } = await response.json()
+      const newAnalysisId = data.analysis_id
+
+      console.log('Analysis started:', newAnalysisId)
+
+      // localStorageに保存
+      saveAnalysisId(newAnalysisId)
+      setAnalysisId(newAnalysisId)
+
+      // ポーリング開始
+      startPolling(newAnalysisId)
     } catch (err) {
       console.error('Upload error:', err)
       if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          setError('タイムアウト: 分析に3分以上かかっています。もう一度お試しください。')
-        } else {
-          setError(`エラー: ${err.message}`)
-        }
+        setError(`エラー: ${err.message}`)
       } else {
         setError('予期しないエラーが発生しました')
       }
-    } finally {
       setIsLoading(false)
     }
   }
@@ -136,7 +236,7 @@ export default function ImageUpload() {
 
         {isLoading && (
           <div className={styles.loadingMessage}>
-            画像を分析しています。2分ほどお待ちください...
+            {statusMessage || '画像を分析しています。2分ほどお待ちください...'}
           </div>
         )}
       </div>

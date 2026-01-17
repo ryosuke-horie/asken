@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/ryosuke-horie/asken/backend/internal/handler"
+	"github.com/ryosuke-horie/asken/backend/internal/repository"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/asken/backend/internal/worker"
+	"github.com/ryosuke-horie/asken/backend/pkg/database"
 	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
 )
 
@@ -29,6 +32,25 @@ func (r *RealGeminiClient) CalculateNutrition(ctx context.Context, foods []gemin
 }
 
 func main() {
+	// 環境変数から設定を読み込み
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	// データベース接続
+	db, err := database.NewPostgresDB(database.Config{
+		DatabaseURL: databaseURL,
+	})
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+	log.Println("Database connection established")
+
+	// リポジトリの初期化
+	analysisRepo := repository.NewAnalysisRepository(db)
+
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
 	calculator := gemini.NewNutritionCalculator(120 * time.Second)
@@ -38,11 +60,39 @@ func main() {
 	}
 
 	foodService := service.NewFoodService(geminiClient)
-	analyzeHandler := handler.NewAnalyzeHandler(foodService)
+
+	// ハンドラーの初期化（リポジトリを渡す）
+	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo)
+	statusHandler := handler.NewStatusHandler(analysisRepo)
+
+	// ワーカーの初期化
+	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
+
+	// ワーカー用のコンテキスト
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+
+	// ワーカーを別ゴルーチンで起動
+	go analysisWorker.Start(workerCtx)
 
 	// ルーティング
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/analyze", analyzeHandler.Handle)
+
+	// POST /api/analyze - 画像アップロード
+	// GET /api/analyze/:id - ステータス取得
+	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			analyzeHandler.Handle(w, r)
+		} else if r.Method == http.MethodGet {
+			statusHandler.Handle(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+
+	// 両方のパスパターンを登録
+	mux.HandleFunc("/api/analyze", analyzeRouteHandler)   // POST用
+	mux.HandleFunc("/api/analyze/", analyzeRouteHandler)  // GET /api/analyze/:id 用
 
 	// CORSミドルウェアを適用
 	corsHandler := enableCORS(mux)
@@ -63,6 +113,12 @@ func main() {
 		<-sigChan
 
 		log.Println("Shutting down server...")
+
+		// ワーカーを停止
+		workerCancel()
+		log.Println("Worker stopped")
+
+		// HTTPサーバーを停止
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -85,7 +141,7 @@ func enableCORS(next http.Handler) http.Handler {
 		if origin == "http://localhost:3000" || origin == "http://localhost:3001" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		// プリフライトリクエスト（OPTIONS）への対応

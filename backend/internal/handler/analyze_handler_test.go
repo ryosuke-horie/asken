@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/ryosuke-horie/asken/backend/internal/repository"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,29 +30,72 @@ func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string
 	return nil, nil
 }
 
+// MockAnalysisRepository はテスト用のモックAnalysisRepository
+type MockAnalysisRepository struct {
+	CreateRequestFunc     func(ctx context.Context, imagePath string) (uuid.UUID, error)
+	GetRequestFunc        func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
+	UpdateStatusFunc      func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
+	SaveResultFunc        func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	GetResultFunc         func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	GetPendingRequestsFunc func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
+}
+
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string) (uuid.UUID, error) {
+	if m.CreateRequestFunc != nil {
+		return m.CreateRequestFunc(ctx, imagePath)
+	}
+	return uuid.Nil, nil
+}
+
+func (m *MockAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+	if m.GetRequestFunc != nil {
+		return m.GetRequestFunc(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockAnalysisRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+	if m.UpdateStatusFunc != nil {
+		return m.UpdateStatusFunc(ctx, id, status, errorMessage)
+	}
+	return nil
+}
+
+func (m *MockAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error {
+	if m.SaveResultFunc != nil {
+		return m.SaveResultFunc(ctx, requestID, result)
+	}
+	return nil
+}
+
+func (m *MockAnalysisRepository) GetResult(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error) {
+	if m.GetResultFunc != nil {
+		return m.GetResultFunc(ctx, requestID)
+	}
+	return nil, nil
+}
+
+func (m *MockAnalysisRepository) GetPendingRequests(ctx context.Context, limit int) ([]repository.AnalysisRequest, error) {
+	if m.GetPendingRequestsFunc != nil {
+		return m.GetPendingRequestsFunc(ctx, limit)
+	}
+	return nil, nil
+}
+
 func TestAnalyzeHandler_Success(t *testing.T) {
-	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, imagePath string) (*service.AnalysisResult, error) {
-			return &service.AnalysisResult{
-				Foods: []gemini.NutritionInfo{
-					{
-						Name:            "刺身盛り合わせ",
-						EstimatedAmount: "8切れ",
-						Calories:        360.0,
-						Protein:         30.0,
-						Fat:             24.6,
-						Carbohydrates:   0.4,
-					},
-				},
-				TotalCalories:      360.0,
-				TotalProtein:       30.0,
-				TotalFat:           24.6,
-				TotalCarbohydrates: 0.4,
-			}, nil
+	// 非同期処理のため、FoodServiceは呼ばれない
+	mockService := &MockFoodService{}
+
+	expectedID := uuid.New()
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestFunc: func(ctx context.Context, imagePath string) (uuid.UUID, error) {
+			// ファイルが永続化されていることを確認
+			assert.FileExists(t, imagePath)
+			return expectedID, nil
 		},
 	}
 
-	handler := NewAnalyzeHandler(mockService)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
 	body := &bytes.Buffer{}
@@ -72,18 +116,25 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 
 	handler.Handle(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	// 202 Accepted レスポンスを確認
+	assert.Equal(t, http.StatusAccepted, w.Code)
 
-	var result service.AnalysisResult
-	err = json.NewDecoder(w.Body).Decode(&result)
+	// レスポンス形式を確認
+	var response struct {
+		AnalysisID string `json:"analysis_id"`
+	}
+	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Len(t, result.Foods, 1)
-	assert.Equal(t, 360.0, result.TotalCalories)
+	assert.Equal(t, expectedID.String(), response.AnalysisID)
+
+	// ファイルが削除されていないことを確認（永続化のため）
+	// Note: テスト後のクリーンアップは別途必要
 }
 
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
-	handler := NewAnalyzeHandler(mockService)
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", nil)
 	w := httptest.NewRecorder()
@@ -95,7 +146,8 @@ func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 
 func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockService := &MockFoodService{}
-	handler := NewAnalyzeHandler(mockService)
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// テキストファイルをアップロード
 	body := &bytes.Buffer{}
@@ -114,14 +166,15 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestAnalyzeHandler_ServiceError(t *testing.T) {
-	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, imagePath string) (*service.AnalysisResult, error) {
-			return nil, assert.AnError
+func TestAnalyzeHandler_RepositoryError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestFunc: func(ctx context.Context, imagePath string) (uuid.UUID, error) {
+			return uuid.Nil, assert.AnError
 		},
 	}
 
-	handler := NewAnalyzeHandler(mockService)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
