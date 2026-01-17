@@ -9,15 +9,27 @@
 
 ## ブランチ命名規則
 
+**Linearとの連携**
+
+このプロジェクトはLinearで課題管理を行っているため、ブランチ名はLinearの課題IDを使用します。
+
 ```
-<type>/<short-description>
+edg-<issue-number>
 
 例:
-- feature/image-analysis
-- feature/food-search
-- bugfix/nutrition-display
-- hotfix/gemini-timeout
+- edg-123
+- edg-456
+- edg-789
 ```
+
+**命名規則:**
+- Linear課題ID（`edg-xxx`）をブランチ名として使用
+- わかりやすい説明が必要な場合は、`edg-xxx/short-description`の形式も可
+  - 例: `edg-123/image-upload`
+
+**注意事項:**
+- 必ずLinear課題を作成してからブランチを作成する
+- ブランチ名とLinear課題が一致していることを確認する
 
 ## コミットメッセージ
 
