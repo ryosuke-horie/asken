@@ -64,6 +64,9 @@ func main() {
 	// ハンドラーの初期化（リポジトリを渡す）
 	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo)
 	statusHandler := handler.NewStatusHandler(analysisRepo)
+	historyHandler := handler.NewHistoryHandler(analysisRepo)
+	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)
+	imageHandler := handler.NewImageHandler("uploads")
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
@@ -93,6 +96,27 @@ func main() {
 	// 両方のパスパターンを登録
 	mux.HandleFunc("/api/analyze", analyzeRouteHandler)   // POST用
 	mux.HandleFunc("/api/analyze/", analyzeRouteHandler)  // GET /api/analyze/:id 用
+
+	// 履歴エンドポイント
+	// GET /api/history - 履歴一覧
+	mux.HandleFunc("/api/history", historyHandler.HandleList)
+
+	// GET /api/history/:id - 履歴詳細
+	// DELETE /api/history/:id - 履歴削除
+	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			historyHandler.HandleDetail(w, r)
+		} else if r.Method == http.MethodDelete {
+			historyDeleteHandler.Handle(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.HandleFunc("/api/history/", historyDetailRouteHandler)
+
+	// 画像配信エンドポイント
+	// GET /api/images/:filename
+	mux.HandleFunc("/api/images/", imageHandler.Handle)
 
 	// CORSミドルウェアを適用
 	corsHandler := enableCORS(mux)
@@ -150,7 +174,7 @@ func enableCORS(next http.Handler) http.Handler {
 				break
 			}
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		// プリフライトリクエスト（OPTIONS）への対応
