@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/asken/backend/internal/repository"
@@ -75,8 +76,27 @@ func (h *AnalyzeHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("File saved permanently to: %s", permanentPath)
 
-	// 4. リポジトリに分析リクエストを登録
-	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath)
+	// 4. meal_type と meal_date を取得・バリデーション
+	mealType := r.FormValue("meal_type")
+	mealDate := r.FormValue("meal_date")
+
+	// meal_type のバリデーション
+	if !isValidMealType(mealType) {
+		log.Printf("Invalid meal_type: %s", mealType)
+		os.Remove(permanentPath)
+		http.Error(w, "無効な食事タイプです（breakfast, lunch, dinner, snackのいずれか）", http.StatusBadRequest)
+		return
+	}
+
+	// meal_date が空の場合は今日の日付
+	if mealDate == "" {
+		mealDate = time.Now().Format("2006-01-02")
+	}
+
+	log.Printf("Meal type: %s, Meal date: %s", mealType, mealDate)
+
+	// 5. リポジトリに分析リクエストを登録
+	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate)
 	if err != nil {
 		log.Printf("Error creating analysis request: %v", err)
 		// ファイル削除
@@ -183,4 +203,15 @@ func savePermanentFile(file multipart.File, header *multipart.FileHeader) (strin
 	}
 
 	return destPath, nil
+}
+
+// isValidMealType は meal_type が有効な値かチェックします
+func isValidMealType(mealType string) bool {
+	validTypes := map[string]bool{
+		"breakfast": true,
+		"lunch":     true,
+		"dinner":    true,
+		"snack":     true,
+	}
+	return validTypes[mealType]
 }

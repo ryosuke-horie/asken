@@ -1,3 +1,5 @@
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
 export interface FoodItem {
   name: string;
   estimated_amount: string;
@@ -24,6 +26,8 @@ export interface HistoryItem {
   id: string;
   image_path: string;
   created_at: string;
+  meal_type?: MealType;
+  meal_date?: string;
   total_calories: number;
   total_protein: number;
   total_fat: number;
@@ -39,4 +43,20 @@ export interface HistoryListResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface DailyMeals {
+  date: string;
+  meals: {
+    breakfast: HistoryDetail[];
+    lunch: HistoryDetail[];
+    dinner: HistoryDetail[];
+    snack: HistoryDetail[];
+  };
+  daily_total: {
+    total_calories: number;
+    total_protein: number;
+    total_fat: number;
+    total_carbohydrates: number;
+  };
 }

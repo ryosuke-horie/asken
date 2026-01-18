@@ -61,7 +61,7 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 @%s`, absPath)
 
 	// Gemini CLIコマンドを構築
-	cmd := exec.CommandContext(ctx, "gemini", "-o", "json", prompt)
+	cmd := exec.CommandContext(ctx, "gemini", "-m", "gemini-3-flash-preview", "-o", "json", prompt)
 
 	// 標準出力と標準エラー出力をキャプチャ
 	output, err := cmd.CombinedOutput()

@@ -67,6 +67,7 @@ func main() {
 	historyHandler := handler.NewHistoryHandler(analysisRepo)
 	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)
 	imageHandler := handler.NewImageHandler("uploads")
+	dailyMealsHandler := handler.NewDailyMealsHandler(analysisRepo)
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
@@ -117,6 +118,10 @@ func main() {
 	// 画像配信エンドポイント
 	// GET /api/images/:filename
 	mux.HandleFunc("/api/images/", imageHandler.Handle)
+
+	// 日次食事データエンドポイント
+	// GET /api/meals/daily
+	mux.HandleFunc("/api/meals/daily", dailyMealsHandler.Handle)
 
 	// CORSミドルウェアを適用
 	corsHandler := enableCORS(mux)
