@@ -36,7 +36,7 @@ func (c *Client) Execute(ctx context.Context, prompt string) (*Response, error) 
 	defer cancel()
 
 	// Gemini CLIコマンドを構築
-	cmd := exec.CommandContext(ctx, "gemini", "-o", "json", prompt)
+	cmd := exec.CommandContext(ctx, "gemini", "-m", "gemini-3-flash-preview", "-o", "json", prompt)
 
 	// 標準出力と標準エラー出力をキャプチャ
 	output, err := cmd.CombinedOutput()

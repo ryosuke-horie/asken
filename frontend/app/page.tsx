@@ -1,15 +1,15 @@
-import ImageUpload from '@/components/client/ImageUpload'
-import './page.css'
+import { fetchDailyMeals } from '@/lib/api/daily-meals'
+import DailyMealsView from '@/components/client/DailyMealsView'
 
-export default function Home() {
-  return (
-    <div className="home">
-      <div className="intro">
-        <h2>食事の画像から栄養素を分析</h2>
-        <p>画像をアップロードするだけで、AIが自動的に食材を認識し、カロリーと栄養素を計算します。</p>
-      </div>
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { date?: string }
+}) {
+  const today = new Date().toISOString().split('T')[0]
+  const date = searchParams.date || today
 
-      <ImageUpload />
-    </div>
-  )
+  const data = await fetchDailyMeals(date)
+
+  return <DailyMealsView initialData={data} initialDate={date} />
 }

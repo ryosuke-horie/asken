@@ -39,6 +39,8 @@ type HistoryItem struct {
 	ID                   uuid.UUID `json:"id"`
 	ImagePath            string    `json:"image_path"`
 	CreatedAt            time.Time `json:"created_at"`
+	MealType             string    `json:"meal_type"`
+	MealDate             time.Time `json:"meal_date"`
 	TotalCalories        float64   `json:"total_calories"`
 	TotalProtein         float64   `json:"total_protein"`
 	TotalFat             float64   `json:"total_fat"`
@@ -51,10 +53,18 @@ type HistoryDetail struct {
 	Foods []gemini.NutritionInfo `json:"foods"`
 }
 
+// DailyTotal は1日の合計栄養素を表す構造体
+type DailyTotal struct {
+	TotalCalories      float64 `json:"total_calories"`
+	TotalProtein       float64 `json:"total_protein"`
+	TotalFat           float64 `json:"total_fat"`
+	TotalCarbohydrates float64 `json:"total_carbohydrates"`
+}
+
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
 	// CreateRequest は新しい分析リクエストを作成します
-	CreateRequest(ctx context.Context, imagePath string) (uuid.UUID, error)
+	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
 
 	// GetRequest は指定されたIDの分析リクエストを取得します
 	GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error)
@@ -79,6 +89,9 @@ type AnalysisRepository interface {
 
 	// DeleteHistory は履歴を削除します（関連する画像も含む）
 	DeleteHistory(ctx context.Context, id uuid.UUID) error
+
+	// GetDailyMeals は指定された日付の食事データを取得します
+	GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error)
 }
 
 // postgresAnalysisRepository はPostgreSQLを使用したAnalysisRepositoryの実装
@@ -92,15 +105,15 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 }
 
 // CreateRequest は新しい分析リクエストを作成します
-func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 	query := `
-		INSERT INTO analysis_requests (status, image_path)
-		VALUES ($1, $2)
+		INSERT INTO analysis_requests (status, image_path, meal_type, meal_date)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, imagePath).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, StatusPending, imagePath, mealType, mealDate).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
 	}
@@ -343,6 +356,8 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 			ar.id,
 			ar.image_path,
 			ar.created_at,
+			ar.meal_type,
+			ar.meal_date,
 			res.total_calories,
 			res.total_protein,
 			res.total_fat,
@@ -363,10 +378,14 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 	var items []HistoryItem
 	for rows.Next() {
 		var item HistoryItem
+		var mealType sql.NullString
+		var mealDate sql.NullTime
 		err := rows.Scan(
 			&item.ID,
 			&item.ImagePath,
 			&item.CreatedAt,
+			&mealType,
+			&mealDate,
 			&item.TotalCalories,
 			&item.TotalProtein,
 			&item.TotalFat,
@@ -374,6 +393,12 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+		if mealType.Valid {
+			item.MealType = mealType.String
+		}
+		if mealDate.Valid {
+			item.MealDate = mealDate.Time
 		}
 		items = append(items, item)
 	}
@@ -392,6 +417,8 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 			ar.id,
 			ar.image_path,
 			ar.created_at,
+			ar.meal_type,
+			ar.meal_date,
 			res.foods,
 			res.total_calories,
 			res.total_protein,
@@ -404,11 +431,15 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 
 	var detail HistoryDetail
 	var foodsJSON []byte
+	var mealType sql.NullString
+	var mealDate sql.NullTime
 
 	err := r.db.QueryRowContext(ctx, query, id, StatusCompleted).Scan(
 		&detail.ID,
 		&detail.ImagePath,
 		&detail.CreatedAt,
+		&mealType,
+		&mealDate,
 		&foodsJSON,
 		&detail.TotalCalories,
 		&detail.TotalProtein,
@@ -421,6 +452,13 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 	}
 	if err != nil {
 		return nil, fmt.Errorf("履歴詳細の取得に失敗: %w", err)
+	}
+
+	if mealType.Valid {
+		detail.MealType = mealType.String
+	}
+	if mealDate.Valid {
+		detail.MealDate = mealDate.Time
 	}
 
 	// JSONB から foods をデシリアライズ
@@ -488,4 +526,91 @@ func (r *postgresAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.
 	}
 
 	return nil
+}
+
+// GetDailyMeals は指定された日付の食事データを取得します
+func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error) {
+	query := `
+		SELECT
+			ar.id,
+			ar.image_path,
+			ar.created_at,
+			ar.meal_type,
+			ar.meal_date,
+			res.foods,
+			res.total_calories,
+			res.total_protein,
+			res.total_fat,
+			res.total_carbohydrates
+		FROM analysis_requests ar
+		INNER JOIN analysis_results res ON ar.id = res.analysis_request_id
+		WHERE ar.meal_date = $1 AND ar.status = $2
+		ORDER BY ar.meal_type, ar.created_at ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, date, StatusCompleted)
+	if err != nil {
+		return nil, DailyTotal{}, fmt.Errorf("日次食事の取得に失敗: %w", err)
+	}
+	defer rows.Close()
+
+	meals := map[string][]HistoryDetail{
+		"breakfast": {},
+		"lunch":     {},
+		"dinner":    {},
+		"snack":     {},
+	}
+
+	var dailyTotal DailyTotal
+
+	for rows.Next() {
+		var detail HistoryDetail
+		var mealType sql.NullString
+		var mealDate sql.NullTime
+		var foodsJSON []byte
+
+		err := rows.Scan(
+			&detail.ID,
+			&detail.ImagePath,
+			&detail.CreatedAt,
+			&mealType,
+			&mealDate,
+			&foodsJSON,
+			&detail.TotalCalories,
+			&detail.TotalProtein,
+			&detail.TotalFat,
+			&detail.TotalCarbohydrates,
+		)
+		if err != nil {
+			return nil, DailyTotal{}, fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+
+		if mealType.Valid {
+			detail.MealType = mealType.String
+		}
+		if mealDate.Valid {
+			detail.MealDate = mealDate.Time
+		}
+
+		if err := json.Unmarshal(foodsJSON, &detail.Foods); err != nil {
+			return nil, DailyTotal{}, fmt.Errorf("foods のデシリアライズに失敗: %w", err)
+		}
+
+		// 食事タイプが有効な場合のみ追加
+		if mealType.Valid && mealType.String != "" {
+			meals[mealType.String] = append(meals[mealType.String], detail)
+		}
+
+		// 合計を加算
+		dailyTotal.TotalCalories += detail.TotalCalories
+		dailyTotal.TotalProtein += detail.TotalProtein
+		dailyTotal.TotalFat += detail.TotalFat
+		dailyTotal.TotalCarbohydrates += detail.TotalCarbohydrates
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, DailyTotal{}, fmt.Errorf("行の反復処理に失敗: %w", err)
+	}
+
+	return meals, dailyTotal, nil
 }
