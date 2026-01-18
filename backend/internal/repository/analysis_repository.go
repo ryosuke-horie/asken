@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
 )
 
 // AnalysisStatus は分析リクエストのステータスを表す型
@@ -47,7 +48,7 @@ type HistoryItem struct {
 // HistoryDetail は履歴詳細を表す構造体
 type HistoryDetail struct {
 	HistoryItem
-	Foods []service.NutritionInfo `json:"foods"`
+	Foods []gemini.NutritionInfo `json:"foods"`
 }
 
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
