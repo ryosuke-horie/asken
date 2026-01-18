@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
 )
 
 // AnalysisStatus は分析リクエストのステータスを表す型
@@ -31,6 +34,23 @@ type AnalysisRequest struct {
 	UpdatedAt    time.Time      `json:"updated_at"`
 }
 
+// HistoryItem は履歴一覧の各項目を表す構造体
+type HistoryItem struct {
+	ID                   uuid.UUID `json:"id"`
+	ImagePath            string    `json:"image_path"`
+	CreatedAt            time.Time `json:"created_at"`
+	TotalCalories        float64   `json:"total_calories"`
+	TotalProtein         float64   `json:"total_protein"`
+	TotalFat             float64   `json:"total_fat"`
+	TotalCarbohydrates   float64   `json:"total_carbohydrates"`
+}
+
+// HistoryDetail は履歴詳細を表す構造体
+type HistoryDetail struct {
+	HistoryItem
+	Foods []gemini.NutritionInfo `json:"foods"`
+}
+
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
 	// CreateRequest は新しい分析リクエストを作成します
@@ -50,6 +70,15 @@ type AnalysisRepository interface {
 
 	// GetPendingRequests はpending状態のリクエストを取得します（limit: 取得件数上限）
 	GetPendingRequests(ctx context.Context, limit int) ([]AnalysisRequest, error)
+
+	// GetHistoryList は履歴一覧を取得します（ページネーション対応）
+	GetHistoryList(ctx context.Context, page, limit int) ([]HistoryItem, int, error)
+
+	// GetHistoryDetail は履歴詳細を取得します
+	GetHistoryDetail(ctx context.Context, id uuid.UUID) (*HistoryDetail, error)
+
+	// DeleteHistory は履歴を削除します（関連する画像も含む）
+	DeleteHistory(ctx context.Context, id uuid.UUID) error
 }
 
 // postgresAnalysisRepository はPostgreSQLを使用したAnalysisRepositoryの実装
@@ -281,4 +310,182 @@ func (r *postgresAnalysisRepository) GetPendingRequests(ctx context.Context, lim
 	}
 
 	return requests, nil
+}
+
+// GetHistoryList は履歴一覧を取得します（ページネーション対応）
+func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]HistoryItem, int, error) {
+	// バリデーション
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	// 総件数を取得
+	var total int
+	countQuery := `
+		SELECT COUNT(*)
+		FROM analysis_requests ar
+		INNER JOIN analysis_results res ON ar.id = res.analysis_request_id
+		WHERE ar.status = $1
+	`
+	if err := r.db.QueryRowContext(ctx, countQuery, StatusCompleted).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("総件数の取得に失敗: %w", err)
+	}
+
+	// オフセットを計算
+	offset := (page - 1) * limit
+
+	// 履歴一覧を取得
+	query := `
+		SELECT
+			ar.id,
+			ar.image_path,
+			ar.created_at,
+			res.total_calories,
+			res.total_protein,
+			res.total_fat,
+			res.total_carbohydrates
+		FROM analysis_requests ar
+		INNER JOIN analysis_results res ON ar.id = res.analysis_request_id
+		WHERE ar.status = $1
+		ORDER BY ar.created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, StatusCompleted, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("履歴一覧の取得に失敗: %w", err)
+	}
+	defer rows.Close()
+
+	var items []HistoryItem
+	for rows.Next() {
+		var item HistoryItem
+		err := rows.Scan(
+			&item.ID,
+			&item.ImagePath,
+			&item.CreatedAt,
+			&item.TotalCalories,
+			&item.TotalProtein,
+			&item.TotalFat,
+			&item.TotalCarbohydrates,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("行の反復処理に失敗: %w", err)
+	}
+
+	return items, total, nil
+}
+
+// GetHistoryDetail は履歴詳細を取得します
+func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*HistoryDetail, error) {
+	query := `
+		SELECT
+			ar.id,
+			ar.image_path,
+			ar.created_at,
+			res.foods,
+			res.total_calories,
+			res.total_protein,
+			res.total_fat,
+			res.total_carbohydrates
+		FROM analysis_requests ar
+		INNER JOIN analysis_results res ON ar.id = res.analysis_request_id
+		WHERE ar.id = $1 AND ar.status = $2
+	`
+
+	var detail HistoryDetail
+	var foodsJSON []byte
+
+	err := r.db.QueryRowContext(ctx, query, id, StatusCompleted).Scan(
+		&detail.ID,
+		&detail.ImagePath,
+		&detail.CreatedAt,
+		&foodsJSON,
+		&detail.TotalCalories,
+		&detail.TotalProtein,
+		&detail.TotalFat,
+		&detail.TotalCarbohydrates,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("履歴詳細の取得に失敗: %w", err)
+	}
+
+	// JSONB から foods をデシリアライズ
+	if err := json.Unmarshal(foodsJSON, &detail.Foods); err != nil {
+		return nil, fmt.Errorf("foods のデシリアライズに失敗: %w", err)
+	}
+
+	return &detail, nil
+}
+
+// DeleteHistory は履歴を削除します（関連する画像も含む）
+func (r *postgresAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 画像パスを取得
+	var imagePath string
+	getImageQuery := `SELECT image_path FROM analysis_requests WHERE id = $1`
+	if err := tx.QueryRowContext(ctx, getImageQuery, id).Scan(&imagePath); err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("履歴が見つかりません: %s", id)
+		}
+		return fmt.Errorf("画像パスの取得に失敗: %w", err)
+	}
+
+	// analysis_results を削除（外部キー制約があるため先に削除）
+	deleteResultsQuery := `DELETE FROM analysis_results WHERE analysis_request_id = $1`
+	if _, err := tx.ExecContext(ctx, deleteResultsQuery, id); err != nil {
+		return fmt.Errorf("分析結果の削除に失敗: %w", err)
+	}
+
+	// analysis_requests を削除
+	deleteRequestQuery := `DELETE FROM analysis_requests WHERE id = $1`
+	result, err := tx.ExecContext(ctx, deleteRequestQuery, id)
+	if err != nil {
+		return fmt.Errorf("分析リクエストの削除に失敗: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("影響を受けた行数の取得に失敗: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("履歴が見つかりません: %s", id)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("トランザクションのコミットに失敗: %w", err)
+	}
+
+	// 画像ファイルを削除（データベース削除成功後）
+	if imagePath != "" {
+		if err := os.Remove(imagePath); err != nil {
+			// 画像削除失敗は警告ログのみ（データベース削除は成功しているため）
+			log.Printf("Warning: Failed to remove image file %s: %v", imagePath, err)
+		} else {
+			log.Printf("Image file removed: %s", imagePath)
+		}
+	}
+
+	return nil
 }
