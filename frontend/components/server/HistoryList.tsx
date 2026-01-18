@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { HistoryItem } from '@/types/nutrition';
+import HistoryItemImage from '@/components/client/HistoryItemImage';
 import styles from './HistoryList.module.css';
 
 interface HistoryListProps {
@@ -20,14 +21,7 @@ export default function HistoryList({ items }: HistoryListProps) {
       {items.map((item) => (
         <Link href={`/history/${item.id}`} key={item.id} className={styles.item}>
           <div className={styles.imageContainer}>
-            <img
-              src={`http://localhost:8080/api/images/${item.image_path.split('/').pop()}`}
-              alt="食事画像"
-              className={styles.image}
-              onError={(e) => {
-                e.currentTarget.src = '/placeholder.png';
-              }}
-            />
+            <HistoryItemImage imagePath={item.image_path} alt="食事画像" />
           </div>
           <div className={styles.details}>
             <p className={styles.date}>

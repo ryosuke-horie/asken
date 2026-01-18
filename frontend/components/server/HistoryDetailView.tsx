@@ -1,4 +1,5 @@
 import { HistoryDetail } from '@/types/nutrition';
+import HistoryDetailImage from '@/components/client/HistoryDetailImage';
 import styles from './HistoryDetailView.module.css';
 
 interface HistoryDetailViewProps {
@@ -9,14 +10,7 @@ export default function HistoryDetailView({ detail }: HistoryDetailViewProps) {
   return (
     <div className={styles.container}>
       <div className={styles.imageContainer}>
-        <img
-          src={`http://localhost:8080/api/images/${detail.image_path.split('/').pop()}`}
-          alt="食事画像"
-          className={styles.image}
-          onError={(e) => {
-            e.currentTarget.src = '/placeholder.png';
-          }}
-        />
+        <HistoryDetailImage imagePath={detail.image_path} alt="食事画像" />
       </div>
 
       <div className={styles.summary}>
