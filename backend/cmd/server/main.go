@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -119,7 +120,8 @@ func main() {
 	mux.HandleFunc("/api/images/", imageHandler.Handle)
 
 	// CORSミドルウェアを適用
-	corsHandler := enableCORS(mux)
+	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
+	corsHandler := enableCORS(mux, allowedOrigins)
 
 	// HTTPサーバー設定
 	server := &http.Server{
@@ -157,23 +159,15 @@ func main() {
 	}
 }
 
-// allowedOrigins は許可するオリジンのリスト
-var allowedOrigins = []string{
-	"http://localhost:3000",
-	"http://localhost:3001",
-	"https://asken.exe.xyz:3000",
-}
-
 // enableCORS はCORSヘッダーを追加するミドルウェア
-func enableCORS(next http.Handler) http.Handler {
+func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		for _, allowed := range allowedOrigins {
-			if origin == allowed {
+		if origin := r.Header.Get("Origin"); origin != "" {
+			if _, ok := allowedOrigins[origin]; ok {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
-				break
 			}
 		}
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
@@ -185,4 +179,24 @@ func enableCORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func parseAllowedOrigins(raw string) map[string]struct{} {
+	origins := map[string]struct{}{
+		"http://localhost:3000":    {},
+		"http://localhost:3001":    {},
+		"https://asken.exe.xyz:3000": {},
+	}
+
+	if raw == "" {
+		return origins
+	}
+
+	for _, origin := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(origin); trimmed != "" {
+			origins[trimmed] = struct{}{}
+		}
+	}
+
+	return origins
 }
