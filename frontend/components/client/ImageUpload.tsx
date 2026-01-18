@@ -6,8 +6,6 @@ import NutritionDisplay from './NutritionDisplay'
 import { saveAnalysisId, getAnalysisId, clearAnalysisId } from '@/lib/storage'
 import styles from './ImageUpload.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-
 type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
 interface StatusResponse {
@@ -16,6 +14,8 @@ interface StatusResponse {
   result?: AnalysisResult
   error?: string
 }
+
+const API_BASE_URL = ''
 
 export default function ImageUpload() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
