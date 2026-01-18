@@ -17,7 +17,7 @@ interface DailyMealsViewProps {
 }
 
 export default function DailyMealsView({ initialData, initialDate }: DailyMealsViewProps) {
-  const { data, mutate } = useSWR<DailyMeals>(
+  const { data } = useSWR<DailyMeals>(
     `${API_BASE_URL}/api/meals/daily?date=${initialDate}`,
     fetcher,
     { fallbackData: initialData }
@@ -47,7 +47,6 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
             mealType={mealType}
             mealDate={initialDate}
             meals={data.meals[mealType]}
-            onRefresh={() => mutate()}
           />
         ))}
       </div>
