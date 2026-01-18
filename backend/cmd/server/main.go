@@ -66,7 +66,7 @@ func main() {
 	statusHandler := handler.NewStatusHandler(analysisRepo)
 	historyHandler := handler.NewHistoryHandler(analysisRepo)
 	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)
-	imageHandler := handler.NewImageHandler("backend/uploads")
+	imageHandler := handler.NewImageHandler("uploads")
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
