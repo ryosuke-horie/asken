@@ -29,8 +29,6 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>食事記録</h1>
-
       <DateNavigation currentDate={initialDate} />
 
       <DailyTotalSummary
