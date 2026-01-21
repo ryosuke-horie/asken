@@ -1,11 +1,10 @@
-import '@testing-library/jest-dom'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import DateNavigation from './DateNavigation'
 
 // useRouter mock
-const mockPush = jest.fn()
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
@@ -15,12 +14,12 @@ describe('DateNavigation', () => {
   beforeEach(() => {
     mockPush.mockClear()
     // 今日の日付を固定（2026-01-21 水曜日）
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date('2026-01-21'))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-21'))
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   describe('週間表示', () => {
@@ -54,14 +53,15 @@ describe('DateNavigation', () => {
       render(<DateNavigation currentDate="2026-01-21" />)
 
       const selectedDayButton = screen.getByRole('button', { name: /21/ })
-      expect(selectedDayButton).toHaveClass('selected')
+      // CSS Modulesでハッシュ化されるため、部分一致で検証
+      expect(selectedDayButton.className).toMatch(/selected/)
     })
 
     it('今日の日付に特別なマークがあるべき', () => {
       render(<DateNavigation currentDate="2026-01-21" />)
 
       const todayButton = screen.getByRole('button', { name: /21/ })
-      expect(todayButton).toHaveClass('today')
+      expect(todayButton.className).toMatch(/today/)
     })
 
     it('今日と選択中の日付が異なる場合、両方が区別できるべき', () => {
@@ -69,33 +69,31 @@ describe('DateNavigation', () => {
 
       // 今日（21日）はtodayクラスのみ
       const todayButton = screen.getByRole('button', { name: /21/ })
-      expect(todayButton).toHaveClass('today')
-      expect(todayButton).not.toHaveClass('selected')
+      expect(todayButton.className).toMatch(/today/)
+      expect(todayButton.className).not.toMatch(/selected/)
 
       // 選択中の日付（22日）はselectedクラス
       const selectedDayButton = screen.getByRole('button', { name: /22/ })
-      expect(selectedDayButton).toHaveClass('selected')
-      expect(selectedDayButton).not.toHaveClass('today')
+      expect(selectedDayButton.className).toMatch(/selected/)
+      expect(selectedDayButton.className).not.toMatch(/today/)
     })
   })
 
   describe('日付クリック', () => {
-    it('日付をクリックするとその日に遷移すべき', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+    it('日付をクリックするとその日に遷移すべき', () => {
       render(<DateNavigation currentDate="2026-01-21" />)
 
       const dayButton = screen.getByRole('button', { name: /19/ })
-      await user.click(dayButton)
+      fireEvent.click(dayButton)
 
       expect(mockPush).toHaveBeenCalledWith('/?date=2026-01-19')
     })
 
-    it('週の最後の日をクリックするとその日に遷移すべき', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+    it('週の最後の日をクリックするとその日に遷移すべき', () => {
       render(<DateNavigation currentDate="2026-01-21" />)
 
       const dayButton = screen.getByRole('button', { name: /25/ })
-      await user.click(dayButton)
+      fireEvent.click(dayButton)
 
       expect(mockPush).toHaveBeenCalledWith('/?date=2026-01-25')
     })
@@ -117,15 +115,14 @@ describe('DateNavigation', () => {
   })
 
   describe('年末年始', () => {
-    it('年をまたぐ週でも正しく動作すべき', async () => {
-      jest.setSystemTime(new Date('2025-12-31'))
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+    it('年をまたぐ週でも正しく動作すべき', () => {
+      vi.setSystemTime(new Date('2025-12-31'))
       // 2025-12-31（水曜日）の週は 12/29(月)〜1/4(日)
       render(<DateNavigation currentDate="2025-12-31" />)
 
       // 1月4日をクリック
       const dayButton = screen.getByRole('button', { name: /4日/ })
-      await user.click(dayButton)
+      fireEvent.click(dayButton)
 
       expect(mockPush).toHaveBeenCalledWith('/?date=2026-01-04')
     })
