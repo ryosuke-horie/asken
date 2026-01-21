@@ -10,6 +10,8 @@ import (
 )
 
 func TestCalculateNutrition_Success(t *testing.T) {
+	skipIfNoGeminiCLI(t)
+
 	calculator := NewNutritionCalculator(60 * time.Second)
 	ctx := context.Background()
 
@@ -55,6 +57,8 @@ func TestCalculateNutrition_InvalidResponse(t *testing.T) {
 }
 
 func TestCalculateNutrition_Timeout(t *testing.T) {
+	skipIfNoGeminiCLI(t)
+
 	// 非常に短いタイムアウトでテスト
 	calculator := NewNutritionCalculator(1 * time.Millisecond)
 	ctx := context.Background()

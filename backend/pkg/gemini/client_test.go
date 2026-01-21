@@ -10,6 +10,8 @@ import (
 )
 
 func TestExecuteGeminiCLI_Success(t *testing.T) {
+	skipIfNoGeminiCLI(t)
+
 	client := NewClient(60 * time.Second)
 	ctx := context.Background()
 
@@ -25,6 +27,8 @@ func TestExecuteGeminiCLI_Success(t *testing.T) {
 }
 
 func TestExecuteGeminiCLI_Timeout(t *testing.T) {
+	skipIfNoGeminiCLI(t)
+
 	// 非常に短いタイムアウトを設定
 	client := NewClient(1 * time.Millisecond)
 	ctx := context.Background()
@@ -40,6 +44,8 @@ func TestExecuteGeminiCLI_Timeout(t *testing.T) {
 }
 
 func TestExecuteGeminiCLI_JSONParse(t *testing.T) {
+	skipIfNoGeminiCLI(t)
+
 	client := NewClient(60 * time.Second)
 	ctx := context.Background()
 
