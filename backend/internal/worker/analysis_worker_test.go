@@ -32,7 +32,7 @@ type MockAnalysisRepository struct {
 	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
 }
 
-func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 
@@ -63,6 +63,22 @@ func (m *MockAnalysisRepository) GetPendingRequests(ctx context.Context, limit i
 		return m.GetPendingRequestsFunc(ctx, limit)
 	}
 	return nil, nil
+}
+
+func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error) {
+	return nil, 0, nil
+}
+
+func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error) {
+	return nil, nil
+}
+
+func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+
+func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+	return nil, repository.DailyTotal{}, nil
 }
 
 func TestProcessRequest_Success(t *testing.T) {

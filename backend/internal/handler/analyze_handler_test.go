@@ -32,17 +32,21 @@ func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string
 
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc     func(ctx context.Context, imagePath string) (uuid.UUID, error)
-	GetRequestFunc        func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
-	UpdateStatusFunc      func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
-	SaveResultFunc        func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
-	GetResultFunc         func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	CreateRequestFunc      func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
+	GetRequestFunc         func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
+	UpdateStatusFunc       func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
+	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	GetResultFunc          func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
 	GetPendingRequestsFunc func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
+	GetHistoryListFunc     func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
+	GetHistoryDetailFunc   func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
+	DeleteHistoryFunc      func(ctx context.Context, id uuid.UUID) error
+	GetDailyMealsFunc      func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
 }
 
-func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 	if m.CreateRequestFunc != nil {
-		return m.CreateRequestFunc(ctx, imagePath)
+		return m.CreateRequestFunc(ctx, imagePath, mealType, mealDate)
 	}
 	return uuid.Nil, nil
 }
@@ -82,13 +86,41 @@ func (m *MockAnalysisRepository) GetPendingRequests(ctx context.Context, limit i
 	return nil, nil
 }
 
+func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error) {
+	if m.GetHistoryListFunc != nil {
+		return m.GetHistoryListFunc(ctx, page, limit)
+	}
+	return nil, 0, nil
+}
+
+func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error) {
+	if m.GetHistoryDetailFunc != nil {
+		return m.GetHistoryDetailFunc(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
+	if m.DeleteHistoryFunc != nil {
+		return m.DeleteHistoryFunc(ctx, id)
+	}
+	return nil
+}
+
+func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+	if m.GetDailyMealsFunc != nil {
+		return m.GetDailyMealsFunc(ctx, date)
+	}
+	return nil, repository.DailyTotal{}, nil
+}
+
 func TestAnalyzeHandler_Success(t *testing.T) {
 	// 非同期処理のため、FoodServiceは呼ばれない
 	mockService := &MockFoodService{}
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 			// ファイルが永続化されていることを確認
 			assert.FileExists(t, imagePath)
 			return expectedID, nil
@@ -108,6 +140,8 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 	jpegData[1] = 0xD8
 	jpegData[2] = 0xFF
 	part.Write(jpegData)
+	// meal_typeフィールドを追加
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
 	writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
@@ -169,7 +203,7 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 			return uuid.Nil, assert.AnError
 		},
 	}
@@ -186,6 +220,8 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	jpegData[1] = 0xD8
 	jpegData[2] = 0xFF
 	part.Write(jpegData)
+	// meal_typeフィールドを追加
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
 	writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
