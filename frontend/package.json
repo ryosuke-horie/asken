@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "knip": "knip"
   },
   "dependencies": {
     "next": "14.0.4",
@@ -24,7 +25,10 @@
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^5.1.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.0.4",
     "jsdom": "^27.4.0",
+    "knip": "^5.82.1",
     "typescript": "^5.3.3",
     "vitest": "^4.0.17"
   }
