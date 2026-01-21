@@ -2,7 +2,7 @@
 
 ## 基本方針
 
-- テストフレームワークはJestを使用すること
+- テストフレームワークはVitestを使用すること
 - テストファイルは実装ファイルと同じディレクトリに配置すること（例: `Button.tsx` → `Button.test.tsx`）
 - UIコンポーネントはReact Testing Libraryを使用すること
 - E2EテストはPlaywrightを使用すること

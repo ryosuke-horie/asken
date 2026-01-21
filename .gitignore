@@ -50,6 +50,7 @@ experiments/*/results/*.json
 # Backend
 backend/testdata/
 backend/uploads/
+backend/server
 /tmp/asken/
 
 # Frontend
@@ -57,6 +58,7 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/dist/
+frontend/tsconfig.tsbuildinfo
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
