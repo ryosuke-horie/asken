@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledPlugins": {
+    "pr-review-toolkit@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "linear@claude-plugins-official": true
+  },
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "deny": ["Read(.env)", "Read(.env.*)"]
+  },
+  "language": "日本語"
+}
