@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "knip": "knip",
-    "depcheck": "depcheck --ignores=@types/react-dom"
+    "depcheck": "depcheck --ignores=@types/react-dom,prettier"
   },
   "dependencies": {
     "next": "14.0.4",
