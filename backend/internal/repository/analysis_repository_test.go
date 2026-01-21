@@ -30,15 +30,17 @@ func TestCreateRequest(t *testing.T) {
 	ctx := context.Background()
 
 	imagePath := "/uploads/test.jpg"
+	mealType := "lunch"
+	mealDate := "2026-01-21"
 	expectedID := uuid.New()
 
 	// モック設定
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, imagePath).
+		WithArgs(StatusPending, imagePath, mealType, mealDate).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
 
 	// 実行
-	id, err := repo.CreateRequest(ctx, imagePath)
+	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate)
 
 	// 検証
 	assert.NoError(t, err)
@@ -54,14 +56,16 @@ func TestCreateRequest_Error(t *testing.T) {
 	ctx := context.Background()
 
 	imagePath := "/uploads/test.jpg"
+	mealType := "lunch"
+	mealDate := "2026-01-21"
 
 	// モック設定 - エラーを返す
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, imagePath).
+		WithArgs(StatusPending, imagePath, mealType, mealDate).
 		WillReturnError(sql.ErrConnDone)
 
 	// 実行
-	id, err := repo.CreateRequest(ctx, imagePath)
+	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate)
 
 	// 検証
 	assert.Error(t, err)
@@ -418,6 +422,7 @@ func TestGetHistoryList(t *testing.T) {
 	id2 := uuid.New()
 	createdAt1 := time.Now()
 	createdAt2 := time.Now().Add(-1 * time.Hour)
+	mealDate := time.Date(2026, 1, 21, 0, 0, 0, 0, time.UTC)
 
 	// 総件数のクエリ
 	countRows := sqlmock.NewRows([]string{"count"}).AddRow(2)
@@ -425,12 +430,12 @@ func TestGetHistoryList(t *testing.T) {
 		WithArgs(StatusCompleted).
 		WillReturnRows(countRows)
 
-	// 履歴一覧のクエリ
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
-		AddRow(id1, "/uploads/test1.jpg", createdAt1, 500.0, 20.0, 15.0, 60.0).
-		AddRow(id2, "/uploads/test2.jpg", createdAt2, 300.0, 10.0, 8.0, 40.0)
+	// 履歴一覧のクエリ（meal_type, meal_dateを含む）
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(id1, "/uploads/test1.jpg", createdAt1, "lunch", mealDate, 500.0, 20.0, 15.0, 60.0).
+		AddRow(id2, "/uploads/test2.jpg", createdAt2, "dinner", mealDate, 300.0, 10.0, 8.0, 40.0)
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 0).
 		WillReturnRows(rows)
 
@@ -443,6 +448,7 @@ func TestGetHistoryList(t *testing.T) {
 	assert.Len(t, items, 2)
 	assert.Equal(t, id1, items[0].ID)
 	assert.Equal(t, 500.0, items[0].TotalCalories)
+	assert.Equal(t, "lunch", items[0].MealType)
 	assert.Equal(t, id2, items[1].ID)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -461,9 +467,9 @@ func TestGetHistoryList_Pagination(t *testing.T) {
 		WillReturnRows(countRows)
 
 	// 2ページ目を取得（offset = 20）
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 20).
 		WillReturnRows(rows)
 
@@ -491,14 +497,14 @@ func TestGetHistoryList_InvalidPage(t *testing.T) {
 		WillReturnRows(countRows)
 
 	// page < 1 は 1 にフォールバック
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.total_calories`).
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 0).
 		WillReturnRows(rows)
 
 	// 実行（page = 0）
-	items, total, err := repo.GetHistoryList(ctx, 0, 20)
+	_, total, err := repo.GetHistoryList(ctx, 0, 20)
 
 	// 検証
 	assert.NoError(t, err)
@@ -515,6 +521,7 @@ func TestGetHistoryDetail(t *testing.T) {
 
 	requestID := uuid.New()
 	createdAt := time.Now()
+	mealDate := time.Date(2026, 1, 21, 0, 0, 0, 0, time.UTC)
 
 	foods := []gemini.NutritionInfo{
 		{
@@ -528,11 +535,11 @@ func TestGetHistoryDetail(t *testing.T) {
 	}
 	foodsJSON, _ := json.Marshal(foods)
 
-	// モック設定
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "foods", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
-		AddRow(requestID, "/uploads/test.jpg", createdAt, foodsJSON, 252.0, 3.8, 0.5, 55.7)
+	// モック設定（meal_type, meal_dateを含む）
+	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "foods", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(requestID, "/uploads/test.jpg", createdAt, "lunch", mealDate, foodsJSON, 252.0, 3.8, 0.5, 55.7)
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.foods`).
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
 		WithArgs(requestID, StatusCompleted).
 		WillReturnRows(rows)
 
@@ -544,6 +551,7 @@ func TestGetHistoryDetail(t *testing.T) {
 	assert.NotNil(t, detail)
 	assert.Equal(t, requestID, detail.ID)
 	assert.Equal(t, "/uploads/test.jpg", detail.ImagePath)
+	assert.Equal(t, "lunch", detail.MealType)
 	assert.Equal(t, 252.0, detail.TotalCalories)
 	assert.Len(t, detail.Foods, 1)
 	assert.Equal(t, "白米", detail.Foods[0].Name)
@@ -559,8 +567,8 @@ func TestGetHistoryDetail_NotFound(t *testing.T) {
 
 	requestID := uuid.New()
 
-	// モック設定 - 結果なし
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, res.foods`).
+	// モック設定 - 結果なし（meal_type, meal_dateを含むクエリ）
+	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
 		WithArgs(requestID, StatusCompleted).
 		WillReturnError(sql.ErrNoRows)
 
