@@ -30,6 +30,7 @@
     "eslint-config-next": "^14.0.4",
     "jsdom": "^27.4.0",
     "knip": "^5.82.1",
+    "prettier": "^3.8.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.17"
   }
