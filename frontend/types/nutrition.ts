@@ -1,10 +1,5 @@
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-export interface FoodItem {
-  name: string;
-  estimated_amount: string;
-}
-
 export interface NutritionInfo {
   name: string;
   estimated_amount: string;
