@@ -109,7 +109,6 @@ export default function ImageUpload() {
           break
       }
     } catch (err) {
-      console.error('Status check error:', err)
       setError(err instanceof Error ? err.message : '予期しないエラーが発生しました')
       setIsLoading(false)
       stopPolling()
@@ -136,7 +135,6 @@ export default function ImageUpload() {
   useEffect(() => {
     const savedAnalysisId = getAnalysisId()
     if (savedAnalysisId) {
-      console.log('Resuming analysis:', savedAnalysisId)
       setAnalysisId(savedAnalysisId)
       setIsLoading(true)
       setStatusMessage('分析を再開しています...')
@@ -173,15 +171,12 @@ export default function ImageUpload() {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('Server error:', response.status, errorText)
         throw new Error(`アップロードに失敗しました (${response.status}): ${errorText}`)
       }
 
       // analysis_idを取得
       const data: { analysis_id: string } = await response.json()
       const newAnalysisId = data.analysis_id
-
-      console.log('Analysis started:', newAnalysisId)
 
       // localStorageに保存
       saveAnalysisId(newAnalysisId)
@@ -190,7 +185,6 @@ export default function ImageUpload() {
       // ポーリング開始
       startPolling(newAnalysisId)
     } catch (err) {
-      console.error('Upload error:', err)
       if (err instanceof Error) {
         setError(`エラー: ${err.message}`)
       } else {
