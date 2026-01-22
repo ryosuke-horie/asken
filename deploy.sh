@@ -30,17 +30,28 @@ echo ""
 
 # 3. DBマイグレーション実行
 echo "[3/5] DBマイグレーション実行..."
+
+# migrateコマンドの確認
+if ! command -v migrate &> /dev/null; then
+    echo "エラー: migrateコマンドが見つかりません"
+    echo "インストール方法: DEPLOY.md の「golang-migrate のインストール」を参照"
+    exit 1
+fi
+
 MIGRATION_DIR="$SCRIPT_DIR/backend/database/migrations"
+MIGRATE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
+
 if [ -d "$MIGRATION_DIR" ]; then
-    for sql_file in "$MIGRATION_DIR"/*.sql; do
-        if [ -f "$sql_file" ]; then
-            echo "  適用中: $(basename "$sql_file")"
-            docker exec -i asken-postgres psql -U asken -d asken < "$sql_file" 2>&1 | grep -v "already exists" || true
-        fi
-    done
-    echo "マイグレーション完了"
+    echo "  マイグレーションディレクトリ: $MIGRATION_DIR"
+    if migrate -path "$MIGRATION_DIR" -database "$MIGRATE_URL" up; then
+        echo "マイグレーション完了"
+    else
+        echo "マイグレーション失敗"
+        exit 1
+    fi
 else
     echo "マイグレーションディレクトリが見つかりません: $MIGRATION_DIR"
+    exit 1
 fi
 echo ""
 

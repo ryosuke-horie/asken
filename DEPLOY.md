@@ -41,7 +41,7 @@ cd /home/exedev/asken
 スクリプトが以下を自動で実行します:
 - `git pull origin main` で最新コードを取得
 - PostgreSQL の稼働確認（停止中なら起動）
-- DBマイグレーションの実行（`backend/database/migrations/*.sql`）
+- DBマイグレーションの実行（golang-migrate）
 - バックエンドサービスの再起動
 - フロントエンドサービスの再起動
 - 各サービスの状態表示
@@ -55,10 +55,10 @@ deploy.sh を使わない場合の手順:
 cd /home/exedev/asken
 git pull origin main
 
-# DBマイグレーション（必要な場合）
-for f in backend/database/migrations/*.sql; do
-  docker exec -i asken-postgres psql -U asken -d asken < "$f" 2>&1 || true
-done
+# DBマイグレーション
+migrate -path backend/database/migrations \
+        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        up
 
 # サービス再起動
 sudo systemctl restart asken-backend
@@ -80,6 +80,16 @@ systemctl status asken-frontend
 - Go 1.23 以上
 - Node.js 18 以上
 - Git
+- golang-migrate
+
+#### golang-migrate のインストール（本番サーバー）
+
+```bash
+MIGRATE_VERSION="v4.17.0"
+curl -L https://github.com/golang-migrate/migrate/releases/download/${MIGRATE_VERSION}/migrate.linux-amd64.tar.gz | tar xvz
+sudo mv migrate /usr/local/bin/migrate
+migrate -version
+```
 
 ### 2. リポジトリのクローン
 
@@ -120,6 +130,25 @@ sudo systemctl start docker-postgres
 sudo systemctl start asken-backend
 sudo systemctl start asken-frontend
 ```
+
+### 6. 既存DBへの golang-migrate 初回適用
+
+既にマイグレーションが適用されているDBに対して、golang-migrateの管理に移行する場合:
+
+```bash
+# version 3まで適用済みとして登録（schema_migrationsテーブルが作成される）
+migrate -path backend/database/migrations \
+        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        force 3
+
+# バージョン確認
+migrate -path backend/database/migrations \
+        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        version
+# 出力: 3
+```
+
+**注意**: この手順は既存の本番環境で1回だけ実行します。新規環境では不要です。
 
 ## サービス管理コマンド
 
