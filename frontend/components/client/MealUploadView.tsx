@@ -5,7 +5,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import { MealType, HistoryDetail, DailyMeals } from '@/types/nutrition'
 import { fetcher } from '@/lib/fetcher'
-import MealTypeUpload from './MealTypeUpload'
+import MealInputSelector from './MealInputSelector'
 import DeleteHistoryButton from './DeleteHistoryButton'
 import MealThumbnail from './MealThumbnail'
 import styles from './MealUploadView.module.css'
@@ -93,12 +93,12 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
 
       {uploadCount > 0 && (
         <div className={styles.successMessage}>
-          ✅ {uploadCount}件の画像を分析しました。続けてアップロードできます。
+          {uploadCount}件の食事を分析しました。続けて入力できます。
         </div>
       )}
 
       <div className={styles.uploadSection}>
-        <MealTypeUpload
+        <MealInputSelector
           mealType={mealType}
           mealDate={mealDate}
           onComplete={handleUploadComplete}
@@ -111,10 +111,16 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
           <div className={styles.mealsList}>
             {meals.map((meal) => (
               <div key={meal.id} className={styles.mealItem}>
-                <MealThumbnail
-                  src={`${API_BASE_URL}/api/images/${meal.image_path.split('/').pop()}`}
-                  className={styles.thumbnail}
-                />
+                {meal.input_type === 'text' ? (
+                  <div className={styles.textPreview}>
+                    {meal.input_text}
+                  </div>
+                ) : (
+                  <MealThumbnail
+                    src={`${API_BASE_URL}/api/images/${meal.image_path?.split('/').pop()}`}
+                    className={styles.thumbnail}
+                  />
+                )}
                 <div className={styles.mealInfo}>
                   <div className={styles.calories}>
                     {Math.round(meal.total_calories)} <span className={styles.unit}>kcal</span>
