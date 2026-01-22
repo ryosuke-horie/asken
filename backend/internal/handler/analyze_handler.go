@@ -21,6 +21,7 @@ import (
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
 	AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error)
 }
 
 // AnalyzeHandler は画像分析エンドポイントのハンドラー
@@ -41,6 +42,86 @@ func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRe
 func (h *AnalyzeHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
+	// Content-Typeで処理を分岐
+	contentType := r.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "application/json") {
+		h.handleTextInput(w, r)
+		return
+	}
+
+	// 既存の画像アップロード処理
+	h.handleImageUpload(w, r)
+}
+
+// handleTextInput はテキスト入力を処理
+func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Processing text input request")
+
+	var req struct {
+		InputText string `json:"input_text"`
+		MealType  string `json:"meal_type"`
+		MealDate  string `json:"meal_date"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding JSON: %v", err)
+		http.Error(w, "リクエストの解析に失敗しました", http.StatusBadRequest)
+		return
+	}
+
+	// バリデーション
+	if req.InputText == "" {
+		http.Error(w, "テキストを入力してください", http.StatusBadRequest)
+		return
+	}
+	if len(req.InputText) > 1000 {
+		http.Error(w, "テキストは1000文字以内で入力してください", http.StatusBadRequest)
+		return
+	}
+
+	// meal_type のバリデーション
+	if !isValidMealType(req.MealType) {
+		log.Printf("Invalid meal_type: %s", req.MealType)
+		http.Error(w, "無効な食事タイプです（breakfast, lunch, dinner, snackのいずれか）", http.StatusBadRequest)
+		return
+	}
+
+	// meal_date が空の場合は今日の日付
+	if req.MealDate == "" {
+		req.MealDate = time.Now().Format("2006-01-02")
+	}
+
+	log.Printf("Text input: %s, Meal type: %s, Meal date: %s", req.InputText, req.MealType, req.MealDate)
+
+	// リポジトリにテキスト分析リクエストを登録
+	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate)
+	if err != nil {
+		log.Printf("Error creating text analysis request: %v", err)
+		http.Error(w, "分析リクエストの作成に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Text analysis request created with ID: %s", analysisID)
+
+	// 202 Accepted レスポンスを返却
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	response := map[string]string{
+		"analysis_id": analysisID.String(),
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
+}
+
+// handleImageUpload は画像アップロードを処理
+func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Request) {
 	// 1. multipart/form-data パース
 	err := r.ParseMultipartForm(10 << 20) // 10MB制限
 	if err != nil {

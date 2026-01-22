@@ -21,11 +21,16 @@ import (
 // RealGeminiClient はGeminiClientインターフェースを実装する
 type RealGeminiClient struct {
 	classifier *gemini.Classifier
+	textParser *gemini.TextParser
 	calculator *gemini.NutritionCalculator
 }
 
 func (r *RealGeminiClient) ClassifyFoods(ctx context.Context, imagePath string) ([]gemini.FoodItem, error) {
 	return r.classifier.ClassifyFoods(ctx, imagePath)
+}
+
+func (r *RealGeminiClient) ParseTextToFoods(ctx context.Context, inputText string) ([]gemini.FoodItem, error) {
+	return r.textParser.ParseTextToFoods(ctx, inputText)
 }
 
 func (r *RealGeminiClient) CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
@@ -54,9 +59,11 @@ func main() {
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
+	textParser := gemini.NewTextParser(120 * time.Second)
 	calculator := gemini.NewNutritionCalculator(120 * time.Second)
 	geminiClient := &RealGeminiClient{
 		classifier: classifier,
+		textParser: textParser,
 		calculator: calculator,
 	}
 

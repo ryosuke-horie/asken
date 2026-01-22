@@ -10,6 +10,7 @@ import (
 // GeminiClient はGemini APIクライアントのインターフェース（モック可能）
 type GeminiClient interface {
 	ClassifyFoods(ctx context.Context, imagePath string) ([]gemini.FoodItem, error)
+	ParseTextToFoods(ctx context.Context, inputText string) ([]gemini.FoodItem, error)
 	CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
 }
 
@@ -52,6 +53,32 @@ func (s *FoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*
 	totalCal, totalPro, totalFat, totalCarbs := calculateTotals(nutritionList)
 
 	// AnalysisResultを返却
+	return &AnalysisResult{
+		Foods:              nutritionList,
+		TotalCalories:      totalCal,
+		TotalProtein:       totalPro,
+		TotalFat:           totalFat,
+		TotalCarbohydrates: totalCarbs,
+	}, nil
+}
+
+// AnalyzeFoodText はテキストから食材を分析し、栄養素を計算する
+func (s *FoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*AnalysisResult, error) {
+	// Step 1: テキストから食材リストを生成
+	foods, err := s.geminiClient.ParseTextToFoods(ctx, inputText)
+	if err != nil {
+		return nil, fmt.Errorf("テキスト解析エラー: %w", err)
+	}
+
+	// Step 2: 栄養素計算（画像分析と共通）
+	nutritionList, err := s.geminiClient.CalculateNutrition(ctx, foods)
+	if err != nil {
+		return nil, fmt.Errorf("栄養素計算エラー: %w", err)
+	}
+
+	// 合計カロリー・栄養素を計算
+	totalCal, totalPro, totalFat, totalCarbs := calculateTotals(nutritionList)
+
 	return &AnalysisResult{
 		Foods:              nutritionList,
 		TotalCalories:      totalCal,

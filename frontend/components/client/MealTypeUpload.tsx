@@ -1,17 +1,11 @@
 'use client'
 
-import { ChangeEvent, useState, useRef } from 'react'
+import { ChangeEvent, useState } from 'react'
 import { MealType } from '@/types/nutrition'
+import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
 import styles from './MealTypeUpload.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-
-type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
-
-interface StatusResponse {
-  status: AnalysisStatus
-  error?: string
-}
 
 interface MealTypeUploadProps {
   mealType: MealType
@@ -22,18 +16,29 @@ interface MealTypeUploadProps {
 export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealTypeUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [statusMessage, setStatusMessage] = useState<string>('')
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const {
+    isLoading,
+    error,
+    statusMessage,
+    startAnalysis,
+    setIsLoading,
+    setError,
+    setStatusMessage,
+  } = useAnalysisPolling({
+    onComplete: () => {
+      setSelectedFile(null)
+      setPreviewUrl(null)
+      onComplete?.()
+    },
+  })
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>): void {
     const file = e.target.files?.[0]
     if (!file) {
       return
     }
 
-    // ファイルバリデーション
     const validTypes = ['image/jpeg', 'image/png', 'image/heic']
     const isHeic = file.name.toLowerCase().endsWith('.heic')
 
@@ -50,7 +55,6 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
     setSelectedFile(file)
     setError(null)
 
-    // プレビュー生成
     if (isHeic) {
       setPreviewUrl(null)
     } else {
@@ -62,68 +66,7 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
     }
   }
 
-  // ポーリング停止
-  const stopPolling = () => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current)
-      pollingIntervalRef.current = null
-    }
-  }
-
-  // ステータスチェック
-  const checkStatus = async (id: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze/${id}`)
-
-      if (!response.ok) {
-        throw new Error(`ステータス取得に失敗しました (${response.status})`)
-      }
-
-      const data: StatusResponse = await response.json()
-
-      switch (data.status) {
-        case 'pending':
-          setStatusMessage('分析リクエストを受け付けました...')
-          break
-
-        case 'processing':
-          setStatusMessage('分析処理中です...')
-          break
-
-        case 'completed':
-          setStatusMessage('分析が完了しました')
-          stopPolling()
-          setIsLoading(false)
-          setSelectedFile(null)
-          setPreviewUrl(null)
-          // 親コンポーネントに通知
-          onComplete?.()
-          break
-
-        case 'failed':
-          setError(data.error || '分析に失敗しました')
-          stopPolling()
-          setIsLoading(false)
-          break
-      }
-    } catch (err) {
-      console.error('Status check error:', err)
-      setError(err instanceof Error ? err.message : '予期しないエラー')
-      stopPolling()
-      setIsLoading(false)
-    }
-  }
-
-  // ポーリング開始
-  const startPolling = (id: string) => {
-    stopPolling()
-    checkStatus(id)
-    pollingIntervalRef.current = setInterval(() => {
-      checkStatus(id)
-    }, 2000)
-  }
-
-  const handleUpload = async () => {
+  async function handleUpload(): Promise<void> {
     if (!selectedFile) {
       return
     }
@@ -148,7 +91,7 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
       }
 
       const data: { analysis_id: string } = await response.json()
-      startPolling(data.analysis_id)
+      startAnalysis(data.analysis_id)
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期しないエラー')
       setIsLoading(false)

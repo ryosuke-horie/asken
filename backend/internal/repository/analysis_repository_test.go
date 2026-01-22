@@ -34,9 +34,9 @@ func TestCreateRequest(t *testing.T) {
 	mealDate := "2026-01-21"
 	expectedID := uuid.New()
 
-	// モック設定
+	// モック設定（input_typeを追加）
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, imagePath, mealType, mealDate).
+		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
 
 	// 実行
@@ -61,7 +61,7 @@ func TestCreateRequest_Error(t *testing.T) {
 
 	// モック設定 - エラーを返す
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, imagePath, mealType, mealDate).
+		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate).
 		WillReturnError(sql.ErrConnDone)
 
 	// 実行
@@ -71,6 +71,32 @@ func TestCreateRequest_Error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, uuid.Nil, id)
 	assert.Contains(t, err.Error(), "分析リクエストの作成に失敗")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateRequestWithText(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	inputText := "ご飯二杯, 焼肉"
+	mealType := "lunch"
+	mealDate := "2026-01-21"
+	expectedID := uuid.New()
+
+	// モック設定
+	mock.ExpectQuery(`INSERT INTO analysis_requests`).
+		WithArgs(StatusPending, InputTypeText, inputText, mealType, mealDate).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
+
+	// 実行
+	id, err := repo.CreateRequestWithText(ctx, inputText, mealType, mealDate)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, expectedID, id)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -85,11 +111,11 @@ func TestGetRequest(t *testing.T) {
 	createdAt := time.Now()
 	updatedAt := time.Now()
 
-	// モック設定
-	rows := sqlmock.NewRows([]string{"id", "status", "image_path", "error_message", "created_at", "updated_at"}).
-		AddRow(requestID, StatusPending, "/uploads/test.jpg", nil, createdAt, updatedAt)
+	// モック設定（input_type, input_textを追加）
+	rows := sqlmock.NewRows([]string{"id", "status", "input_type", "image_path", "input_text", "error_message", "created_at", "updated_at"}).
+		AddRow(requestID, StatusPending, InputTypeImage, "/uploads/test.jpg", nil, nil, createdAt, updatedAt)
 
-	mock.ExpectQuery(`SELECT id, status, image_path, error_message, created_at, updated_at FROM analysis_requests`).
+	mock.ExpectQuery(`SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at FROM analysis_requests`).
 		WithArgs(requestID).
 		WillReturnRows(rows)
 
@@ -101,6 +127,7 @@ func TestGetRequest(t *testing.T) {
 	assert.NotNil(t, req)
 	assert.Equal(t, requestID, req.ID)
 	assert.Equal(t, StatusPending, req.Status)
+	assert.Equal(t, InputTypeImage, req.InputType)
 	assert.Equal(t, "/uploads/test.jpg", req.ImagePath)
 	assert.Empty(t, req.ErrorMessage)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -116,7 +143,7 @@ func TestGetRequest_NotFound(t *testing.T) {
 	requestID := uuid.New()
 
 	// モック設定 - 結果なし
-	mock.ExpectQuery(`SELECT id, status, image_path, error_message, created_at, updated_at FROM analysis_requests`).
+	mock.ExpectQuery(`SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at FROM analysis_requests`).
 		WithArgs(requestID).
 		WillReturnError(sql.ErrNoRows)
 
@@ -367,12 +394,12 @@ func TestGetPendingRequests(t *testing.T) {
 	createdAt := time.Now()
 	updatedAt := time.Now()
 
-	// モック設定
-	rows := sqlmock.NewRows([]string{"id", "status", "image_path", "error_message", "created_at", "updated_at"}).
-		AddRow(id1, StatusPending, "/uploads/test1.jpg", nil, createdAt, updatedAt).
-		AddRow(id2, StatusPending, "/uploads/test2.jpg", nil, createdAt.Add(1*time.Minute), updatedAt)
+	// モック設定（input_type, input_textを追加）
+	rows := sqlmock.NewRows([]string{"id", "status", "input_type", "image_path", "input_text", "error_message", "created_at", "updated_at"}).
+		AddRow(id1, StatusPending, InputTypeImage, "/uploads/test1.jpg", nil, nil, createdAt, updatedAt).
+		AddRow(id2, StatusPending, InputTypeImage, "/uploads/test2.jpg", nil, nil, createdAt.Add(1*time.Minute), updatedAt)
 
-	mock.ExpectQuery(`SELECT id, status, image_path, error_message, created_at, updated_at FROM analysis_requests`).
+	mock.ExpectQuery(`SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at FROM analysis_requests`).
 		WithArgs(StatusPending, 10).
 		WillReturnRows(rows)
 
@@ -385,6 +412,7 @@ func TestGetPendingRequests(t *testing.T) {
 	assert.Equal(t, id1, requests[0].ID)
 	assert.Equal(t, id2, requests[1].ID)
 	assert.Equal(t, StatusPending, requests[0].Status)
+	assert.Equal(t, InputTypeImage, requests[0].InputType)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -396,9 +424,9 @@ func TestGetPendingRequests_Empty(t *testing.T) {
 	ctx := context.Background()
 
 	// モック設定 - 空の結果
-	rows := sqlmock.NewRows([]string{"id", "status", "image_path", "error_message", "created_at", "updated_at"})
+	rows := sqlmock.NewRows([]string{"id", "status", "input_type", "image_path", "input_text", "error_message", "created_at", "updated_at"})
 
-	mock.ExpectQuery(`SELECT id, status, image_path, error_message, created_at, updated_at FROM analysis_requests`).
+	mock.ExpectQuery(`SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at FROM analysis_requests`).
 		WithArgs(StatusPending, 10).
 		WillReturnRows(rows)
 
@@ -430,12 +458,12 @@ func TestGetHistoryList(t *testing.T) {
 		WithArgs(StatusCompleted).
 		WillReturnRows(countRows)
 
-	// 履歴一覧のクエリ（meal_type, meal_dateを含む）
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
-		AddRow(id1, "/uploads/test1.jpg", createdAt1, "lunch", mealDate, 500.0, 20.0, 15.0, 60.0).
-		AddRow(id2, "/uploads/test2.jpg", createdAt2, "dinner", mealDate, 300.0, 10.0, 8.0, 40.0)
+	// 履歴一覧のクエリ（input_type, input_textを含む）
+	rows := sqlmock.NewRows([]string{"id", "input_type", "image_path", "input_text", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(id1, InputTypeImage, "/uploads/test1.jpg", nil, createdAt1, "lunch", mealDate, 500.0, 20.0, 15.0, 60.0).
+		AddRow(id2, InputTypeImage, "/uploads/test2.jpg", nil, createdAt2, "dinner", mealDate, 300.0, 10.0, 8.0, 40.0)
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
+	mock.ExpectQuery(`SELECT ar.id, ar.input_type, ar.image_path, ar.input_text, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 0).
 		WillReturnRows(rows)
 
@@ -447,6 +475,7 @@ func TestGetHistoryList(t *testing.T) {
 	assert.Equal(t, 2, total)
 	assert.Len(t, items, 2)
 	assert.Equal(t, id1, items[0].ID)
+	assert.Equal(t, InputTypeImage, items[0].InputType)
 	assert.Equal(t, 500.0, items[0].TotalCalories)
 	assert.Equal(t, "lunch", items[0].MealType)
 	assert.Equal(t, id2, items[1].ID)
@@ -467,9 +496,9 @@ func TestGetHistoryList_Pagination(t *testing.T) {
 		WillReturnRows(countRows)
 
 	// 2ページ目を取得（offset = 20）
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+	rows := sqlmock.NewRows([]string{"id", "input_type", "image_path", "input_text", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
+	mock.ExpectQuery(`SELECT ar.id, ar.input_type, ar.image_path, ar.input_text, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 20).
 		WillReturnRows(rows)
 
@@ -497,9 +526,9 @@ func TestGetHistoryList_InvalidPage(t *testing.T) {
 		WillReturnRows(countRows)
 
 	// page < 1 は 1 にフォールバック
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
+	rows := sqlmock.NewRows([]string{"id", "input_type", "image_path", "input_text", "created_at", "meal_type", "meal_date", "total_calories", "total_protein", "total_fat", "total_carbohydrates"})
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
+	mock.ExpectQuery(`SELECT ar.id, ar.input_type, ar.image_path, ar.input_text, ar.created_at, ar.meal_type`).
 		WithArgs(StatusCompleted, 20, 0).
 		WillReturnRows(rows)
 
@@ -535,11 +564,11 @@ func TestGetHistoryDetail(t *testing.T) {
 	}
 	foodsJSON, _ := json.Marshal(foods)
 
-	// モック設定（meal_type, meal_dateを含む）
-	rows := sqlmock.NewRows([]string{"id", "image_path", "created_at", "meal_type", "meal_date", "foods", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
-		AddRow(requestID, "/uploads/test.jpg", createdAt, "lunch", mealDate, foodsJSON, 252.0, 3.8, 0.5, 55.7)
+	// モック設定（input_type, input_textを含む）
+	rows := sqlmock.NewRows([]string{"id", "input_type", "image_path", "input_text", "created_at", "meal_type", "meal_date", "foods", "total_calories", "total_protein", "total_fat", "total_carbohydrates"}).
+		AddRow(requestID, InputTypeImage, "/uploads/test.jpg", nil, createdAt, "lunch", mealDate, foodsJSON, 252.0, 3.8, 0.5, 55.7)
 
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
+	mock.ExpectQuery(`SELECT ar.id, ar.input_type, ar.image_path, ar.input_text, ar.created_at, ar.meal_type`).
 		WithArgs(requestID, StatusCompleted).
 		WillReturnRows(rows)
 
@@ -550,6 +579,7 @@ func TestGetHistoryDetail(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, detail)
 	assert.Equal(t, requestID, detail.ID)
+	assert.Equal(t, InputTypeImage, detail.InputType)
 	assert.Equal(t, "/uploads/test.jpg", detail.ImagePath)
 	assert.Equal(t, "lunch", detail.MealType)
 	assert.Equal(t, 252.0, detail.TotalCalories)
@@ -567,8 +597,8 @@ func TestGetHistoryDetail_NotFound(t *testing.T) {
 
 	requestID := uuid.New()
 
-	// モック設定 - 結果なし（meal_type, meal_dateを含むクエリ）
-	mock.ExpectQuery(`SELECT ar.id, ar.image_path, ar.created_at, ar.meal_type`).
+	// モック設定 - 結果なし
+	mock.ExpectQuery(`SELECT ar.id, ar.input_type, ar.image_path, ar.input_text, ar.created_at, ar.meal_type`).
 		WithArgs(requestID, StatusCompleted).
 		WillReturnError(sql.ErrNoRows)
 
@@ -595,9 +625,9 @@ func TestDeleteHistory(t *testing.T) {
 	// トランザクション開始
 	mock.ExpectBegin()
 
-	// 画像パスの取得
-	imageRows := sqlmock.NewRows([]string{"image_path"}).AddRow(imagePath)
-	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+	// input_typeと画像パスの取得
+	imageRows := sqlmock.NewRows([]string{"input_type", "image_path"}).AddRow(InputTypeImage, imagePath)
+	mock.ExpectQuery(`SELECT input_type, image_path FROM analysis_requests WHERE id`).
 		WithArgs(requestID).
 		WillReturnRows(imageRows)
 
@@ -622,6 +652,45 @@ func TestDeleteHistory(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestDeleteHistory_TextInput(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	requestID := uuid.New()
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// input_typeの取得（テキスト入力）
+	imageRows := sqlmock.NewRows([]string{"input_type", "image_path"}).AddRow(InputTypeText, nil)
+	mock.ExpectQuery(`SELECT input_type, image_path FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnRows(imageRows)
+
+	// analysis_results の削除
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(requestID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// analysis_requests の削除
+	mock.ExpectExec(`DELETE FROM analysis_requests WHERE id`).
+		WithArgs(requestID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
+
+	// 実行
+	err := repo.DeleteHistory(ctx, requestID)
+
+	// 検証（テキスト入力の場合、ファイル削除は行われない）
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestDeleteHistory_NotFound(t *testing.T) {
 	db, mock := setupMockDB(t)
 	defer db.Close()
@@ -634,8 +703,8 @@ func TestDeleteHistory_NotFound(t *testing.T) {
 	// トランザクション開始
 	mock.ExpectBegin()
 
-	// 画像パスの取得 - 結果なし
-	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+	// input_typeと画像パスの取得 - 結果なし
+	mock.ExpectQuery(`SELECT input_type, image_path FROM analysis_requests WHERE id`).
 		WithArgs(requestID).
 		WillReturnError(sql.ErrNoRows)
 
@@ -664,9 +733,9 @@ func TestDeleteHistory_ResultsDeleteError(t *testing.T) {
 	// トランザクション開始
 	mock.ExpectBegin()
 
-	// 画像パスの取得
-	imageRows := sqlmock.NewRows([]string{"image_path"}).AddRow(imagePath)
-	mock.ExpectQuery(`SELECT image_path FROM analysis_requests WHERE id`).
+	// input_typeと画像パスの取得
+	imageRows := sqlmock.NewRows([]string{"input_type", "image_path"}).AddRow(InputTypeImage, imagePath)
+	mock.ExpectQuery(`SELECT input_type, image_path FROM analysis_requests WHERE id`).
 		WithArgs(requestID).
 		WillReturnRows(imageRows)
 

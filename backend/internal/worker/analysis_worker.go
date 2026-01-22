@@ -13,6 +13,7 @@ import (
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
 	AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error)
 }
 
 // AnalysisWorker は非同期分析ワーカー
@@ -90,7 +91,7 @@ func (w *AnalysisWorker) processPendingRequests(ctx context.Context) error {
 
 // processRequest は個別のリクエストを処理
 func (w *AnalysisWorker) processRequest(ctx context.Context, request repository.AnalysisRequest) error {
-	log.Printf("Processing request: %s (image: %s)", request.ID, request.ImagePath)
+	log.Printf("Processing request: %s (input_type: %s)", request.ID, request.InputType)
 
 	// 1. ステータスをprocessingに更新
 	if err := w.repository.UpdateStatus(ctx, request.ID, repository.StatusProcessing, ""); err != nil {
@@ -99,13 +100,27 @@ func (w *AnalysisWorker) processRequest(ctx context.Context, request repository.
 
 	log.Printf("Status updated to processing for request: %s", request.ID)
 
-	// 2. FoodService.AnalyzeFoodImage()を呼び出し
-	result, err := w.foodService.AnalyzeFoodImage(ctx, request.ImagePath)
+	// 2. input_typeに応じて処理を分岐
+	var result *service.AnalysisResult
+	var err error
+
+	switch request.InputType {
+	case repository.InputTypeImage:
+		log.Printf("Analyzing image: %s", request.ImagePath)
+		result, err = w.foodService.AnalyzeFoodImage(ctx, request.ImagePath)
+	case repository.InputTypeText:
+		log.Printf("Analyzing text: %s", request.InputText)
+		result, err = w.foodService.AnalyzeFoodText(ctx, request.InputText)
+	default:
+		err = fmt.Errorf("不明な入力タイプ: %s", request.InputType)
+	}
+
 	if err != nil {
 		// 分析エラー時はfailedステータスに更新
 		errorMessage := fmt.Sprintf("分析エラー: %v", err)
 		if updateErr := w.repository.UpdateStatus(ctx, request.ID, repository.StatusFailed, errorMessage); updateErr != nil {
-			log.Printf("Failed to update status to failed: %v", updateErr)
+			log.Printf("CRITICAL: Failed to update status to failed for request %s: %v (original error: %v)", request.ID, updateErr, err)
+			return fmt.Errorf("failed to update status after analysis error: %w (original: %v)", updateErr, err)
 		}
 		log.Printf("Analysis failed for request %s: %v", request.ID, err)
 		return nil // エラーをハンドリング済みなのでnilを返す
@@ -118,7 +133,8 @@ func (w *AnalysisWorker) processRequest(ctx context.Context, request repository.
 		// 保存エラー時はfailedステータスに更新
 		errorMessage := fmt.Sprintf("結果保存エラー: %v", err)
 		if updateErr := w.repository.UpdateStatus(ctx, request.ID, repository.StatusFailed, errorMessage); updateErr != nil {
-			log.Printf("Failed to update status to failed: %v", updateErr)
+			log.Printf("CRITICAL: Failed to update status to failed for request %s: %v (original error: %v)", request.ID, updateErr, err)
+			return fmt.Errorf("failed to update status after save error: %w (original: %v)", updateErr, err)
 		}
 		return fmt.Errorf("failed to save result: %w", err)
 	}
