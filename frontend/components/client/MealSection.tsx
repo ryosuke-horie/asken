@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { HistoryDetail, MealType } from '@/types/nutrition'
 import DeleteHistoryButton from './DeleteHistoryButton'
+import MealThumbnail from './MealThumbnail'
 import styles from './MealSection.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -64,9 +65,8 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
         <div className={styles.mealsList}>
           {meals.map((meal) => (
             <div key={meal.id} className={styles.mealItem}>
-              <img
+              <MealThumbnail
                 src={`${API_BASE_URL}/api/images/${meal.image_path.split('/').pop()}`}
-                alt="食事"
                 className={styles.thumbnail}
               />
               <div className={styles.mealInfo}>

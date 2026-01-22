@@ -64,6 +64,43 @@ describe('DeleteHistoryButton', () => {
       })
     })
 
+    it('ネットワークエラー時にアラートを表示すべき', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')))
+
+      render(<DeleteHistoryButton historyId="test-id" />)
+      fireEvent.click(screen.getByRole('button', { name: '削除' }))
+
+      await waitFor(() => {
+        expect(alert).toHaveBeenCalledWith('削除に失敗しました')
+      })
+    })
+
+    it('削除失敗後にボタンが再度有効になるべき', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+      render(<DeleteHistoryButton historyId="test-id" />)
+      fireEvent.click(screen.getByRole('button', { name: '削除' }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: '削除' })).not.toBeDisabled()
+      })
+    })
+
+    it('正しいエンドポイントにDELETEリクエストを送信すべき', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true })
+      vi.stubGlobal('fetch', mockFetch)
+
+      render(<DeleteHistoryButton historyId="test-id-123" />)
+      fireEvent.click(screen.getByRole('button', { name: '削除' }))
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          'http://localhost:8080/api/history/test-id-123',
+          { method: 'DELETE' }
+        )
+      })
+    })
+
     it('削除中はボタンが無効化されるべき', async () => {
       vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})))
 
@@ -107,6 +144,17 @@ describe('DeleteHistoryButton', () => {
       await waitFor(() => {
         const button = screen.getByRole('button', { name: '削除' })
         expect(button.querySelector('svg')).not.toBeInTheDocument()
+      })
+    })
+
+    it('削除失敗時にアラートを表示すべき', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+      render(<DeleteHistoryButton historyId="test-id" iconOnly />)
+      fireEvent.click(screen.getByRole('button', { name: '削除' }))
+
+      await waitFor(() => {
+        expect(alert).toHaveBeenCalledWith('削除に失敗しました')
       })
     })
   })

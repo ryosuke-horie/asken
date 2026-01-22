@@ -2,6 +2,7 @@
 
 import useSWR from 'swr'
 import { DailyMeals, MealType } from '@/types/nutrition'
+import { fetcher } from '@/lib/fetcher'
 import DateNavigation from './DateNavigation'
 import MealSection from './MealSection'
 import DailyTotalSummary from './DailyTotalSummary'
@@ -9,21 +10,13 @@ import styles from './DailyMealsView.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`)
-  }
-  return res.json()
-}
-
 interface DailyMealsViewProps {
   initialData: DailyMeals
   initialDate: string
 }
 
 export default function DailyMealsView({ initialData, initialDate }: DailyMealsViewProps) {
-  const { data, mutate } = useSWR<DailyMeals>(
+  const { data, error, mutate } = useSWR<DailyMeals>(
     `${API_BASE_URL}/api/meals/daily?date=${initialDate}`,
     fetcher,
     { fallbackData: initialData }
@@ -31,6 +24,14 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
 
   const handleDelete = () => {
     mutate()
+  }
+
+  if (error) {
+    return (
+      <div className={styles.error}>
+        データの取得に失敗しました。再読み込みしてください。
+      </div>
+    )
   }
 
   if (!data) return <div className={styles.loading}>読み込み中...</div>

@@ -59,6 +59,17 @@
   font-weight: 500;
 }
 
+.syncError {
+  background-color: #ffebee;
+  border: 1px solid #ef5350;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #c62828;
+  font-weight: 500;
+}
+
 .uploadSection {
   background-color: #fff;
   border-radius: 12px;
