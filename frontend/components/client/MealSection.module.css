@@ -104,6 +104,24 @@
   flex-shrink: 0;
 }
 
+.textPreview {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e8f5e9;
+  border-radius: 6px;
+  flex-shrink: 0;
+  padding: 0.25rem;
+  font-size: 0.65rem;
+  color: #333;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
 .mealInfo {
   flex: 1;
   min-width: 0;
@@ -146,6 +164,11 @@
   }
 
   .thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+
+  .textPreview {
     width: 50px;
     height: 50px;
   }

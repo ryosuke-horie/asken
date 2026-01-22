@@ -1,5 +1,7 @@
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
+export type InputType = 'image' | 'text'
+
 export interface NutritionInfo {
   name: string;
   estimated_amount: string;
@@ -19,7 +21,9 @@ export interface AnalysisResult {
 
 interface HistoryItem {
   id: string;
+  input_type: InputType;
   image_path: string;
+  input_text: string;
   created_at: string;
   meal_type?: MealType;
   meal_date?: string;

@@ -16,11 +16,19 @@ import (
 // MockFoodService はテスト用のモックFoodService
 type MockFoodService struct {
 	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
+	AnalyzeFoodTextFunc  func(ctx context.Context, inputText string) (*service.AnalysisResult, error)
 }
 
 func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error) {
 	if m.AnalyzeFoodImageFunc != nil {
 		return m.AnalyzeFoodImageFunc(ctx, imagePath)
+	}
+	return nil, nil
+}
+
+func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error) {
+	if m.AnalyzeFoodTextFunc != nil {
+		return m.AnalyzeFoodTextFunc(ctx, inputText)
 	}
 	return nil, nil
 }
@@ -33,6 +41,10 @@ type MockAnalysisRepository struct {
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+	return uuid.Nil, nil
+}
+
+func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 
@@ -136,6 +148,7 @@ func TestProcessRequest_Success(t *testing.T) {
 	request := repository.AnalysisRequest{
 		ID:        requestID,
 		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
 		ImagePath: imagePath,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -188,6 +201,7 @@ func TestProcessRequest_AnalysisError(t *testing.T) {
 	request := repository.AnalysisRequest{
 		ID:        requestID,
 		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
 		ImagePath: imagePath,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -240,6 +254,7 @@ func TestProcessPendingRequests_WithPendingRequests(t *testing.T) {
 				{
 					ID:        requestID,
 					Status:    repository.StatusPending,
+					InputType: repository.InputTypeImage,
 					ImagePath: "/uploads/test.jpg",
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
@@ -288,4 +303,130 @@ func TestWorkerStart_StopsOnContextCancel(t *testing.T) {
 
 	// 少なくとも1回は呼ばれているはず（100msごとにポーリング）
 	assert.GreaterOrEqual(t, callCount, 1)
+}
+
+func TestProcessRequest_TextInput_Success(t *testing.T) {
+	requestID := uuid.New()
+	inputText := "ご飯二杯, 焼肉"
+
+	// AnalyzeFoodTextが成功するケース
+	mockService := &MockFoodService{
+		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*service.AnalysisResult, error) {
+			assert.Equal(t, inputText, text)
+			return &service.AnalysisResult{
+				Foods: []gemini.NutritionInfo{
+					{
+						Name:            "白米",
+						EstimatedAmount: "300g",
+						Calories:        504,
+						Protein:         7.6,
+						Fat:             1.0,
+						Carbohydrates:   111.4,
+					},
+					{
+						Name:            "焼肉",
+						EstimatedAmount: "100g",
+						Calories:        371,
+						Protein:         17.1,
+						Fat:             32.9,
+						Carbohydrates:   0.1,
+					},
+				},
+				TotalCalories:      875,
+				TotalProtein:       24.7,
+				TotalFat:           33.9,
+				TotalCarbohydrates: 111.5,
+			}, nil
+		},
+	}
+
+	updateStatusCalled := 0
+	saveResultCalled := false
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			if updateStatusCalled == 1 {
+				assert.Equal(t, requestID, id)
+				assert.Equal(t, repository.StatusProcessing, status)
+				assert.Empty(t, errorMessage)
+			}
+			return nil
+		},
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+			saveResultCalled = true
+			assert.Equal(t, requestID, id)
+			assert.NotNil(t, result)
+			assert.Equal(t, 875.0, result.TotalCalories)
+			return nil
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeText,
+		InputText: inputText,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, updateStatusCalled)
+	assert.True(t, saveResultCalled)
+}
+
+func TestProcessRequest_TextInput_AnalysisError(t *testing.T) {
+	requestID := uuid.New()
+	inputText := "ご飯二杯"
+
+	// AnalyzeFoodTextが失敗するケース
+	analysisError := errors.New("Gemini API タイムアウト")
+	mockService := &MockFoodService{
+		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*service.AnalysisResult, error) {
+			return nil, analysisError
+		},
+	}
+
+	updateStatusCalled := 0
+	saveResultCalled := false
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			if updateStatusCalled == 1 {
+				assert.Equal(t, repository.StatusProcessing, status)
+			} else if updateStatusCalled == 2 {
+				assert.Equal(t, requestID, id)
+				assert.Equal(t, repository.StatusFailed, status)
+				assert.Contains(t, errorMessage, "Gemini API タイムアウト")
+			}
+			return nil
+		},
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+			saveResultCalled = true
+			return nil
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeText,
+		InputText: inputText,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, updateStatusCalled)
+	assert.False(t, saveResultCalled)
 }

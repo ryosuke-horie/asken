@@ -24,11 +24,21 @@ const (
 	StatusFailed     AnalysisStatus = "failed"
 )
 
+// InputType は入力タイプを表す型
+type InputType string
+
+const (
+	InputTypeImage InputType = "image"
+	InputTypeText  InputType = "text"
+)
+
 // AnalysisRequest は分析リクエストを表す構造体
 type AnalysisRequest struct {
 	ID           uuid.UUID      `json:"id"`
 	Status       AnalysisStatus `json:"status"`
+	InputType    InputType      `json:"input_type"`
 	ImagePath    string         `json:"image_path"`
+	InputText    string         `json:"input_text"`
 	ErrorMessage string         `json:"error_message,omitempty"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
@@ -36,15 +46,17 @@ type AnalysisRequest struct {
 
 // HistoryItem は履歴一覧の各項目を表す構造体
 type HistoryItem struct {
-	ID                   uuid.UUID `json:"id"`
-	ImagePath            string    `json:"image_path"`
-	CreatedAt            time.Time `json:"created_at"`
-	MealType             string    `json:"meal_type"`
-	MealDate             time.Time `json:"meal_date"`
-	TotalCalories        float64   `json:"total_calories"`
-	TotalProtein         float64   `json:"total_protein"`
-	TotalFat             float64   `json:"total_fat"`
-	TotalCarbohydrates   float64   `json:"total_carbohydrates"`
+	ID                 uuid.UUID `json:"id"`
+	InputType          InputType `json:"input_type"`
+	ImagePath          string    `json:"image_path"`
+	InputText          string    `json:"input_text"`
+	CreatedAt          time.Time `json:"created_at"`
+	MealType           string    `json:"meal_type"`
+	MealDate           time.Time `json:"meal_date"`
+	TotalCalories      float64   `json:"total_calories"`
+	TotalProtein       float64   `json:"total_protein"`
+	TotalFat           float64   `json:"total_fat"`
+	TotalCarbohydrates float64   `json:"total_carbohydrates"`
 }
 
 // HistoryDetail は履歴詳細を表す構造体
@@ -63,8 +75,11 @@ type DailyTotal struct {
 
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
-	// CreateRequest は新しい分析リクエストを作成します
+	// CreateRequest は新しい画像分析リクエストを作成します
 	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
+
+	// CreateRequestWithText は新しいテキスト分析リクエストを作成します
+	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error)
 
 	// GetRequest は指定されたIDの分析リクエストを取得します
 	GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error)
@@ -104,16 +119,33 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 	return &postgresAnalysisRepository{db: db}
 }
 
-// CreateRequest は新しい分析リクエストを作成します
+// CreateRequest は新しい画像分析リクエストを作成します
 func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 	query := `
-		INSERT INTO analysis_requests (status, image_path, meal_type, meal_date)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO analysis_requests (status, input_type, image_path, meal_type, meal_date)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, imagePath, mealType, mealDate).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeImage, imagePath, mealType, mealDate).Scan(&id)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
+	}
+
+	return id, nil
+}
+
+// CreateRequestWithText は新しいテキスト分析リクエストを作成します
+func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+	query := `
+		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+
+	var id uuid.UUID
+	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeText, inputText, mealType, mealDate).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
 	}
@@ -124,18 +156,22 @@ func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePat
 // GetRequest は指定されたIDの分析リクエストを取得します
 func (r *postgresAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error) {
 	query := `
-		SELECT id, status, image_path, error_message, created_at, updated_at
+		SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at
 		FROM analysis_requests
 		WHERE id = $1
 	`
 
 	var req AnalysisRequest
+	var imagePath sql.NullString
+	var inputText sql.NullString
 	var errorMessage sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&req.ID,
 		&req.Status,
-		&req.ImagePath,
+		&req.InputType,
+		&imagePath,
+		&inputText,
 		&errorMessage,
 		&req.CreatedAt,
 		&req.UpdatedAt,
@@ -148,6 +184,12 @@ func (r *postgresAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUI
 		return nil, fmt.Errorf("リクエストの取得に失敗: %w", err)
 	}
 
+	if imagePath.Valid {
+		req.ImagePath = imagePath.String
+	}
+	if inputText.Valid {
+		req.InputText = inputText.String
+	}
 	if errorMessage.Valid {
 		req.ErrorMessage = errorMessage.String
 	}
@@ -281,7 +323,7 @@ func (r *postgresAnalysisRepository) GetResult(ctx context.Context, requestID uu
 // GetPendingRequests はpending状態のリクエストを取得します
 func (r *postgresAnalysisRepository) GetPendingRequests(ctx context.Context, limit int) ([]AnalysisRequest, error) {
 	query := `
-		SELECT id, status, image_path, error_message, created_at, updated_at
+		SELECT id, status, input_type, image_path, input_text, error_message, created_at, updated_at
 		FROM analysis_requests
 		WHERE status = $1
 		ORDER BY created_at ASC
@@ -297,12 +339,16 @@ func (r *postgresAnalysisRepository) GetPendingRequests(ctx context.Context, lim
 	var requests []AnalysisRequest
 	for rows.Next() {
 		var req AnalysisRequest
+		var imagePath sql.NullString
+		var inputText sql.NullString
 		var errorMessage sql.NullString
 
 		err := rows.Scan(
 			&req.ID,
 			&req.Status,
-			&req.ImagePath,
+			&req.InputType,
+			&imagePath,
+			&inputText,
 			&errorMessage,
 			&req.CreatedAt,
 			&req.UpdatedAt,
@@ -311,6 +357,12 @@ func (r *postgresAnalysisRepository) GetPendingRequests(ctx context.Context, lim
 			return nil, fmt.Errorf("行のスキャンに失敗: %w", err)
 		}
 
+		if imagePath.Valid {
+			req.ImagePath = imagePath.String
+		}
+		if inputText.Valid {
+			req.InputText = inputText.String
+		}
 		if errorMessage.Valid {
 			req.ErrorMessage = errorMessage.String
 		}
@@ -354,7 +406,9 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 	query := `
 		SELECT
 			ar.id,
+			ar.input_type,
 			ar.image_path,
+			ar.input_text,
 			ar.created_at,
 			ar.meal_type,
 			ar.meal_date,
@@ -378,11 +432,15 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 	var items []HistoryItem
 	for rows.Next() {
 		var item HistoryItem
+		var imagePath sql.NullString
+		var inputText sql.NullString
 		var mealType sql.NullString
 		var mealDate sql.NullTime
 		err := rows.Scan(
 			&item.ID,
-			&item.ImagePath,
+			&item.InputType,
+			&imagePath,
+			&inputText,
 			&item.CreatedAt,
 			&mealType,
 			&mealDate,
@@ -393,6 +451,12 @@ func (r *postgresAnalysisRepository) GetHistoryList(ctx context.Context, page, l
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+		if imagePath.Valid {
+			item.ImagePath = imagePath.String
+		}
+		if inputText.Valid {
+			item.InputText = inputText.String
 		}
 		if mealType.Valid {
 			item.MealType = mealType.String
@@ -415,7 +479,9 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 	query := `
 		SELECT
 			ar.id,
+			ar.input_type,
 			ar.image_path,
+			ar.input_text,
 			ar.created_at,
 			ar.meal_type,
 			ar.meal_date,
@@ -431,12 +497,16 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 
 	var detail HistoryDetail
 	var foodsJSON []byte
+	var imagePath sql.NullString
+	var inputText sql.NullString
 	var mealType sql.NullString
 	var mealDate sql.NullTime
 
 	err := r.db.QueryRowContext(ctx, query, id, StatusCompleted).Scan(
 		&detail.ID,
-		&detail.ImagePath,
+		&detail.InputType,
+		&imagePath,
+		&inputText,
 		&detail.CreatedAt,
 		&mealType,
 		&mealDate,
@@ -454,6 +524,12 @@ func (r *postgresAnalysisRepository) GetHistoryDetail(ctx context.Context, id uu
 		return nil, fmt.Errorf("履歴詳細の取得に失敗: %w", err)
 	}
 
+	if imagePath.Valid {
+		detail.ImagePath = imagePath.String
+	}
+	if inputText.Valid {
+		detail.InputText = inputText.String
+	}
 	if mealType.Valid {
 		detail.MealType = mealType.String
 	}
@@ -478,14 +554,15 @@ func (r *postgresAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.
 	}
 	defer tx.Rollback()
 
-	// 画像パスを取得
-	var imagePath string
-	getImageQuery := `SELECT image_path FROM analysis_requests WHERE id = $1`
-	if err := tx.QueryRowContext(ctx, getImageQuery, id).Scan(&imagePath); err != nil {
+	// 入力タイプと画像パスを取得
+	var inputType string
+	var imagePath sql.NullString
+	getInfoQuery := `SELECT input_type, image_path FROM analysis_requests WHERE id = $1`
+	if err := tx.QueryRowContext(ctx, getInfoQuery, id).Scan(&inputType, &imagePath); err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("履歴が見つかりません: %s", id)
 		}
-		return fmt.Errorf("画像パスの取得に失敗: %w", err)
+		return fmt.Errorf("リクエスト情報の取得に失敗: %w", err)
 	}
 
 	// analysis_results を削除（外部キー制約があるため先に削除）
@@ -515,13 +592,13 @@ func (r *postgresAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.
 		return fmt.Errorf("トランザクションのコミットに失敗: %w", err)
 	}
 
-	// 画像ファイルを削除（データベース削除成功後）
-	if imagePath != "" {
-		if err := os.Remove(imagePath); err != nil {
+	// 画像ファイルを削除（画像入力の場合のみ、データベース削除成功後）
+	if inputType == string(InputTypeImage) && imagePath.Valid && imagePath.String != "" {
+		if err := os.Remove(imagePath.String); err != nil {
 			// 画像削除失敗は警告ログのみ（データベース削除は成功しているため）
-			log.Printf("Warning: Failed to remove image file %s: %v", imagePath, err)
+			log.Printf("Warning: Failed to remove image file %s: %v", imagePath.String, err)
 		} else {
-			log.Printf("Image file removed: %s", imagePath)
+			log.Printf("Image file removed: %s", imagePath.String)
 		}
 	}
 
@@ -533,7 +610,9 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 	query := `
 		SELECT
 			ar.id,
+			ar.input_type,
 			ar.image_path,
+			ar.input_text,
 			ar.created_at,
 			ar.meal_type,
 			ar.meal_date,
@@ -565,13 +644,17 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 
 	for rows.Next() {
 		var detail HistoryDetail
+		var imagePath sql.NullString
+		var inputText sql.NullString
 		var mealType sql.NullString
 		var mealDate sql.NullTime
 		var foodsJSON []byte
 
 		err := rows.Scan(
 			&detail.ID,
-			&detail.ImagePath,
+			&detail.InputType,
+			&imagePath,
+			&inputText,
 			&detail.CreatedAt,
 			&mealType,
 			&mealDate,
@@ -585,6 +668,12 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 			return nil, DailyTotal{}, fmt.Errorf("行のスキャンに失敗: %w", err)
 		}
 
+		if imagePath.Valid {
+			detail.ImagePath = imagePath.String
+		}
+		if inputText.Valid {
+			detail.InputText = inputText.String
+		}
 		if mealType.Valid {
 			detail.MealType = mealType.String
 		}

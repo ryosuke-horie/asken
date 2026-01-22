@@ -21,6 +21,7 @@ import (
 // MockFoodService はテスト用のモックFoodService
 type MockFoodService struct {
 	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
+	AnalyzeFoodTextFunc  func(ctx context.Context, inputText string) (*service.AnalysisResult, error)
 }
 
 func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error) {
@@ -30,23 +31,38 @@ func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string
 	return nil, nil
 }
 
+func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error) {
+	if m.AnalyzeFoodTextFunc != nil {
+		return m.AnalyzeFoodTextFunc(ctx, inputText)
+	}
+	return nil, nil
+}
+
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc      func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
-	GetRequestFunc         func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
-	UpdateStatusFunc       func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
-	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
-	GetResultFunc          func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
-	GetPendingRequestsFunc func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
-	GetHistoryListFunc     func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
-	GetHistoryDetailFunc   func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
-	DeleteHistoryFunc      func(ctx context.Context, id uuid.UUID) error
-	GetDailyMealsFunc      func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
+	CreateRequestFunc         func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
+	CreateRequestWithTextFunc func(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error)
+	GetRequestFunc            func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
+	UpdateStatusFunc          func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
+	SaveResultFunc            func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	GetResultFunc             func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	GetPendingRequestsFunc    func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
+	GetHistoryListFunc        func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
+	GetHistoryDetailFunc      func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
+	DeleteHistoryFunc         func(ctx context.Context, id uuid.UUID) error
+	GetDailyMealsFunc         func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
 	if m.CreateRequestFunc != nil {
 		return m.CreateRequestFunc(ctx, imagePath, mealType, mealDate)
+	}
+	return uuid.Nil, nil
+}
+
+func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+	if m.CreateRequestWithTextFunc != nil {
+		return m.CreateRequestWithTextFunc(ctx, inputText, mealType, mealDate)
 	}
 	return uuid.Nil, nil
 }
@@ -304,4 +320,116 @@ func TestValidateImageFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
+	mockService := &MockFoodService{}
+
+	expectedID := uuid.New()
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestWithTextFunc: func(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+			assert.Equal(t, "ご飯二杯, 焼肉", inputText)
+			assert.Equal(t, "lunch", mealType)
+			assert.Equal(t, "2024-01-15", mealDate)
+			return expectedID, nil
+		},
+	}
+
+	handler := NewAnalyzeHandler(mockService, mockRepo)
+
+	// JSONリクエストボディを作成
+	reqBody := map[string]string{
+		"input_text": "ご飯二杯, 焼肉",
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusAccepted, w.Code)
+
+	var response struct {
+		AnalysisID string `json:"analysis_id"`
+	}
+	err = json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Equal(t, expectedID.String(), response.AnalysisID)
+}
+
+func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo)
+
+	reqBody := map[string]string{
+		"input_text": "",
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo)
+
+	reqBody := map[string]string{
+		"input_text": "ご飯二杯",
+		"meal_type":  "invalid",
+		"meal_date":  "2024-01-15",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo)
+
+	// 1001文字のテキストを作成
+	longText := make([]byte, 1001)
+	for i := range longText {
+		longText[i] = 'a'
+	}
+
+	reqBody := map[string]string{
+		"input_text": string(longText),
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
