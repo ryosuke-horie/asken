@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState, MouseEvent } from 'react';
 import styles from './DeleteHistoryButton.module.css';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 interface DeleteHistoryButtonProps {
   historyId: string;
   iconOnly?: boolean;
@@ -29,7 +31,7 @@ export default function DeleteHistoryButton({
     setIsDeleting(true);
 
     try {
-      const response = await fetch(`http://localhost:8080/api/history/${historyId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/history/${historyId}`, {
         method: 'DELETE',
       });
 
@@ -40,10 +42,11 @@ export default function DeleteHistoryButton({
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push('/history');
+        router.push('/');
         router.refresh();
       }
-    } catch {
+    } catch (error) {
+      console.error('削除エラー:', error);
       alert('削除に失敗しました');
       setIsDeleting(false);
     }

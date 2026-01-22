@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import DeleteHistoryButton from './DeleteHistoryButton'
 
@@ -21,6 +21,10 @@ describe('DeleteHistoryButton', () => {
     vi.stubGlobal('fetch', vi.fn())
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   describe('通常モード', () => {
     it('削除ボタンを表示すべき', () => {
       render(<DeleteHistoryButton historyId="test-id" />)
@@ -28,14 +32,14 @@ describe('DeleteHistoryButton', () => {
       expect(screen.getByRole('button', { name: '削除' })).toBeInTheDocument()
     })
 
-    it('削除成功時に/historyへリダイレクトすべき', async () => {
+    it('削除成功時にトップページへリダイレクトすべき', async () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/history')
+        expect(mockPush).toHaveBeenCalledWith('/')
         expect(mockRefresh).toHaveBeenCalled()
       })
     })

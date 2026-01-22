@@ -9,7 +9,13 @@ import styles from './DailyMealsView.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`)
+  }
+  return res.json()
+}
 
 interface DailyMealsViewProps {
   initialData: DailyMeals
