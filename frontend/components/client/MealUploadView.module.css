@@ -89,6 +89,7 @@
 
 .mealItem {
   display: flex;
+  align-items: center;
   gap: 1rem;
   padding: 1rem;
   background-color: #f9f9f9;
@@ -109,10 +110,15 @@
 }
 
 .mealInfo {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 0.5rem;
+}
+
+.deleteButton {
+  flex-shrink: 0;
 }
 
 .calories {
