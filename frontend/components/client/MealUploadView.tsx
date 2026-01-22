@@ -5,6 +5,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 import { MealType, HistoryDetail, DailyMeals } from '@/types/nutrition'
 import MealTypeUpload from './MealTypeUpload'
+import DeleteHistoryButton from './DeleteHistoryButton'
 import styles from './MealUploadView.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -47,6 +48,10 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
 
   const handleUploadComplete = () => {
     setUploadCount((prev) => prev + 1)
+    mutate() // データを再取得
+  }
+
+  const handleDeleteSuccess = () => {
     mutate() // データを再取得
   }
 
@@ -106,6 +111,13 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
                     <span className={styles.nutrient}>F: {meal.total_fat.toFixed(1)}g</span>
                     <span className={styles.nutrient}>C: {meal.total_carbohydrates.toFixed(1)}g</span>
                   </div>
+                </div>
+                <div className={styles.deleteButton}>
+                  <DeleteHistoryButton
+                    historyId={meal.id}
+                    iconOnly
+                    onSuccess={handleDeleteSuccess}
+                  />
                 </div>
               </div>
             ))}

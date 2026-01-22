@@ -17,11 +17,15 @@ interface DailyMealsViewProps {
 }
 
 export default function DailyMealsView({ initialData, initialDate }: DailyMealsViewProps) {
-  const { data } = useSWR<DailyMeals>(
+  const { data, mutate } = useSWR<DailyMeals>(
     `${API_BASE_URL}/api/meals/daily?date=${initialDate}`,
     fetcher,
     { fallbackData: initialData }
   )
+
+  const handleDelete = () => {
+    mutate()
+  }
 
   if (!data) return <div className={styles.loading}>読み込み中...</div>
 
@@ -45,6 +49,7 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
             mealType={mealType}
             mealDate={initialDate}
             meals={data.meals[mealType]}
+            onDelete={handleDelete}
           />
         ))}
       </div>
