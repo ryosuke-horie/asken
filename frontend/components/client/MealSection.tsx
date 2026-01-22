@@ -2,12 +2,17 @@
 
 import Link from 'next/link'
 import { HistoryDetail, MealType } from '@/types/nutrition'
+import DeleteHistoryButton from './DeleteHistoryButton'
+import MealThumbnail from './MealThumbnail'
 import styles from './MealSection.module.css'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 interface MealSectionProps {
   mealType: MealType
   mealDate: string
   meals: HistoryDetail[]
+  onDelete?: () => void
 }
 
 const mealTypeLabels: Record<MealType, string> = {
@@ -24,7 +29,7 @@ const mealTypeIcons: Record<MealType, string> = {
   snack: '☕',
 }
 
-export default function MealSection({ mealType, mealDate, meals }: MealSectionProps) {
+export default function MealSection({ mealType, mealDate, meals, onDelete }: MealSectionProps) {
   const totalCalories = meals.reduce((sum, meal) => sum + meal.total_calories, 0)
 
   return (
@@ -55,6 +60,36 @@ export default function MealSection({ mealType, mealDate, meals }: MealSectionPr
           )}
         </div>
       </Link>
+
+      {meals.length > 0 && (
+        <div className={styles.mealsList}>
+          {meals.map((meal) => (
+            <div key={meal.id} className={styles.mealItem}>
+              <MealThumbnail
+                src={`${API_BASE_URL}/api/images/${meal.image_path.split('/').pop()}`}
+                className={styles.thumbnail}
+              />
+              <div className={styles.mealInfo}>
+                <div className={styles.mealCalories}>
+                  {Math.round(meal.total_calories)} <span className={styles.mealUnit}>kcal</span>
+                </div>
+                <div className={styles.nutrients}>
+                  <span>P: {meal.total_protein.toFixed(1)}g</span>
+                  <span>F: {meal.total_fat.toFixed(1)}g</span>
+                  <span>C: {meal.total_carbohydrates.toFixed(1)}g</span>
+                </div>
+              </div>
+              <div className={styles.deleteButton}>
+                <DeleteHistoryButton
+                  historyId={meal.id}
+                  iconOnly
+                  onSuccess={onDelete}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

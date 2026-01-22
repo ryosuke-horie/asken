@@ -79,6 +79,59 @@
   padding: 1rem 0;
 }
 
+.mealsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0 0.5rem;
+}
+
+.mealItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.thumbnail {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.mealInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.mealCalories {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #0070f3;
+}
+
+.mealUnit {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.nutrients {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.deleteButton {
+  flex-shrink: 0;
+}
+
 @media (max-width: 640px) {
   .link {
     padding: 1rem;
@@ -90,5 +143,19 @@
 
   .unit {
     font-size: 1rem;
+  }
+
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+
+  .mealCalories {
+    font-size: 1rem;
+  }
+
+  .nutrients {
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 }
