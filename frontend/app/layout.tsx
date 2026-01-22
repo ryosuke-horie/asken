@@ -18,7 +18,6 @@ export default function RootLayout({
           <h1>asken - カロリー計算アプリ</h1>
           <nav>
             <Link href="/">ホーム</Link>
-            <Link href="/history">履歴</Link>
           </nav>
         </header>
         <main>{children}</main>
