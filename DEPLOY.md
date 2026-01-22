@@ -41,6 +41,7 @@ cd /home/exedev/asken
 スクリプトが以下を自動で実行します:
 - `git pull origin main` で最新コードを取得
 - PostgreSQL の稼働確認（停止中なら起動）
+- DBマイグレーションの実行（`backend/database/migrations/*.sql`）
 - バックエンドサービスの再起動
 - フロントエンドサービスの再起動
 - 各サービスの状態表示
@@ -53,6 +54,11 @@ deploy.sh を使わない場合の手順:
 # 最新コードを取得
 cd /home/exedev/asken
 git pull origin main
+
+# DBマイグレーション（必要な場合）
+for f in backend/database/migrations/*.sql; do
+  docker exec -i asken-postgres psql -U asken -d asken < "$f" 2>&1 || true
+done
 
 # サービス再起動
 sudo systemctl restart asken-backend
