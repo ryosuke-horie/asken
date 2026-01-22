@@ -4,19 +4,13 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import useSWR from 'swr'
 import { MealType, HistoryDetail, DailyMeals } from '@/types/nutrition'
+import { fetcher } from '@/lib/fetcher'
 import MealTypeUpload from './MealTypeUpload'
 import DeleteHistoryButton from './DeleteHistoryButton'
+import MealThumbnail from './MealThumbnail'
 import styles from './MealUploadView.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`)
-  }
-  return res.json()
-}
 
 interface MealUploadViewProps {
   mealType: MealType
@@ -35,6 +29,7 @@ const MEAL_TYPE_ICONS: Record<MealType, string> = {
 export default function MealUploadView({ mealType, mealDate, mealLabel, initialMeals }: MealUploadViewProps) {
   const router = useRouter()
   const [uploadCount, setUploadCount] = useState(0)
+  const [syncError, setSyncError] = useState(false)
 
   // SWRで最新のデータを取得
   const { data, mutate } = useSWR<DailyMeals>(
@@ -46,7 +41,14 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
         meals: { breakfast: [], lunch: [], dinner: [], snack: [], [mealType]: initialMeals },
         daily_total: { total_calories: 0, total_protein: 0, total_fat: 0, total_carbohydrates: 0 }
       },
-      refreshInterval: 5000 // 5秒ごとに更新
+      refreshInterval: 5000,
+      onError: (err) => {
+        console.error('データ同期エラー:', err)
+        setSyncError(true)
+      },
+      onSuccess: () => {
+        setSyncError(false)
+      }
     }
   )
 
@@ -83,6 +85,12 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
         <h1 className={styles.title}>{mealLabel}</h1>
       </div>
 
+      {syncError && (
+        <div className={styles.syncError}>
+          データの同期に失敗しました。ネットワーク接続を確認してください。
+        </div>
+      )}
+
       {uploadCount > 0 && (
         <div className={styles.successMessage}>
           ✅ {uploadCount}件の画像を分析しました。続けてアップロードできます。
@@ -103,9 +111,8 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
           <div className={styles.mealsList}>
             {meals.map((meal) => (
               <div key={meal.id} className={styles.mealItem}>
-                <img
+                <MealThumbnail
                   src={`${API_BASE_URL}/api/images/${meal.image_path.split('/').pop()}`}
-                  alt="食事"
                   className={styles.thumbnail}
                 />
                 <div className={styles.mealInfo}>
