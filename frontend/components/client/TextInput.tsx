@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MealType } from '@/types/nutrition'
 import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
+import { useUserEmail } from '@/contexts/UserEmailContext'
 import styles from './TextInput.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -14,6 +15,7 @@ interface TextInputProps {
 }
 
 export default function TextInput({ mealType, mealDate, onComplete }: TextInputProps) {
+  const { email } = useUserEmail()
   const [inputs, setInputs] = useState<string[]>([''])
 
   const {
@@ -73,6 +75,7 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
           input_text: inputText,
           meal_type: mealType,
           meal_date: mealDate,
+          email: email || undefined,
         }),
       })
 

@@ -40,11 +40,11 @@ type MockAnalysisRepository struct {
 	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
 }
 
-func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 

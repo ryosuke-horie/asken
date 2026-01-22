@@ -56,6 +56,7 @@ func main() {
 
 	// リポジトリの初期化
 	analysisRepo := repository.NewAnalysisRepository(db)
+	userRepo := repository.NewUserRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -70,7 +71,7 @@ func main() {
 	foodService := service.NewFoodService(geminiClient)
 
 	// ハンドラーの初期化（リポジトリを渡す）
-	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo)
+	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo, userRepo)
 	statusHandler := handler.NewStatusHandler(analysisRepo)
 	historyHandler := handler.NewHistoryHandler(analysisRepo)
 	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)

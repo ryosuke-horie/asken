@@ -4,6 +4,15 @@ import TextInput from './TextInput'
 
 const mockFetch = vi.fn()
 
+vi.mock('@/contexts/UserEmailContext', () => ({
+  useUserEmail: vi.fn(() => ({
+    email: 'test@example.com',
+    setEmail: vi.fn(),
+    clearEmail: vi.fn(),
+    isLoading: false,
+  })),
+}))
+
 describe('TextInput', () => {
   const defaultProps = {
     mealType: 'lunch' as const,
@@ -121,6 +130,7 @@ describe('TextInput', () => {
               input_text: 'ご飯二杯',
               meal_type: 'lunch',
               meal_date: '2024-01-15',
+              email: 'test@example.com',
             }),
           })
         )
@@ -152,6 +162,7 @@ describe('TextInput', () => {
               input_text: 'ご飯, 味噌汁',
               meal_type: 'lunch',
               meal_date: '2024-01-15',
+              email: 'test@example.com',
             }),
           })
         )
