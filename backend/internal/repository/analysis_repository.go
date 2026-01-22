@@ -76,10 +76,10 @@ type DailyTotal struct {
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
 	// CreateRequest は新しい画像分析リクエストを作成します
-	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
+	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
 
 	// CreateRequestWithText は新しいテキスト分析リクエストを作成します
-	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error)
+	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
 
 	// GetRequest は指定されたIDの分析リクエストを取得します
 	GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error)
@@ -120,15 +120,15 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 }
 
 // CreateRequest は新しい画像分析リクエストを作成します
-func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	query := `
-		INSERT INTO analysis_requests (status, input_type, image_path, meal_type, meal_date)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO analysis_requests (status, input_type, image_path, meal_type, meal_date, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeImage, imagePath, mealType, mealDate).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeImage, imagePath, mealType, mealDate, userID).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
 	}
@@ -137,15 +137,15 @@ func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePat
 }
 
 // CreateRequestWithText は新しいテキスト分析リクエストを作成します
-func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	query := `
-		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeText, inputText, mealType, mealDate).Scan(&id)
+	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeText, inputText, mealType, mealDate, userID).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
 	}

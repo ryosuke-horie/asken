@@ -40,8 +40,8 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc         func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error)
-	CreateRequestWithTextFunc func(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error)
+	CreateRequestFunc         func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequestWithTextFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
 	GetRequestFunc            func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
 	UpdateStatusFunc          func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
 	SaveResultFunc            func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
@@ -53,18 +53,54 @@ type MockAnalysisRepository struct {
 	GetDailyMealsFunc         func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
 }
 
-func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	if m.CreateRequestFunc != nil {
-		return m.CreateRequestFunc(ctx, imagePath, mealType, mealDate)
+		return m.CreateRequestFunc(ctx, imagePath, mealType, mealDate, userID)
 	}
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	if m.CreateRequestWithTextFunc != nil {
-		return m.CreateRequestWithTextFunc(ctx, inputText, mealType, mealDate)
+		return m.CreateRequestWithTextFunc(ctx, inputText, mealType, mealDate, userID)
 	}
 	return uuid.Nil, nil
+}
+
+// MockUserRepository はテスト用のモックUserRepository
+type MockUserRepository struct {
+	FindByEmailFunc   func(ctx context.Context, email string) (*repository.User, error)
+	FindByIDFunc      func(ctx context.Context, id uuid.UUID) (*repository.User, error)
+	CreateFunc        func(ctx context.Context, user *repository.User) error
+	FindOrCreateFunc  func(ctx context.Context, email string, name string) (*repository.User, error)
+}
+
+func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*repository.User, error) {
+	if m.FindByEmailFunc != nil {
+		return m.FindByEmailFunc(ctx, email)
+	}
+	return nil, nil
+}
+
+func (m *MockUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
+	if m.FindByIDFunc != nil {
+		return m.FindByIDFunc(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockUserRepository) Create(ctx context.Context, user *repository.User) error {
+	if m.CreateFunc != nil {
+		return m.CreateFunc(ctx, user)
+	}
+	return nil
+}
+
+func (m *MockUserRepository) FindOrCreate(ctx context.Context, email string, name string) (*repository.User, error) {
+	if m.FindOrCreateFunc != nil {
+		return m.FindOrCreateFunc(ctx, email, name)
+	}
+	return &repository.User{ID: uuid.New(), Email: email}, nil
 }
 
 func (m *MockAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
@@ -136,14 +172,15 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 			// ファイルが永続化されていることを確認
 			assert.FileExists(t, imagePath)
 			return expectedID, nil
 		},
 	}
+	mockUserRepo := &MockUserRepository{}
 
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
 	body := &bytes.Buffer{}
@@ -184,7 +221,8 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", nil)
 	w := httptest.NewRecorder()
@@ -197,7 +235,8 @@ func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	// テキストファイルをアップロード
 	body := &bytes.Buffer{}
@@ -219,12 +258,13 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 			return uuid.Nil, assert.AnError
 		},
 	}
+	mockUserRepo := &MockUserRepository{}
 
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -327,15 +367,16 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestWithTextFunc: func(ctx context.Context, inputText string, mealType string, mealDate string) (uuid.UUID, error) {
+		CreateRequestWithTextFunc: func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 			assert.Equal(t, "ご飯二杯, 焼肉", inputText)
 			assert.Equal(t, "lunch", mealType)
 			assert.Equal(t, "2024-01-15", mealDate)
 			return expectedID, nil
 		},
 	}
+	mockUserRepo := &MockUserRepository{}
 
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	// JSONリクエストボディを作成
 	reqBody := map[string]string{
@@ -365,7 +406,8 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	reqBody := map[string]string{
 		"input_text": "",
@@ -387,7 +429,8 @@ func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	reqBody := map[string]string{
 		"input_text": "ご飯二杯",
@@ -409,7 +452,8 @@ func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
 
 	// 1001文字のテキストを作成
 	longText := make([]byte, 1001)
@@ -432,4 +476,95 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+
+	// 不正なJSONを送信
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader([]byte("{invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestIsValidEmail(t *testing.T) {
+	testCases := []struct {
+		name     string
+		email    string
+		expected bool
+	}{
+		{
+			name:     "有効なメールアドレス",
+			email:    "test@example.com",
+			expected: true,
+		},
+		{
+			name:     "サブドメイン付きメールアドレス",
+			email:    "user@mail.example.com",
+			expected: true,
+		},
+		{
+			name:     "@なしのメールアドレス",
+			email:    "testexample.com",
+			expected: false,
+		},
+		{
+			name:     "ドメインなしのメールアドレス",
+			email:    "test@",
+			expected: false,
+		},
+		{
+			name:     "TLDなしのメールアドレス",
+			email:    "test@example",
+			expected: false,
+		},
+		{
+			name:     "空文字列",
+			email:    "",
+			expected: false,
+		},
+		{
+			name:     "スペース含むメールアドレス",
+			email:    "test @example.com",
+			expected: false,
+		},
+		{
+			name: "255文字を超えるメールアドレス",
+			email: func() string {
+				// 256文字のメールアドレスを作成（247 + @test.com(9) = 256）
+				longLocal := make([]byte, 247)
+				for i := range longLocal {
+					longLocal[i] = 'a'
+				}
+				return string(longLocal) + "@test.com"
+			}(),
+			expected: false,
+		},
+		{
+			name: "255文字ちょうどのメールアドレス",
+			email: func() string {
+				// 255文字のメールアドレスを作成（246 + @test.com(9) = 255）
+				longLocal := make([]byte, 246)
+				for i := range longLocal {
+					longLocal[i] = 'a'
+				}
+				return string(longLocal) + "@test.com"
+			}(),
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isValidEmail(tc.email)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }

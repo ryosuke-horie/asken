@@ -3,6 +3,7 @@
 import { ChangeEvent, useState } from 'react'
 import { MealType } from '@/types/nutrition'
 import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
+import { useUserEmail } from '@/contexts/UserEmailContext'
 import styles from './MealTypeUpload.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -14,6 +15,7 @@ interface MealTypeUploadProps {
 }
 
 export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealTypeUploadProps) {
+  const { email } = useUserEmail()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -80,6 +82,9 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
       formData.append('image', selectedFile)
       formData.append('meal_type', mealType)
       formData.append('meal_date', mealDate)
+      if (email) {
+        formData.append('email', email)
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
