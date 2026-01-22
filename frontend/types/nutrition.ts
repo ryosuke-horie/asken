@@ -17,7 +17,7 @@ export interface AnalysisResult {
   total_carbohydrates: number;
 }
 
-export interface HistoryItem {
+interface HistoryItem {
   id: string;
   image_path: string;
   created_at: string;
@@ -31,13 +31,6 @@ export interface HistoryItem {
 
 export interface HistoryDetail extends HistoryItem {
   foods: NutritionInfo[];
-}
-
-export interface HistoryListResponse {
-  items: HistoryItem[];
-  total: number;
-  page: number;
-  limit: number;
 }
 
 export interface DailyMeals {
