@@ -208,6 +208,73 @@ sudo systemctl restart asken-backend
 sudo systemctl restart asken-frontend
 ```
 
+## CI/CD（GitHub Actions self-hosted runner）
+
+exe.dev VM 上で GitHub Actions の self-hosted runner を常駐させることで、この環境でビルド・テスト・デプロイを自動化できます。公式ガイド: [Running a self-hosted GitHub Actions Runner](https://exe.dev/docs/use-case-gh-action-runner.md)
+
+### 推奨フロー
+1. **専用ユーザーを作成（任意）**: `asken-runner` などを作成し runner を実行することで権限を分離。
+2. **GitHub で runner を登録**: リポジトリ (または組織) の `Settings > Actions > Runners > New self-hosted runner` で Linux x64 を選択し、表示されるコマンドを VM 上で実行。
+3. **インストール**: 例) `/home/exedev/actions-runner` に展開し、`./config.sh --url <repo-url> --token <token> --labels self-hosted,asken` を実行。
+4. **systemd サービス化**: `./svc.sh install` でも良いが、exe.dev の標準に合わせて以下のようなユニットを `/etc/systemd/system/asken-runner.service` として配置し、`sudo systemctl enable --now asken-runner`。
+
+```ini
+[Unit]
+Description=Asken GitHub Actions Runner
+After=network-online.target
+
+[Service]
+Type=simple
+User=asken-runner
+WorkingDirectory=/home/asken-runner/actions-runner
+ExecStart=/home/asken-runner/actions-runner/run.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### ワークフロー例
+`.github/workflows/ci.yml`
+```yaml
+name: asken CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: [self-hosted, asken]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Backend tests
+        run: |
+          cd backend
+          go test ./...
+      - name: Frontend lint
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+```
+`runs-on` ラベルは runner 登録時に付与したものに合わせてください。テストやデプロイ処理を追加しても良いです。
+
+### GitHub 上での準備
+- `Actions` を有効化
+- 必要な Secrets (例: `GEMINI_API_KEY`) を `Settings > Secrets and variables > Actions` に登録
+- ブランチ保護ルールで `Require status checks` を設定する場合は、このワークフロー名を指定
+
+### exe.dev 側の運用
+- `journalctl -u asken-runner -f` で runner ログを監視
+- runner バイナリ更新時は `./svc.sh stop && ./svc.sh uninstall` の後に再インストール
+- token 失効時は GitHub 側で runner を削除し、再登録
+
 ### ローカル開発モード
 
 従来通り、手動で起動して開発することもできます。
