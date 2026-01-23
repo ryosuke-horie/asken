@@ -4,12 +4,15 @@ import TextInput from './TextInput'
 
 const mockFetch = vi.fn()
 
-vi.mock('@/contexts/UserEmailContext', () => ({
-  useUserEmail: vi.fn(() => ({
-    email: 'test@example.com',
-    setEmail: vi.fn(),
-    clearEmail: vi.fn(),
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: 'user-123', email: 'test@example.com', name: 'Test User' },
+    token: 'mock-jwt-token',
+    isAuthenticated: true,
     isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
   })),
 }))
 
@@ -125,12 +128,14 @@ describe('TextInput', () => {
           expect.stringContaining('/api/analyze'),
           expect.objectContaining({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer mock-jwt-token',
+            },
             body: JSON.stringify({
               input_text: 'ご飯二杯',
               meal_type: 'lunch',
               meal_date: '2024-01-15',
-              email: 'test@example.com',
             }),
           })
         )
@@ -162,7 +167,6 @@ describe('TextInput', () => {
               input_text: 'ご飯, 味噌汁',
               meal_type: 'lunch',
               meal_date: '2024-01-15',
-              email: 'test@example.com',
             }),
           })
         )

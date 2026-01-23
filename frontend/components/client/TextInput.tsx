@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { MealType } from '@/types/nutrition'
 import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
-import { useUserEmail } from '@/contexts/UserEmailContext'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './TextInput.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -15,7 +15,7 @@ interface TextInputProps {
 }
 
 export default function TextInput({ mealType, mealDate, onComplete }: TextInputProps) {
-  const { email } = useUserEmail()
+  const { token } = useAuth()
   const [inputs, setInputs] = useState<string[]>([''])
 
   const {
@@ -59,6 +59,11 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
       return
     }
 
+    if (!token) {
+      setError('ログインが必要です')
+      return
+    }
+
     const inputText = validInputs.join(', ')
 
     setIsLoading(true)
@@ -70,12 +75,12 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           input_text: inputText,
           meal_type: mealType,
           meal_date: mealDate,
-          email: email || undefined,
         }),
       })
 

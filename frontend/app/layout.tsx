@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { UserEmailProvider } from '@/contexts/UserEmailContext'
-import EmailSetup from '@/components/client/EmailSetup'
+import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 export const metadata = {
@@ -16,8 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <UserEmailProvider>
-          <EmailSetup />
+        <AuthProvider>
           <header>
             <h1>asken - カロリー計算アプリ</h1>
             <nav>
@@ -28,7 +26,7 @@ export default function RootLayout({
           <footer>
             <p>&copy; 2024 asken. Powered by Gemini API.</p>
           </footer>
-        </UserEmailProvider>
+        </AuthProvider>
       </body>
     </html>
   )

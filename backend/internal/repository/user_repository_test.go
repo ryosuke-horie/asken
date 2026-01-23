@@ -23,10 +23,10 @@ func TestFindByEmail_Success(t *testing.T) {
 	expectedID := uuid.New()
 	email := "test@example.com"
 
-	rows := sqlmock.NewRows([]string{"id", "email", "name", "created_at", "updated_at"}).
-		AddRow(expectedID, email, nil, now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "name", "password_hash", "created_at", "updated_at"}).
+		AddRow(expectedID, email, nil, "hashed_password", now, now)
 
-	mock.ExpectQuery(`SELECT id, email, name, created_at, updated_at FROM users WHERE email`).
+	mock.ExpectQuery(`SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE email`).
 		WithArgs(email).
 		WillReturnRows(rows)
 
@@ -48,7 +48,7 @@ func TestFindByEmail_NotFound(t *testing.T) {
 
 	email := "notfound@example.com"
 
-	mock.ExpectQuery(`SELECT id, email, name, created_at, updated_at FROM users WHERE email`).
+	mock.ExpectQuery(`SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE email`).
 		WithArgs(email).
 		WillReturnError(sql.ErrNoRows)
 
@@ -68,7 +68,7 @@ func TestFindByEmail_DBError(t *testing.T) {
 
 	email := "test@example.com"
 
-	mock.ExpectQuery(`SELECT id, email, name, created_at, updated_at FROM users WHERE email`).
+	mock.ExpectQuery(`SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE email`).
 		WithArgs(email).
 		WillReturnError(sql.ErrConnDone)
 
@@ -90,10 +90,10 @@ func TestFindByID_Success(t *testing.T) {
 	userID := uuid.New()
 	email := "test@example.com"
 
-	rows := sqlmock.NewRows([]string{"id", "email", "name", "created_at", "updated_at"}).
-		AddRow(userID, email, "Test User", now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "name", "password_hash", "created_at", "updated_at"}).
+		AddRow(userID, email, "Test User", "hashed_password", now, now)
 
-	mock.ExpectQuery(`SELECT id, email, name, created_at, updated_at FROM users WHERE id`).
+	mock.ExpectQuery(`SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE id`).
 		WithArgs(userID).
 		WillReturnRows(rows)
 
@@ -116,7 +116,7 @@ func TestFindByID_NotFound(t *testing.T) {
 
 	userID := uuid.New()
 
-	mock.ExpectQuery(`SELECT id, email, name, created_at, updated_at FROM users WHERE id`).
+	mock.ExpectQuery(`SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE id`).
 		WithArgs(userID).
 		WillReturnError(sql.ErrNoRows)
 
@@ -127,57 +127,7 @@ func TestFindByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestCreate_Success(t *testing.T) {
-	db, mock := setupMockDB(t)
-	defer db.Close()
-
-	repo := NewUserRepository(db)
-	ctx := context.Background()
-
-	user := &User{
-		Email: "new@example.com",
-		Name:  "New User",
-	}
-
-	expectedID := uuid.New()
-
-	rows := sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).
-		AddRow(expectedID, now, now)
-
-	mock.ExpectQuery(`INSERT INTO users`).
-		WithArgs(user.Email, sql.NullString{String: user.Name, Valid: true}).
-		WillReturnRows(rows)
-
-	err := repo.Create(ctx, user)
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedID, user.ID)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestCreate_Error(t *testing.T) {
-	db, mock := setupMockDB(t)
-	defer db.Close()
-
-	repo := NewUserRepository(db)
-	ctx := context.Background()
-
-	user := &User{
-		Email: "duplicate@example.com",
-	}
-
-	mock.ExpectQuery(`INSERT INTO users`).
-		WithArgs(user.Email, sql.NullString{}).
-		WillReturnError(sql.ErrConnDone)
-
-	err := repo.Create(ctx, user)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "ユーザーの作成に失敗")
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestFindOrCreate_NewUser(t *testing.T) {
+func TestCreateWithPassword_Success(t *testing.T) {
 	db, mock := setupMockDB(t)
 	defer db.Close()
 
@@ -185,67 +135,75 @@ func TestFindOrCreate_NewUser(t *testing.T) {
 	ctx := context.Background()
 
 	email := "new@example.com"
+	name := "New User"
+	passwordHash := "hashed_password_123"
 	expectedID := uuid.New()
 
-	rows := sqlmock.NewRows([]string{"id", "email", "name", "created_at", "updated_at"}).
-		AddRow(expectedID, email, nil, now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "name", "password_hash", "created_at", "updated_at"}).
+		AddRow(expectedID, email, name, passwordHash, now, now)
 
-	mock.ExpectQuery(`INSERT INTO users .* ON CONFLICT`).
-		WithArgs(email, sql.NullString{}).
+	mock.ExpectQuery(`INSERT INTO users`).
+		WithArgs(email, sql.NullString{String: name, Valid: true}, passwordHash).
 		WillReturnRows(rows)
 
-	user, err := repo.FindOrCreate(ctx, email, "")
+	user, err := repo.CreateWithPassword(ctx, email, name, passwordHash)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, expectedID, user.ID)
 	assert.Equal(t, email, user.Email)
+	assert.Equal(t, name, user.Name)
+	assert.Equal(t, passwordHash, user.PasswordHash)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestFindOrCreate_ExistingUser(t *testing.T) {
+func TestCreateWithPassword_WithoutName(t *testing.T) {
 	db, mock := setupMockDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
 	ctx := context.Background()
 
-	email := "existing@example.com"
+	email := "new@example.com"
+	passwordHash := "hashed_password_123"
 	expectedID := uuid.New()
 
-	rows := sqlmock.NewRows([]string{"id", "email", "name", "created_at", "updated_at"}).
-		AddRow(expectedID, email, "Existing User", now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "name", "password_hash", "created_at", "updated_at"}).
+		AddRow(expectedID, email, nil, passwordHash, now, now)
 
-	mock.ExpectQuery(`INSERT INTO users .* ON CONFLICT`).
-		WithArgs(email, sql.NullString{}).
+	mock.ExpectQuery(`INSERT INTO users`).
+		WithArgs(email, sql.NullString{}, passwordHash).
 		WillReturnRows(rows)
 
-	user, err := repo.FindOrCreate(ctx, email, "")
+	user, err := repo.CreateWithPassword(ctx, email, "", passwordHash)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, expectedID, user.ID)
-	assert.Equal(t, "Existing User", user.Name)
+	assert.Equal(t, email, user.Email)
+	assert.Empty(t, user.Name)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestFindOrCreate_Error(t *testing.T) {
+func TestCreateWithPassword_Error(t *testing.T) {
 	db, mock := setupMockDB(t)
 	defer db.Close()
 
 	repo := NewUserRepository(db)
 	ctx := context.Background()
 
-	email := "error@example.com"
+	email := "duplicate@example.com"
+	passwordHash := "hashed_password_123"
 
-	mock.ExpectQuery(`INSERT INTO users .* ON CONFLICT`).
-		WithArgs(email, sql.NullString{}).
+	mock.ExpectQuery(`INSERT INTO users`).
+		WithArgs(email, sql.NullString{}, passwordHash).
 		WillReturnError(sql.ErrConnDone)
 
-	user, err := repo.FindOrCreate(ctx, email, "")
+	user, err := repo.CreateWithPassword(ctx, email, "", passwordHash)
 
 	assert.Error(t, err)
 	assert.Nil(t, user)
-	assert.Contains(t, err.Error(), "ユーザーの取得または作成に失敗")
+	assert.Contains(t, err.Error(), "ユーザーの作成に失敗")
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+

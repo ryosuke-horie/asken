@@ -67,42 +67,6 @@ func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inpu
 	return uuid.Nil, nil
 }
 
-// MockUserRepository はテスト用のモックUserRepository
-type MockUserRepository struct {
-	FindByEmailFunc   func(ctx context.Context, email string) (*repository.User, error)
-	FindByIDFunc      func(ctx context.Context, id uuid.UUID) (*repository.User, error)
-	CreateFunc        func(ctx context.Context, user *repository.User) error
-	FindOrCreateFunc  func(ctx context.Context, email string, name string) (*repository.User, error)
-}
-
-func (m *MockUserRepository) FindByEmail(ctx context.Context, email string) (*repository.User, error) {
-	if m.FindByEmailFunc != nil {
-		return m.FindByEmailFunc(ctx, email)
-	}
-	return nil, nil
-}
-
-func (m *MockUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
-	if m.FindByIDFunc != nil {
-		return m.FindByIDFunc(ctx, id)
-	}
-	return nil, nil
-}
-
-func (m *MockUserRepository) Create(ctx context.Context, user *repository.User) error {
-	if m.CreateFunc != nil {
-		return m.CreateFunc(ctx, user)
-	}
-	return nil
-}
-
-func (m *MockUserRepository) FindOrCreate(ctx context.Context, email string, name string) (*repository.User, error) {
-	if m.FindOrCreateFunc != nil {
-		return m.FindOrCreateFunc(ctx, email, name)
-	}
-	return &repository.User{ID: uuid.New(), Email: email}, nil
-}
-
 func (m *MockAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
 	if m.GetRequestFunc != nil {
 		return m.GetRequestFunc(ctx, id)
@@ -178,9 +142,7 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 			return expectedID, nil
 		},
 	}
-	mockUserRepo := &MockUserRepository{}
-
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
 	body := &bytes.Buffer{}
@@ -221,8 +183,7 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", nil)
 	w := httptest.NewRecorder()
@@ -235,8 +196,7 @@ func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// テキストファイルをアップロード
 	body := &bytes.Buffer{}
@@ -262,9 +222,7 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 			return uuid.Nil, assert.AnError
 		},
 	}
-	mockUserRepo := &MockUserRepository{}
-
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -374,9 +332,7 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 			return expectedID, nil
 		},
 	}
-	mockUserRepo := &MockUserRepository{}
-
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// JSONリクエストボディを作成
 	reqBody := map[string]string{
@@ -406,8 +362,7 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	reqBody := map[string]string{
 		"input_text": "",
@@ -429,8 +384,7 @@ func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	reqBody := map[string]string{
 		"input_text": "ご飯二杯",
@@ -452,8 +406,7 @@ func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// 1001文字のテキストを作成
 	longText := make([]byte, 1001)
@@ -481,8 +434,7 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+	handler := NewAnalyzeHandler(mockService, mockRepo)
 
 	// 不正なJSONを送信
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader([]byte("{invalid json")))
@@ -494,180 +446,3 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestIsValidEmail(t *testing.T) {
-	testCases := []struct {
-		name     string
-		email    string
-		expected bool
-	}{
-		{
-			name:     "有効なメールアドレス",
-			email:    "test@example.com",
-			expected: true,
-		},
-		{
-			name:     "サブドメイン付きメールアドレス",
-			email:    "user@mail.example.com",
-			expected: true,
-		},
-		{
-			name:     "@なしのメールアドレス",
-			email:    "testexample.com",
-			expected: false,
-		},
-		{
-			name:     "ドメインなしのメールアドレス",
-			email:    "test@",
-			expected: false,
-		},
-		{
-			name:     "TLDなしのメールアドレス",
-			email:    "test@example",
-			expected: false,
-		},
-		{
-			name:     "空文字列",
-			email:    "",
-			expected: false,
-		},
-		{
-			name:     "スペース含むメールアドレス",
-			email:    "test @example.com",
-			expected: false,
-		},
-		{
-			name: "255文字を超えるメールアドレス",
-			email: func() string {
-				// 256文字のメールアドレスを作成（247 + @test.com(9) = 256）
-				longLocal := make([]byte, 247)
-				for i := range longLocal {
-					longLocal[i] = 'a'
-				}
-				return string(longLocal) + "@test.com"
-			}(),
-			expected: false,
-		},
-		{
-			name: "255文字ちょうどのメールアドレス",
-			email: func() string {
-				// 255文字のメールアドレスを作成（246 + @test.com(9) = 255）
-				longLocal := make([]byte, 246)
-				for i := range longLocal {
-					longLocal[i] = 'a'
-				}
-				return string(longLocal) + "@test.com"
-			}(),
-			expected: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := isValidEmail(tc.email)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestAnalyzeHandler_TextInput_InvalidEmail(t *testing.T) {
-	mockService := &MockFoodService{}
-	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
-
-	reqBody := map[string]string{
-		"input_text": "ご飯二杯",
-		"meal_type":  "lunch",
-		"meal_date":  "2024-01-15",
-		"email":      "invalid-email", // @がない無効なメールアドレス
-	}
-	body, err := json.Marshal(reqBody)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	handler.Handle(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "無効なメールアドレス形式です")
-}
-
-func TestAnalyzeHandler_TextInput_UserRepositoryError(t *testing.T) {
-	mockService := &MockFoodService{}
-	mockRepo := &MockAnalysisRepository{}
-	mockUserRepo := &MockUserRepository{
-		FindOrCreateFunc: func(ctx context.Context, email string, name string) (*repository.User, error) {
-			return nil, assert.AnError
-		},
-	}
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
-
-	reqBody := map[string]string{
-		"input_text": "ご飯二杯",
-		"meal_type":  "lunch",
-		"meal_date":  "2024-01-15",
-		"email":      "test@example.com",
-	}
-	body, err := json.Marshal(reqBody)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	handler.Handle(w, req)
-
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Contains(t, w.Body.String(), "ユーザー情報の処理に失敗しました")
-}
-
-func TestAnalyzeHandler_ImageUpload_WithEmail(t *testing.T) {
-	mockService := &MockFoodService{}
-
-	expectedID := uuid.New()
-	expectedUserID := uuid.New()
-	var capturedUserID *uuid.UUID
-
-	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
-			capturedUserID = userID
-			return expectedID, nil
-		},
-	}
-	mockUserRepo := &MockUserRepository{
-		FindOrCreateFunc: func(ctx context.Context, email string, name string) (*repository.User, error) {
-			assert.Equal(t, "test@example.com", email)
-			return &repository.User{ID: expectedUserID, Email: email}, nil
-		},
-	}
-
-	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
-
-	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	// JPEG magic number + 512バイト以上のダミーデータ
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	part.Write(jpegData)
-	// meal_typeとemailフィールドを追加
-	require.NoError(t, writer.WriteField("meal_type", "lunch"))
-	require.NoError(t, writer.WriteField("email", "test@example.com"))
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	w := httptest.NewRecorder()
-
-	handler.Handle(w, req)
-
-	assert.Equal(t, http.StatusAccepted, w.Code)
-	assert.NotNil(t, capturedUserID)
-	assert.Equal(t, expectedUserID, *capturedUserID)
-}
