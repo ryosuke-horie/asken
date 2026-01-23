@@ -6,7 +6,7 @@ import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './TextInput.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 interface TextInputProps {
   mealType: MealType

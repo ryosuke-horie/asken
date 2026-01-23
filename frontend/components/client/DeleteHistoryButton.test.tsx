@@ -115,7 +115,7 @@ describe('DeleteHistoryButton', () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          'http://localhost:8080/api/history/test-id-123',
+          '/api/history/test-id-123',
           {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer mock-jwt-token' },
