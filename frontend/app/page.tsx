@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import DailyMealsView from '@/components/client/DailyMealsView'
+import WeightSection from '@/components/client/WeightSection'
 import ProtectedRoute from '@/components/client/ProtectedRoute'
 
 export default function HomePage() {
@@ -11,6 +12,7 @@ export default function HomePage() {
 
   return (
     <ProtectedRoute>
+      <WeightSection />
       <DailyMealsView date={date} />
     </ProtectedRoute>
   )
