@@ -42,17 +42,17 @@
 }
 
 .dayButton.today {
-  border: 2px solid #0070f3;
-  color: #0070f3;
+  border: 2px solid #f97316;
+  color: #f97316;
 }
 
 .dayButton.selected {
-  background-color: #0070f3;
+  background-color: #f97316;
   color: white;
 }
 
 .dayButton.today.selected {
-  background-color: #0070f3;
+  background-color: #f97316;
   color: white;
-  border: 2px solid #0070f3;
+  border: 2px solid #f97316;
 }
