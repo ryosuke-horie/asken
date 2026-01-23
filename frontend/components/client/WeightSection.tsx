@@ -43,7 +43,9 @@ export default function WeightSection() {
 
   const handleRecordWeight = useCallback(
     async (weight: number) => {
-      if (!token) return
+      if (!token) {
+        throw new Error('認証が必要です。再ログインしてください')
+      }
 
       setIsRecording(true)
       try {
@@ -60,11 +62,11 @@ export default function WeightSection() {
         })
 
         if (!response.ok) {
-          throw new Error('記録に失敗しました')
+          const errorText = await response.text()
+          throw new Error(errorText || '記録に失敗しました')
         }
 
-        await mutateRecords()
-        await mutateGoal()
+        await Promise.all([mutateRecords(), mutateGoal()])
       } finally {
         setIsRecording(false)
       }
@@ -74,7 +76,9 @@ export default function WeightSection() {
 
   const handleUpdateGoal = useCallback(
     async (targetWeight: number, targetDate: string) => {
-      if (!token) return
+      if (!token) {
+        throw new Error('認証が必要です。再ログインしてください')
+      }
 
       setIsUpdatingGoal(true)
       try {
@@ -91,7 +95,8 @@ export default function WeightSection() {
         })
 
         if (!response.ok) {
-          throw new Error('目標の設定に失敗しました')
+          const errorText = await response.text()
+          throw new Error(errorText || '目標の設定に失敗しました')
         }
 
         await mutateGoal()
@@ -104,7 +109,8 @@ export default function WeightSection() {
   )
 
   if (recordsError || goalError) {
-    return <div className={styles.error}>データの取得に失敗しました</div>
+    const errorMessage = recordsError?.message || goalError?.message || 'データの取得に失敗しました'
+    return <div className={styles.error}>{errorMessage}</div>
   }
 
   const records = recordsData?.records ?? []
