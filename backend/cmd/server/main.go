@@ -211,11 +211,10 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 
 func parseAllowedOrigins(raw string) map[string]struct{} {
 	origins := map[string]struct{}{
-		"http://localhost:3000":        {},
-		"http://localhost:3001":        {},
-		"http://localhost:3002":        {},
-		"https://asken.exe.xyz:3000":   {},
-		"https://uchikomi.exe.xyz:3000": {},
+		"http://localhost:3000":      {},
+		"http://localhost:3001":      {},
+		"http://localhost:3002":      {},
+		"https://asken.exe.xyz:3000": {},
 	}
 
 	if raw == "" {
