@@ -58,3 +58,8 @@ func GetUserIDFromContext(ctx context.Context) uuid.UUID {
 	}
 	return userID
 }
+
+// SetUserIDToContext はテスト用にユーザーIDをコンテキストに設定する
+func SetUserIDToContext(ctx context.Context, userID uuid.UUID) context.Context {
+	return context.WithValue(ctx, userIDContextKey, userID)
+}
