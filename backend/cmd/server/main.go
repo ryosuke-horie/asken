@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ryosuke-horie/asken/backend/internal/handler"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
-	"github.com/ryosuke-horie/asken/backend/internal/worker"
-	"github.com/ryosuke-horie/asken/backend/pkg/database"
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/handler"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/worker"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/database"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // RealGeminiClient はGeminiClientインターフェースを実装する
@@ -197,7 +197,7 @@ func parseAllowedOrigins(raw string) map[string]struct{} {
 	origins := map[string]struct{}{
 		"http://localhost:3000":    {},
 		"http://localhost:3001":    {},
-		"https://asken.exe.xyz:3000": {},
+		"https://uchikomi.exe.xyz:3000": {},
 	}
 
 	if raw == "" {

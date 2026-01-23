@@ -36,7 +36,7 @@ func TestNewPostgresDB_DefaultPoolSettings(t *testing.T) {
 	t.Skip("実際のPostgreSQLインスタンスが必要なため、統合テスト環境でのみ実行")
 
 	config := Config{
-		DatabaseURL: "postgres://asken:asken@localhost:5432/asken?sslmode=disable",
+		DatabaseURL: "postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable",
 	}
 
 	db, err := NewPostgresDB(config)
@@ -58,7 +58,7 @@ func TestNewPostgresDB_CustomPoolSettings(t *testing.T) {
 	t.Skip("実際のPostgreSQLインスタンスが必要なため、統合テスト環境でのみ実行")
 
 	config := Config{
-		DatabaseURL:     "postgres://asken:asken@localhost:5432/asken?sslmode=disable",
+		DatabaseURL:     "postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable",
 		MaxOpenConns:    10,
 		MaxIdleConns:    3,
 		ConnMaxLifetime: 10 * time.Minute,

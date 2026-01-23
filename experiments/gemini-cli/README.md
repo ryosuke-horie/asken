@@ -4,7 +4,7 @@
 
 ## 検証の目的
 
-askenプロジェクトで、Gemini CLI（Gemini 3 API）を使って食事画像から食材を判定し、カロリーや栄養素を推定する機能の実現可能性を検証します。
+uchikomiプロジェクトで、Gemini CLI（Gemini 3 API）を使って食事画像から食材を判定し、カロリーや栄養素を推定する機能の実現可能性を検証します。
 
 ## ディレクトリ構成
 
@@ -94,7 +94,7 @@ go run scripts/main.go
 
 ## 関連リンク
 
-- [Linear課題 EDG-315](https://linear.app/edge-work/issue/EDG-315/asken：geminicliをaiエージェント用途活用できるか検証)
+- [Linear課題 EDG-315](https://linear.app/edge-work/issue/EDG-315/uchikomi：geminicliをaiエージェント用途活用できるか検証)
 - [Gemini CLI GitHub](https://github.com/google-gemini/gemini-cli)
 - [Gemini API Documentation](https://ai.google.dev/gemini-api/docs)
 
