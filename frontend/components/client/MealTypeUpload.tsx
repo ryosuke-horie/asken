@@ -3,6 +3,7 @@
 import { ChangeEvent, useState } from 'react'
 import { MealType } from '@/types/nutrition'
 import { useAnalysisPolling } from '@/hooks/useAnalysisPolling'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './MealTypeUpload.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
@@ -14,6 +15,7 @@ interface MealTypeUploadProps {
 }
 
 export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealTypeUploadProps) {
+  const { token } = useAuth()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -62,12 +64,21 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string)
       }
+      reader.onerror = () => {
+        console.error('Failed to read file for preview:', reader.error)
+        setPreviewUrl(null)
+      }
       reader.readAsDataURL(file)
     }
   }
 
   async function handleUpload(): Promise<void> {
     if (!selectedFile) {
+      return
+    }
+
+    if (!token) {
+      setError('認証が必要です。再度ログインしてください。')
       return
     }
 
@@ -83,6 +94,9 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
 
       const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       })
 

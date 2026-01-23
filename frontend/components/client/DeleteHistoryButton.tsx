@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, MouseEvent } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './DeleteHistoryButton.module.css';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -18,6 +19,7 @@ export default function DeleteHistoryButton({
   onSuccess,
 }: DeleteHistoryButtonProps) {
   const router = useRouter();
+  const { token } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -31,12 +33,23 @@ export default function DeleteHistoryButton({
     setIsDeleting(true);
 
     try {
+      if (!token) {
+        alert('認証が必要です。再度ログインしてください。');
+        setIsDeleting(false);
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/history/${historyId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
-        throw new Error('削除に失敗しました');
+        const errorText = await response.text().catch(() => '');
+        const errorMessage = errorText || `削除に失敗しました (${response.status})`;
+        throw new Error(errorMessage);
       }
 
       if (onSuccess) {
@@ -47,7 +60,8 @@ export default function DeleteHistoryButton({
       }
     } catch (error) {
       console.error('削除エラー:', error);
-      alert('削除に失敗しました');
+      const message = error instanceof Error ? error.message : '削除に失敗しました';
+      alert(message);
       setIsDeleting(false);
     }
   };
