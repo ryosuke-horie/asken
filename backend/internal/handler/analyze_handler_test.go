@@ -568,3 +568,106 @@ func TestIsValidEmail(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeHandler_TextInput_InvalidEmail(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockUserRepo := &MockUserRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+
+	reqBody := map[string]string{
+		"input_text": "ご飯二杯",
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+		"email":      "invalid-email", // @がない無効なメールアドレス
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "無効なメールアドレス形式です")
+}
+
+func TestAnalyzeHandler_TextInput_UserRepositoryError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockUserRepo := &MockUserRepository{
+		FindOrCreateFunc: func(ctx context.Context, email string, name string) (*repository.User, error) {
+			return nil, assert.AnError
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+
+	reqBody := map[string]string{
+		"input_text": "ご飯二杯",
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+		"email":      "test@example.com",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "ユーザー情報の処理に失敗しました")
+}
+
+func TestAnalyzeHandler_ImageUpload_WithEmail(t *testing.T) {
+	mockService := &MockFoodService{}
+
+	expectedID := uuid.New()
+	expectedUserID := uuid.New()
+	var capturedUserID *uuid.UUID
+
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+			capturedUserID = userID
+			return expectedID, nil
+		},
+	}
+	mockUserRepo := &MockUserRepository{
+		FindOrCreateFunc: func(ctx context.Context, email string, name string) (*repository.User, error) {
+			assert.Equal(t, "test@example.com", email)
+			return &repository.User{ID: expectedUserID, Email: email}, nil
+		},
+	}
+
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockUserRepo)
+
+	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	// JPEG magic number + 512バイト以上のダミーデータ
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	part.Write(jpegData)
+	// meal_typeとemailフィールドを追加
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
+	require.NoError(t, writer.WriteField("email", "test@example.com"))
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusAccepted, w.Code)
+	assert.NotNil(t, capturedUserID)
+	assert.Equal(t, expectedUserID, *capturedUserID)
+}
