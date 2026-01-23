@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 export const metadata = {
@@ -14,19 +15,21 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <header>
-          <Image
-            src="/logo-cropped.png"
-            alt="ウチコミ"
-            width={150}
-            height={50}
-            priority
-          />
-        </header>
-        <main>{children}</main>
-        <footer>
-          <p>&copy; 2024 ウチコミ. Powered by Gemini API.</p>
-        </footer>
+        <AuthProvider>
+          <header>
+            <Image
+              src="/logo-cropped.png"
+              alt="ウチコミ"
+              width={150}
+              height={50}
+              priority
+            />
+          </header>
+          <main>{children}</main>
+          <footer>
+            <p>&copy; 2024 ウチコミ. Powered by Gemini API.</p>
+          </footer>
+        </AuthProvider>
       </body>
     </html>
   )

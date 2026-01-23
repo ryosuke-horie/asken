@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/handler"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/worker"
@@ -56,6 +57,7 @@ func main() {
 
 	// リポジトリの初期化
 	analysisRepo := repository.NewAnalysisRepository(db)
+	userRepo := repository.NewUserRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -69,7 +71,17 @@ func main() {
 
 	foodService := service.NewFoodService(geminiClient)
 
+	// 認証サービスの初期化
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "default-secret-change-in-production"
+		log.Println("WARNING: JWT_SECRET not set, using default secret. Set JWT_SECRET in production!")
+	}
+	authService := service.NewAuthService(jwtSecret, 24*time.Hour)
+	authMiddleware := middleware.NewAuthMiddleware(authService)
+
 	// ハンドラーの初期化（リポジトリを渡す）
+	authHandler := handler.NewAuthHandler(authService, userRepo)
 	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo)
 	statusHandler := handler.NewStatusHandler(analysisRepo)
 	historyHandler := handler.NewHistoryHandler(analysisRepo)
@@ -90,8 +102,12 @@ func main() {
 	// ルーティング
 	mux := http.NewServeMux()
 
-	// POST /api/analyze - 画像アップロード
-	// GET /api/analyze/:id - ステータス取得
+	// 認証エンドポイント（認証不要）
+	mux.HandleFunc("/api/auth/register", authHandler.HandleRegister)
+	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
+
+	// POST /api/analyze - 画像アップロード（認証必須）
+	// GET /api/analyze/:id - ステータス取得（認証必須）
 	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			analyzeHandler.Handle(w, r)
@@ -102,13 +118,13 @@ func main() {
 		}
 	}
 
-	// 両方のパスパターンを登録
-	mux.HandleFunc("/api/analyze", analyzeRouteHandler)   // POST用
-	mux.HandleFunc("/api/analyze/", analyzeRouteHandler)  // GET /api/analyze/:id 用
+	// 認証が必要なエンドポイントにミドルウェアを適用
+	mux.Handle("/api/analyze", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
+	mux.Handle("/api/analyze/", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
 
-	// 履歴エンドポイント
+	// 履歴エンドポイント（認証必須）
 	// GET /api/history - 履歴一覧
-	mux.HandleFunc("/api/history", historyHandler.HandleList)
+	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(historyHandler.HandleList)))
 
 	// GET /api/history/:id - 履歴詳細
 	// DELETE /api/history/:id - 履歴削除
@@ -121,15 +137,15 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.HandleFunc("/api/history/", historyDetailRouteHandler)
+	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
 
-	// 画像配信エンドポイント
+	// 画像配信エンドポイント（認証必須）
 	// GET /api/images/:filename
-	mux.HandleFunc("/api/images/", imageHandler.Handle)
+	mux.Handle("/api/images/", authMiddleware.Authenticate(http.HandlerFunc(imageHandler.Handle)))
 
-	// 日次食事データエンドポイント
+	// 日次食事データエンドポイント（認証必須）
 	// GET /api/meals/daily
-	mux.HandleFunc("/api/meals/daily", dailyMealsHandler.Handle)
+	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(dailyMealsHandler.Handle)))
 
 	// CORSミドルウェアを適用
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
@@ -181,7 +197,7 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		// プリフライトリクエスト（OPTIONS）への対応
 		if r.Method == http.MethodOptions {
@@ -195,9 +211,10 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 
 func parseAllowedOrigins(raw string) map[string]struct{} {
 	origins := map[string]struct{}{
-		"http://localhost:3000":    {},
-		"http://localhost:3001":    {},
-		"https://uchikomi.exe.xyz:3000": {},
+		"http://localhost:3000":      {},
+		"http://localhost:3001":      {},
+		"http://localhost:3002":      {},
+		"https://asken.exe.xyz:3000": {},
 	}
 
 	if raw == "" {

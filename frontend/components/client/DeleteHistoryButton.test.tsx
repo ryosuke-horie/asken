@@ -12,6 +12,18 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: 'user-123', email: 'test@example.com', name: 'Test User' },
+    token: 'mock-jwt-token',
+    isAuthenticated: true,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+  })),
+}))
+
 describe('DeleteHistoryButton', () => {
   beforeEach(() => {
     mockPush.mockClear()
@@ -54,13 +66,17 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除失敗時にアラートを表示すべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('サーバーエラー'),
+      }))
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 
       await waitFor(() => {
-        expect(alert).toHaveBeenCalledWith('削除に失敗しました')
+        expect(alert).toHaveBeenCalledWith('サーバーエラー')
       })
     })
 
@@ -71,12 +87,16 @@ describe('DeleteHistoryButton', () => {
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 
       await waitFor(() => {
-        expect(alert).toHaveBeenCalledWith('削除に失敗しました')
+        expect(alert).toHaveBeenCalledWith('Network error')
       })
     })
 
     it('削除失敗後にボタンが再度有効になるべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve(''),
+      }))
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -96,7 +116,10 @@ describe('DeleteHistoryButton', () => {
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
           'http://localhost:8080/api/history/test-id-123',
-          { method: 'DELETE' }
+          {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer mock-jwt-token' },
+          }
         )
       })
     })
@@ -148,13 +171,17 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除失敗時にアラートを表示すべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('サーバーエラー'),
+      }))
 
       render(<DeleteHistoryButton historyId="test-id" iconOnly />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 
       await waitFor(() => {
-        expect(alert).toHaveBeenCalledWith('削除に失敗しました')
+        expect(alert).toHaveBeenCalledWith('サーバーエラー')
       })
     })
   })
