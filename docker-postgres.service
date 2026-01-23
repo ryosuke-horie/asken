@@ -1,11 +1,11 @@
 [Unit]
-Description=Asken Postgres via Docker Compose
+Description=Uchikomi Postgres via Docker Compose
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/exedev/asken
+WorkingDirectory=/home/exedev/uchikomi
 ExecStart=/usr/bin/docker compose up -d postgres
 ExecStop=/usr/bin/docker compose stop postgres
 RemainAfterExit=yes

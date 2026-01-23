@@ -2,13 +2,13 @@
 
 **検証日**: 2026-01-17
 **担当者**: r-horie
-**関連Linear課題**: [EDG-315](https://linear.app/edge-work/issue/EDG-315/asken：geminicliをaiエージェント用途活用できるか検証)
+**関連Linear課題**: [EDG-315](https://linear.app/edge-work/issue/EDG-315/uchikomi：geminicliをaiエージェント用途活用できるか検証)
 
 ---
 
 ## 1. 検証の目的
 
-askenプロジェクトにおいて、Gemini CLI（Gemini 3 API）をAIエージェント用途で活用できるか検証する。特に、**非対話的なモード**で画像から食材を判定し、カロリーや栄養素を推定する機能の実現可能性を確認する。
+uchikomiプロジェクトにおいて、Gemini CLI（Gemini 3 API）をAIエージェント用途で活用できるか検証する。特に、**非対話的なモード**で画像から食材を判定し、カロリーや栄養素を推定する機能の実現可能性を確認する。
 
 ---
 

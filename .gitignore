@@ -51,7 +51,7 @@ experiments/*/results/*.json
 backend/testdata/
 backend/uploads/
 backend/server
-/tmp/asken/
+/tmp/uchikomi/
 
 # Frontend
 frontend/node_modules/
