@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 type contextKey string

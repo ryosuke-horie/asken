@@ -3,7 +3,7 @@ package seeder
 import (
 	"time"
 
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // TestUser はテストユーザー情報を表す構造体

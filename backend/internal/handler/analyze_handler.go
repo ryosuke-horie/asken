@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/middleware"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 // emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）

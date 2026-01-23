@@ -1,4 +1,4 @@
-module github.com/ryosuke-horie/asken/backend
+module github.com/ryosuke-horie/uchikomi/backend
 
 go 1.23
 
