@@ -7,8 +7,6 @@ updates:
       interval: "weekly"
       day: "monday"
       timezone: "Asia/Tokyo"
-    labels:
-      - "dependencies"
     commit-message:
       prefix: "chore(deps)"
 
@@ -20,9 +18,6 @@ updates:
       day: "monday"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "frontend"
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -58,9 +53,6 @@ updates:
       day: "monday"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "backend"
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -84,8 +76,5 @@ updates:
       day: "monday"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "docker"
     commit-message:
       prefix: "chore(deps)"
