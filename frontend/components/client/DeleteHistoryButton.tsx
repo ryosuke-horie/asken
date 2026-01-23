@@ -5,7 +5,7 @@ import { useState, MouseEvent } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './DeleteHistoryButton.module.css';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface DeleteHistoryButtonProps {
   historyId: string;

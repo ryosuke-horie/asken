@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 const MAX_POLLING_ATTEMPTS = 60 // 2分（2秒間隔で60回）
 
 type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
