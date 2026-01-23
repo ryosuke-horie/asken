@@ -3,8 +3,8 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 export const metadata = {
-  title: 'asken - カロリー計算アプリ',
-  description: '画像から食事内容を判定し、カロリーと栄養素を計算するアプリ',
+  title: 'ウチコミ - 格闘技向け体重管理アプリ',
+  description: '柔術/キックボクシングなど格闘技の減量・体重コントロールを支援するアプリ',
 }
 
 export default function RootLayout({

@@ -3,18 +3,18 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: asken-postgres
+    container_name: uchikomi-postgres
     environment:
-      POSTGRES_USER: asken
-      POSTGRES_PASSWORD: asken
-      POSTGRES_DB: asken
+      POSTGRES_USER: uchikomi
+      POSTGRES_PASSWORD: uchikomi
+      POSTGRES_DB: uchikomi
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U asken"]
+      test: ["CMD-SHELL", "pg_isready -U uchikomi"]
       interval: 10s
       timeout: 5s
       retries: 5
