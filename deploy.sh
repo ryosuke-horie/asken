@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-# Asken デプロイスクリプト
+# ウチコミ デプロイスクリプト
 # 本番サーバー (exe.dev VM) で実行してください
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "=== Asken デプロイ開始 ==="
+echo "=== ウチコミ デプロイ開始 ==="
 echo "ディレクトリ: $SCRIPT_DIR"
 echo ""
 
@@ -39,7 +39,7 @@ if ! command -v migrate &> /dev/null; then
 fi
 
 MIGRATION_DIR="$SCRIPT_DIR/backend/database/migrations"
-MIGRATE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
+MIGRATE_URL="postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable"
 
 if [ -d "$MIGRATION_DIR" ]; then
     echo "  マイグレーションディレクトリ: $MIGRATION_DIR"
@@ -57,12 +57,12 @@ echo ""
 
 # 4. バックエンドサービス再起動
 echo "[4/5] バックエンドサービス再起動..."
-sudo systemctl restart asken-backend
+sudo systemctl restart uchikomi-backend
 echo ""
 
 # 5. フロントエンドサービス再起動
 echo "[5/5] フロントエンドサービス再起動..."
-sudo systemctl restart asken-frontend
+sudo systemctl restart uchikomi-frontend
 echo ""
 
 # 状態確認
@@ -71,13 +71,13 @@ echo ""
 echo "--- docker-postgres ---"
 systemctl status docker-postgres --no-pager -l | head -10
 echo ""
-echo "--- asken-backend ---"
-systemctl status asken-backend --no-pager -l | head -10
+echo "--- uchikomi-backend ---"
+systemctl status uchikomi-backend --no-pager -l | head -10
 echo ""
-echo "--- asken-frontend ---"
-systemctl status asken-frontend --no-pager -l | head -10
+echo "--- uchikomi-frontend ---"
+systemctl status uchikomi-frontend --no-pager -l | head -10
 echo ""
 
 echo "=== デプロイ完了 ==="
-echo "フロントエンド: https://asken.exe.xyz:3000"
-echo "バックエンドAPI: https://asken.exe.xyz:8080"
+echo "フロントエンド: https://uchikomi.exe.xyz:3000"
+echo "バックエンドAPI: https://uchikomi.exe.xyz:8080"

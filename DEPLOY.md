@@ -29,7 +29,7 @@ ssh exedev@exe.dev
 2. **プロジェクトディレクトリに移動**
 
 ```bash
-cd /home/exedev/asken
+cd /home/exedev/uchikomi
 ```
 
 3. **デプロイスクリプトを実行**
@@ -52,21 +52,21 @@ deploy.sh を使わない場合の手順:
 
 ```bash
 # 最新コードを取得
-cd /home/exedev/asken
+cd /home/exedev/uchikomi
 git pull origin main
 
 # DBマイグレーション
 migrate -path backend/database/migrations \
-        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        -database "postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable" \
         up
 
 # サービス再起動
-sudo systemctl restart asken-backend
-sudo systemctl restart asken-frontend
+sudo systemctl restart uchikomi-backend
+sudo systemctl restart uchikomi-frontend
 
 # 状態確認
-systemctl status asken-backend
-systemctl status asken-frontend
+systemctl status uchikomi-backend
+systemctl status uchikomi-frontend
 ```
 
 ## 初回セットアップ
@@ -95,8 +95,8 @@ migrate -version
 
 ```bash
 cd /home/exedev
-git clone https://github.com/ryosuke-horie/asken-sub.git asken
-cd asken
+git clone https://github.com/ryosuke-horie/uchikomi.git uchikomi
+cd uchikomi
 ```
 
 ### 3. systemd サービスファイルの配置
@@ -106,10 +106,10 @@ cd asken
 sudo cp docker-postgres.service /etc/systemd/system/
 
 # バックエンド用
-sudo cp backend/asken-backend.service /etc/systemd/system/
+sudo cp backend/uchikomi-backend.service /etc/systemd/system/
 
 # フロントエンド用
-sudo cp frontend/asken-frontend.service /etc/systemd/system/
+sudo cp frontend/uchikomi-frontend.service /etc/systemd/system/
 
 # デーモンをリロード
 sudo systemctl daemon-reload
@@ -119,16 +119,16 @@ sudo systemctl daemon-reload
 
 ```bash
 sudo systemctl enable docker-postgres
-sudo systemctl enable asken-backend
-sudo systemctl enable asken-frontend
+sudo systemctl enable uchikomi-backend
+sudo systemctl enable uchikomi-frontend
 ```
 
 ### 5. サービスの起動
 
 ```bash
 sudo systemctl start docker-postgres
-sudo systemctl start asken-backend
-sudo systemctl start asken-frontend
+sudo systemctl start uchikomi-backend
+sudo systemctl start uchikomi-frontend
 ```
 
 ### 6. 既存DBへの golang-migrate 初回適用
@@ -138,12 +138,12 @@ sudo systemctl start asken-frontend
 ```bash
 # version 3まで適用済みとして登録（schema_migrationsテーブルが作成される）
 migrate -path backend/database/migrations \
-        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        -database "postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable" \
         force 3
 
 # バージョン確認
 migrate -path backend/database/migrations \
-        -database "postgres://asken:asken@localhost:5432/asken?sslmode=disable" \
+        -database "postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable" \
         version
 # 出力: 3
 ```
@@ -156,27 +156,27 @@ migrate -path backend/database/migrations \
 
 ```bash
 systemctl status docker-postgres
-systemctl status asken-backend
-systemctl status asken-frontend
+systemctl status uchikomi-backend
+systemctl status uchikomi-frontend
 ```
 
 ### ログ確認
 
 ```bash
 # リアルタイムログ
-journalctl -u asken-backend -f
-journalctl -u asken-frontend -f
+journalctl -u uchikomi-backend -f
+journalctl -u uchikomi-frontend -f
 
 # 直近のログ（100行）
-journalctl -u asken-backend -n 100
-journalctl -u asken-frontend -n 100
+journalctl -u uchikomi-backend -n 100
+journalctl -u uchikomi-frontend -n 100
 ```
 
 ### 全サービスの停止
 
 ```bash
-sudo systemctl stop asken-frontend
-sudo systemctl stop asken-backend
+sudo systemctl stop uchikomi-frontend
+sudo systemctl stop uchikomi-backend
 sudo systemctl stop docker-postgres
 ```
 
@@ -184,8 +184,8 @@ sudo systemctl stop docker-postgres
 
 ```bash
 sudo systemctl start docker-postgres
-sudo systemctl start asken-backend
-sudo systemctl start asken-frontend
+sudo systemctl start uchikomi-backend
+sudo systemctl start uchikomi-frontend
 ```
 
 ## トラブルシューティング
@@ -197,7 +197,7 @@ sudo systemctl start asken-frontend
 journalctl -u <サービス名> -n 50 --no-pager
 
 # 例: バックエンドのエラーを確認
-journalctl -u asken-backend -n 50 --no-pager
+journalctl -u uchikomi-backend -n 50 --no-pager
 ```
 
 ### PostgreSQL に接続できない
@@ -207,14 +207,14 @@ journalctl -u asken-backend -n 50 --no-pager
 docker ps
 
 # PostgreSQL コンテナのログ確認
-docker logs asken-postgres
+docker logs uchikomi-postgres
 ```
 
 ### フロントエンドのビルドが失敗する
 
 ```bash
 # 手動でビルドを実行してエラーを確認
-cd /home/exedev/asken/frontend
+cd /home/exedev/uchikomi/frontend
 npm install
 npm run build
 ```
@@ -224,7 +224,7 @@ npm run build
 特定のコミットに戻す場合:
 
 ```bash
-cd /home/exedev/asken
+cd /home/exedev/uchikomi
 
 # 戻したいコミットを確認
 git log --oneline -10
@@ -233,11 +233,11 @@ git log --oneline -10
 git checkout <commit-hash>
 
 # サービス再起動
-sudo systemctl restart asken-backend
-sudo systemctl restart asken-frontend
+sudo systemctl restart uchikomi-backend
+sudo systemctl restart uchikomi-frontend
 ```
 
 ## URL
 
-- **フロントエンド**: https://asken.exe.xyz:3000
-- **バックエンドAPI**: https://asken.exe.xyz:8080
+- **フロントエンド**: https://uchikomi.exe.xyz:3000
+- **バックエンドAPI**: https://uchikomi.exe.xyz:8080

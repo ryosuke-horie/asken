@@ -3,7 +3,7 @@
  * 分析IDの保存・取得・削除を型安全に実装
  */
 
-const ANALYSIS_ID_KEY = 'asken_analysis_id';
+const ANALYSIS_ID_KEY = 'uchikomi_analysis_id';
 
 /**
  * 分析IDをlocalStorageに保存

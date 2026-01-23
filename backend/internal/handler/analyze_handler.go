@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 // FoodService は食品分析サービスのインターフェース
@@ -264,7 +264,7 @@ func savePermanentFile(file multipart.File, header *multipart.FileHeader) (strin
 		return "", fmt.Errorf("ディレクトリの作成に失敗しました: %w", err)
 	}
 
-	// ファイルパスを作成（保存先を /tmp/asken/uploads/ に制限）
+	// ファイルパスを作成（保存先を /tmp/uchikomi/uploads/ に制限）
 	destPath := filepath.Join(uploadDir, filename)
 
 	// ディレクトリトラバーサル対策: destPathがuploadDir配下であることを確認

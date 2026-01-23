@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
 // HistoryDeleteHandler は履歴削除エンドポイントのハンドラー

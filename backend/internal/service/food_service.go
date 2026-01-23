@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // GeminiClient はGemini APIクライアントのインターフェース（モック可能）
