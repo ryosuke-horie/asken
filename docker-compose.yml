@@ -5,9 +5,9 @@ services:
     image: postgres:15
     container_name: uchikomi-postgres
     environment:
-      POSTGRES_USER: uchikomi
-      POSTGRES_PASSWORD: uchikomi
-      POSTGRES_DB: uchikomi
+      POSTGRES_USER: asken
+      POSTGRES_PASSWORD: asken
+      POSTGRES_DB: asken
     ports:
       - "5432:5432"
     volumes:
