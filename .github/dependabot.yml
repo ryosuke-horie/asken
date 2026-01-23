@@ -25,6 +25,30 @@ updates:
       - "frontend"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "next"
+          - "eslint-config-next"
+          - "swr"
+      testing:
+        patterns:
+          - "vitest"
+          - "@testing-library/*"
+          - "@vitejs/plugin-react"
+          - "jsdom"
+      linting:
+        patterns:
+          - "eslint"
+          - "prettier"
+          - "knip"
+          - "depcheck"
+      types:
+        patterns:
+          - "typescript"
+          - "@types/*"
 
   # Go modules (backend)
   - package-ecosystem: "gomod"
@@ -39,6 +63,18 @@ updates:
       - "backend"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      testing:
+        patterns:
+          - "github.com/stretchr/testify"
+          - "github.com/DATA-DOG/go-sqlmock"
+      security:
+        patterns:
+          - "github.com/golang-jwt/*"
+          - "golang.org/x/crypto"
+      database:
+        patterns:
+          - "github.com/lib/pq"
 
   # Docker (root)
   - package-ecosystem: "docker"
