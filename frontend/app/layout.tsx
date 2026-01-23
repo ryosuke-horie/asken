@@ -27,7 +27,7 @@ export default function RootLayout({
           </header>
           <main>{children}</main>
           <footer>
-            <p>&copy; 2024 ウチコミ. Powered by Gemini API.</p>
+            <p>&copy; 2025 ウチコミ. Powered by Gemini API.</p>
           </footer>
         </AuthProvider>
       </body>
