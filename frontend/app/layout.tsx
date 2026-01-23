@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Image from 'next/image'
 import './globals.css'
 
 export const metadata = {
@@ -15,10 +15,13 @@ export default function RootLayout({
     <html lang="ja">
       <body>
         <header>
-          <h1>ウチコミ - 格闘技向け体重管理アプリ</h1>
-          <nav>
-            <Link href="/">ホーム</Link>
-          </nav>
+          <Image
+            src="/logo-cropped.png"
+            alt="ウチコミ"
+            width={150}
+            height={50}
+            priority
+          />
         </header>
         <main>{children}</main>
         <footer>
