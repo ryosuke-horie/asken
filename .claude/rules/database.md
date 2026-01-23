@@ -29,9 +29,49 @@ CREATE TABLE foods (
 CREATE INDEX idx_foods_name ON foods(name);
 ```
 
+## マイグレーション
+
+### 命名規則
+
+golang-migrateを使用。ファイル名は以下の形式に従うこと：
+
+```
+{version}_{description}.up.sql   - アップマイグレーション
+{version}_{description}.down.sql - ダウンマイグレーション（任意）
+```
+
+| 項目 | 規則 |
+|:---|:---|
+| バージョン番号 | 6桁ゼロパディング（例: `000001`, `000002`） |
+| 説明 | スネークケース、動詞から始める（例: `create_users_table`, `add_password_column`） |
+| 拡張子 | `.up.sql`（アップ）、`.down.sql`（ダウン） |
+
+### 例
+
+```
+000001_create_analysis_tables.up.sql
+000002_add_meal_type_and_date.up.sql
+000003_add_text_input.up.sql
+000004_create_users_table.up.sql
+000005_add_password_to_users.up.sql
+```
+
+### 実行方法
+
+```bash
+# マイグレーション実行
+migrate -path backend/database/migrations \
+        -database "postgres://user:pass@localhost:5432/dbname?sslmode=disable" \
+        up
+
+# バージョン確認
+migrate -path backend/database/migrations \
+        -database "postgres://user:pass@localhost:5432/dbname?sslmode=disable" \
+        version
+```
+
 ## データベース操作
 
-- **マイグレーション**は必ずバージョン管理する
 - **トランザクション**は適切に使用
 - **プレースホルダ**を使用（SQLインジェクション対策）
 
