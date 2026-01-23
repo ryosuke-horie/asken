@@ -4,6 +4,18 @@ import TextInput from './TextInput'
 
 const mockFetch = vi.fn()
 
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: 'user-123', email: 'test@example.com', name: 'Test User' },
+    token: 'mock-jwt-token',
+    isAuthenticated: true,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+  })),
+}))
+
 describe('TextInput', () => {
   const defaultProps = {
     mealType: 'lunch' as const,
@@ -116,7 +128,10 @@ describe('TextInput', () => {
           expect.stringContaining('/api/analyze'),
           expect.objectContaining({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer mock-jwt-token',
+            },
             body: JSON.stringify({
               input_text: 'ご飯二杯',
               meal_type: 'lunch',

@@ -10,13 +10,18 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
+
+// emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）
+var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
@@ -91,10 +96,17 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		req.MealDate = time.Now().Format("2006-01-02")
 	}
 
-	log.Printf("Text input: %s, Meal type: %s, Meal date: %s", req.InputText, req.MealType, req.MealDate)
+	// contextからユーザーIDを取得
+	userID := middleware.GetUserIDFromContext(r.Context())
+	var userIDPtr *uuid.UUID
+	if userID != uuid.Nil {
+		userIDPtr = &userID
+	}
+
+	log.Printf("Text input: %s, Meal type: %s, Meal date: %s, UserID: %v", req.InputText, req.MealType, req.MealDate, userID)
 
 	// リポジトリにテキスト分析リクエストを登録
-	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate)
+	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate, userIDPtr)
 	if err != nil {
 		log.Printf("Error creating text analysis request: %v", err)
 		http.Error(w, "分析リクエストの作成に失敗しました", http.StatusInternalServerError)
@@ -104,20 +116,9 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 	log.Printf("Text analysis request created with ID: %s", analysisID)
 
 	// 202 Accepted レスポンスを返却
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-
-	response := map[string]string{
-		"analysis_id": analysisID.String(),
-	}
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if err := writeAnalysisResponse(w, analysisID); err != nil {
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
-		return
 	}
-
-	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
 }
 
 // handleImageUpload は画像アップロードを処理
@@ -157,7 +158,7 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("File saved permanently to: %s", permanentPath)
 
-	// 4. meal_type と meal_date を取得・バリデーション
+	// 4. meal_type, meal_date を取得・バリデーション
 	mealType := r.FormValue("meal_type")
 	mealDate := r.FormValue("meal_date")
 
@@ -174,10 +175,17 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 		mealDate = time.Now().Format("2006-01-02")
 	}
 
-	log.Printf("Meal type: %s, Meal date: %s", mealType, mealDate)
+	// contextからユーザーIDを取得
+	userID := middleware.GetUserIDFromContext(r.Context())
+	var userIDPtr *uuid.UUID
+	if userID != uuid.Nil {
+		userIDPtr = &userID
+	}
+
+	log.Printf("Meal type: %s, Meal date: %s, UserID: %v", mealType, mealDate, userID)
 
 	// 5. リポジトリに分析リクエストを登録
-	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate)
+	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate, userIDPtr)
 	if err != nil {
 		log.Printf("Error creating analysis request: %v", err)
 		// ファイル削除
@@ -189,20 +197,9 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	log.Printf("Analysis request created with ID: %s", analysisID)
 
 	// 5. 202 Accepted レスポンスを返却
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-
-	response := map[string]string{
-		"analysis_id": analysisID.String(),
-	}
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if err := writeAnalysisResponse(w, analysisID); err != nil {
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
-		return
 	}
-
-	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
 }
 
 // validateImageFile はファイルのバリデーションを行う
@@ -286,13 +283,41 @@ func savePermanentFile(file multipart.File, header *multipart.FileHeader) (strin
 	return destPath, nil
 }
 
+// validMealTypes は有効な食事タイプの集合（パッケージ初期化時に一度だけ作成）
+var validMealTypes = map[string]bool{
+	"breakfast": true,
+	"lunch":     true,
+	"dinner":    true,
+	"snack":     true,
+}
+
 // isValidMealType は meal_type が有効な値かチェックします
 func isValidMealType(mealType string) bool {
-	validTypes := map[string]bool{
-		"breakfast": true,
-		"lunch":     true,
-		"dinner":    true,
-		"snack":     true,
-	}
-	return validTypes[mealType]
+	return validMealTypes[mealType]
 }
+
+// writeAnalysisResponse は分析IDを含む202 Acceptedレスポンスを書き込みます
+func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
+	response := map[string]string{
+		"analysis_id": analysisID.String(),
+	}
+
+	// バッファに先にエンコードしてエラーを検出（ヘッダー書き込み前）
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding response: %v", err)
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: %v", err)
+		return err
+	}
+
+	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
+	return nil
+}
+
