@@ -13,7 +13,7 @@
     "depcheck": "depcheck --ignores=@types/react-dom,prettier"
   },
   "dependencies": {
-    "next": "14.0.4",
+    "next": "16.1.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "swr": "^2.3.8"
