@@ -148,7 +148,7 @@ sudo systemctl start uchikomi-backend
 systemctl status uchikomi-backend
 ```
 
-API は `http://localhost:8080` / `https://uchikomi.exe.xyz:8080` で待ち受けます。
+API は `http://localhost:8080` / `https://asken.exe.xyz:8080` で待ち受けます。
 
 #### 3. フロントエンド（本番モード）
 
@@ -187,7 +187,7 @@ sudo systemctl restart uchikomi-frontend
 systemctl status uchikomi-frontend
 ```
 
-フロントエンドは `http://localhost:3000` / `https://uchikomi.exe.xyz:3000` からアクセス可能です。
+フロントエンドは `http://localhost:3000` / `https://asken.exe.xyz:3000` からアクセス可能です。
 
 #### 4. 全体の起動・停止
 
@@ -323,6 +323,16 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 ### CORS エラーが発生する
 
 - バックエンドの `enableCORS` 関数でフロントエンドのURLが許可されているか確認
+
+### 「サーバーに接続できません」エラー
+
+本番環境でAPI接続エラーが発生する場合、以下を確認してください：
+
+1. `frontend/uchikomi-frontend.service`の`NEXT_PUBLIC_API_URL`が正しいドメインを指しているか確認
+2. バックエンドの`backend/cmd/server/main.go`でフロントエンドのオリジンがCORS許可リストに含まれているか確認
+3. 設定変更後は`sudo systemctl restart uchikomi-frontend`でサービスを再起動
+
+詳細は[DEPLOY.md](./DEPLOY.md#api接続エラーサーバーに接続できません)を参照してください。
 
 ## 今後の拡張
 
