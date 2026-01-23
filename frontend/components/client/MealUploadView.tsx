@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import useSWR from 'swr'
-import { MealType, HistoryDetail, DailyMeals } from '@/types/nutrition'
-import { fetcher } from '@/lib/fetcher'
+import { MealType, DailyMeals } from '@/types/nutrition'
+import { createAuthFetcher } from '@/lib/fetcher'
+import { useAuth } from '@/contexts/AuthContext'
 import MealInputSelector from './MealInputSelector'
 import DeleteHistoryButton from './DeleteHistoryButton'
 import MealThumbnail from './MealThumbnail'
@@ -16,7 +17,6 @@ interface MealUploadViewProps {
   mealType: MealType
   mealDate: string
   mealLabel: string
-  initialMeals: HistoryDetail[]
 }
 
 const MEAL_TYPE_ICONS: Record<MealType, string> = {
@@ -26,21 +26,18 @@ const MEAL_TYPE_ICONS: Record<MealType, string> = {
   snack: '☕',
 }
 
-export default function MealUploadView({ mealType, mealDate, mealLabel, initialMeals }: MealUploadViewProps) {
+export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUploadViewProps) {
   const router = useRouter()
+  const { token } = useAuth()
+  const authFetcher = useMemo(() => createAuthFetcher(token), [token])
   const [uploadCount, setUploadCount] = useState(0)
   const [syncError, setSyncError] = useState(false)
 
   // SWRで最新のデータを取得
   const { data, mutate } = useSWR<DailyMeals>(
-    `${API_BASE_URL}/api/meals/daily?date=${mealDate}`,
-    fetcher,
+    token ? `${API_BASE_URL}/api/meals/daily?date=${mealDate}` : null,
+    authFetcher,
     {
-      fallbackData: {
-        date: mealDate,
-        meals: { breakfast: [], lunch: [], dinner: [], snack: [], [mealType]: initialMeals },
-        daily_total: { total_calories: 0, total_protein: 0, total_fat: 0, total_carbohydrates: 0 }
-      },
       refreshInterval: 5000,
       onError: (err) => {
         console.error('データ同期エラー:', err)
@@ -52,7 +49,7 @@ export default function MealUploadView({ mealType, mealDate, mealLabel, initialM
     }
   )
 
-  const meals = data?.meals[mealType] || initialMeals
+  const meals = data?.meals[mealType] || []
 
   const handleUploadComplete = () => {
     setUploadCount((prev) => prev + 1)

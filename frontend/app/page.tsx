@@ -1,15 +1,17 @@
-import { fetchDailyMeals } from '@/lib/api/daily-meals'
+'use client'
+
+import { useSearchParams } from 'next/navigation'
 import DailyMealsView from '@/components/client/DailyMealsView'
+import ProtectedRoute from '@/components/client/ProtectedRoute'
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: { date?: string }
-}) {
+export default function HomePage() {
+  const searchParams = useSearchParams()
   const today = new Date().toISOString().split('T')[0]
-  const date = searchParams.date || today
+  const date = searchParams.get('date') || today
 
-  const data = await fetchDailyMeals(date)
-
-  return <DailyMealsView initialData={data} initialDate={date} />
+  return (
+    <ProtectedRoute>
+      <DailyMealsView date={date} />
+    </ProtectedRoute>
+  )
 }

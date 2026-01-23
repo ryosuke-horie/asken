@@ -10,18 +10,18 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           uuid.UUID `json:"id"`
+	Email        string    `json:"email"`
+	Name         string    `json:"name,omitempty"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*User, error)
-	Create(ctx context.Context, user *User) error
-	FindOrCreate(ctx context.Context, email string, name string) (*User, error)
+	CreateWithPassword(ctx context.Context, email, name, passwordHash string) (*User, error)
 }
 
 type postgresUserRepository struct {
@@ -42,6 +42,7 @@ func scanUser(row *sql.Row) (*User, error) {
 		&user.ID,
 		&user.Email,
 		&name,
+		&user.PasswordHash,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -62,7 +63,7 @@ func scanUser(row *sql.Row) (*User, error) {
 
 func (r *postgresUserRepository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, email, name, created_at, updated_at
+		SELECT id, email, name, password_hash, created_at, updated_at
 		FROM users
 		WHERE email = $1
 	`
@@ -77,7 +78,7 @@ func (r *postgresUserRepository) FindByEmail(ctx context.Context, email string) 
 
 func (r *postgresUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	query := `
-		SELECT id, email, name, created_at, updated_at
+		SELECT id, email, name, password_hash, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -90,38 +91,11 @@ func (r *postgresUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*U
 	return user, nil
 }
 
-func (r *postgresUserRepository) Create(ctx context.Context, user *User) error {
+func (r *postgresUserRepository) CreateWithPassword(ctx context.Context, email, name, passwordHash string) (*User, error) {
 	query := `
-		INSERT INTO users (email, name)
-		VALUES ($1, $2)
-		RETURNING id, created_at, updated_at
-	`
-
-	var name sql.NullString
-	if user.Name != "" {
-		name = sql.NullString{String: user.Name, Valid: true}
-	}
-
-	err := r.db.QueryRowContext(ctx, query, user.Email, name).Scan(
-		&user.ID,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-
-	if err != nil {
-		return fmt.Errorf("ユーザーの作成に失敗: %w", err)
-	}
-
-	return nil
-}
-
-func (r *postgresUserRepository) FindOrCreate(ctx context.Context, email string, name string) (*User, error) {
-	// ON CONFLICTを使用してアトミックな upsert を実行（レースコンディション対策）
-	query := `
-		INSERT INTO users (email, name)
-		VALUES ($1, $2)
-		ON CONFLICT (email) DO UPDATE SET updated_at = NOW()
-		RETURNING id, email, name, created_at, updated_at
+		INSERT INTO users (email, name, password_hash)
+		VALUES ($1, $2, $3)
+		RETURNING id, email, name, password_hash, created_at, updated_at
 	`
 
 	var nameParam sql.NullString
@@ -132,16 +106,17 @@ func (r *postgresUserRepository) FindOrCreate(ctx context.Context, email string,
 	var user User
 	var returnedName sql.NullString
 
-	err := r.db.QueryRowContext(ctx, query, email, nameParam).Scan(
+	err := r.db.QueryRowContext(ctx, query, email, nameParam, passwordHash).Scan(
 		&user.ID,
 		&user.Email,
 		&returnedName,
+		&user.PasswordHash,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("ユーザーの取得または作成に失敗: %w", err)
+		return nil, fmt.Errorf("ユーザーの作成に失敗: %w", err)
 	}
 
 	if returnedName.Valid {

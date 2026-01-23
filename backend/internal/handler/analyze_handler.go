@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -16,15 +15,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/asken/backend/internal/middleware"
 	"github.com/ryosuke-horie/asken/backend/internal/repository"
 	"github.com/ryosuke-horie/asken/backend/internal/service"
 )
 
 // emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
-
-// ErrInvalidEmailFormat は無効なメールアドレス形式のエラー（クライアントエラー）
-var ErrInvalidEmailFormat = errors.New("invalid email format")
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
@@ -34,17 +31,15 @@ type FoodService interface {
 
 // AnalyzeHandler は画像分析エンドポイントのハンドラー
 type AnalyzeHandler struct {
-	foodService    FoodService
-	repository     repository.AnalysisRepository
-	userRepository repository.UserRepository
+	foodService FoodService
+	repository  repository.AnalysisRepository
 }
 
 // NewAnalyzeHandler は新しいAnalyzeHandlerを作成
-func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRepository, userRepository repository.UserRepository) *AnalyzeHandler {
+func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRepository) *AnalyzeHandler {
 	return &AnalyzeHandler{
-		foodService:    foodService,
-		repository:     repository,
-		userRepository: userRepository,
+		foodService: foodService,
+		repository:  repository,
 	}
 }
 
@@ -71,7 +66,6 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		InputText string `json:"input_text"`
 		MealType  string `json:"meal_type"`
 		MealDate  string `json:"meal_date"`
-		Email     string `json:"email"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -102,22 +96,17 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		req.MealDate = time.Now().Format("2006-01-02")
 	}
 
-	// emailからユーザーを取得または作成
-	userID, err := h.getUserID(r.Context(), req.Email)
-	if err != nil {
-		if errors.Is(err, ErrInvalidEmailFormat) {
-			http.Error(w, "無効なメールアドレス形式です", http.StatusBadRequest)
-		} else {
-			log.Printf("Error getting user ID: %v", err)
-			http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
-		}
-		return
+	// contextからユーザーIDを取得
+	userID := middleware.GetUserIDFromContext(r.Context())
+	var userIDPtr *uuid.UUID
+	if userID != uuid.Nil {
+		userIDPtr = &userID
 	}
 
-	log.Printf("Text input: %s, Meal type: %s, Meal date: %s, HasEmail: %v", req.InputText, req.MealType, req.MealDate, req.Email != "")
+	log.Printf("Text input: %s, Meal type: %s, Meal date: %s, UserID: %v", req.InputText, req.MealType, req.MealDate, userID)
 
 	// リポジトリにテキスト分析リクエストを登録
-	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate, userID)
+	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate, userIDPtr)
 	if err != nil {
 		log.Printf("Error creating text analysis request: %v", err)
 		http.Error(w, "分析リクエストの作成に失敗しました", http.StatusInternalServerError)
@@ -169,10 +158,9 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("File saved permanently to: %s", permanentPath)
 
-	// 4. meal_type, meal_date, email を取得・バリデーション
+	// 4. meal_type, meal_date を取得・バリデーション
 	mealType := r.FormValue("meal_type")
 	mealDate := r.FormValue("meal_date")
-	email := r.FormValue("email")
 
 	// meal_type のバリデーション
 	if !isValidMealType(mealType) {
@@ -187,23 +175,17 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 		mealDate = time.Now().Format("2006-01-02")
 	}
 
-	// emailからユーザーを取得または作成
-	userID, err := h.getUserID(r.Context(), email)
-	if err != nil {
-		os.Remove(permanentPath)
-		if errors.Is(err, ErrInvalidEmailFormat) {
-			http.Error(w, "無効なメールアドレス形式です", http.StatusBadRequest)
-		} else {
-			log.Printf("Error getting user ID: %v", err)
-			http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
-		}
-		return
+	// contextからユーザーIDを取得
+	userID := middleware.GetUserIDFromContext(r.Context())
+	var userIDPtr *uuid.UUID
+	if userID != uuid.Nil {
+		userIDPtr = &userID
 	}
 
-	log.Printf("Meal type: %s, Meal date: %s, HasEmail: %v", mealType, mealDate, email != "")
+	log.Printf("Meal type: %s, Meal date: %s, UserID: %v", mealType, mealDate, userID)
 
 	// 5. リポジトリに分析リクエストを登録
-	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate, userID)
+	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate, userIDPtr)
 	if err != nil {
 		log.Printf("Error creating analysis request: %v", err)
 		// ファイル削除
@@ -339,31 +321,3 @@ func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
 	return nil
 }
 
-// isValidEmail はメールアドレスの形式をバリデーションします
-func isValidEmail(email string) bool {
-	if len(email) > 255 {
-		return false
-	}
-	return emailRegex.MatchString(email)
-}
-
-// getUserID はemailからユーザーIDを取得または作成します
-func (h *AnalyzeHandler) getUserID(ctx context.Context, email string) (*uuid.UUID, error) {
-	if email == "" {
-		return nil, nil
-	}
-
-	if !isValidEmail(email) {
-		log.Printf("Invalid email format: length=%d", len(email))
-		return nil, ErrInvalidEmailFormat
-	}
-
-	user, err := h.userRepository.FindOrCreate(ctx, email, "")
-	if err != nil {
-		log.Printf("Error finding/creating user: %v", err)
-		return nil, err
-	}
-
-	log.Printf("User found/created: %s", user.ID)
-	return &user.ID, nil
-}
