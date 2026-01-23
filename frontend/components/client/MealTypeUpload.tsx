@@ -64,6 +64,10 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string)
       }
+      reader.onerror = () => {
+        console.error('Failed to read file for preview:', reader.error)
+        setPreviewUrl(null)
+      }
       reader.readAsDataURL(file)
     }
   }

@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +22,9 @@ import (
 
 // emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）
 var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+
+// ErrInvalidEmailFormat は無効なメールアドレス形式のエラー（クライアントエラー）
+var ErrInvalidEmailFormat = errors.New("invalid email format")
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
@@ -101,7 +105,12 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 	// emailからユーザーを取得または作成
 	userID, err := h.getUserID(r.Context(), req.Email)
 	if err != nil {
-		http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
+		if errors.Is(err, ErrInvalidEmailFormat) {
+			http.Error(w, "無効なメールアドレス形式です", http.StatusBadRequest)
+		} else {
+			log.Printf("Error getting user ID: %v", err)
+			http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -182,7 +191,12 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	userID, err := h.getUserID(r.Context(), email)
 	if err != nil {
 		os.Remove(permanentPath)
-		http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
+		if errors.Is(err, ErrInvalidEmailFormat) {
+			http.Error(w, "無効なメールアドレス形式です", http.StatusBadRequest)
+		} else {
+			log.Printf("Error getting user ID: %v", err)
+			http.Error(w, "ユーザー情報の処理に失敗しました", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -302,15 +316,22 @@ func isValidMealType(mealType string) bool {
 
 // writeAnalysisResponse は分析IDを含む202 Acceptedレスポンスを書き込みます
 func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-
 	response := map[string]string{
 		"analysis_id": analysisID.String(),
 	}
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	// バッファに先にエンコードしてエラーを検出（ヘッダー書き込み前）
+	data, err := json.Marshal(response)
+	if err != nil {
 		log.Printf("Error encoding response: %v", err)
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: %v", err)
 		return err
 	}
 
@@ -333,8 +354,8 @@ func (h *AnalyzeHandler) getUserID(ctx context.Context, email string) (*uuid.UUI
 	}
 
 	if !isValidEmail(email) {
-		log.Printf("Invalid email format")
-		return nil, fmt.Errorf("invalid email format")
+		log.Printf("Invalid email format: length=%d", len(email))
+		return nil, ErrInvalidEmailFormat
 	}
 
 	user, err := h.userRepository.FindOrCreate(ctx, email, "")

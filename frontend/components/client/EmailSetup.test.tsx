@@ -11,6 +11,7 @@ vi.mock('@/contexts/UserEmailContext', () => ({
     setEmail: mockSetEmail,
     clearEmail: mockClearEmail,
     isLoading: false,
+    storageError: false,
   })),
 }))
 
@@ -19,11 +20,13 @@ import { useUserEmail } from '@/contexts/UserEmailContext'
 describe('EmailSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSetEmail.mockReturnValue(true)
     vi.mocked(useUserEmail).mockReturnValue({
       email: null,
       setEmail: mockSetEmail,
       clearEmail: mockClearEmail,
       isLoading: false,
+      storageError: false,
     })
   })
 
@@ -33,6 +36,7 @@ describe('EmailSetup', () => {
       setEmail: mockSetEmail,
       clearEmail: mockClearEmail,
       isLoading: true,
+      storageError: false,
     })
 
     render(<EmailSetup />)
@@ -46,6 +50,7 @@ describe('EmailSetup', () => {
       setEmail: mockSetEmail,
       clearEmail: mockClearEmail,
       isLoading: false,
+      storageError: false,
     })
 
     const { container } = render(<EmailSetup />)
@@ -147,5 +152,45 @@ describe('EmailSetup', () => {
     // エラーメッセージが消えていることを確認
     expect(screen.queryByText('メールアドレスを入力してください')).not.toBeInTheDocument()
     expect(mockSetEmail).toHaveBeenCalledWith('valid@example.com')
+  })
+
+  it('255文字を超えるメールアドレスでエラーを表示すべき', () => {
+    render(<EmailSetup />)
+
+    // 256文字のメールアドレス (247 + "@test.com" = 256)
+    const longEmail = 'a'.repeat(247) + '@test.com'
+    fireEvent.change(screen.getByPlaceholderText('example@email.com'), {
+      target: { value: longEmail },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '始める' }))
+
+    expect(screen.getByText('メールアドレスは255文字以内で入力してください')).toBeInTheDocument()
+    expect(mockSetEmail).not.toHaveBeenCalled()
+  })
+
+  it('255文字ちょうどのメールアドレスは有効として扱うべき', () => {
+    render(<EmailSetup />)
+
+    // 255文字のメールアドレス (246 + "@test.com" = 255)
+    const validLongEmail = 'a'.repeat(246) + '@test.com'
+    fireEvent.change(screen.getByPlaceholderText('example@email.com'), {
+      target: { value: validLongEmail },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '始める' }))
+
+    expect(mockSetEmail).toHaveBeenCalledWith(validLongEmail)
+  })
+
+  it('setEmailが失敗した場合にエラーメッセージを表示すべき', () => {
+    mockSetEmail.mockReturnValue(false)
+
+    render(<EmailSetup />)
+
+    fireEvent.change(screen.getByPlaceholderText('example@email.com'), {
+      target: { value: 'valid@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '始める' }))
+
+    expect(screen.getByText('メールアドレスの保存に失敗しました。ブラウザの設定を確認してください。')).toBeInTheDocument()
   })
 })

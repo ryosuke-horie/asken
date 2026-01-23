@@ -7,6 +7,7 @@ interface UserEmailContextType {
   setEmail: (email: string) => boolean
   clearEmail: () => boolean
   isLoading: boolean
+  storageError: boolean
 }
 
 const UserEmailContext = createContext<UserEmailContextType | undefined>(undefined)
@@ -16,6 +17,7 @@ const STORAGE_KEY = 'asken_user_email'
 export function UserEmailProvider({ children }: { children: ReactNode }) {
   const [email, setEmailState] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [storageError, setStorageError] = useState(false)
 
   useEffect(() => {
     try {
@@ -25,6 +27,7 @@ export function UserEmailProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to access localStorage:', error)
+      setStorageError(true)
     }
     setIsLoading(false)
   }, [])
@@ -52,7 +55,7 @@ export function UserEmailProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UserEmailContext.Provider value={{ email, setEmail, clearEmail, isLoading }}>
+    <UserEmailContext.Provider value={{ email, setEmail, clearEmail, isLoading, storageError }}>
       {children}
     </UserEmailContext.Provider>
   )

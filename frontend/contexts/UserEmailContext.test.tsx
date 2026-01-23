@@ -3,11 +3,12 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { UserEmailProvider, useUserEmail } from './UserEmailContext'
 
 const TestConsumer = () => {
-  const { email, setEmail, clearEmail, isLoading } = useUserEmail()
+  const { email, setEmail, clearEmail, isLoading, storageError } = useUserEmail()
   return (
     <div>
       <span data-testid="email">{email ?? 'no-email'}</span>
       <span data-testid="loading">{isLoading ? 'loading' : 'ready'}</span>
+      <span data-testid="storage-error">{storageError ? 'error' : 'ok'}</span>
       <button onClick={() => setEmail('new@example.com')}>Set Email</button>
       <button onClick={clearEmail}>Clear Email</button>
     </div>
@@ -111,7 +112,7 @@ describe('UserEmailContext', () => {
     consoleSpy.mockRestore()
   })
 
-  it('should handle localStorage errors gracefully on read', async () => {
+  it('should handle localStorage errors gracefully on read and set storageError', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     localStorageMock.getItem.mockImplementation(() => {
       throw new Error('localStorage error')
@@ -128,13 +129,32 @@ describe('UserEmailContext', () => {
     })
 
     expect(screen.getByTestId('email')).toHaveTextContent('no-email')
+    expect(screen.getByTestId('storage-error')).toHaveTextContent('error')
     expect(consoleSpy).toHaveBeenCalledWith('Failed to access localStorage:', expect.any(Error))
 
     consoleSpy.mockRestore()
   })
 
+  it('should not set storageError when localStorage read succeeds', async () => {
+    localStorageMock.getItem.mockReturnValue('stored@example.com')
+
+    render(
+      <UserEmailProvider>
+        <TestConsumer />
+      </UserEmailProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('ready')
+    })
+
+    expect(screen.getByTestId('storage-error')).toHaveTextContent('ok')
+  })
+
   it('should not update state when localStorage write fails', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // 初期状態ではメールがないことを明示
+    localStorageMock.getItem.mockReturnValue(null)
     localStorageMock.setItem.mockImplementation(() => {
       throw new Error('localStorage error')
     })
