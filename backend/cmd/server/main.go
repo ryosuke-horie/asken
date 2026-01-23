@@ -58,6 +58,7 @@ func main() {
 	// リポジトリの初期化
 	analysisRepo := repository.NewAnalysisRepository(db)
 	userRepo := repository.NewUserRepository(db)
+	weightRepo := repository.NewWeightRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -88,6 +89,7 @@ func main() {
 	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)
 	imageHandler := handler.NewImageHandler("uploads")
 	dailyMealsHandler := handler.NewDailyMealsHandler(analysisRepo)
+	weightHandler := handler.NewWeightHandler(weightRepo)
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
@@ -147,6 +149,34 @@ func main() {
 	// GET /api/meals/daily
 	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(dailyMealsHandler.Handle)))
 
+	// 体重記録エンドポイント（認証必須）
+	// POST /api/weight-records - 体重記録作成
+	// GET /api/weight-records - 体重記録一覧取得
+	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			weightHandler.HandleCreateRecord(w, r)
+		} else if r.Method == http.MethodGet {
+			weightHandler.HandleGetRecords(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight-records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
+
+	// 目標体重エンドポイント（認証必須）
+	// GET /api/weight-goal - 目標取得
+	// PUT /api/weight-goal - 目標更新
+	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			weightHandler.HandleGetGoal(w, r)
+		} else if r.Method == http.MethodPut {
+			weightHandler.HandleUpdateGoal(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+
 	// CORSミドルウェアを適用
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
 	corsHandler := enableCORS(mux, allowedOrigins)
@@ -196,7 +226,7 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 			}
 		}
 
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		// プリフライトリクエスト（OPTIONS）への対応
