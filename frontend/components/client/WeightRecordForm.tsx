@@ -25,8 +25,9 @@ export default function WeightRecordForm({ onSubmit, isLoading }: WeightRecordFo
     try {
       await onSubmit(weightNum)
       setWeight('')
-    } catch {
-      setError('記録に失敗しました')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '記録に失敗しました'
+      setError(message)
     }
   }
 

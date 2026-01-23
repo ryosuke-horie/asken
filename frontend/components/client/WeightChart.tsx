@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { WeightRecord } from '@/types/weight'
+import { formatDateShort } from '@/lib/date'
 import styles from './WeightChart.module.css'
 
 interface WeightChartProps {
@@ -20,7 +21,7 @@ interface WeightChartProps {
 
 export default function WeightChart({ records, targetWeight }: WeightChartProps) {
   const chartData = records.map((record) => ({
-    date: formatDate(record.recorded_at),
+    date: formatDateShort(record.recorded_at),
     weight: record.weight,
   }))
 
@@ -77,9 +78,4 @@ export default function WeightChart({ records, targetWeight }: WeightChartProps)
       </ResponsiveContainer>
     </div>
   )
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return `${date.getMonth() + 1}/${date.getDate()}`
 }

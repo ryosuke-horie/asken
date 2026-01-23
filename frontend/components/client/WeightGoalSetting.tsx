@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { WeightGoal } from '@/types/weight'
+import { formatDateFull } from '@/lib/date'
 import styles from './WeightGoalSetting.module.css'
 
 interface WeightGoalSettingProps {
@@ -38,8 +39,9 @@ export default function WeightGoalSetting({
     try {
       await onSubmit(weightNum, targetDate)
       setIsEditing(false)
-    } catch {
-      setError('目標の設定に失敗しました')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '目標の設定に失敗しました'
+      setError(message)
     }
   }
 
@@ -53,7 +55,7 @@ export default function WeightGoalSetting({
           </div>
           <div className={styles.goalItem}>
             <span className={styles.label}>目標日</span>
-            <span className={styles.value}>{formatDate(currentGoal.target_date)}</span>
+            <span className={styles.value}>{formatDateFull(currentGoal.target_date)}</span>
           </div>
           <div className={styles.goalItem}>
             <span className={styles.label}>残り</span>
@@ -125,9 +127,4 @@ export default function WeightGoalSetting({
       </div>
     </form>
   )
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`
 }

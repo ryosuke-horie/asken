@@ -71,6 +71,7 @@ func (h *WeightHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Reques
 
 	record, err := h.repository.CreateOrUpdateRecord(r.Context(), userID, req.Weight, req.RecordedAt)
 	if err != nil {
+		log.Printf("体重記録の作成/更新に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "体重の記録に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -114,18 +115,21 @@ func (h *WeightHandler) HandleGetRecords(w http.ResponseWriter, r *http.Request)
 
 	records, err := h.repository.GetRecordsByPeriod(r.Context(), userID, startDateStr, endDateStr)
 	if err != nil {
+		log.Printf("期間内の体重記録取得に失敗 (user_id=%s, period=%s-%s): %v", userID, startDateStr, endDateStr, err)
 		http.Error(w, "体重記録の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
 	latest, err := h.repository.GetLatestRecord(r.Context(), userID)
 	if err != nil {
+		log.Printf("最新体重記録の取得に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "最新の体重記録の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
 	stats, err := h.repository.GetStatsByPeriod(r.Context(), userID, startDateStr, endDateStr)
 	if err != nil {
+		log.Printf("体重統計の取得に失敗 (user_id=%s, period=%s-%s): %v", userID, startDateStr, endDateStr, err)
 		http.Error(w, "体重統計の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -156,6 +160,7 @@ func (h *WeightHandler) HandleGetGoal(w http.ResponseWriter, r *http.Request) {
 
 	goal, err := h.repository.GetGoal(r.Context(), userID)
 	if err != nil {
+		log.Printf("目標体重の取得に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "目標体重の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -170,14 +175,16 @@ func (h *WeightHandler) HandleGetGoal(w http.ResponseWriter, r *http.Request) {
 
 	latest, err := h.repository.GetLatestRecord(r.Context(), userID)
 	if err != nil {
+		log.Printf("最新体重記録の取得に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "最新の体重記録の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
 	targetDate, err := time.Parse("2006-01-02", goal.TargetDate)
 	if err != nil {
-		log.Printf("目標日のパースに失敗: %v", err)
-		targetDate = time.Now()
+		log.Printf("目標日のパースに失敗 (user_id=%s, target_date=%s): %v", userID, goal.TargetDate, err)
+		http.Error(w, "目標日のデータが不正です。目標を再設定してください", http.StatusInternalServerError)
+		return
 	}
 	daysRemaining := int(math.Ceil(time.Until(targetDate).Hours() / 24))
 	if daysRemaining < 0 {
@@ -233,6 +240,7 @@ func (h *WeightHandler) HandleUpdateGoal(w http.ResponseWriter, r *http.Request)
 
 	goal, err := h.repository.CreateOrUpdateGoal(r.Context(), userID, req.TargetWeight, req.TargetDate)
 	if err != nil {
+		log.Printf("目標体重の保存に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "目標体重の保存に失敗しました", http.StatusInternalServerError)
 		return
 	}
