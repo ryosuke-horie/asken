@@ -1,10 +1,10 @@
-# asken - カロリー計算アプリ
+# ウチコミ - 格闘技向け体重管理アプリ
 
-画像から食事内容を判定し、カロリーと栄養素を計算するMVPアプリケーション。
+柔術/キックボクシングなど格闘技の減量・体重コントロールを支援するMVPアプリケーション。
 
 ## 概要
 
-**asken**は、Gemini API（Gemini 3）を活用して、食事の画像から自動的に食材を認識し、カロリーと栄養素を計算するWebアプリケーションです。
+**ウチコミ**は、Gemini API（Gemini 3）を活用して、日々の体重・食事・体調を記録し、AIと対話しながら減量計画を進めるWebアプリケーションです。食事の画像から自動的に食材を認識し、カロリーと栄養素を計算する機能も備えています。
 
 ### 主要機能
 
@@ -34,7 +34,7 @@
 ## ディレクトリ構成
 
 ```
-asken/
+uchikomi/
 ├── backend/                    # Goバックエンド
 │   ├── cmd/server/            # HTTPサーバー
 │   ├── internal/              # 内部パッケージ
@@ -89,13 +89,13 @@ systemd ユニット `/etc/systemd/system/docker-postgres.service` を作成し�
 
 ```ini
 [Unit]
-Description=Asken Postgres via Docker Compose
+Description=Uchikomi Postgres via Docker Compose
 After=network-online.target docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/exedev/asken
+WorkingDirectory=/home/exedev/uchikomi
 ExecStart=/usr/bin/docker compose up -d postgres
 ExecStop=/usr/bin/docker compose stop postgres
 RemainAfterExit=yes
@@ -117,18 +117,18 @@ systemctl status docker-postgres
 
 #### 2. バックエンド API サービス
 
-Go サーバーを systemd 管理にしました。ユニットは `/etc/systemd/system/asken-backend.service` です。
+Go サーバーを systemd 管理にしました。ユニットは `/etc/systemd/system/uchikomi-backend.service` です。
 
 ```ini
 [Unit]
-Description=Asken Backend API Service
+Description=Uchikomi Backend API Service
 After=network-online.target docker.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/exedev/asken/backend
-Environment=DATABASE_URL=postgres://asken:asken@localhost:5432/asken?sslmode=disable
+WorkingDirectory=/home/exedev/uchikomi/backend
+Environment=DATABASE_URL=postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable
 ExecStart=/usr/local/go/bin/go run ./cmd/server
 Restart=on-failure
 RestartSec=5
@@ -141,30 +141,30 @@ WantedBy=multi-user.target
 有効化と起動:
 
 ```bash
-sudo systemctl enable asken-backend
-sudo systemctl start asken-backend
+sudo systemctl enable uchikomi-backend
+sudo systemctl start uchikomi-backend
 
 # 状態確認
-systemctl status asken-backend
+systemctl status uchikomi-backend
 ```
 
-API は `http://localhost:8080` / `https://asken.exe.xyz:8080` で待ち受けます。
+API は `http://localhost:8080` / `https://uchikomi.exe.xyz:8080` で待ち受けます。
 
 #### 3. フロントエンド（本番モード）
 
 Next.js アプリを `npm run build` + `npm start` で本番実行するように systemd 化しました。
 
-`/etc/systemd/system/asken-frontend.service`:
+`/etc/systemd/system/uchikomi-frontend.service`:
 
 ```ini
 [Unit]
-Description=Asken Frontend Next.js Service (Production)
+Description=Uchikomi Frontend Next.js Service (Production)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/exedev/asken/frontend
+WorkingDirectory=/home/exedev/uchikomi/frontend
 ExecStartPre=/usr/bin/npm install
 ExecStartPre=/usr/bin/npm run build
 ExecStart=/usr/bin/npm start
@@ -180,32 +180,32 @@ WantedBy=multi-user.target
 有効化と起動:
 
 ```bash
-sudo systemctl enable asken-frontend
-sudo systemctl restart asken-frontend
+sudo systemctl enable uchikomi-frontend
+sudo systemctl restart uchikomi-frontend
 
 # 状態確認
-systemctl status asken-frontend
+systemctl status uchikomi-frontend
 ```
 
-フロントエンドは `http://localhost:3000` / `https://asken.exe.xyz:3000` からアクセス可能です。
+フロントエンドは `http://localhost:3000` / `https://uchikomi.exe.xyz:3000` からアクセス可能です。
 
 #### 4. 全体の起動・停止
 
 ```bash
 # 起動
 sudo systemctl start docker-postgres
-sudo systemctl start asken-backend
-sudo systemctl start asken-frontend
+sudo systemctl start uchikomi-backend
+sudo systemctl start uchikomi-frontend
 
 # 停止
-sudo systemctl stop asken-frontend
-sudo systemctl stop asken-backend
+sudo systemctl stop uchikomi-frontend
+sudo systemctl stop uchikomi-backend
 sudo systemctl stop docker-postgres
 
 # 再起動
 sudo systemctl restart docker-postgres
-sudo systemctl restart asken-backend
-sudo systemctl restart asken-frontend
+sudo systemctl restart uchikomi-backend
+sudo systemctl restart uchikomi-frontend
 ```
 
 ### ローカル開発モード
@@ -216,7 +216,7 @@ sudo systemctl restart asken-frontend
 
 ```bash
 cd backend
-export DATABASE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
+export DATABASE_URL="postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable"
 go run cmd/server/main.go
 ```
 
@@ -299,7 +299,7 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 実装済みのセキュリティ対策：
 
 - ✅ ファイルアップロード: 拡張子・MIMEタイプ・サイズチェック
-- ✅ ディレクトリトラバーサル対策: `/tmp/asken/uploads/` に保存制限
+- ✅ ディレクトリトラバーサル対策: `/tmp/uchikomi/uploads/` に保存制限
 - ✅ ファイル名サニタイズ: UUIDを使用
 - ✅ コマンドインジェクション対策: 画像パスの絶対パス変換
 - ✅ CORS設定: localhost:3000のみ許可

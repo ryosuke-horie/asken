@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
 // StatusHandler は分析ステータス取得エンドポイントのハンドラー

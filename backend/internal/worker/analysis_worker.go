@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 // FoodService は食品分析サービスのインターフェース
