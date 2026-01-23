@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
 // HistoryHandler は履歴取得エンドポイントのハンドラー

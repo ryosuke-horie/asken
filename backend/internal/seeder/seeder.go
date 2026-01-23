@@ -8,9 +8,9 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // Config はSeederの設定

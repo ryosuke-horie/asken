@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
-	"github.com/ryosuke-horie/asken/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // AnalysisStatus は分析リクエストのステータスを表す型

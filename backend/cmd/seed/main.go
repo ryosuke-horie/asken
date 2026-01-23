@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/ryosuke-horie/asken/backend/internal/seeder"
-	"github.com/ryosuke-horie/asken/backend/internal/service"
-	"github.com/ryosuke-horie/asken/backend/pkg/database"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/seeder"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/database"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ryosuke-horie/asken/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
 // DailyMealsHandler は日次食事データ取得エンドポイントのハンドラー
