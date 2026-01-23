@@ -52,7 +52,7 @@ backend/testdata/
 backend/uploads/
 backend/internal/handler/uploads/
 backend/server
-/tmp/asken/
+/tmp/uchikomi/
 
 # Frontend
 frontend/node_modules/

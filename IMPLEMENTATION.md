@@ -34,7 +34,7 @@
 
 - **analyze_handler.go**: POST /api/analyze エンドポイント
   - ファイルバリデーション（JPEG/PNG/HEIC、最大10MB）
-  - 一時保存（/tmp/asken/uploads/）
+  - 一時保存（/tmp/uchikomi/uploads/）
   - セキュリティ対策（UUIDファイル名、ディレクトリトラバーサル防止）
 
 **テスト**:
@@ -63,7 +63,7 @@
 ## ファイル構成
 
 ```
-asken/
+uchikomi/
 ├── backend/
 │   ├── cmd/server/main.go                  # HTTPサーバー
 │   ├── internal/
@@ -151,7 +151,7 @@ npm run dev
 実装済みのセキュリティ対策：
 
 - ✅ ファイルアップロード: 拡張子・MIMEタイプ・サイズチェック
-- ✅ ディレクトリトラバーサル対策: /tmp/asken/uploads/ に保存制限
+- ✅ ディレクトリトラバーサル対策: /tmp/uchikomi/uploads/ に保存制限
 - ✅ ファイル名サニタイズ: UUIDを使用
 - ✅ コマンドインジェクション対策: 画像パスの絶対パス変換
 - ✅ CORS設定: localhost:3000のみ許可

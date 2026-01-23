@@ -25,7 +25,7 @@ docker-compose ps
 
 ```bash
 # PostgreSQLコンテナに接続
-docker exec -it asken-postgres psql -U asken -d asken
+docker exec -it uchikomi-postgres psql -U uchikomi -d uchikomi
 
 # マイグレーション実行（SQLファイルの内容を手動実行）
 \i /docker-entrypoint-initdb.d/001_create_analysis_tables.sql
@@ -36,8 +36,8 @@ docker exec -it asken-postgres psql -U asken -d asken
 # 期待される出力:
 #  Schema |       Name        | Type  | Owner
 # --------+-------------------+-------+-------
-#  public | analysis_requests | table | asken
-#  public | analysis_results  | table | asken
+#  public | analysis_requests | table | uchikomi
+#  public | analysis_results  | table | uchikomi
 
 # 終了
 \q
@@ -55,7 +55,7 @@ docker-compose up -d postgres
 ```bash
 # Terminal 1: バックエンド
 cd backend
-export DATABASE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
+export DATABASE_URL="postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable"
 go run cmd/server/main.go
 ```
 
@@ -106,10 +106,10 @@ Image file removed: uploads/xxx.jpg
 
 6. **データベース確認:**
 ```bash
-docker exec -it asken-postgres psql -U asken -d asken -c "SELECT id, status FROM analysis_requests ORDER BY created_at DESC LIMIT 1;"
+docker exec -it uchikomi-postgres psql -U uchikomi -d uchikomi -c "SELECT id, status FROM analysis_requests ORDER BY created_at DESC LIMIT 1;"
 # 期待: status = 'completed'
 
-docker exec -it asken-postgres psql -U asken -d asken -c "SELECT total_calories FROM analysis_results ORDER BY created_at DESC LIMIT 1;"
+docker exec -it uchikomi-postgres psql -U uchikomi -d uchikomi -c "SELECT total_calories FROM analysis_results ORDER BY created_at DESC LIMIT 1;"
 # 期待: カロリー値が表示される
 ```
 
@@ -125,7 +125,7 @@ docker exec -it asken-postgres psql -U asken -d asken -c "SELECT total_calories 
 4. **localStorage確認（開発者ツール）:**
 ```javascript
 // Console タブで実行
-localStorage.getItem('asken_analysis_id')
+localStorage.getItem('uchikomi_analysis_id')
 // 期待: analysis_id が保存されている（処理中）
 // 完了後: null（自動削除される）
 ```
@@ -170,7 +170,7 @@ localStorage.getItem('asken_analysis_id')
 
 **データベース確認:**
 ```bash
-docker exec -it asken-postgres psql -U asken -d asken -c "SELECT id, status, created_at FROM analysis_requests ORDER BY created_at DESC LIMIT 5;"
+docker exec -it uchikomi-postgres psql -U uchikomi -d uchikomi -c "SELECT id, status, created_at FROM analysis_requests ORDER BY created_at DESC LIMIT 5;"
 ```
 
 ### 7. クリーンアップ
