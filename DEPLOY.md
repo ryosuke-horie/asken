@@ -219,6 +219,29 @@ npm install
 npm run build
 ```
 
+### API接続エラー（「サーバーに接続できません」）
+
+フロントエンドからバックエンドAPIに接続できない場合、以下を確認してください：
+
+1. **環境変数の確認**: `frontend/uchikomi-frontend.service`の`NEXT_PUBLIC_API_URL`が正しいドメインを指しているか確認
+
+```bash
+# 現在の設定を確認
+grep NEXT_PUBLIC_API_URL /home/exedev/uchikomi/frontend/uchikomi-frontend.service
+
+# 正しい設定例
+# Environment=NEXT_PUBLIC_API_URL=https://asken.exe.xyz:8080
+```
+
+2. **CORS設定の確認**: バックエンドの`backend/cmd/server/main.go`でフロントエンドのオリジンが許可されているか確認
+
+3. **サービス再起動**: 設定変更後はサービスの再起動が必要
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart uchikomi-frontend
+```
+
 ### ロールバック
 
 特定のコミットに戻す場合:
@@ -239,5 +262,5 @@ sudo systemctl restart uchikomi-frontend
 
 ## URL
 
-- **フロントエンド**: https://uchikomi.exe.xyz:3000
-- **バックエンドAPI**: https://uchikomi.exe.xyz:8080
+- **フロントエンド**: https://asken.exe.xyz:3000
+- **バックエンドAPI**: https://asken.exe.xyz:8080

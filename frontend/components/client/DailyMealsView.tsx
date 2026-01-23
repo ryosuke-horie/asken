@@ -10,7 +10,7 @@ import MealSection from './MealSection'
 import DailyTotalSummary from './DailyTotalSummary'
 import styles from './DailyMealsView.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 interface DailyMealsViewProps {
   date: string
