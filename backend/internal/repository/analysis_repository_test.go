@@ -34,13 +34,13 @@ func TestCreateRequest(t *testing.T) {
 	mealDate := "2026-01-21"
 	expectedID := uuid.New()
 
-	// モック設定（input_typeを追加）
+	// モック設定（input_typeを追加、userIDはnil）
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate).
+		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate, nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
 
 	// 実行
-	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate)
+	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate, nil)
 
 	// 検証
 	assert.NoError(t, err)
@@ -61,11 +61,11 @@ func TestCreateRequest_Error(t *testing.T) {
 
 	// モック設定 - エラーを返す
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate).
+		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate, nil).
 		WillReturnError(sql.ErrConnDone)
 
 	// 実行
-	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate)
+	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate, nil)
 
 	// 検証
 	assert.Error(t, err)
@@ -88,11 +88,11 @@ func TestCreateRequestWithText(t *testing.T) {
 
 	// モック設定
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
-		WithArgs(StatusPending, InputTypeText, inputText, mealType, mealDate).
+		WithArgs(StatusPending, InputTypeText, inputText, mealType, mealDate, nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
 
 	// 実行
-	id, err := repo.CreateRequestWithText(ctx, inputText, mealType, mealDate)
+	id, err := repo.CreateRequestWithText(ctx, inputText, mealType, mealDate, nil)
 
 	// 検証
 	assert.NoError(t, err)

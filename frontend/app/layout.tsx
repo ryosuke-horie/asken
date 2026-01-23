@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AuthProvider } from '@/contexts/AuthContext'
 import './globals.css'
 
 export const metadata = {
@@ -14,16 +15,18 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <header>
-          <h1>ウチコミ - 格闘技向け体重管理アプリ</h1>
-          <nav>
-            <Link href="/">ホーム</Link>
-          </nav>
-        </header>
-        <main>{children}</main>
-        <footer>
-          <p>&copy; 2024 ウチコミ. Powered by Gemini API.</p>
-        </footer>
+        <AuthProvider>
+          <header>
+            <h1>asken - カロリー計算アプリ</h1>
+            <nav>
+              <Link href="/">ホーム</Link>
+            </nav>
+          </header>
+          <main>{children}</main>
+          <footer>
+            <p>&copy; 2024 asken. Powered by Gemini API.</p>
+          </footer>
+        </AuthProvider>
       </body>
     </html>
   )

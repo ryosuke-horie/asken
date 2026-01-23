@@ -1,8 +1,10 @@
 'use client'
 
+import { useMemo } from 'react'
 import useSWR from 'swr'
 import { DailyMeals, MealType } from '@/types/nutrition'
-import { fetcher } from '@/lib/fetcher'
+import { createAuthFetcher } from '@/lib/fetcher'
+import { useAuth } from '@/contexts/AuthContext'
 import DateNavigation from './DateNavigation'
 import MealSection from './MealSection'
 import DailyTotalSummary from './DailyTotalSummary'
@@ -11,15 +13,16 @@ import styles from './DailyMealsView.module.css'
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 interface DailyMealsViewProps {
-  initialData: DailyMeals
-  initialDate: string
+  date: string
 }
 
-export default function DailyMealsView({ initialData, initialDate }: DailyMealsViewProps) {
+export default function DailyMealsView({ date }: DailyMealsViewProps) {
+  const { token } = useAuth()
+  const authFetcher = useMemo(() => createAuthFetcher(token), [token])
+
   const { data, error, mutate } = useSWR<DailyMeals>(
-    `${API_BASE_URL}/api/meals/daily?date=${initialDate}`,
-    fetcher,
-    { fallbackData: initialData }
+    token ? `${API_BASE_URL}/api/meals/daily?date=${date}` : null,
+    authFetcher
   )
 
   const handleDelete = () => {
@@ -40,7 +43,7 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
 
   return (
     <div className={styles.container}>
-      <DateNavigation currentDate={initialDate} />
+      <DateNavigation currentDate={date} />
 
       <DailyTotalSummary
         totalCalories={data.daily_total.total_calories}
@@ -54,7 +57,7 @@ export default function DailyMealsView({ initialData, initialDate }: DailyMealsV
           <MealSection
             key={mealType}
             mealType={mealType}
-            mealDate={initialDate}
+            mealDate={date}
             meals={data.meals[mealType]}
             onDelete={handleDelete}
           />
