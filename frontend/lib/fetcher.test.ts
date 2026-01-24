@@ -17,7 +17,7 @@ describe('fetcher', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockData),
-      })
+      }),
     )
 
     const result = await fetcher('http://example.com/api')
@@ -32,7 +32,7 @@ describe('fetcher', () => {
         ok: false,
         status: 404,
         text: () => Promise.resolve(''),
-      })
+      }),
     )
 
     await expect(fetcher('http://example.com/api')).rejects.toThrow('API error: 404')
@@ -45,7 +45,7 @@ describe('fetcher', () => {
         ok: false,
         status: 500,
         text: () => Promise.resolve(''),
-      })
+      }),
     )
 
     await expect(fetcher('http://example.com/api')).rejects.toThrow('API error: 500')
@@ -59,7 +59,7 @@ describe('fetcher', () => {
         ok: false,
         status: 500,
         text: () => Promise.resolve(serverErrorMessage),
-      })
+      }),
     )
 
     await expect(fetcher('http://example.com/api')).rejects.toThrow(serverErrorMessage)
@@ -120,7 +120,7 @@ describe('createAuthFetcher', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockData),
-      })
+      }),
     )
 
     const authFetcher = createAuthFetcher('test-token')
@@ -136,7 +136,7 @@ describe('createAuthFetcher', () => {
         ok: false,
         status: 401,
         text: () => Promise.resolve('Unauthorized'),
-      })
+      }),
     )
 
     const authFetcher = createAuthFetcher('invalid-token')
@@ -151,7 +151,7 @@ describe('createAuthFetcher', () => {
         ok: false,
         status: 403,
         text: () => Promise.resolve(serverErrorMessage),
-      })
+      }),
     )
 
     const authFetcher = createAuthFetcher('test-token')
@@ -165,7 +165,7 @@ describe('createAuthFetcher', () => {
         ok: false,
         status: 500,
         text: () => Promise.resolve(''),
-      })
+      }),
     )
 
     const authFetcher = createAuthFetcher('test-token')

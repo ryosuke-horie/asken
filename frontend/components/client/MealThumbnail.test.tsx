@@ -36,7 +36,7 @@ describe('MealThumbnail', () => {
 
   it('エラー時にプレースホルダーにclassNameを適用すべき', () => {
     const { container } = render(
-      <MealThumbnail src="/invalid-image.jpg" className="custom-class" />
+      <MealThumbnail src="/invalid-image.jpg" className="custom-class" />,
     )
 
     const img = screen.getByRole('img', { name: '食事' })

@@ -20,12 +20,5 @@ export default function MealThumbnail({ src, alt = '食事', className }: MealTh
     )
   }
 
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setHasError(true)}
-    />
-  )
+  return <img src={src} alt={alt} className={className} onError={() => setHasError(true)} />
 }

@@ -45,8 +45,8 @@ export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUp
       },
       onSuccess: () => {
         setSyncError(false)
-      }
-    }
+      },
+    },
   )
 
   const meals = data?.meals[mealType] || []
@@ -109,9 +109,7 @@ export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUp
             {meals.map((meal) => (
               <div key={meal.id} className={styles.mealItem}>
                 {meal.input_type === 'text' ? (
-                  <div className={styles.textPreview}>
-                    {meal.input_text}
-                  </div>
+                  <div className={styles.textPreview}>{meal.input_text}</div>
                 ) : (
                   <MealThumbnail
                     src={`${API_BASE_URL}/api/images/${meal.image_path?.split('/').pop()}`}
@@ -125,7 +123,9 @@ export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUp
                   <div className={styles.nutrients}>
                     <span className={styles.nutrient}>P: {meal.total_protein.toFixed(1)}g</span>
                     <span className={styles.nutrient}>F: {meal.total_fat.toFixed(1)}g</span>
-                    <span className={styles.nutrient}>C: {meal.total_carbohydrates.toFixed(1)}g</span>
+                    <span className={styles.nutrient}>
+                      C: {meal.total_carbohydrates.toFixed(1)}g
+                    </span>
                   </div>
                 </div>
                 <div className={styles.deleteButton}>

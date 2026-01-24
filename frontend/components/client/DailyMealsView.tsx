@@ -22,7 +22,7 @@ export default function DailyMealsView({ date }: DailyMealsViewProps) {
 
   const { data, error, mutate } = useSWR<DailyMeals>(
     token ? `${API_BASE_URL}/api/meals/daily?date=${date}` : null,
-    authFetcher
+    authFetcher,
   )
 
   const handleDelete = () => {
@@ -30,11 +30,7 @@ export default function DailyMealsView({ date }: DailyMealsViewProps) {
   }
 
   if (error) {
-    return (
-      <div className={styles.error}>
-        データの取得に失敗しました。再読み込みしてください。
-      </div>
-    )
+    return <div className={styles.error}>データの取得に失敗しました。再読み込みしてください。</div>
   }
 
   if (!data) return <div className={styles.loading}>読み込み中...</div>

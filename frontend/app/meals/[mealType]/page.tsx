@@ -29,11 +29,7 @@ export default function MealUploadPage() {
 
   return (
     <ProtectedRoute>
-      <MealUploadView
-        mealType={mealType}
-        mealDate={date}
-        mealLabel={MEAL_TYPE_LABELS[mealType]}
-      />
+      <MealUploadView mealType={mealType} mealDate={date} mealLabel={MEAL_TYPE_LABELS[mealType]} />
     </ProtectedRoute>
   )
 }
