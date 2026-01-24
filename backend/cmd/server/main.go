@@ -161,9 +161,9 @@ func run() error {
 	}
 	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
 
-	// 画像配信エンドポイント（認証必須）
+	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
 	// GET /api/images/:filename
-	mux.Handle("/api/images/", authMiddleware.Authenticate(http.HandlerFunc(imageHandler.Handle)))
+	mux.HandleFunc("/api/images/", imageHandler.Handle)
 
 	// 日次食事データエンドポイント（認証必須）
 	// GET /api/meals/daily

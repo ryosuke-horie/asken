@@ -10,8 +10,43 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.content {
+.cardBody {
+  display: flex;
+  gap: 1rem;
   padding: 1rem;
+}
+
+.thumbnailContainer {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageContainer {
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+  background-color: #f3f4f6;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
 }
 
 .header {
@@ -102,8 +137,14 @@
 }
 
 @media (max-width: 640px) {
-  .content {
+  .cardBody {
     padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .thumbnailContainer {
+    width: 60px;
+    height: 60px;
   }
 
   .name {

@@ -3,6 +3,8 @@
 import type { MylistItem } from '@/types/mylist'
 import styles from './MylistItemCard.module.css'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
 interface MylistItemCardProps {
   item: MylistItem
   onEdit: (item: MylistItem) => void
@@ -22,8 +24,15 @@ export default function MylistItemCard({ item, onEdit, onDelete }: MylistItemCar
     }
   }
 
+  const imageUrl = item.image_path ? `${API_BASE_URL}/api/images/${item.image_path.split('/').pop()}` : null
+
   return (
     <div className={styles.card}>
+      {imageUrl && (
+        <div className={styles.imageContainer}>
+          <img src={imageUrl} alt={item.name} className={styles.image} />
+        </div>
+      )}
       <div className={styles.content}>
         <div className={styles.header}>
           <h3 className={styles.name}>{item.name}</h3>

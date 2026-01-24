@@ -95,6 +95,9 @@ export default function MylistSelector({ mealType, mealDate, onComplete }: Mylis
     const scaledProtein = (selectedItem.protein * quantity).toFixed(1)
     const scaledFat = (selectedItem.fat * quantity).toFixed(1)
     const scaledCarbs = (selectedItem.carbohydrates * quantity).toFixed(1)
+    const selectedImageUrl = selectedItem.image_path
+      ? `${API_BASE_URL}/api/images/${selectedItem.image_path.split('/').pop()}`
+      : null
 
     return (
       <div className={styles.detail}>
@@ -103,10 +106,17 @@ export default function MylistSelector({ mealType, mealDate, onComplete }: Mylis
         </button>
 
         <div className={styles.selectedItem}>
-          <h3 className={styles.itemName}>{selectedItem.name}</h3>
-          <p className={styles.itemBase}>
-            {selectedItem.base_amount} {selectedItem.unit}
-          </p>
+          {selectedImageUrl && (
+            <div className={styles.selectedThumbnail}>
+              <img src={selectedImageUrl} alt={selectedItem.name} className={styles.selectedImage} />
+            </div>
+          )}
+          <div className={styles.selectedInfo}>
+            <h3 className={styles.itemName}>{selectedItem.name}</h3>
+            <p className={styles.itemBase}>
+              {selectedItem.base_amount} {selectedItem.unit}
+            </p>
+          </div>
         </div>
 
         <div className={styles.quantitySection}>
@@ -145,17 +155,29 @@ export default function MylistSelector({ mealType, mealDate, onComplete }: Mylis
   return (
     <div className={styles.container}>
       <div className={styles.list}>
-        {items.map((item) => (
-          <button key={item.id} type="button" onClick={() => handleSelect(item)} className={styles.itemCard}>
-            <div className={styles.itemHeader}>
-              <span className={styles.itemName}>{item.name}</span>
-              <span className={styles.itemCalories}>{Math.round(item.calories)} kcal</span>
-            </div>
-            <div className={styles.itemMeta}>
-              {item.base_amount} {item.unit}
-            </div>
-          </button>
-        ))}
+        {items.map((item) => {
+          const imageUrl = item.image_path
+            ? `${API_BASE_URL}/api/images/${item.image_path.split('/').pop()}`
+            : null
+          return (
+            <button key={item.id} type="button" onClick={() => handleSelect(item)} className={styles.itemCard}>
+              {imageUrl && (
+                <div className={styles.itemThumbnail}>
+                  <img src={imageUrl} alt={item.name} className={styles.itemImage} />
+                </div>
+              )}
+              <div className={styles.itemContent}>
+                <div className={styles.itemHeader}>
+                  <span className={styles.itemName}>{item.name}</span>
+                  <span className={styles.itemCalories}>{Math.round(item.calories)} kcal</span>
+                </div>
+                <div className={styles.itemMeta}>
+                  {item.base_amount} {item.unit}
+                </div>
+              </div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
