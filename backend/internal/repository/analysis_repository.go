@@ -120,7 +120,7 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 }
 
 // CreateRequest は新しい画像分析リクエストを作成します
-func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	query := `
 		INSERT INTO analysis_requests (status, input_type, image_path, meal_type, meal_date, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -137,7 +137,7 @@ func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePat
 }
 
 // CreateRequestWithText は新しいテキスト分析リクエストを作成します
-func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	query := `
 		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -234,7 +234,7 @@ func (r *postgresAnalysisRepository) SaveResult(ctx context.Context, requestID u
 	if err != nil {
 		return fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// foods をJSONBに変換
 	foodsJSON, err := json.Marshal(result.Foods)
@@ -552,7 +552,7 @@ func (r *postgresAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.
 	if err != nil {
 		return fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// 入力タイプと画像パスを取得
 	var inputType string

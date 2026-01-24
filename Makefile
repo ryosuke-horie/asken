@@ -28,9 +28,9 @@ test: ## Goテストを実行
 	@echo "=== Goテスト実行 ==="
 	cd $(BACKEND_DIR) && go test ./...
 
-lint: ## Goリント（go vet）を実行
+lint: ## Goリント（golangci-lint）を実行
 	@echo "=== Goリント実行 ==="
-	cd $(BACKEND_DIR) && go vet ./...
+	cd $(BACKEND_DIR) && golangci-lint run ./...
 
 build: ## Goバイナリをビルド
 	@echo "=== Goビルド ==="

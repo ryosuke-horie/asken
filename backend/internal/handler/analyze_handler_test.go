@@ -445,4 +445,3 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
-

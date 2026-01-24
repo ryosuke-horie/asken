@@ -20,9 +20,9 @@ func NewDailyMealsHandler(repository repository.AnalysisRepository) *DailyMealsH
 
 // DailyMealsResponse は日次食事データのレスポンス
 type DailyMealsResponse struct {
-	Date       string                                       `json:"date"`
-	Meals      map[string][]repository.HistoryDetail        `json:"meals"`
-	DailyTotal repository.DailyTotal                        `json:"daily_total"`
+	Date       string                                `json:"date"`
+	Meals      map[string][]repository.HistoryDetail `json:"meals"`
+	DailyTotal repository.DailyTotal                 `json:"daily_total"`
 }
 
 // Handle はGET /api/meals/dailyリクエストを処理

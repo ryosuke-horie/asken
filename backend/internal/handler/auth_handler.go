@@ -141,8 +141,8 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// タイミング攻撃対策: ユーザーが存在しない場合もパスワード検証を実行
-	// ダミーハッシュを使用して一定時間を消費
+	// タイミング攻撃対策としてユーザーが存在しない場合もパスワード検証を実行する。
+	// ダミーハッシュを使用して一定時間を消費させる。
 	passwordHash := ""
 	if user != nil {
 		passwordHash = user.PasswordHash

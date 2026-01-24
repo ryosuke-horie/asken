@@ -261,17 +261,17 @@ func TestHandleGetRecords(t *testing.T) {
 	userID := uuid.New()
 
 	tests := []struct {
-		name                   string
-		period                 string
-		userID                 uuid.UUID
-		mockRecords            []*repository.WeightRecord
-		mockLatest             *repository.WeightRecord
-		mockStats              *repository.WeightStats
-		mockRecordsErr         error
-		mockLatestErr          error
-		mockStatsErr           error
-		expectedStatus         int
-		expectedRecordsCount   int
+		name                 string
+		period               string
+		userID               uuid.UUID
+		mockRecords          []*repository.WeightRecord
+		mockLatest           *repository.WeightRecord
+		mockStats            *repository.WeightStats
+		mockRecordsErr       error
+		mockLatestErr        error
+		mockStatsErr         error
+		expectedStatus       int
+		expectedRecordsCount int
 	}{
 		{
 			name:   "正常に記録一覧を取得できるべき（week）",
@@ -281,8 +281,8 @@ func TestHandleGetRecords(t *testing.T) {
 				{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
 				{ID: uuid.New(), UserID: userID, Weight: 65.5, RecordedAt: "2024-01-15"},
 			},
-			mockLatest: &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.5, RecordedAt: "2024-01-15"},
-			mockStats:  &repository.WeightStats{Min: 65.0, Max: 65.5, Average: 65.25},
+			mockLatest:           &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.5, RecordedAt: "2024-01-15"},
+			mockStats:            &repository.WeightStats{Min: 65.0, Max: 65.5, Average: 65.25},
 			expectedStatus:       http.StatusOK,
 			expectedRecordsCount: 2,
 		},
@@ -316,8 +316,8 @@ func TestHandleGetRecords(t *testing.T) {
 			mockRecords: []*repository.WeightRecord{
 				{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
 			},
-			mockLatest:    &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
-			mockStatsErr:  errors.New("database error"),
+			mockLatest:     &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
+			mockStatsErr:   errors.New("database error"),
 			expectedStatus: http.StatusInternalServerError,
 		},
 		{
@@ -327,8 +327,8 @@ func TestHandleGetRecords(t *testing.T) {
 			mockRecords: []*repository.WeightRecord{
 				{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
 			},
-			mockLatest: &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
-			mockStats:  &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
+			mockLatest:           &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
+			mockStats:            &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
 			expectedStatus:       http.StatusOK,
 			expectedRecordsCount: 1,
 		},
@@ -339,8 +339,8 @@ func TestHandleGetRecords(t *testing.T) {
 			mockRecords: []*repository.WeightRecord{
 				{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
 			},
-			mockLatest: &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
-			mockStats:  &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
+			mockLatest:           &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-01"},
+			mockStats:            &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
 			expectedStatus:       http.StatusOK,
 			expectedRecordsCount: 1,
 		},
@@ -351,8 +351,8 @@ func TestHandleGetRecords(t *testing.T) {
 			mockRecords: []*repository.WeightRecord{
 				{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
 			},
-			mockLatest: &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
-			mockStats:  &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
+			mockLatest:           &repository.WeightRecord{ID: uuid.New(), UserID: userID, Weight: 65.0, RecordedAt: "2024-01-14"},
+			mockStats:            &repository.WeightStats{Min: 65.0, Max: 65.0, Average: 65.0},
 			expectedStatus:       http.StatusOK,
 			expectedRecordsCount: 1,
 		},

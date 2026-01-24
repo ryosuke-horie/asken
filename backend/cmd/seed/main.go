@@ -14,6 +14,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("シード実行に失敗: %v", err)
+	}
+}
+
+func run() error {
 	// コマンドラインフラグを定義
 	users := flag.Int("users", 3, "生成するユーザー数")
 	analyses := flag.Int("analyses", 5, "ユーザーあたりの分析数")
@@ -24,7 +30,7 @@ func main() {
 	// 環境変数からDATABASE_URLを取得
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		log.Fatal("DATABASE_URL environment variable is required")
+		return fmt.Errorf("DATABASE_URL environment variable is required")
 	}
 
 	// データベース接続
@@ -32,7 +38,7 @@ func main() {
 		DatabaseURL: databaseURL,
 	})
 	if err != nil {
-		log.Fatalf("データベース接続に失敗: %v", err)
+		return fmt.Errorf("データベース接続に失敗: %w", err)
 	}
 	defer db.Close()
 
@@ -60,7 +66,7 @@ func main() {
 
 	ctx := context.Background()
 	if err := s.Run(ctx); err != nil {
-		log.Fatalf("シード実行に失敗: %v", err)
+		return fmt.Errorf("シード実行に失敗: %w", err)
 	}
 
 	fmt.Println("シードが正常に完了しました")
@@ -75,4 +81,6 @@ func main() {
 			fmt.Printf("  - %s (パスワード: %s)\n", user.Email, user.Password)
 		}
 	}
+
+	return nil
 }
