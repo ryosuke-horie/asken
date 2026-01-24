@@ -56,6 +56,82 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+.imageUploadSection {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.imageLabel {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.fileInput {
+  display: none;
+}
+
+.fileButton {
+  width: 100%;
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.fileButton:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #f97316;
+}
+
+.fileButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.imagePreview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.previewImage {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background-color: #f9fafb;
+}
+
+.clearImageButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #666;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.clearImageButton:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 0.75rem;

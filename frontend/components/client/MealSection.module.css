@@ -122,6 +122,18 @@
   word-break: break-word;
 }
 
+.noImage {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff3e0;
+  border-radius: 6px;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+}
+
 .mealInfo {
   flex: 1;
   min-width: 0;
@@ -171,6 +183,12 @@
   .textPreview {
     width: 50px;
     height: 50px;
+  }
+
+  .noImage {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
   }
 
   .mealCalories {
