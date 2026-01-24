@@ -127,11 +127,7 @@ export default function RegisterPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={styles.submitButton}
-          >
+          <button type="submit" disabled={isLoading} className={styles.submitButton}>
             {isLoading ? '登録中...' : '登録'}
           </button>
         </form>

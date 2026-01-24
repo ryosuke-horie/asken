@@ -95,7 +95,7 @@ export default function MealTypeUpload({ mealType, mealDate, onComplete }: MealT
       const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       })

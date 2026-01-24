@@ -45,7 +45,10 @@
   border-radius: 4px;
   cursor: pointer;
   color: #666;
-  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .removeButton:hover:not(:disabled) {

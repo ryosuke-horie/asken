@@ -12,7 +12,11 @@ interface MealInputSelectorProps {
   onComplete?: () => void
 }
 
-export default function MealInputSelector({ mealType, mealDate, onComplete }: MealInputSelectorProps) {
+export default function MealInputSelector({
+  mealType,
+  mealDate,
+  onComplete,
+}: MealInputSelectorProps) {
   const [inputType, setInputType] = useState<InputType>('image')
 
   return (
@@ -36,17 +40,9 @@ export default function MealInputSelector({ mealType, mealDate, onComplete }: Me
 
       <div className={styles.content}>
         {inputType === 'image' ? (
-          <MealTypeUpload
-            mealType={mealType}
-            mealDate={mealDate}
-            onComplete={onComplete}
-          />
+          <MealTypeUpload mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
         ) : (
-          <TextInput
-            mealType={mealType}
-            mealDate={mealDate}
-            onComplete={onComplete}
-          />
+          <TextInput mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
         )}
       </div>
     </div>
