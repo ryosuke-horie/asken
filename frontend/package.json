@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "knip": "knip",
-    "depcheck": "depcheck --ignores=@types/react-dom,prettier"
+    "depcheck": "depcheck --ignores=@types/react-dom,prettier,@vitest/coverage-v8"
   },
   "dependencies": {
     "next": "14.0.4",
