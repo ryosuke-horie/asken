@@ -1,10 +1,24 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
+
 import { AuthProvider } from '@/contexts/AuthContext'
+
 import './globals.css'
 
-export const metadata = {
-  title: 'ウチコミ - 格闘技向け体重管理アプリ',
-  description: '柔術/キックボクシングなど格闘技の減量・体重コントロールを支援するアプリ',
+export const metadata: Metadata = {
+  title: {
+    default: 'ウチコミ',
+    template: '%s | ウチコミ',
+  },
+  description: '格闘技の減量・体重コントロールを支援するアプリ',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
