@@ -54,6 +54,7 @@ type handlers struct {
 	dailyMeals    *handler.DailyMealsHandler
 	weight        *handler.WeightHandler
 	mylist        *handler.MylistHandler
+	skipMeal      *handler.SkipMealHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -125,6 +126,16 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware
 		}
 	}
 	mux.Handle("/api/meals/from-mylist", authMiddleware.Authenticate(http.HandlerFunc(mealsFromMylistRouteHandler)))
+
+	mealsSkipRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.skipMeal.Handle(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
 }
 
 func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -256,6 +267,7 @@ func run() error {
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
 		weight:        handler.NewWeightHandler(weightRepo),
 		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
+		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 	}
 
 	// ワーカーの初期化

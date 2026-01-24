@@ -5,6 +5,7 @@ import { MealType, InputType } from '@/types/nutrition'
 import MealTypeUpload from './MealTypeUpload'
 import TextInput from './TextInput'
 import MylistSelector from './MylistSelector'
+import SkippedMealButton from './SkippedMealButton'
 import styles from './MealInputSelector.module.css'
 
 interface MealInputSelectorProps {
@@ -40,6 +41,13 @@ export default function MealInputSelector({ mealType, mealDate, onComplete }: Me
         >
           テキスト
         </button>
+        <button
+          type="button"
+          onClick={() => setInputType('skipped')}
+          className={`${styles.tab} ${inputType === 'skipped' ? styles.active : ''}`}
+        >
+          食べなかった
+        </button>
       </div>
 
       <div className={styles.content}>
@@ -47,8 +55,10 @@ export default function MealInputSelector({ mealType, mealDate, onComplete }: Me
           <MylistSelector mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
         ) : inputType === 'image' ? (
           <MealTypeUpload mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
-        ) : (
+        ) : inputType === 'text' ? (
           <TextInput mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
+        ) : (
+          <SkippedMealButton mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
         )}
       </div>
     </div>
