@@ -41,9 +41,7 @@ describe('ImageUpload', () => {
       render(<ImageUpload />)
 
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       expect(fileInput).toBeTruthy()
 
       Object.defineProperty(fileInput, 'files', {
@@ -61,9 +59,7 @@ describe('ImageUpload', () => {
       render(<ImageUpload />)
 
       const file = new File(['test'], 'test.png', { type: 'image/png' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
 
       Object.defineProperty(fileInput, 'files', {
         value: [file],
@@ -80,9 +76,7 @@ describe('ImageUpload', () => {
       render(<ImageUpload />)
 
       const file = new File(['test'], 'test.heic', { type: '' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
 
       Object.defineProperty(fileInput, 'files', {
         value: [file],
@@ -99,9 +93,7 @@ describe('ImageUpload', () => {
       render(<ImageUpload />)
 
       const file = new File(['test'], 'test.txt', { type: 'text/plain' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
 
       Object.defineProperty(fileInput, 'files', {
         value: [file],
@@ -109,7 +101,7 @@ describe('ImageUpload', () => {
       fireEvent.change(fileInput)
 
       expect(
-        screen.getByText('JPEG, PNG, HEIC形式の画像のみアップロードできます')
+        screen.getByText('JPEG, PNG, HEIC形式の画像のみアップロードできます'),
       ).toBeInTheDocument()
     })
 
@@ -119,18 +111,14 @@ describe('ImageUpload', () => {
       // 11MBのファイルを作成
       const largeContent = new Array(11 * 1024 * 1024).fill('a').join('')
       const file = new File([largeContent], 'large.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
 
       Object.defineProperty(fileInput, 'files', {
         value: [file],
       })
       fireEvent.change(fileInput)
 
-      expect(
-        screen.getByText('ファイルサイズは10MB以下にしてください')
-      ).toBeInTheDocument()
+      expect(screen.getByText('ファイルサイズは10MB以下にしてください')).toBeInTheDocument()
     })
   })
 
@@ -167,9 +155,7 @@ describe('ImageUpload', () => {
 
       // ファイル選択
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       Object.defineProperty(fileInput, 'files', { value: [file] })
       fireEvent.change(fileInput)
 
@@ -202,9 +188,7 @@ describe('ImageUpload', () => {
 
       // ファイル選択
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       Object.defineProperty(fileInput, 'files', { value: [file] })
       fireEvent.change(fileInput)
 
@@ -215,9 +199,7 @@ describe('ImageUpload', () => {
       fireEvent.click(uploadButton)
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/アップロードに失敗しました/)
-        ).toBeInTheDocument()
+        expect(screen.getByText(/アップロードに失敗しました/)).toBeInTheDocument()
       })
     })
   })
@@ -243,9 +225,7 @@ describe('ImageUpload', () => {
 
       // ファイル選択
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       Object.defineProperty(fileInput, 'files', { value: [file] })
       fireEvent.change(fileInput)
 
@@ -284,9 +264,7 @@ describe('ImageUpload', () => {
 
       // ファイル選択
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' })
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       Object.defineProperty(fileInput, 'files', { value: [file] })
       fireEvent.change(fileInput)
 
@@ -297,9 +275,7 @@ describe('ImageUpload', () => {
       fireEvent.click(uploadButton)
 
       await waitFor(() => {
-        expect(
-          screen.getByText('画像の分析に失敗しました')
-        ).toBeInTheDocument()
+        expect(screen.getByText('画像の分析に失敗しました')).toBeInTheDocument()
       })
     })
   })

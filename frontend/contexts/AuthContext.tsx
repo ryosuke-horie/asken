@@ -14,7 +14,11 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  register: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>
+  register: (
+    email: string,
+    password: string,
+    name?: string,
+  ) => Promise<{ success: boolean; error?: string }>
   logout: () => void
 }
 
@@ -38,7 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedToken && storedUser) {
         const parsedUser = JSON.parse(storedUser)
         // 基本的なユーザーデータの検証
-        if (parsedUser && typeof parsedUser.id === 'string' && typeof parsedUser.email === 'string') {
+        if (
+          parsedUser &&
+          typeof parsedUser.id === 'string' &&
+          typeof parsedUser.email === 'string'
+        ) {
           setToken(storedToken)
           setUser(parsedUser)
         } else {
@@ -61,93 +69,121 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
+  const login = useCallback(
+    async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        // ステータスコードに応じたエラーメッセージ
-        if (response.status === 401) {
-          return { success: false, error: errorText || 'メールアドレスまたはパスワードが正しくありません' }
+        if (!response.ok) {
+          const errorText = await response.text()
+          // ステータスコードに応じたエラーメッセージ
+          if (response.status === 401) {
+            return {
+              success: false,
+              error: errorText || 'メールアドレスまたはパスワードが正しくありません',
+            }
+          }
+          if (response.status === 400) {
+            return { success: false, error: errorText || '入力内容を確認してください' }
+          }
+          if (response.status >= 500) {
+            return {
+              success: false,
+              error: 'サーバーエラーが発生しました。しばらく経ってからお試しください',
+            }
+          }
+          return { success: false, error: errorText || 'ログインに失敗しました' }
         }
-        if (response.status === 400) {
-          return { success: false, error: errorText || '入力内容を確認してください' }
+
+        const data = await response.json()
+
+        localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
+
+        setToken(data.token)
+        setUser(data.user)
+
+        return { success: true }
+      } catch (error) {
+        console.error('Login error:', error)
+        // ネットワークエラーの詳細を判定
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          return {
+            success: false,
+            error: 'サーバーに接続できません。ネットワーク接続を確認してください',
+          }
         }
-        if (response.status >= 500) {
-          return { success: false, error: 'サーバーエラーが発生しました。しばらく経ってからお試しください' }
-        }
-        return { success: false, error: errorText || 'ログインに失敗しました' }
+        return { success: false, error: 'ネットワークエラーが発生しました' }
       }
+    },
+    [],
+  )
 
-      const data = await response.json()
+  const register = useCallback(
+    async (
+      email: string,
+      password: string,
+      name?: string,
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password, name }),
+        })
 
-      localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
-
-      setToken(data.token)
-      setUser(data.user)
-
-      return { success: true }
-    } catch (error) {
-      console.error('Login error:', error)
-      // ネットワークエラーの詳細を判定
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        return { success: false, error: 'サーバーに接続できません。ネットワーク接続を確認してください' }
-      }
-      return { success: false, error: 'ネットワークエラーが発生しました' }
-    }
-  }, [])
-
-  const register = useCallback(async (email: string, password: string, name?: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, name }),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        // ステータスコードに応じたエラーメッセージ
-        if (response.status === 409) {
-          return { success: false, error: errorText || 'このメールアドレスは既に登録されています' }
+        if (!response.ok) {
+          const errorText = await response.text()
+          // ステータスコードに応じたエラーメッセージ
+          if (response.status === 409) {
+            return {
+              success: false,
+              error: errorText || 'このメールアドレスは既に登録されています',
+            }
+          }
+          if (response.status === 400) {
+            return { success: false, error: errorText || '入力内容を確認してください' }
+          }
+          if (response.status >= 500) {
+            return {
+              success: false,
+              error: 'サーバーエラーが発生しました。しばらく経ってからお試しください',
+            }
+          }
+          return { success: false, error: errorText || '登録に失敗しました' }
         }
-        if (response.status === 400) {
-          return { success: false, error: errorText || '入力内容を確認してください' }
+
+        const data = await response.json()
+
+        localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
+
+        setToken(data.token)
+        setUser(data.user)
+
+        return { success: true }
+      } catch (error) {
+        console.error('Register error:', error)
+        // ネットワークエラーの詳細を判定
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          return {
+            success: false,
+            error: 'サーバーに接続できません。ネットワーク接続を確認してください',
+          }
         }
-        if (response.status >= 500) {
-          return { success: false, error: 'サーバーエラーが発生しました。しばらく経ってからお試しください' }
-        }
-        return { success: false, error: errorText || '登録に失敗しました' }
+        return { success: false, error: 'ネットワークエラーが発生しました' }
       }
-
-      const data = await response.json()
-
-      localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
-
-      setToken(data.token)
-      setUser(data.user)
-
-      return { success: true }
-    } catch (error) {
-      console.error('Register error:', error)
-      // ネットワークエラーの詳細を判定
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        return { success: false, error: 'サーバーに接続できません。ネットワーク接続を確認してください' }
-      }
-      return { success: false, error: 'ネットワークエラーが発生しました' }
-    }
-  }, [])
+    },
+    [],
+  )
 
   const logout = useCallback(() => {
     try {

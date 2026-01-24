@@ -130,14 +130,14 @@ describe('TextInput', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer mock-jwt-token',
+              Authorization: 'Bearer mock-jwt-token',
             },
             body: JSON.stringify({
               input_text: 'ご飯二杯',
               meal_type: 'lunch',
               meal_date: '2024-01-15',
             }),
-          })
+          }),
         )
       })
     })
@@ -168,7 +168,7 @@ describe('TextInput', () => {
               meal_type: 'lunch',
               meal_date: '2024-01-15',
             }),
-          })
+          }),
         )
       })
     })

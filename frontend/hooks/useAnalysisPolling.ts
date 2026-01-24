@@ -29,7 +29,9 @@ interface UseAnalysisPollingResult {
   setStatusMessage: (message: string) => void
 }
 
-export function useAnalysisPolling(options: UseAnalysisPollingOptions = {}): UseAnalysisPollingResult {
+export function useAnalysisPolling(
+  options: UseAnalysisPollingOptions = {},
+): UseAnalysisPollingResult {
   const { onComplete, pollingInterval = 2000, maxPollingAttempts = MAX_POLLING_ATTEMPTS } = options
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,62 +54,68 @@ export function useAnalysisPolling(options: UseAnalysisPollingOptions = {}): Use
     }
   }, [stopPolling])
 
-  const checkStatus = useCallback(async (id: string) => {
-    // ポーリング回数制限をチェック
-    pollingCountRef.current += 1
-    if (pollingCountRef.current > maxPollingAttempts) {
-      setError('分析処理がタイムアウトしました。しばらく経ってから再度お試しください。')
-      stopPolling()
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/analyze/${id}`)
-
-      if (!response.ok) {
-        throw new Error(`ステータス取得に失敗しました (${response.status})`)
+  const checkStatus = useCallback(
+    async (id: string) => {
+      // ポーリング回数制限をチェック
+      pollingCountRef.current += 1
+      if (pollingCountRef.current > maxPollingAttempts) {
+        setError('分析処理がタイムアウトしました。しばらく経ってから再度お試しください。')
+        stopPolling()
+        setIsLoading(false)
+        return
       }
 
-      const data: StatusResponse = await response.json()
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/analyze/${id}`)
 
-      switch (data.status) {
-        case 'pending':
-          setStatusMessage('分析リクエストを受け付けました...')
-          break
+        if (!response.ok) {
+          throw new Error(`ステータス取得に失敗しました (${response.status})`)
+        }
 
-        case 'processing':
-          setStatusMessage('分析処理中です...')
-          break
+        const data: StatusResponse = await response.json()
 
-        case 'completed':
-          setStatusMessage('分析が完了しました')
-          stopPolling()
-          setIsLoading(false)
-          onComplete?.()
-          break
+        switch (data.status) {
+          case 'pending':
+            setStatusMessage('分析リクエストを受け付けました...')
+            break
 
-        case 'failed':
-          setError(data.error || '分析に失敗しました')
-          stopPolling()
-          setIsLoading(false)
-          break
+          case 'processing':
+            setStatusMessage('分析処理中です...')
+            break
+
+          case 'completed':
+            setStatusMessage('分析が完了しました')
+            stopPolling()
+            setIsLoading(false)
+            onComplete?.()
+            break
+
+          case 'failed':
+            setError(data.error || '分析に失敗しました')
+            stopPolling()
+            setIsLoading(false)
+            break
+        }
+      } catch (err) {
+        console.error('Status check error:', err)
+        setError(err instanceof Error ? err.message : '予期しないエラー')
+        stopPolling()
+        setIsLoading(false)
       }
-    } catch (err) {
-      console.error('Status check error:', err)
-      setError(err instanceof Error ? err.message : '予期しないエラー')
-      stopPolling()
-      setIsLoading(false)
-    }
-  }, [maxPollingAttempts, onComplete, stopPolling])
+    },
+    [maxPollingAttempts, onComplete, stopPolling],
+  )
 
-  const startAnalysis = useCallback((analysisId: string) => {
-    stopPolling()
-    checkStatus(analysisId)
-    pollingIntervalRef.current = setInterval(() => {
+  const startAnalysis = useCallback(
+    (analysisId: string) => {
+      stopPolling()
       checkStatus(analysisId)
-    }, pollingInterval)
-  }, [checkStatus, pollingInterval, stopPolling])
+      pollingIntervalRef.current = setInterval(() => {
+        checkStatus(analysisId)
+      }, pollingInterval)
+    },
+    [checkStatus, pollingInterval, stopPolling],
+  )
 
   const resetState = useCallback(() => {
     setIsLoading(false)

@@ -7,23 +7,13 @@ export const metadata = {
   description: '柔術/キックボクシングなど格闘技の減量・体重コントロールを支援するアプリ',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">
       <body>
         <AuthProvider>
           <header>
-            <Image
-              src="/logo-cropped.png"
-              alt="ウチコミ"
-              width={150}
-              height={50}
-              priority
-            />
+            <Image src="/logo-cropped.png" alt="ウチコミ" width={150} height={50} priority />
           </header>
           <main>{children}</main>
           <footer>

@@ -12,7 +12,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
-      include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'hooks/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}', 'contexts/**/*.{ts,tsx}'],
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'hooks/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+        'contexts/**/*.{ts,tsx}',
+      ],
       exclude: [
         'node_modules/',
         '.next/',

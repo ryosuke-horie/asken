@@ -83,11 +83,7 @@ export default function LoginPage() {
 
           {error && <div className={styles.error}>{error}</div>}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={styles.submitButton}
-          >
+          <button type="submit" disabled={isLoading} className={styles.submitButton}>
             {isLoading ? 'ログイン中...' : 'ログイン'}
           </button>
         </form>
