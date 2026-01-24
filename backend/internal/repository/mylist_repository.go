@@ -22,6 +22,7 @@ type MylistItem struct {
 	Fat           float64                `json:"fat"`
 	Carbohydrates float64                `json:"carbohydrates"`
 	Foods         []gemini.NutritionInfo `json:"foods"`
+	ImagePath     string                 `json:"image_path,omitempty"`
 	SortOrder     int                    `json:"sort_order"`
 	CreatedAt     time.Time              `json:"created_at"`
 	UpdatedAt     time.Time              `json:"updated_at"`
@@ -46,7 +47,7 @@ func NewMylistRepository(db *sql.DB) MylistRepository {
 
 func (r *postgresMylistRepository) GetAll(ctx context.Context, userID uuid.UUID) ([]*MylistItem, error) {
 	query := `
-		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order, created_at, updated_at
+		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 		FROM mylist_items
 		WHERE user_id = $1
 		ORDER BY sort_order ASC, created_at ASC
@@ -76,13 +77,14 @@ func (r *postgresMylistRepository) GetAll(ctx context.Context, userID uuid.UUID)
 
 func (r *postgresMylistRepository) GetByID(ctx context.Context, id, userID uuid.UUID) (*MylistItem, error) {
 	query := `
-		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order, created_at, updated_at
+		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 		FROM mylist_items
 		WHERE id = $1 AND user_id = $2
 	`
 
 	var item MylistItem
 	var foodsJSON []byte
+	var imagePath sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id, userID).Scan(
 		&item.ID,
@@ -95,6 +97,7 @@ func (r *postgresMylistRepository) GetByID(ctx context.Context, id, userID uuid.
 		&item.Fat,
 		&item.Carbohydrates,
 		&foodsJSON,
+		&imagePath,
 		&item.SortOrder,
 		&item.CreatedAt,
 		&item.UpdatedAt,
@@ -105,6 +108,10 @@ func (r *postgresMylistRepository) GetByID(ctx context.Context, id, userID uuid.
 	}
 	if err != nil {
 		return nil, fmt.Errorf("マイリストアイテムの取得に失敗: %w", err)
+	}
+
+	if imagePath.Valid {
+		item.ImagePath = imagePath.String
 	}
 
 	if err := json.Unmarshal(foodsJSON, &item.Foods); err != nil {
@@ -127,13 +134,22 @@ func (r *postgresMylistRepository) Create(ctx context.Context, item *MylistItem)
 	}
 
 	query := `
-		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order, created_at, updated_at
+		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 	`
 
 	var created MylistItem
 	var returnedFoodsJSON []byte
+	var returnedImagePath sql.NullString
+
+	// image_pathが空の場合はNULLとして扱う
+	var imagePathParam interface{}
+	if item.ImagePath != "" {
+		imagePathParam = item.ImagePath
+	} else {
+		imagePathParam = nil
+	}
 
 	err = r.db.QueryRowContext(ctx, query,
 		item.UserID,
@@ -145,6 +161,7 @@ func (r *postgresMylistRepository) Create(ctx context.Context, item *MylistItem)
 		item.Fat,
 		item.Carbohydrates,
 		foodsJSON,
+		imagePathParam,
 		nextSortOrder,
 	).Scan(
 		&created.ID,
@@ -157,6 +174,7 @@ func (r *postgresMylistRepository) Create(ctx context.Context, item *MylistItem)
 		&created.Fat,
 		&created.Carbohydrates,
 		&returnedFoodsJSON,
+		&returnedImagePath,
 		&created.SortOrder,
 		&created.CreatedAt,
 		&created.UpdatedAt,
@@ -164,6 +182,10 @@ func (r *postgresMylistRepository) Create(ctx context.Context, item *MylistItem)
 
 	if err != nil {
 		return nil, fmt.Errorf("マイリストアイテムの作成に失敗: %w", err)
+	}
+
+	if returnedImagePath.Valid {
+		created.ImagePath = returnedImagePath.String
 	}
 
 	if err := json.Unmarshal(returnedFoodsJSON, &created.Foods); err != nil {
@@ -181,13 +203,22 @@ func (r *postgresMylistRepository) Update(ctx context.Context, item *MylistItem)
 
 	query := `
 		UPDATE mylist_items
-		SET name = $1, base_amount = $2, unit = $3, calories = $4, protein = $5, fat = $6, carbohydrates = $7, foods = $8
-		WHERE id = $9 AND user_id = $10
-		RETURNING id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order, created_at, updated_at
+		SET name = $1, base_amount = $2, unit = $3, calories = $4, protein = $5, fat = $6, carbohydrates = $7, foods = $8, image_path = $9
+		WHERE id = $10 AND user_id = $11
+		RETURNING id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 	`
 
 	var updated MylistItem
 	var returnedFoodsJSON []byte
+	var returnedImagePath sql.NullString
+
+	// image_pathが空の場合はNULLとして扱う
+	var imagePathParam interface{}
+	if item.ImagePath != "" {
+		imagePathParam = item.ImagePath
+	} else {
+		imagePathParam = nil
+	}
 
 	err = r.db.QueryRowContext(ctx, query,
 		item.Name,
@@ -198,6 +229,7 @@ func (r *postgresMylistRepository) Update(ctx context.Context, item *MylistItem)
 		item.Fat,
 		item.Carbohydrates,
 		foodsJSON,
+		imagePathParam,
 		item.ID,
 		item.UserID,
 	).Scan(
@@ -211,6 +243,7 @@ func (r *postgresMylistRepository) Update(ctx context.Context, item *MylistItem)
 		&updated.Fat,
 		&updated.Carbohydrates,
 		&returnedFoodsJSON,
+		&returnedImagePath,
 		&updated.SortOrder,
 		&updated.CreatedAt,
 		&updated.UpdatedAt,
@@ -221,6 +254,10 @@ func (r *postgresMylistRepository) Update(ctx context.Context, item *MylistItem)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("マイリストアイテムの更新に失敗: %w", err)
+	}
+
+	if returnedImagePath.Valid {
+		updated.ImagePath = returnedImagePath.String
 	}
 
 	if err := json.Unmarshal(returnedFoodsJSON, &updated.Foods); err != nil {
@@ -289,6 +326,7 @@ type rowScanner interface {
 func scanMylistItem(rows rowScanner) (*MylistItem, error) {
 	var item MylistItem
 	var foodsJSON []byte
+	var imagePath sql.NullString
 
 	err := rows.Scan(
 		&item.ID,
@@ -301,12 +339,17 @@ func scanMylistItem(rows rowScanner) (*MylistItem, error) {
 		&item.Fat,
 		&item.Carbohydrates,
 		&foodsJSON,
+		&imagePath,
 		&item.SortOrder,
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("マイリストアイテムのスキャンに失敗: %w", err)
+	}
+
+	if imagePath.Valid {
+		item.ImagePath = imagePath.String
 	}
 
 	if err := json.Unmarshal(foodsJSON, &item.Foods); err != nil {

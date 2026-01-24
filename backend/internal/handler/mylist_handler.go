@@ -29,25 +29,27 @@ func NewMylistHandler(repository repository.MylistRepository, analysisRepository
 }
 
 type CreateMylistItemRequest struct {
-	Name          string                `json:"name"`
-	BaseAmount    string                `json:"base_amount"`
-	Unit          string                `json:"unit"`
-	Calories      float64               `json:"calories"`
-	Protein       float64               `json:"protein"`
-	Fat           float64               `json:"fat"`
-	Carbohydrates float64               `json:"carbohydrates"`
+	Name          string                 `json:"name"`
+	BaseAmount    string                 `json:"base_amount"`
+	Unit          string                 `json:"unit"`
+	Calories      float64                `json:"calories"`
+	Protein       float64                `json:"protein"`
+	Fat           float64                `json:"fat"`
+	Carbohydrates float64                `json:"carbohydrates"`
 	Foods         []gemini.NutritionInfo `json:"foods"`
+	ImagePath     string                 `json:"image_path,omitempty"`
 }
 
 type UpdateMylistItemRequest struct {
-	Name          string                `json:"name"`
-	BaseAmount    string                `json:"base_amount"`
-	Unit          string                `json:"unit"`
-	Calories      float64               `json:"calories"`
-	Protein       float64               `json:"protein"`
-	Fat           float64               `json:"fat"`
-	Carbohydrates float64               `json:"carbohydrates"`
+	Name          string                 `json:"name"`
+	BaseAmount    string                 `json:"base_amount"`
+	Unit          string                 `json:"unit"`
+	Calories      float64                `json:"calories"`
+	Protein       float64                `json:"protein"`
+	Fat           float64                `json:"fat"`
+	Carbohydrates float64                `json:"carbohydrates"`
 	Foods         []gemini.NutritionInfo `json:"foods"`
+	ImagePath     string                 `json:"image_path,omitempty"`
 }
 
 type ReorderMylistRequest struct {
@@ -142,6 +144,7 @@ func (h *MylistHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		Fat:           req.Fat,
 		Carbohydrates: req.Carbohydrates,
 		Foods:         req.Foods,
+		ImagePath:     req.ImagePath,
 	}
 
 	created, err := h.repository.Create(r.Context(), item)
@@ -212,6 +215,7 @@ func (h *MylistHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		Fat:           req.Fat,
 		Carbohydrates: req.Carbohydrates,
 		Foods:         req.Foods,
+		ImagePath:     req.ImagePath,
 	}
 
 	updated, err := h.repository.Update(r.Context(), item)

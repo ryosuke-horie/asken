@@ -133,6 +133,16 @@ func run() error {
 	mux.Handle("/api/analyze", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
 	mux.Handle("/api/analyze/", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
 
+	// POST /api/upload-image - 画像アップロード（分析なし、認証必須）
+	uploadImageRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			analyzeHandler.HandleUploadImage(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/upload-image", authMiddleware.Authenticate(http.HandlerFunc(uploadImageRouteHandler)))
+
 	// 履歴エンドポイント（認証必須）
 	// GET /api/history - 履歴一覧
 	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(historyHandler.HandleList)))
