@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 
 import { AuthProvider } from '@/contexts/AuthContext'
-
+import Navigation from '@/components/client/Navigation'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header>
             <Image src="/logo-cropped.png" alt="ウチコミ" width={150} height={50} priority />
           </header>
+          <Navigation />
           <main>{children}</main>
           <footer>
             <p>&copy; 2025 ウチコミ.</p>

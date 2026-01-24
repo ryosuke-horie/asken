@@ -63,11 +63,13 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
             <div key={meal.id} className={styles.mealItem}>
               {meal.input_type === 'text' ? (
                 <div className={styles.textPreview}>{meal.input_text}</div>
-              ) : (
+              ) : meal.image_path ? (
                 <MealThumbnail
-                  src={`${API_BASE_URL}/api/images/${meal.image_path?.split('/').pop()}`}
+                  src={`${API_BASE_URL}/api/images/${meal.image_path.split('/').pop()}`}
                   className={styles.thumbnail}
                 />
+              ) : (
+                <div className={styles.noImage}>📋</div>
               )}
               <div className={styles.mealInfo}>
                 <div className={styles.mealCalories}>

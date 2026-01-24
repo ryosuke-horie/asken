@@ -93,6 +93,10 @@ func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string)
 	return nil, repository.DailyTotal{}, nil
 }
 
+func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+	return uuid.Nil, nil
+}
+
 func TestProcessRequest_Success(t *testing.T) {
 	requestID := uuid.New()
 	imagePath := "/uploads/test.jpg"

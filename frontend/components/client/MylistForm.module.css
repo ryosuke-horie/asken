@@ -1,0 +1,148 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  color: #333;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.section {
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.nutritionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.nutritionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nutritionLabel {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.nutritionInput {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nutritionInput .input {
+  flex: 1;
+}
+
+.nutritionUnit {
+  font-size: 0.875rem;
+  color: #666;
+  min-width: 2.5rem;
+}
+
+.foodsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.foodItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+.foodName {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.foodAmount {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.foodCalories {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #f97316;
+}
+
+.submitButton {
+  padding: 1rem;
+  background-color: #f97316;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 1rem;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #ea580c;
+}
+
+.submitButton:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .nutritionGrid {
+    grid-template-columns: 1fr;
+  }
+}
