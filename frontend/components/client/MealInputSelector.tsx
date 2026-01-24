@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MealType, InputType } from '@/types/nutrition'
 import MealTypeUpload from './MealTypeUpload'
 import TextInput from './TextInput'
+import MylistSelector from './MylistSelector'
 import styles from './MealInputSelector.module.css'
 
 interface MealInputSelectorProps {
@@ -12,16 +13,19 @@ interface MealInputSelectorProps {
   onComplete?: () => void
 }
 
-export default function MealInputSelector({
-  mealType,
-  mealDate,
-  onComplete,
-}: MealInputSelectorProps) {
-  const [inputType, setInputType] = useState<InputType>('image')
+export default function MealInputSelector({ mealType, mealDate, onComplete }: MealInputSelectorProps) {
+  const [inputType, setInputType] = useState<InputType>('mylist')
 
   return (
     <div className={styles.container}>
       <div className={styles.tabs}>
+        <button
+          type="button"
+          onClick={() => setInputType('mylist')}
+          className={`${styles.tab} ${inputType === 'mylist' ? styles.active : ''}`}
+        >
+          マイリスト
+        </button>
         <button
           type="button"
           onClick={() => setInputType('image')}
@@ -39,7 +43,9 @@ export default function MealInputSelector({
       </div>
 
       <div className={styles.content}>
-        {inputType === 'image' ? (
+        {inputType === 'mylist' ? (
+          <MylistSelector mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
+        ) : inputType === 'image' ? (
           <MealTypeUpload mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
         ) : (
           <TextInput mealType={mealType} mealDate={mealDate} onComplete={onComplete} />
