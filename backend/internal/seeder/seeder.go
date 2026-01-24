@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
@@ -370,9 +373,21 @@ func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item My
 
 	calories, protein, fat, carbs := CalculateMylistTotals(item.Foods)
 
+	// 画像をコピーしてimage_pathを設定
+	var imagePath interface{}
+	if item.SeedImageSource != "" {
+		copiedPath, err := s.copySeedImage(item.SeedImageSource)
+		if err != nil {
+			s.log(fmt.Sprintf("画像コピーに失敗（スキップ）: %v", err))
+			imagePath = nil
+		} else {
+			imagePath = copiedPath
+		}
+	}
+
 	query := `
-		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 
 	_, err = s.db.ExecContext(ctx, query,
@@ -385,6 +400,7 @@ func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item My
 		fat,
 		carbs,
 		foodsJSON,
+		imagePath,
 		sortOrder,
 	)
 	if err != nil {
@@ -392,4 +408,47 @@ func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item My
 	}
 
 	return nil
+}
+
+// copySeedImage はシード画像をuploadsディレクトリにコピーする
+func (s *Seeder) copySeedImage(sourceFileName string) (string, error) {
+	// シード画像のソースパス
+	sourcePath := filepath.Join("seeds", "images", sourceFileName)
+
+	// uploadsディレクトリを作成
+	uploadsDir := "uploads"
+	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
+		return "", fmt.Errorf("uploadsディレクトリの作成に失敗: %w", err)
+	}
+
+	// 新しいファイル名（UUIDを使用）
+	ext := filepath.Ext(sourceFileName)
+	newFileName := uuid.New().String() + ext
+	destPath := filepath.Join(uploadsDir, newFileName)
+
+	// ファイルをコピー
+	if err := copyFile(sourcePath, destPath); err != nil {
+		return "", fmt.Errorf("ファイルコピーに失敗: %w", err)
+	}
+
+	// DBに保存するパス（/uploads/xxx.jpg形式）
+	return "/" + destPath, nil
+}
+
+// copyFile はファイルをコピーする
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }
