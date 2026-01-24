@@ -65,6 +65,7 @@ func run() error {
 	analysisRepo := repository.NewAnalysisRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	weightRepo := repository.NewWeightRepository(db)
+	mylistRepo := repository.NewMylistRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -96,6 +97,7 @@ func run() error {
 	imageHandler := handler.NewImageHandler("uploads")
 	dailyMealsHandler := handler.NewDailyMealsHandler(analysisRepo)
 	weightHandler := handler.NewWeightHandler(weightRepo)
+	mylistHandler := handler.NewMylistHandler(mylistRepo, analysisRepo, foodService)
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
@@ -157,6 +159,17 @@ func run() error {
 	// GET /api/meals/daily
 	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(dailyMealsHandler.Handle)))
 
+	// マイリストからの食事記録エンドポイント（認証必須）
+	// POST /api/meals/from-mylist
+	mealsFromMylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			mylistHandler.HandleRecordFromMylist(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/meals/from-mylist", authMiddleware.Authenticate(http.HandlerFunc(mealsFromMylistRouteHandler)))
+
 	// 体重記録エンドポイント（認証必須）
 	// POST /api/weight-records - 体重記録作成
 	// GET /api/weight-records - 体重記録一覧取得
@@ -186,6 +199,56 @@ func run() error {
 		}
 	}
 	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+
+	// マイリストエンドポイント（認証必須）
+	// GET /api/mylist - 一覧取得
+	// POST /api/mylist - 新規作成
+	mylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			mylistHandler.HandleList(w, r)
+		} else if r.Method == http.MethodPost {
+			mylistHandler.HandleCreate(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist", authMiddleware.Authenticate(http.HandlerFunc(mylistRouteHandler)))
+
+	// PUT /api/mylist/reorder - 並び替え
+	mylistReorderRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			mylistHandler.HandleReorder(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/reorder", authMiddleware.Authenticate(http.HandlerFunc(mylistReorderRouteHandler)))
+
+	// POST /api/mylist/analyze - AI分析
+	mylistAnalyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			mylistHandler.HandleAnalyze(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/analyze", authMiddleware.Authenticate(http.HandlerFunc(mylistAnalyzeRouteHandler)))
+
+	// GET /api/mylist/:id - 単体取得
+	// PUT /api/mylist/:id - 更新
+	// DELETE /api/mylist/:id - 削除
+	mylistDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			mylistHandler.HandleGetByID(w, r)
+		} else if r.Method == http.MethodPut {
+			mylistHandler.HandleUpdate(w, r)
+		} else if r.Method == http.MethodDelete {
+			mylistHandler.HandleDelete(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/", authMiddleware.Authenticate(http.HandlerFunc(mylistDetailRouteHandler)))
 
 	// CORSミドルウェアを適用
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))

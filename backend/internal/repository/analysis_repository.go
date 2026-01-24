@@ -28,8 +28,9 @@ const (
 type InputType string
 
 const (
-	InputTypeImage InputType = "image"
-	InputTypeText  InputType = "text"
+	InputTypeImage  InputType = "image"
+	InputTypeText   InputType = "text"
+	InputTypeMylist InputType = "mylist"
 )
 
 // AnalysisRequest は分析リクエストを表す構造体
@@ -107,6 +108,9 @@ type AnalysisRepository interface {
 
 	// GetDailyMeals は指定された日付の食事データを取得します
 	GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error)
+
+	// CreateRequestFromMylist はマイリストからの食事記録を作成します
+	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error)
 }
 
 // postgresAnalysisRepository はPostgreSQLを使用したAnalysisRepositoryの実装
@@ -702,4 +706,64 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 	}
 
 	return meals, dailyTotal, nil
+}
+
+// CreateRequestFromMylist はマイリストからの食事記録を作成します
+func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer tx.Rollback()
+
+	// analysis_requests に挿入（statusはcompleted）
+	requestQuery := `
+		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`
+
+	var requestID uuid.UUID
+	err = tx.QueryRowContext(ctx, requestQuery, StatusCompleted, InputTypeMylist, inputText, mealType, mealDate, userID).Scan(&requestID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
+	}
+
+	// foods をJSONBに変換
+	foodsJSON, err := json.Marshal(result.Foods)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("foods のJSON変換に失敗: %w", err)
+	}
+
+	// analysis_results に結果を保存
+	resultQuery := `
+		INSERT INTO analysis_results (
+			analysis_request_id,
+			foods,
+			total_calories,
+			total_protein,
+			total_fat,
+			total_carbohydrates
+		) VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	_, err = tx.ExecContext(ctx, resultQuery,
+		requestID,
+		foodsJSON,
+		result.TotalCalories,
+		result.TotalProtein,
+		result.TotalFat,
+		result.TotalCarbohydrates,
+	)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("分析結果の保存に失敗: %w", err)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションのコミットに失敗: %w", err)
+	}
+
+	return requestID, nil
 }

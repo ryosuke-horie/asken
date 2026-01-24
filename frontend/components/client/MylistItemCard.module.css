@@ -1,0 +1,116 @@
+.card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.content {
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.name {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+  flex: 1;
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.editButton,
+.deleteButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.editButton:hover,
+.deleteButton:hover {
+  opacity: 1;
+}
+
+.amount {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.nutrition {
+  margin-bottom: 0.75rem;
+}
+
+.calories {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f97316;
+  margin-bottom: 0.25rem;
+}
+
+.unit {
+  font-size: 1rem;
+  color: #666;
+}
+
+.macros {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.macro {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.foods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.foodTag {
+  font-size: 0.75rem;
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: #555;
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 0.75rem;
+  }
+
+  .name {
+    font-size: 1rem;
+  }
+
+  .calories {
+    font-size: 1.25rem;
+  }
+}
