@@ -24,8 +24,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_STORAGE_KEY = 'asken_auth_token'
-const USER_STORAGE_KEY = 'asken_user'
+const TOKEN_STORAGE_KEY = 'uchikomi_auth_token'
+const USER_STORAGE_KEY = 'uchikomi_user'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 

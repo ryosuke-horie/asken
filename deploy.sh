@@ -39,7 +39,7 @@ if ! command -v migrate &> /dev/null; then
 fi
 
 MIGRATION_DIR="$SCRIPT_DIR/backend/database/migrations"
-MIGRATE_URL="postgres://asken:asken@localhost:5432/asken?sslmode=disable"
+MIGRATE_URL="postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable"
 
 if [ -d "$MIGRATION_DIR" ]; then
     echo "  マイグレーションディレクトリ: $MIGRATION_DIR"
@@ -79,5 +79,5 @@ systemctl status uchikomi-frontend --no-pager -l | head -10
 echo ""
 
 echo "=== デプロイ完了 ==="
-echo "フロントエンド: https://uchikomi.exe.xyz:3000"
-echo "バックエンドAPI: https://uchikomi.exe.xyz:8080"
+echo "フロントエンド: https://utikomi.exe.xyz:3000"
+echo "バックエンドAPI: https://utikomi.exe.xyz:8080"

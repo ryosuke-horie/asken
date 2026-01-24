@@ -230,7 +230,7 @@ npm run build
 grep NEXT_PUBLIC_API_URL /home/exedev/uchikomi/frontend/uchikomi-frontend.service
 
 # 正しい設定例
-# Environment=NEXT_PUBLIC_API_URL=https://asken.exe.xyz:8080
+# Environment=NEXT_PUBLIC_API_URL=https://utikomi.exe.xyz:8080
 ```
 
 2. **CORS設定の確認**: バックエンドの`backend/cmd/server/main.go`でフロントエンドのオリジンが許可されているか確認
@@ -262,5 +262,5 @@ sudo systemctl restart uchikomi-frontend
 
 ## URL
 
-- **フロントエンド**: https://asken.exe.xyz:3000
-- **バックエンドAPI**: https://asken.exe.xyz:8080
+- **フロントエンド**: https://utikomi.exe.xyz:3000
+- **バックエンドAPI**: https://utikomi.exe.xyz:8080
