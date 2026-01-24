@@ -9,8 +9,9 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "knip": "knip",
-    "depcheck": "depcheck --ignores=@types/react-dom,prettier"
+    "depcheck": "depcheck --ignores=@types/react-dom,prettier,@vitest/coverage-v8"
   },
   "dependencies": {
     "next": "14.0.4",
@@ -26,6 +27,7 @@
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^4.0.18",
     "depcheck": "^1.4.7",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.0.4",
