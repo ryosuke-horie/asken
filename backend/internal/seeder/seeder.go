@@ -15,10 +15,11 @@ import (
 
 // Config はSeederの設定
 type Config struct {
-	UserCount       int
-	AnalysesPerUser int
-	CleanFirst      bool
-	Verbose         bool
+	UserCount        int
+	AnalysesPerUser  int
+	WeightRecordDays int
+	CleanFirst       bool
+	Verbose          bool
 }
 
 // Seeder はデータベースにテストデータを投入する構造体
@@ -66,6 +67,22 @@ func (s *Seeder) Run(ctx context.Context) error {
 		s.log(fmt.Sprintf("ユーザー %s に %d 件の分析データを作成しました", user.Email, s.config.AnalysesPerUser))
 	}
 
+	// 体重記録データを作成
+	if s.config.WeightRecordDays > 0 {
+		for _, user := range users {
+			recordCount, err := s.seedWeightRecordsForUser(ctx, user.ID)
+			if err != nil {
+				return fmt.Errorf("ユーザー %s の体重記録シードに失敗: %w", user.Email, err)
+			}
+			s.log(fmt.Sprintf("ユーザー %s に %d 件の体重記録データを作成しました", user.Email, recordCount))
+
+			if err := s.seedWeightGoalForUser(ctx, user.ID); err != nil {
+				return fmt.Errorf("ユーザー %s の目標体重シードに失敗: %w", user.Email, err)
+			}
+			s.log(fmt.Sprintf("ユーザー %s に目標体重を設定しました", user.Email))
+		}
+	}
+
 	return nil
 }
 
@@ -74,6 +91,8 @@ func (s *Seeder) clean(ctx context.Context) error {
 	queries := []string{
 		"DELETE FROM analysis_results",
 		"DELETE FROM analysis_requests",
+		"DELETE FROM weight_records",
+		"DELETE FROM weight_goals",
 		"DELETE FROM users",
 	}
 
@@ -286,4 +305,38 @@ func GetSampleNutritionInfo(mealType string) []gemini.NutritionInfo {
 		return foods
 	}
 	return SampleNutritionData["lunch"]
+}
+
+// seedWeightRecordsForUser はユーザーに対して体重記録データを作成する
+func (s *Seeder) seedWeightRecordsForUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	records := GenerateWeightRecords(s.config.WeightRecordDays, DefaultWeightSeedConfig)
+
+	query := `
+		INSERT INTO weight_records (user_id, weight, recorded_at)
+		VALUES ($1, $2, $3)
+	`
+
+	for _, record := range records {
+		if _, err := s.db.ExecContext(ctx, query, userID, record.Weight, record.RecordedAt); err != nil {
+			return 0, fmt.Errorf("体重記録の挿入に失敗: %w", err)
+		}
+	}
+
+	return len(records), nil
+}
+
+// seedWeightGoalForUser はユーザーに対して目標体重を設定する
+func (s *Seeder) seedWeightGoalForUser(ctx context.Context, userID uuid.UUID) error {
+	query := `
+		INSERT INTO weight_goals (user_id, target_weight, target_date)
+		VALUES ($1, $2, $3)
+	`
+
+	targetDate := GetDefaultTargetDate()
+	_, err := s.db.ExecContext(ctx, query, userID, DefaultWeightSeedConfig.TargetWeight, targetDate)
+	if err != nil {
+		return fmt.Errorf("目標体重の挿入に失敗: %w", err)
+	}
+
+	return nil
 }

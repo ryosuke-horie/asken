@@ -121,3 +121,120 @@ func TestGetSampleNutritionInfo(t *testing.T) {
 		}
 	})
 }
+
+func TestGenerateWeightRecords(t *testing.T) {
+	t.Run("指定日数分の体重記録を生成すべき", func(t *testing.T) {
+		days := 30
+		config := WeightSeedConfig{
+			StartWeight:  75.0,
+			TargetWeight: 68.0,
+		}
+		records := GenerateWeightRecords(days, config)
+
+		// 週末のスキップがあるため、日数より少なくなる可能性がある
+		if len(records) == 0 {
+			t.Error("体重記録が生成されていない")
+		}
+		if len(records) > days {
+			t.Errorf("体重記録が指定日数より多い: 期待最大%d件, 実際%d件", days, len(records))
+		}
+	})
+
+	t.Run("0日の場合はnilを返すべき", func(t *testing.T) {
+		records := GenerateWeightRecords(0, DefaultWeightSeedConfig)
+		if records != nil {
+			t.Errorf("0日の場合はnilであるべき: 実際%d件", len(records))
+		}
+	})
+
+	t.Run("負の日数の場合はnilを返すべき", func(t *testing.T) {
+		records := GenerateWeightRecords(-1, DefaultWeightSeedConfig)
+		if records != nil {
+			t.Errorf("負の日数の場合はnilであるべき: 実際%d件", len(records))
+		}
+	})
+
+	t.Run("体重が減量トレンドを示すべき", func(t *testing.T) {
+		days := 90
+		config := WeightSeedConfig{
+			StartWeight:  75.0,
+			TargetWeight: 68.0,
+		}
+		records := GenerateWeightRecords(days, config)
+
+		if len(records) < 2 {
+			t.Skip("記録が2件未満のためスキップ")
+		}
+
+		// 最初と最後の記録を比較
+		firstWeight := records[0].Weight
+		lastWeight := records[len(records)-1].Weight
+
+		// 日々の変動はあるが、全体的に減少しているはず
+		// 変動幅を考慮して緩い条件でチェック
+		if lastWeight > firstWeight+1.0 {
+			t.Errorf("体重が増加している: 開始%.1fkg → 終了%.1fkg", firstWeight, lastWeight)
+		}
+	})
+
+	t.Run("体重が妥当な範囲であるべき", func(t *testing.T) {
+		days := 30
+		config := WeightSeedConfig{
+			StartWeight:  75.0,
+			TargetWeight: 68.0,
+		}
+		records := GenerateWeightRecords(days, config)
+
+		for _, record := range records {
+			if record.Weight < 65.0 || record.Weight > 80.0 {
+				t.Errorf("体重が範囲外: %.1fkg", record.Weight)
+			}
+		}
+	})
+
+	t.Run("日付がYYYY-MM-DD形式であるべき", func(t *testing.T) {
+		records := GenerateWeightRecords(7, DefaultWeightSeedConfig)
+		for _, record := range records {
+			if len(record.RecordedAt) != 10 {
+				t.Errorf("日付の形式が不正: %s", record.RecordedAt)
+			}
+		}
+	})
+}
+
+func TestDefaultWeightSeedConfig(t *testing.T) {
+	t.Run("デフォルト設定が妥当な値であるべき", func(t *testing.T) {
+		if DefaultWeightSeedConfig.StartWeight <= 0 {
+			t.Errorf("開始体重が0以下: %.1f", DefaultWeightSeedConfig.StartWeight)
+		}
+		if DefaultWeightSeedConfig.TargetWeight <= 0 {
+			t.Errorf("目標体重が0以下: %.1f", DefaultWeightSeedConfig.TargetWeight)
+		}
+		if DefaultWeightSeedConfig.StartWeight <= DefaultWeightSeedConfig.TargetWeight {
+			t.Errorf("開始体重が目標体重以下: 開始%.1fkg <= 目標%.1fkg",
+				DefaultWeightSeedConfig.StartWeight, DefaultWeightSeedConfig.TargetWeight)
+		}
+	})
+}
+
+func TestGetDefaultTargetDate(t *testing.T) {
+	t.Run("1ヶ月後の日付を返すべき", func(t *testing.T) {
+		result := GetDefaultTargetDate()
+		if len(result) != 10 {
+			t.Errorf("日付の形式が不正: %s", result)
+		}
+
+		// パースして1ヶ月後であることを確認
+		parsed, err := time.Parse("2006-01-02", result)
+		if err != nil {
+			t.Errorf("日付のパースに失敗: %v", err)
+		}
+
+		now := time.Now()
+		expected := now.AddDate(0, 1, 0)
+		if parsed.Year() != expected.Year() || parsed.Month() != expected.Month() || parsed.Day() != expected.Day() {
+			t.Errorf("日付が1ヶ月後でない: 期待%s, 実際%s",
+				expected.Format("2006-01-02"), result)
+		}
+	})
+}
