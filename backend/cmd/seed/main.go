@@ -23,6 +23,7 @@ func run() error {
 	// コマンドラインフラグを定義
 	users := flag.Int("users", 3, "生成するユーザー数")
 	analyses := flag.Int("analyses", 5, "ユーザーあたりの分析数")
+	weightDays := flag.Int("weight-days", 90, "体重記録の日数（0で無効）")
 	clean := flag.Bool("clean", true, "既存データを削除")
 	verbose := flag.Bool("verbose", false, "詳細ログ出力")
 	flag.Parse()
@@ -55,10 +56,11 @@ func run() error {
 
 	// Seederの設定
 	config := seeder.Config{
-		UserCount:       *users,
-		AnalysesPerUser: *analyses,
-		CleanFirst:      *clean,
-		Verbose:         *verbose,
+		UserCount:        *users,
+		AnalysesPerUser:  *analyses,
+		WeightRecordDays: *weightDays,
+		CleanFirst:       *clean,
+		Verbose:          *verbose,
 	}
 
 	// Seeder実行
@@ -73,6 +75,9 @@ func run() error {
 	fmt.Printf("  ユーザー数: %d\n", *users)
 	fmt.Printf("  ユーザーあたりの分析数: %d\n", *analyses)
 	fmt.Printf("  合計分析数: %d\n", *users*(*analyses))
+	if *weightDays > 0 {
+		fmt.Printf("  体重記録期間: %d日分\n", *weightDays)
+	}
 
 	if *users > 0 {
 		fmt.Println("\nテストユーザー:")
