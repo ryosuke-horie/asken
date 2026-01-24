@@ -55,6 +55,7 @@ type handlers struct {
 	weight        *handler.WeightHandler
 	mylist        *handler.MylistHandler
 	skipMeal      *handler.SkipMealHandler
+	condition     *handler.ConditionHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -71,6 +72,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.Auth
 	setupMealsRoutes(mux, h, authMiddleware)
 	setupWeightRoutes(mux, h, authMiddleware)
 	setupMylistRoutes(mux, h, authMiddleware)
+	setupConditionRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -212,6 +214,20 @@ func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewar
 	mux.Handle("/api/mylist/", authMiddleware.Authenticate(http.HandlerFunc(mylistDetailRouteHandler)))
 }
 
+func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	conditionRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.condition.HandleCreateRecord(w, r)
+		case http.MethodGet:
+			h.condition.HandleGetRecord(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
+}
+
 func run() error {
 	// 環境変数から設定を読み込み
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -234,6 +250,7 @@ func run() error {
 	userRepo := repository.NewUserRepository(db)
 	weightRepo := repository.NewWeightRepository(db)
 	mylistRepo := repository.NewMylistRepository(db)
+	conditionRepo := repository.NewConditionRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -268,6 +285,7 @@ func run() error {
 		weight:        handler.NewWeightHandler(weightRepo),
 		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
+		condition:     handler.NewConditionHandler(conditionRepo),
 	}
 
 	// ワーカーの初期化
