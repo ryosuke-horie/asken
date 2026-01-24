@@ -231,7 +231,7 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 
 	// ファイルポインタを先頭に戻す
 	if seeker, ok := file.(io.Seeker); ok {
-		seeker.Seek(0, io.SeekStart)
+		_, _ = seeker.Seek(0, io.SeekStart)
 	}
 
 	contentType := http.DetectContentType(buffer)
@@ -257,7 +257,7 @@ func savePermanentFile(file multipart.File, header *multipart.FileHeader) (strin
 
 	// 保存先ディレクトリを作成（バックエンドディレクトリ内のuploads/）
 	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 		return "", fmt.Errorf("ディレクトリの作成に失敗しました: %w", err)
 	}
 
@@ -320,4 +320,3 @@ func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
 	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
 	return nil
 }
-

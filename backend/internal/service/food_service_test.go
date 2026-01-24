@@ -75,9 +75,9 @@ func TestAnalyzeFoodImage_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Len(t, result.Foods, 2)
-	assert.Equal(t, 410.0, result.TotalCalories) // 360 + 50
-	assert.Equal(t, 32.0, result.TotalProtein)   // 30 + 2
-	assert.Equal(t, 26.1, result.TotalFat)       // 24.6 + 1.5
+	assert.Equal(t, 410.0, result.TotalCalories)    // 360 + 50
+	assert.Equal(t, 32.0, result.TotalProtein)      // 30 + 2
+	assert.Equal(t, 26.1, result.TotalFat)          // 24.6 + 1.5
 	assert.Equal(t, 8.4, result.TotalCarbohydrates) // 0.4 + 8
 }
 
@@ -182,9 +182,9 @@ func TestAnalyzeFoodText_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Len(t, result.Foods, 2)
-	assert.InDelta(t, 875.0, result.TotalCalories, 0.01) // 504 + 371
-	assert.InDelta(t, 24.7, result.TotalProtein, 0.01)   // 7.6 + 17.1
-	assert.InDelta(t, 33.9, result.TotalFat, 0.01)       // 1.0 + 32.9
+	assert.InDelta(t, 875.0, result.TotalCalories, 0.01)      // 504 + 371
+	assert.InDelta(t, 24.7, result.TotalProtein, 0.01)        // 7.6 + 17.1
+	assert.InDelta(t, 33.9, result.TotalFat, 0.01)            // 1.0 + 32.9
 	assert.InDelta(t, 111.5, result.TotalCarbohydrates, 0.01) // 111.4 + 0.1
 }
 

@@ -15,10 +15,10 @@ import (
 
 // Config はSeederの設定
 type Config struct {
-	UserCount      int
+	UserCount       int
 	AnalysesPerUser int
-	CleanFirst     bool
-	Verbose        bool
+	CleanFirst      bool
+	Verbose         bool
 }
 
 // Seeder はデータベースにテストデータを投入する構造体
@@ -81,7 +81,7 @@ func (s *Seeder) clean(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("トランザクション開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	for _, query := range queries {
 		if _, err := tx.ExecContext(ctx, query); err != nil {
@@ -94,11 +94,6 @@ func (s *Seeder) clean(ctx context.Context) error {
 
 // seedUsers はテストユーザーを作成する
 func (s *Seeder) seedUsers(ctx context.Context) ([]*repository.User, error) {
-	testUsers := DefaultTestUsers
-	if s.config.UserCount < len(testUsers) {
-		testUsers = testUsers[:s.config.UserCount]
-	}
-
 	var users []*repository.User
 
 	for i := 0; i < s.config.UserCount; i++ {
