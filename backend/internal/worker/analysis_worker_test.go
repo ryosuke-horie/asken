@@ -154,7 +154,7 @@ func TestProcessRequest_Success(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err := worker.processRequest(context.Background(), request)
+	err := worker.processRequest(context.Background(), &request)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, updateStatusCalled)
@@ -207,7 +207,7 @@ func TestProcessRequest_AnalysisError(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err := worker.processRequest(context.Background(), request)
+	err := worker.processRequest(context.Background(), &request)
 
 	assert.NoError(t, err) // processRequestは内部でエラーをハンドリングするため、nilを返す
 	assert.Equal(t, 2, updateStatusCalled)
@@ -373,7 +373,7 @@ func TestProcessRequest_TextInput_Success(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err := worker.processRequest(context.Background(), request)
+	err := worker.processRequest(context.Background(), &request)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, updateStatusCalled)
@@ -424,7 +424,7 @@ func TestProcessRequest_TextInput_AnalysisError(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err := worker.processRequest(context.Background(), request)
+	err := worker.processRequest(context.Background(), &request)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2, updateStatusCalled)
