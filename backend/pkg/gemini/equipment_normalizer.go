@@ -60,7 +60,7 @@ func (en *EquipmentNormalizer) NormalizeEquipmentNames(ctx context.Context, name
 
 	response, err := en.client.Execute(ctx, prompt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Gemini APIによる器具名正規化に失敗: %w", err)
 	}
 
 	normalizedJSON := removeCodeBlock(response.Response)

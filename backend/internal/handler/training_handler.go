@@ -15,16 +15,16 @@ import (
 
 // TrainingHandler はトレーニング関連のハンドラー
 type TrainingHandler struct {
-	repository        repository.TrainingRepository
-	menuSuggester     *gemini.MenuSuggester
+	repository          repository.TrainingRepository
+	menuSuggester       *gemini.MenuSuggester
 	equipmentNormalizer *gemini.EquipmentNormalizer
 }
 
 // NewTrainingHandler は新しいTrainingHandlerを作成
 func NewTrainingHandler(repository repository.TrainingRepository, menuSuggester *gemini.MenuSuggester, equipmentNormalizer *gemini.EquipmentNormalizer) *TrainingHandler {
 	return &TrainingHandler{
-		repository:        repository,
-		menuSuggester:     menuSuggester,
+		repository:          repository,
+		menuSuggester:       menuSuggester,
 		equipmentNormalizer: equipmentNormalizer,
 	}
 }
@@ -83,7 +83,7 @@ type SuggestMenuResponse struct {
 
 func (h *TrainingHandler) HandleListLocations(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -108,7 +108,7 @@ func (h *TrainingHandler) HandleListLocations(w http.ResponseWriter, r *http.Req
 
 func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -150,7 +150,7 @@ func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Re
 
 func (h *TrainingHandler) HandleUpdateLocation(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -208,7 +208,7 @@ func (h *TrainingHandler) HandleUpdateLocation(w http.ResponseWriter, r *http.Re
 
 func (h *TrainingHandler) HandleDeleteLocation(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -242,7 +242,7 @@ func (h *TrainingHandler) HandleDeleteLocation(w http.ResponseWriter, r *http.Re
 
 func (h *TrainingHandler) HandleListEquipment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -293,7 +293,7 @@ func (h *TrainingHandler) HandleListEquipment(w http.ResponseWriter, r *http.Req
 
 func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -362,7 +362,7 @@ func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.R
 
 func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -393,7 +393,12 @@ func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.R
 
 	// 場所の所有権確認
 	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID, userID)
-	if err != nil || location == nil {
+	if err != nil {
+		log.Printf("場所の所有権確認に失敗 (location_id=%s, user_id=%s): %v", existing.LocationID, userID, err)
+		http.Error(w, "場所の所有権確認に失敗しました", http.StatusInternalServerError)
+		return
+	}
+	if location == nil {
 		http.Error(w, "アクセス権限がありません", http.StatusForbidden)
 		return
 	}
@@ -439,7 +444,7 @@ func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.R
 
 func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -470,7 +475,12 @@ func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.R
 
 	// 場所の所有権確認
 	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID, userID)
-	if err != nil || location == nil {
+	if err != nil {
+		log.Printf("場所の所有権確認に失敗 (location_id=%s, user_id=%s): %v", existing.LocationID, userID, err)
+		http.Error(w, "場所の所有権確認に失敗しました", http.StatusInternalServerError)
+		return
+	}
+	if location == nil {
 		http.Error(w, "アクセス権限がありません", http.StatusForbidden)
 		return
 	}
@@ -492,7 +502,7 @@ func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.R
 
 func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -546,7 +556,7 @@ func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Reque
 
 func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -608,7 +618,7 @@ func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Requ
 
 func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -653,7 +663,7 @@ func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Reque
 
 func (h *TrainingHandler) HandleNormalizeEquipment(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	if userID == uuid.Nil {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
