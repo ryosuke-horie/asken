@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 # Frontend: lint-staged (ESLint, Prettier, TypeScript)
 cd frontend
@@ -7,10 +8,10 @@ cd frontend
 STAGED_FRONTEND=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^frontend/' || true)
 
 if [ -n "$STAGED_FRONTEND" ]; then
-  echo "🔍 Frontend: Running lint-staged..."
+  echo "[Frontend] Running lint-staged..."
   npx lint-staged
 
-  echo "🔍 Frontend: Running TypeScript type check..."
+  echo "[Frontend] Running TypeScript type check..."
   npm run typecheck
 fi
 
@@ -20,10 +21,12 @@ cd ..
 STAGED_BACKEND=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^backend/.*\.go$' || true)
 
 if [ -n "$STAGED_BACKEND" ]; then
-  echo "🔍 Backend: Running golangci-lint..."
+  echo "[Backend] Running golangci-lint..."
   cd backend
   golangci-lint run ./...
   cd ..
 fi
 
-echo "✅ Pre-commit checks passed!"
+if [ -n "$STAGED_FRONTEND" ] || [ -n "$STAGED_BACKEND" ]; then
+  echo "[OK] Pre-commit checks passed!"
+fi
