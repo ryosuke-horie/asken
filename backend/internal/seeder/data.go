@@ -158,3 +158,74 @@ func GenerateWeightRecords(days int, config WeightSeedConfig) []WeightSeedRecord
 func GetDefaultTargetDate() string {
 	return FormatDateForDB(time.Now().AddDate(0, 1, 0))
 }
+
+// MylistSeedItem はマイリストシード用の構造体
+type MylistSeedItem struct {
+	Name       string
+	BaseAmount string
+	Unit       string
+	Foods      []gemini.NutritionInfo
+}
+
+// DefaultMylistItems はデフォルトのマイリストアイテム
+// 格闘技の減量に適した高タンパク・低カロリーなメニューを中心に構成
+var DefaultMylistItems = []MylistSeedItem{
+	{
+		Name:       "鶏むね肉定食",
+		BaseAmount: "1人前",
+		Unit:       "食",
+		Foods: []gemini.NutritionInfo{
+			{Name: "鶏むね肉（皮なし）", EstimatedAmount: "150g", Calories: 165, Protein: 34.5, Fat: 2.3, Carbohydrates: 0.0},
+			{Name: "白ご飯", EstimatedAmount: "1膳（150g）", Calories: 252, Protein: 3.8, Fat: 0.5, Carbohydrates: 55.7},
+			{Name: "ブロッコリー", EstimatedAmount: "50g", Calories: 17, Protein: 2.2, Fat: 0.3, Carbohydrates: 2.6},
+		},
+	},
+	{
+		Name:       "プロテインシェイク",
+		BaseAmount: "1杯",
+		Unit:       "杯",
+		Foods: []gemini.NutritionInfo{
+			{Name: "ホエイプロテイン", EstimatedAmount: "30g", Calories: 120, Protein: 24.0, Fat: 1.5, Carbohydrates: 3.0},
+			{Name: "低脂肪牛乳", EstimatedAmount: "200ml", Calories: 92, Protein: 7.6, Fat: 2.0, Carbohydrates: 11.0},
+		},
+	},
+	{
+		Name:       "サラダチキン",
+		BaseAmount: "1パック",
+		Unit:       "パック",
+		Foods: []gemini.NutritionInfo{
+			{Name: "サラダチキン", EstimatedAmount: "1パック（115g）", Calories: 127, Protein: 26.5, Fat: 1.6, Carbohydrates: 1.2},
+		},
+	},
+	{
+		Name:       "オートミール朝食",
+		BaseAmount: "1人前",
+		Unit:       "食",
+		Foods: []gemini.NutritionInfo{
+			{Name: "オートミール", EstimatedAmount: "50g", Calories: 190, Protein: 6.9, Fat: 2.8, Carbohydrates: 34.5},
+			{Name: "バナナ", EstimatedAmount: "1本（100g）", Calories: 86, Protein: 1.1, Fat: 0.2, Carbohydrates: 22.5},
+			{Name: "はちみつ", EstimatedAmount: "10g", Calories: 30, Protein: 0.0, Fat: 0.0, Carbohydrates: 8.2},
+		},
+	},
+	{
+		Name:       "焼き鮭定食",
+		BaseAmount: "1人前",
+		Unit:       "食",
+		Foods: []gemini.NutritionInfo{
+			{Name: "焼き鮭", EstimatedAmount: "1切れ（80g）", Calories: 156, Protein: 17.8, Fat: 8.9, Carbohydrates: 0.1},
+			{Name: "白ご飯", EstimatedAmount: "1膳（150g）", Calories: 252, Protein: 3.8, Fat: 0.5, Carbohydrates: 55.7},
+			{Name: "味噌汁", EstimatedAmount: "1杯（150ml）", Calories: 32, Protein: 2.4, Fat: 1.2, Carbohydrates: 2.8},
+		},
+	},
+}
+
+// CalculateMylistTotals はマイリストアイテムの栄養素合計を計算する
+func CalculateMylistTotals(foods []gemini.NutritionInfo) (calories, protein, fat, carbs float64) {
+	for _, food := range foods {
+		calories += food.Calories
+		protein += food.Protein
+		fat += food.Fat
+		carbs += food.Carbohydrates
+	}
+	return
+}
