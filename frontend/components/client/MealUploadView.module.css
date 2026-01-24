@@ -138,6 +138,23 @@
   word-break: break-word;
 }
 
+.skippedIcon {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-size: 2.5rem;
+}
+
+.skippedText {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
 .mealInfo {
   flex: 1;
   display: flex;
@@ -197,6 +214,12 @@
   .textPreview {
     width: 80px;
     height: 80px;
+  }
+
+  .skippedIcon {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
   }
 
   .calories {

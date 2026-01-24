@@ -28,9 +28,10 @@ const (
 type InputType string
 
 const (
-	InputTypeImage  InputType = "image"
-	InputTypeText   InputType = "text"
-	InputTypeMylist InputType = "mylist"
+	InputTypeImage   InputType = "image"
+	InputTypeText    InputType = "text"
+	InputTypeMylist  InputType = "mylist"
+	InputTypeSkipped InputType = "skipped"
 )
 
 // AnalysisRequest は分析リクエストを表す構造体
@@ -111,6 +112,9 @@ type AnalysisRepository interface {
 
 	// CreateRequestFromMylist はマイリストからの食事記録を作成します
 	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error)
+
+	// CreateSkippedMeal は「食べなかった」記録を作成します
+	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
 }
 
 // postgresAnalysisRepository はPostgreSQLを使用したAnalysisRepositoryの実装
@@ -755,6 +759,61 @@ func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context
 		result.TotalProtein,
 		result.TotalFat,
 		result.TotalCarbohydrates,
+	)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("分析結果の保存に失敗: %w", err)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションのコミットに失敗: %w", err)
+	}
+
+	return requestID, nil
+}
+
+// CreateSkippedMeal は「食べなかった」記録を作成します
+func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// analysis_requests に挿入（statusはcompleted, input_typeはskipped）
+	requestQuery := `
+		INSERT INTO analysis_requests (status, input_type, meal_type, meal_date, user_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+
+	var requestID uuid.UUID
+	err = tx.QueryRowContext(ctx, requestQuery, StatusCompleted, InputTypeSkipped, mealType, mealDate, userID).Scan(&requestID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
+	}
+
+	// analysis_results に空の結果を保存（カロリー0）
+	resultQuery := `
+		INSERT INTO analysis_results (
+			analysis_request_id,
+			foods,
+			total_calories,
+			total_protein,
+			total_fat,
+			total_carbohydrates
+		) VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	emptyFoodsJSON := []byte("[]")
+	_, err = tx.ExecContext(ctx, resultQuery,
+		requestID,
+		emptyFoodsJSON,
+		0,
+		0,
+		0,
+		0,
 	)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析結果の保存に失敗: %w", err)
