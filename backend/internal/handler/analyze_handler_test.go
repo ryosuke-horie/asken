@@ -178,11 +178,11 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 
 	// レスポンス形式を確認
 	var response struct {
-		AnalysisID string `json:"analysis_id"`
+		ID string `json:"id"`
 	}
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, expectedID.String(), response.AnalysisID)
+	assert.Equal(t, expectedID.String(), response.ID)
 
 	// ファイルが削除されていないことを確認（永続化のため）
 	// Note: テスト後のクリーンアップは別途必要
@@ -360,11 +360,11 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, w.Code)
 
 	var response struct {
-		AnalysisID string `json:"analysis_id"`
+		ID string `json:"id"`
 	}
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, expectedID.String(), response.AnalysisID)
+	assert.Equal(t, expectedID.String(), response.ID)
 }
 
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
