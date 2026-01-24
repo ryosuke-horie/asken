@@ -11,6 +11,7 @@ export interface MylistItem {
   fat: number
   carbohydrates: number
   foods: NutritionInfo[]
+  image_path?: string
   sort_order: number
   created_at: string
   updated_at: string
@@ -25,6 +26,7 @@ export interface CreateMylistItemRequest {
   fat: number
   carbohydrates: number
   foods: NutritionInfo[]
+  image_path?: string
 }
 
 export interface UpdateMylistItemRequest {
@@ -36,6 +38,7 @@ export interface UpdateMylistItemRequest {
   fat: number
   carbohydrates: number
   foods: NutritionInfo[]
+  image_path?: string
 }
 
 export interface AnalyzeMylistRequest {
