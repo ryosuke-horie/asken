@@ -1,0 +1,306 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settingsButton,
+.suggestButton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.settingsButton {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.settingsButton:hover {
+  background-color: #d1d5db;
+}
+
+.suggestButton {
+  background-color: #f97316;
+  color: white;
+}
+
+.suggestButton:hover {
+  background-color: #ea580c;
+}
+
+.error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.calendarContainer {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.calendarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.navButton {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.navButton:hover {
+  color: #333;
+}
+
+.monthLabel {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.weekDay {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+  padding: 0.25rem;
+}
+
+.sunday {
+  color: #dc2626;
+}
+
+.saturday {
+  color: #2563eb;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calendarDay {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0.25rem;
+}
+
+.calendarDay:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.calendarDay.selected {
+  border-color: #f97316;
+  background-color: #fff7ed;
+}
+
+.calendarDay.today {
+  background-color: #fef3c7;
+}
+
+.calendarDay.otherMonth {
+  opacity: 0.3;
+}
+
+.calendarDay:disabled {
+  cursor: default;
+}
+
+.dayNumber {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.calendarDay.sunday .dayNumber {
+  color: #dc2626;
+}
+
+.calendarDay.saturday .dayNumber {
+  color: #2563eb;
+}
+
+.recordIndicator {
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-top: 0.125rem;
+}
+
+.recordIndicator.completed {
+  color: #16a34a;
+}
+
+.recordIndicator.notCompleted {
+  color: #dc2626;
+}
+
+.recordForm {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.formTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #f97316;
+}
+
+.saveButton {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #f97316;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #ea580c;
+}
+
+.saveButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0.75rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
+    justify-content: center;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .calendarDay {
+    padding: 0.125rem;
+  }
+
+  .dayNumber {
+    font-size: 0.75rem;
+  }
+
+  .recordIndicator {
+    font-size: 0.625rem;
+  }
+}

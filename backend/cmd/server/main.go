@@ -56,6 +56,7 @@ type handlers struct {
 	mylist        *handler.MylistHandler
 	skipMeal      *handler.SkipMealHandler
 	condition     *handler.ConditionHandler
+	training      *handler.TrainingHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -73,6 +74,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.Auth
 	setupWeightRoutes(mux, h, authMiddleware)
 	setupMylistRoutes(mux, h, authMiddleware)
 	setupConditionRoutes(mux, h, authMiddleware)
+	setupTrainingRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -228,6 +230,96 @@ func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middle
 	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
 }
 
+func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	// 場所一覧・作成
+	locationsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.training.HandleListLocations(w, r)
+		case http.MethodPost:
+			h.training.HandleCreateLocation(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/locations", authMiddleware.Authenticate(http.HandlerFunc(locationsRouteHandler)))
+
+	// 練習記録一覧・作成
+	recordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.training.HandleListRecords(w, r)
+		case http.MethodPost:
+			h.training.HandleUpsertRecord(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/records", authMiddleware.Authenticate(http.HandlerFunc(recordsRouteHandler)))
+
+	// メニュー提案
+	suggestMenuRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.training.HandleSuggestMenu(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/suggest-menu", authMiddleware.Authenticate(http.HandlerFunc(suggestMenuRouteHandler)))
+
+	// 器具名正規化
+	normalizeEquipmentRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.training.HandleNormalizeEquipment(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/normalize-equipment", authMiddleware.Authenticate(http.HandlerFunc(normalizeEquipmentRouteHandler)))
+
+	// 器具の更新・削除
+	equipmentDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			h.training.HandleUpdateEquipment(w, r)
+		case http.MethodDelete:
+			h.training.HandleDeleteEquipment(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/equipment/", authMiddleware.Authenticate(http.HandlerFunc(equipmentDetailRouteHandler)))
+
+	// 場所詳細・更新・削除、器具一覧・作成
+	locationsDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		// /api/training/locations/{id}/equipment のパターンをチェック
+		if strings.Contains(path, "/equipment") {
+			switch r.Method {
+			case http.MethodGet:
+				h.training.HandleListEquipment(w, r)
+			case http.MethodPost:
+				h.training.HandleCreateEquipment(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+		// /api/training/locations/{id} のパターン
+		switch r.Method {
+		case http.MethodPut:
+			h.training.HandleUpdateLocation(w, r)
+		case http.MethodDelete:
+			h.training.HandleDeleteLocation(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/locations/", authMiddleware.Authenticate(http.HandlerFunc(locationsDetailRouteHandler)))
+}
+
 func run() error {
 	// 環境変数から設定を読み込み
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -251,11 +343,14 @@ func run() error {
 	weightRepo := repository.NewWeightRepository(db)
 	mylistRepo := repository.NewMylistRepository(db)
 	conditionRepo := repository.NewConditionRepository(db)
+	trainingRepo := repository.NewTrainingRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
 	textParser := gemini.NewTextParser(120 * time.Second)
 	calculator := gemini.NewNutritionCalculator(120 * time.Second)
+	menuSuggester := gemini.NewMenuSuggester(120 * time.Second)
+	equipmentNormalizer := gemini.NewEquipmentNormalizer(120 * time.Second)
 	geminiClient := &RealGeminiClient{
 		classifier: classifier,
 		textParser: textParser,
@@ -286,6 +381,7 @@ func run() error {
 		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 		condition:     handler.NewConditionHandler(conditionRepo),
+		training:      handler.NewTrainingHandler(trainingRepo, menuSuggester, equipmentNormalizer),
 	}
 
 	// ワーカーの初期化
