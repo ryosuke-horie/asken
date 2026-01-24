@@ -312,6 +312,11 @@ func (s *Seeder) log(message string) {
 	}
 }
 
+// logWarning は警告を常に出力する（Verboseに関係なく）
+func (s *Seeder) logWarning(message string) {
+	log.Printf("WARNING: %s", message)
+}
+
 // GetSampleNutritionInfo はサンプルのNutritionInfoを返す（テスト用）
 func GetSampleNutritionInfo(mealType string) []gemini.NutritionInfo {
 	if foods, ok := SampleNutritionData[mealType]; ok {
@@ -376,9 +381,10 @@ func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item My
 	// 画像をコピーしてimage_pathを設定
 	var imagePath interface{}
 	if item.SeedImageSource != "" {
-		copiedPath, err := s.copySeedImage(item.SeedImageSource)
-		if err != nil {
-			s.log(fmt.Sprintf("画像コピーに失敗（スキップ）: %v", err))
+		copiedPath, copyErr := s.copySeedImage(item.SeedImageSource)
+		if copyErr != nil {
+			// 画像コピー失敗は警告として常に出力し、画像なしで続行
+			s.logWarning(fmt.Sprintf("画像コピーに失敗（画像なしで続行）: %s - %v", item.SeedImageSource, copyErr))
 			imagePath = nil
 		} else {
 			imagePath = copiedPath
@@ -432,23 +438,39 @@ func (s *Seeder) copySeedImage(sourceFileName string) (string, error) {
 	}
 
 	// DBに保存するパス（/uploads/xxx.jpg形式）
-	return "/" + destPath, nil
+	// filepath.Joinはプラットフォーム依存のセパレータを使うため、明示的にスラッシュを使用
+	return "/uploads/" + newFileName, nil
 }
 
 // copyFile はファイルをコピーする
 func copyFile(src, dst string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("ソースファイルのオープンに失敗 (%s): %w", src, err)
 	}
 	defer sourceFile.Close()
 
 	destFile, err := os.Create(dst)
 	if err != nil {
-		return err
+		return fmt.Errorf("コピー先ファイルの作成に失敗 (%s): %w", dst, err)
 	}
-	defer destFile.Close()
 
-	_, err = io.Copy(destFile, sourceFile)
-	return err
+	_, copyErr := io.Copy(destFile, sourceFile)
+
+	// データをディスクに同期
+	if syncErr := destFile.Sync(); syncErr != nil && copyErr == nil {
+		copyErr = fmt.Errorf("ファイルの同期に失敗 (%s): %w", dst, syncErr)
+	}
+
+	if closeErr := destFile.Close(); closeErr != nil && copyErr == nil {
+		copyErr = fmt.Errorf("ファイルのクローズに失敗 (%s): %w", dst, closeErr)
+	}
+
+	// 失敗時はコピー先ファイルを削除
+	if copyErr != nil {
+		_ = os.Remove(dst)
+		return fmt.Errorf("ファイルコピーに失敗 (%s → %s): %w", src, dst, copyErr)
+	}
+
+	return nil
 }

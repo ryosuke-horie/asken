@@ -238,3 +238,72 @@ func TestGetDefaultTargetDate(t *testing.T) {
 		}
 	})
 }
+
+func TestCalculateMylistTotals(t *testing.T) {
+	t.Run("マイリストアイテムの栄養素合計を計算すべき", func(t *testing.T) {
+		foods := DefaultMylistItems[0].Foods // 鶏むね肉定食
+		calories, protein, fat, carbs := CalculateMylistTotals(foods)
+
+		// 合計値が0より大きいことを確認
+		if calories <= 0 {
+			t.Errorf("カロリーの合計が0以下: %f", calories)
+		}
+		if protein <= 0 {
+			t.Errorf("タンパク質の合計が0以下: %f", protein)
+		}
+		if fat < 0 {
+			t.Errorf("脂質の合計が負: %f", fat)
+		}
+		if carbs <= 0 {
+			t.Errorf("炭水化物の合計が0以下: %f", carbs)
+		}
+	})
+
+	t.Run("空のスライスの場合は全て0を返すべき", func(t *testing.T) {
+		calories, protein, fat, carbs := CalculateMylistTotals(nil)
+
+		if calories != 0 || protein != 0 || fat != 0 || carbs != 0 {
+			t.Errorf("空のスライスの合計は全て0であるべき")
+		}
+	})
+}
+
+func TestDefaultMylistItems(t *testing.T) {
+	t.Run("デフォルトのマイリストアイテムが存在すべき", func(t *testing.T) {
+		if len(DefaultMylistItems) == 0 {
+			t.Error("デフォルトのマイリストアイテムが空")
+		}
+	})
+
+	t.Run("全てのアイテムが必須フィールドを持つべき", func(t *testing.T) {
+		for i, item := range DefaultMylistItems {
+			if item.Name == "" {
+				t.Errorf("アイテム%dの名前が空", i)
+			}
+			if item.BaseAmount == "" {
+				t.Errorf("アイテム%dのBaseAmountが空", i)
+			}
+			if item.Unit == "" {
+				t.Errorf("アイテム%dのUnitが空", i)
+			}
+			if len(item.Foods) == 0 {
+				t.Errorf("アイテム%dのFoodsが空", i)
+			}
+			if item.SeedImageSource == "" {
+				t.Errorf("アイテム%dのSeedImageSourceが空", i)
+			}
+		}
+	})
+
+	t.Run("各アイテムの栄養素合計が妥当であるべき", func(t *testing.T) {
+		for i, item := range DefaultMylistItems {
+			calories, protein, _, _ := CalculateMylistTotals(item.Foods)
+			if calories <= 0 {
+				t.Errorf("アイテム%d (%s) のカロリーが0以下", i, item.Name)
+			}
+			if protein <= 0 {
+				t.Errorf("アイテム%d (%s) のタンパク質が0以下", i, item.Name)
+			}
+		}
+	})
+}
