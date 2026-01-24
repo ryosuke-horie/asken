@@ -83,6 +83,15 @@ func (s *Seeder) Run(ctx context.Context) error {
 		}
 	}
 
+	// マイリストデータを作成
+	for _, user := range users {
+		count, err := s.seedMylistForUser(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("ユーザー %s のマイリストシードに失敗: %w", user.Email, err)
+		}
+		s.log(fmt.Sprintf("ユーザー %s に %d 件のマイリストアイテムを作成しました", user.Email, count))
+	}
+
 	return nil
 }
 
@@ -93,6 +102,7 @@ func (s *Seeder) clean(ctx context.Context) error {
 		"DELETE FROM analysis_requests",
 		"DELETE FROM weight_records",
 		"DELETE FROM weight_goals",
+		"DELETE FROM mylist_items",
 		"DELETE FROM users",
 	}
 
@@ -336,6 +346,49 @@ func (s *Seeder) seedWeightGoalForUser(ctx context.Context, userID uuid.UUID) er
 	_, err := s.db.ExecContext(ctx, query, userID, DefaultWeightSeedConfig.TargetWeight, targetDate)
 	if err != nil {
 		return fmt.Errorf("目標体重の挿入に失敗: %w", err)
+	}
+
+	return nil
+}
+
+// seedMylistForUser はユーザーに対してマイリストデータを作成する
+func (s *Seeder) seedMylistForUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	for i, item := range DefaultMylistItems {
+		if err := s.createMylistItem(ctx, userID, item, i); err != nil {
+			return 0, fmt.Errorf("マイリストアイテム作成に失敗: %w", err)
+		}
+	}
+	return len(DefaultMylistItems), nil
+}
+
+// createMylistItem はマイリストアイテムを作成する
+func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item MylistSeedItem, sortOrder int) error {
+	foodsJSON, err := json.Marshal(item.Foods)
+	if err != nil {
+		return fmt.Errorf("foods のJSON変換に失敗: %w", err)
+	}
+
+	calories, protein, fat, carbs := CalculateMylistTotals(item.Foods)
+
+	query := `
+		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
+
+	_, err = s.db.ExecContext(ctx, query,
+		userID,
+		item.Name,
+		item.BaseAmount,
+		item.Unit,
+		calories,
+		protein,
+		fat,
+		carbs,
+		foodsJSON,
+		sortOrder,
+	)
+	if err != nil {
+		return fmt.Errorf("マイリストアイテムの挿入に失敗: %w", err)
 	}
 
 	return nil
