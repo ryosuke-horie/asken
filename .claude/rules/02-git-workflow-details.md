@@ -48,10 +48,12 @@ Conventional Commits形式を使用:
 | fix | バグ修正 |
 | refactor | リファクタリング |
 | docs | ドキュメント |
+| style | コードスタイル（フォーマット） |
 | test | テスト |
 | chore | ビルド、設定等 |
 | perf | パフォーマンス改善 |
 | ci | CI/CD関連 |
+| revert | リバート |
 
 ### 例
 
