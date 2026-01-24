@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
@@ -83,6 +86,15 @@ func (s *Seeder) Run(ctx context.Context) error {
 		}
 	}
 
+	// マイリストデータを作成
+	for _, user := range users {
+		count, err := s.seedMylistForUser(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("ユーザー %s のマイリストシードに失敗: %w", user.Email, err)
+		}
+		s.log(fmt.Sprintf("ユーザー %s に %d 件のマイリストアイテムを作成しました", user.Email, count))
+	}
+
 	return nil
 }
 
@@ -93,6 +105,7 @@ func (s *Seeder) clean(ctx context.Context) error {
 		"DELETE FROM analysis_requests",
 		"DELETE FROM weight_records",
 		"DELETE FROM weight_goals",
+		"DELETE FROM mylist_items",
 		"DELETE FROM users",
 	}
 
@@ -299,6 +312,11 @@ func (s *Seeder) log(message string) {
 	}
 }
 
+// logWarning は警告を常に出力する（Verboseに関係なく）
+func (s *Seeder) logWarning(message string) {
+	log.Printf("WARNING: %s", message)
+}
+
 // GetSampleNutritionInfo はサンプルのNutritionInfoを返す（テスト用）
 func GetSampleNutritionInfo(mealType string) []gemini.NutritionInfo {
 	if foods, ok := SampleNutritionData[mealType]; ok {
@@ -336,6 +354,122 @@ func (s *Seeder) seedWeightGoalForUser(ctx context.Context, userID uuid.UUID) er
 	_, err := s.db.ExecContext(ctx, query, userID, DefaultWeightSeedConfig.TargetWeight, targetDate)
 	if err != nil {
 		return fmt.Errorf("目標体重の挿入に失敗: %w", err)
+	}
+
+	return nil
+}
+
+// seedMylistForUser はユーザーに対してマイリストデータを作成する
+func (s *Seeder) seedMylistForUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	for i, item := range DefaultMylistItems {
+		if err := s.createMylistItem(ctx, userID, item, i); err != nil {
+			return 0, fmt.Errorf("マイリストアイテム作成に失敗: %w", err)
+		}
+	}
+	return len(DefaultMylistItems), nil
+}
+
+// createMylistItem はマイリストアイテムを作成する
+func (s *Seeder) createMylistItem(ctx context.Context, userID uuid.UUID, item MylistSeedItem, sortOrder int) error {
+	foodsJSON, err := json.Marshal(item.Foods)
+	if err != nil {
+		return fmt.Errorf("foods のJSON変換に失敗: %w", err)
+	}
+
+	calories, protein, fat, carbs := CalculateMylistTotals(item.Foods)
+
+	// 画像をコピーしてimage_pathを設定
+	var imagePath interface{}
+	if item.SeedImageSource != "" {
+		copiedPath, copyErr := s.copySeedImage(item.SeedImageSource)
+		if copyErr != nil {
+			// 画像コピー失敗は警告として常に出力し、画像なしで続行
+			s.logWarning(fmt.Sprintf("画像コピーに失敗（画像なしで続行）: %s - %v", item.SeedImageSource, copyErr))
+			imagePath = nil
+		} else {
+			imagePath = copiedPath
+		}
+	}
+
+	query := `
+		INSERT INTO mylist_items (user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	`
+
+	_, err = s.db.ExecContext(ctx, query,
+		userID,
+		item.Name,
+		item.BaseAmount,
+		item.Unit,
+		calories,
+		protein,
+		fat,
+		carbs,
+		foodsJSON,
+		imagePath,
+		sortOrder,
+	)
+	if err != nil {
+		return fmt.Errorf("マイリストアイテムの挿入に失敗: %w", err)
+	}
+
+	return nil
+}
+
+// copySeedImage はシード画像をuploadsディレクトリにコピーする
+func (s *Seeder) copySeedImage(sourceFileName string) (string, error) {
+	// シード画像のソースパス
+	sourcePath := filepath.Join("seeds", "images", sourceFileName)
+
+	// uploadsディレクトリを作成
+	uploadsDir := "uploads"
+	if err := os.MkdirAll(uploadsDir, 0o755); err != nil {
+		return "", fmt.Errorf("uploadsディレクトリの作成に失敗: %w", err)
+	}
+
+	// 新しいファイル名（UUIDを使用）
+	ext := filepath.Ext(sourceFileName)
+	newFileName := uuid.New().String() + ext
+	destPath := filepath.Join(uploadsDir, newFileName)
+
+	// ファイルをコピー
+	if err := copyFile(sourcePath, destPath); err != nil {
+		return "", fmt.Errorf("ファイルコピーに失敗: %w", err)
+	}
+
+	// DBに保存するパス（/uploads/xxx.jpg形式）
+	// filepath.Joinはプラットフォーム依存のセパレータを使うため、明示的にスラッシュを使用
+	return "/uploads/" + newFileName, nil
+}
+
+// copyFile はファイルをコピーする
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("ソースファイルのオープンに失敗 (%s): %w", src, err)
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("コピー先ファイルの作成に失敗 (%s): %w", dst, err)
+	}
+
+	_, copyErr := io.Copy(destFile, sourceFile)
+
+	// データをディスクに同期
+	if syncErr := destFile.Sync(); syncErr != nil && copyErr == nil {
+		copyErr = fmt.Errorf("ファイルの同期に失敗 (%s): %w", dst, syncErr)
+	}
+
+	if closeErr := destFile.Close(); closeErr != nil && copyErr == nil {
+		copyErr = fmt.Errorf("ファイルのクローズに失敗 (%s): %w", dst, closeErr)
+	}
+
+	// 失敗時はコピー先ファイルを削除
+	if copyErr != nil {
+		_ = os.Remove(dst)
+		return fmt.Errorf("ファイルコピーに失敗 (%s → %s): %w", src, dst, copyErr)
 	}
 
 	return nil
