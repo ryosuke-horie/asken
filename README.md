@@ -148,7 +148,7 @@ sudo systemctl start uchikomi-backend
 systemctl status uchikomi-backend
 ```
 
-API は `http://localhost:8080` / `https://asken.exe.xyz:8080` で待ち受けます。
+API は `http://localhost:8080` / `https://utikomi.exe.xyz:8080` で待ち受けます。
 
 #### 3. フロントエンド（本番モード）
 
@@ -187,7 +187,7 @@ sudo systemctl restart uchikomi-frontend
 systemctl status uchikomi-frontend
 ```
 
-フロントエンドは `http://localhost:3000` / `https://asken.exe.xyz:3000` からアクセス可能です。
+フロントエンドは `http://localhost:3000` / `https://utikomi.exe.xyz:3000` からアクセス可能です。
 
 #### 4. 全体の起動・停止
 
