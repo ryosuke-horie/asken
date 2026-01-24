@@ -52,6 +52,7 @@ backend/testdata/
 backend/uploads/
 backend/internal/handler/uploads/
 backend/server
+backend/bin/
 /tmp/uchikomi/
 
 # Frontend
