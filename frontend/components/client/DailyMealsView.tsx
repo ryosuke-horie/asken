@@ -7,6 +7,7 @@ import { createAuthFetcher } from '@/lib/fetcher'
 import { useAuth } from '@/contexts/AuthContext'
 import DateNavigation from './DateNavigation'
 import WeightSection from './WeightSection'
+import ConditionSection from './ConditionSection'
 import MealSection from './MealSection'
 import DailyTotalSummary from './DailyTotalSummary'
 import styles from './DailyMealsView.module.css'
@@ -42,6 +43,7 @@ export default function DailyMealsView({ date }: DailyMealsViewProps) {
     <div className={styles.container}>
       <DateNavigation currentDate={date} />
       <WeightSection />
+      <ConditionSection date={date} />
 
       <DailyTotalSummary
         totalCalories={data.daily_total.total_calories}
