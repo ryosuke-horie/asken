@@ -709,13 +709,13 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 }
 
 // CreateRequestFromMylist はマイリストからの食事記録を作成します
-func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// analysis_requests に挿入（statusはcompleted）
 	requestQuery := `
