@@ -12,7 +12,7 @@ dependabotは`.github/dependabot.yml`で設定されており、週次（月曜�
 | グループ | パッケージ |
 |:---|:---|
 | react-ecosystem | react, react-dom, next, swr, eslint-config-next |
-| testing | vitest, @testing-library/*, jsdom |
+| testing | vitest, @testing-library/*, @playwright/test, jsdom |
 | linting | eslint, prettier, knip, depcheck |
 | types | typescript, @types/* |
 
