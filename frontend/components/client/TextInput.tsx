@@ -34,7 +34,7 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
   })
 
   function handleInputChange(index: number, value: string): void {
-    setInputs(prev => {
+    setInputs((prev) => {
       const newInputs = [...prev]
       newInputs[index] = value
       return newInputs
@@ -42,18 +42,18 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
   }
 
   function handleAddInput(): void {
-    setInputs(prev => [...prev, ''])
+    setInputs((prev) => [...prev, ''])
   }
 
   function handleRemoveInput(index: number): void {
     if (inputs.length <= 1) {
       return
     }
-    setInputs(prev => prev.filter((_, i) => i !== index))
+    setInputs((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function handleSubmit(): Promise<void> {
-    const validInputs = inputs.filter(input => input.trim() !== '')
+    const validInputs = inputs.filter((input) => input.trim() !== '')
     if (validInputs.length === 0) {
       setError('食事内容を入力してください')
       return
@@ -75,7 +75,7 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           input_text: inputText,
@@ -96,7 +96,7 @@ export default function TextInput({ mealType, mealDate, onComplete }: TextInputP
     }
   }
 
-  const hasValidInput = inputs.some(input => input.trim() !== '')
+  const hasValidInput = inputs.some((input) => input.trim() !== '')
 
   return (
     <div className={styles.container}>

@@ -37,11 +37,21 @@ export default function NutritionDisplay({ result }: Props) {
         </tbody>
         <tfoot>
           <tr className={styles.totalRow}>
-            <td colSpan={2}><strong>合計</strong></td>
-            <td><strong>{result.total_calories.toFixed(0)}</strong></td>
-            <td><strong>{result.total_protein.toFixed(1)}</strong></td>
-            <td><strong>{result.total_fat.toFixed(1)}</strong></td>
-            <td><strong>{result.total_carbohydrates.toFixed(1)}</strong></td>
+            <td colSpan={2}>
+              <strong>合計</strong>
+            </td>
+            <td>
+              <strong>{result.total_calories.toFixed(0)}</strong>
+            </td>
+            <td>
+              <strong>{result.total_protein.toFixed(1)}</strong>
+            </td>
+            <td>
+              <strong>{result.total_fat.toFixed(1)}</strong>
+            </td>
+            <td>
+              <strong>{result.total_carbohydrates.toFixed(1)}</strong>
+            </td>
           </tr>
         </tfoot>
       </table>

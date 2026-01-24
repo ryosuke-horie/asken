@@ -49,14 +49,10 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
               <div className={styles.total}>
                 {Math.round(totalCalories)} <span className={styles.unit}>kcal</span>
               </div>
-              <div className={styles.mealsCount}>
-                {meals.length}件の記録
-              </div>
+              <div className={styles.mealsCount}>{meals.length}件の記録</div>
             </>
           ) : (
-            <div className={styles.empty}>
-              タップして記録する
-            </div>
+            <div className={styles.empty}>タップして記録する</div>
           )}
         </div>
       </Link>
@@ -66,9 +62,7 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
           {meals.map((meal) => (
             <div key={meal.id} className={styles.mealItem}>
               {meal.input_type === 'text' ? (
-                <div className={styles.textPreview}>
-                  {meal.input_text}
-                </div>
+                <div className={styles.textPreview}>{meal.input_text}</div>
               ) : (
                 <MealThumbnail
                   src={`${API_BASE_URL}/api/images/${meal.image_path?.split('/').pop()}`}
@@ -86,11 +80,7 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
                 </div>
               </div>
               <div className={styles.deleteButton}>
-                <DeleteHistoryButton
-                  historyId={meal.id}
-                  iconOnly
-                  onSuccess={onDelete}
-                />
+                <DeleteHistoryButton historyId={meal.id} iconOnly onSuccess={onDelete} />
               </div>
             </div>
           ))}

@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useRouter } from 'next/navigation';
-import { useState, MouseEvent } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import styles from './DeleteHistoryButton.module.css';
+import { useRouter } from 'next/navigation'
+import { useState, MouseEvent } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import styles from './DeleteHistoryButton.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 interface DeleteHistoryButtonProps {
-  historyId: string;
-  iconOnly?: boolean;
-  onSuccess?: () => void;
+  historyId: string
+  iconOnly?: boolean
+  onSuccess?: () => void
 }
 
 export default function DeleteHistoryButton({
@@ -18,53 +18,53 @@ export default function DeleteHistoryButton({
   iconOnly = false,
   onSuccess,
 }: DeleteHistoryButtonProps) {
-  const router = useRouter();
-  const { token } = useAuth();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter()
+  const { token } = useAuth()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault()
+    e.stopPropagation()
 
     if (!confirm('この履歴を削除してもよろしいですか?')) {
-      return;
+      return
     }
 
-    setIsDeleting(true);
+    setIsDeleting(true)
 
     try {
       if (!token) {
-        alert('認証が必要です。再度ログインしてください。');
-        setIsDeleting(false);
-        return;
+        alert('認証が必要です。再度ログインしてください。')
+        setIsDeleting(false)
+        return
       }
 
       const response = await fetch(`${API_BASE_URL}/api/history/${historyId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-      });
+      })
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        const errorMessage = errorText || `削除に失敗しました (${response.status})`;
-        throw new Error(errorMessage);
+        const errorText = await response.text().catch(() => '')
+        const errorMessage = errorText || `削除に失敗しました (${response.status})`
+        throw new Error(errorMessage)
       }
 
       if (onSuccess) {
-        onSuccess();
+        onSuccess()
       } else {
-        router.push('/');
-        router.refresh();
+        router.push('/')
+        router.refresh()
       }
     } catch (error) {
-      console.error('削除エラー:', error);
-      const message = error instanceof Error ? error.message : '削除に失敗しました';
-      alert(message);
-      setIsDeleting(false);
+      console.error('削除エラー:', error)
+      const message = error instanceof Error ? error.message : '削除に失敗しました'
+      alert(message)
+      setIsDeleting(false)
     }
-  };
+  }
 
   if (iconOnly) {
     return (
@@ -96,16 +96,12 @@ export default function DeleteHistoryButton({
           </svg>
         )}
       </button>
-    );
+    )
   }
 
   return (
-    <button
-      onClick={handleDelete}
-      disabled={isDeleting}
-      className={styles.button}
-    >
+    <button onClick={handleDelete} disabled={isDeleting} className={styles.button}>
       {isDeleting ? '削除中...' : '削除'}
     </button>
-  );
+  )
 }

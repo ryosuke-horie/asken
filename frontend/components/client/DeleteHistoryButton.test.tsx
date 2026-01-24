@@ -28,7 +28,10 @@ describe('DeleteHistoryButton', () => {
   beforeEach(() => {
     mockPush.mockClear()
     mockRefresh.mockClear()
-    vi.stubGlobal('confirm', vi.fn(() => true))
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true),
+    )
     vi.stubGlobal('alert', vi.fn())
     vi.stubGlobal('fetch', vi.fn())
   })
@@ -57,7 +60,10 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除をキャンセルした場合はAPIを呼ばないべき', () => {
-      vi.stubGlobal('confirm', vi.fn(() => false))
+      vi.stubGlobal(
+        'confirm',
+        vi.fn(() => false),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -66,11 +72,14 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除失敗時にアラートを表示すべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: () => Promise.resolve('サーバーエラー'),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('サーバーエラー'),
+        }),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -92,11 +101,14 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除失敗後にボタンが再度有効になるべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: () => Promise.resolve(''),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve(''),
+        }),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -114,18 +126,18 @@ describe('DeleteHistoryButton', () => {
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          '/api/history/test-id-123',
-          {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer mock-jwt-token' },
-          }
-        )
+        expect(mockFetch).toHaveBeenCalledWith('/api/history/test-id-123', {
+          method: 'DELETE',
+          headers: { Authorization: 'Bearer mock-jwt-token' },
+        })
       })
     })
 
     it('削除中はボタンが無効化されるべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(() => new Promise(() => {})),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -159,7 +171,10 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除中はスピナーを表示すべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Promise(() => {})))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(() => new Promise(() => {})),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" iconOnly />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -171,11 +186,14 @@ describe('DeleteHistoryButton', () => {
     })
 
     it('削除失敗時にアラートを表示すべき', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: () => Promise.resolve('サーバーエラー'),
-      }))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve('サーバーエラー'),
+        }),
+      )
 
       render(<DeleteHistoryButton historyId="test-id" iconOnly />)
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
@@ -189,12 +207,15 @@ describe('DeleteHistoryButton', () => {
   describe('イベント伝播', () => {
     it('クリックイベントの伝播を止めるべき', () => {
       const parentClickHandler = vi.fn()
-      vi.stubGlobal('confirm', vi.fn(() => false))
+      vi.stubGlobal(
+        'confirm',
+        vi.fn(() => false),
+      )
 
       render(
         <div onClick={parentClickHandler}>
           <DeleteHistoryButton historyId="test-id" />
-        </div>
+        </div>,
       )
       fireEvent.click(screen.getByRole('button', { name: '削除' }))
 

@@ -3,7 +3,7 @@
  * 分析IDの保存・取得・削除を型安全に実装
  */
 
-const ANALYSIS_ID_KEY = 'uchikomi_analysis_id';
+const ANALYSIS_ID_KEY = 'uchikomi_analysis_id'
 
 /**
  * 分析IDをlocalStorageに保存
@@ -11,9 +11,9 @@ const ANALYSIS_ID_KEY = 'uchikomi_analysis_id';
  */
 export function saveAnalysisId(analysisId: string): void {
   try {
-    localStorage.setItem(ANALYSIS_ID_KEY, analysisId);
+    localStorage.setItem(ANALYSIS_ID_KEY, analysisId)
   } catch (error) {
-    console.error('Failed to save analysis ID to localStorage:', error);
+    console.error('Failed to save analysis ID to localStorage:', error)
   }
 }
 
@@ -23,10 +23,10 @@ export function saveAnalysisId(analysisId: string): void {
  */
 export function getAnalysisId(): string | null {
   try {
-    return localStorage.getItem(ANALYSIS_ID_KEY);
+    return localStorage.getItem(ANALYSIS_ID_KEY)
   } catch (error) {
-    console.error('Failed to get analysis ID from localStorage:', error);
-    return null;
+    console.error('Failed to get analysis ID from localStorage:', error)
+    return null
   }
 }
 
@@ -35,8 +35,8 @@ export function getAnalysisId(): string | null {
  */
 export function clearAnalysisId(): void {
   try {
-    localStorage.removeItem(ANALYSIS_ID_KEY);
+    localStorage.removeItem(ANALYSIS_ID_KEY)
   } catch (error) {
-    console.error('Failed to clear analysis ID from localStorage:', error);
+    console.error('Failed to clear analysis ID from localStorage:', error)
   }
 }

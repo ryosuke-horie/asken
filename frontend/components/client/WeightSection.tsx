@@ -32,7 +32,7 @@ export default function WeightSection() {
     mutate: mutateRecords,
   } = useSWR<WeightRecordsResponse>(
     token ? `${API_BASE_URL}/api/weight-records?period=${period}` : null,
-    authFetcher
+    authFetcher,
   )
 
   const {
@@ -71,7 +71,7 @@ export default function WeightSection() {
         setIsRecording(false)
       }
     },
-    [token, mutateRecords, mutateGoal]
+    [token, mutateRecords, mutateGoal],
   )
 
   const handleUpdateGoal = useCallback(
@@ -105,7 +105,7 @@ export default function WeightSection() {
         setIsUpdatingGoal(false)
       }
     },
-    [token, mutateGoal]
+    [token, mutateGoal],
   )
 
   if (recordsError || goalError) {

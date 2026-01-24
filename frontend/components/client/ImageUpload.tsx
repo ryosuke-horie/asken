@@ -211,7 +211,10 @@ export default function ImageUpload() {
             {previewUrl ? (
               <img src={previewUrl} alt="プレビュー" />
             ) : (
-              <p>選択したファイル: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+              <p>
+                選択したファイル: {selectedFile.name} (
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
             )}
           </div>
         )}
@@ -224,11 +227,7 @@ export default function ImageUpload() {
           {isLoading ? '分析中...' : 'アップロードして分析'}
         </button>
 
-        {error && (
-          <div className={styles.errorMessage}>
-            {error}
-          </div>
-        )}
+        {error && <div className={styles.errorMessage}>{error}</div>}
 
         {isLoading && (
           <div className={styles.loadingMessage}>

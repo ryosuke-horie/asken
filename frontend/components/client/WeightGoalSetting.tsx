@@ -68,11 +68,7 @@ export default function WeightGoalSetting({
             </div>
           )}
         </div>
-        <button
-          type="button"
-          className={styles.editButton}
-          onClick={() => setIsEditing(true)}
-        >
+        <button type="button" className={styles.editButton} onClick={() => setIsEditing(true)}>
           目標を変更
         </button>
       </div>
