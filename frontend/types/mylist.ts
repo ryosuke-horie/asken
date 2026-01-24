@@ -41,10 +41,6 @@ export interface UpdateMylistItemRequest {
   image_path?: string
 }
 
-export interface AnalyzeMylistRequest {
-  input_text: string
-}
-
 export interface AnalyzeMylistResponse {
   foods: NutritionInfo[]
   total_calories: number
