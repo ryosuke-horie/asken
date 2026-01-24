@@ -10,7 +10,7 @@ import WeightRecordForm from './WeightRecordForm'
 import WeightGoalSetting from './WeightGoalSetting'
 import styles from './WeightSection.module.css'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 const PERIOD_LABELS: Record<WeightPeriod, string> = {
   week: '1週間',

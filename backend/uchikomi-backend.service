@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/exedev/asken/backend
-Environment=DATABASE_URL=postgres://asken:asken@localhost:5432/asken?sslmode=disable
+WorkingDirectory=/home/exedev/utikomi/backend
+Environment=DATABASE_URL=postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable
 ExecStart=/usr/local/go/bin/go run ./cmd/server
 Restart=on-failure
 RestartSec=5
