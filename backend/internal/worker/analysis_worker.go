@@ -78,9 +78,9 @@ func (w *AnalysisWorker) processPendingRequests(ctx context.Context) error {
 	log.Printf("Found %d pending requests", len(requests))
 
 	// 各リクエストを処理（逐次処理でシンプルに）
-	for _, request := range requests {
-		if err := w.processRequest(ctx, request); err != nil {
-			log.Printf("Error processing request %s: %v", request.ID, err)
+	for i := range requests {
+		if err := w.processRequest(ctx, &requests[i]); err != nil {
+			log.Printf("Error processing request %s: %v", requests[i].ID, err)
 			// 1つのリクエストの失敗で全体を止めない
 			continue
 		}
@@ -90,7 +90,7 @@ func (w *AnalysisWorker) processPendingRequests(ctx context.Context) error {
 }
 
 // processRequest は個別のリクエストを処理
-func (w *AnalysisWorker) processRequest(ctx context.Context, request repository.AnalysisRequest) error {
+func (w *AnalysisWorker) processRequest(ctx context.Context, request *repository.AnalysisRequest) error {
 	log.Printf("Processing request: %s (input_type: %s)", request.ID, request.InputType)
 
 	// 1. ステータスをprocessingに更新

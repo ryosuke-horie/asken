@@ -206,4 +206,3 @@ func TestCreateWithPassword_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "ユーザーの作成に失敗")
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
-

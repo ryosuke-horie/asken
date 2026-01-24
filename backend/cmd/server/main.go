@@ -39,6 +39,12 @@ func (r *RealGeminiClient) CalculateNutrition(ctx context.Context, foods []gemin
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
+}
+
+func run() error {
 	// 環境変数から設定を読み込み
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
@@ -111,11 +117,12 @@ func main() {
 	// POST /api/analyze - 画像アップロード（認証必須）
 	// GET /api/analyze/:id - ステータス取得（認証必須）
 	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
+		switch r.Method {
+		case http.MethodPost:
 			analyzeHandler.Handle(w, r)
-		} else if r.Method == http.MethodGet {
+		case http.MethodGet:
 			statusHandler.Handle(w, r)
-		} else {
+		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
@@ -131,11 +138,12 @@ func main() {
 	// GET /api/history/:id - 履歴詳細
 	// DELETE /api/history/:id - 履歴削除
 	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			historyHandler.HandleDetail(w, r)
-		} else if r.Method == http.MethodDelete {
+		case http.MethodDelete:
 			historyDeleteHandler.Handle(w, r)
-		} else {
+		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
@@ -153,11 +161,12 @@ func main() {
 	// POST /api/weight-records - 体重記録作成
 	// GET /api/weight-records - 体重記録一覧取得
 	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
+		switch r.Method {
+		case http.MethodPost:
 			weightHandler.HandleCreateRecord(w, r)
-		} else if r.Method == http.MethodGet {
+		case http.MethodGet:
 			weightHandler.HandleGetRecords(w, r)
-		} else {
+		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
@@ -167,11 +176,12 @@ func main() {
 	// GET /api/weight-goal - 目標取得
 	// PUT /api/weight-goal - 目標更新
 	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			weightHandler.HandleGetGoal(w, r)
-		} else if r.Method == http.MethodPut {
+		case http.MethodPut:
 			weightHandler.HandleUpdateGoal(w, r)
-		} else {
+		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
@@ -207,14 +217,16 @@ func main() {
 		defer cancel()
 
 		if err := server.Shutdown(ctx); err != nil {
-			log.Fatalf("Server shutdown error: %v", err)
+			log.Printf("Server shutdown error: %v", err)
 		}
 	}()
 
 	log.Println("Server starting on :8080")
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server error: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 // enableCORS はCORSヘッダーを追加するミドルウェア
@@ -241,9 +253,9 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 
 func parseAllowedOrigins(raw string) map[string]struct{} {
 	origins := map[string]struct{}{
-		"http://localhost:3000":      {},
-		"http://localhost:3001":      {},
-		"http://localhost:3002":      {},
+		"http://localhost:3000":        {},
+		"http://localhost:3001":        {},
+		"http://localhost:3002":        {},
 		"https://utikomi.exe.xyz:3000": {},
 	}
 
