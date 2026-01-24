@@ -1,4 +1,4 @@
--- 006_create_weight_tables.sql
+-- 000006_create_weight_tables.up.sql
 -- 体重管理機能用テーブル
 
 -- weight_records テーブル: 体重記録を管理
