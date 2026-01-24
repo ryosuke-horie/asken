@@ -1,4 +1,4 @@
--- 007_create_mylist_tables.sql
+-- 000007_create_mylist_tables.up.sql
 -- マイリスト機能用テーブル
 
 -- mylist_items テーブル: よく食べるメニューを管理
