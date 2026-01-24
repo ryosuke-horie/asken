@@ -5,7 +5,7 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/exedev/uchikomi
+WorkingDirectory=/home/exedev/utikomi
 ExecStart=/usr/bin/docker compose up -d postgres
 ExecStop=/usr/bin/docker compose stop postgres
 RemainAfterExit=yes
