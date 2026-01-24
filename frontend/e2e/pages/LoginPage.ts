@@ -1,4 +1,4 @@
-import { type Page, type Locator } from '@playwright/test'
+import { type Page, type Locator, errors } from '@playwright/test'
 
 export class LoginPage {
   readonly page: Page
@@ -30,17 +30,26 @@ export class LoginPage {
   }
 
   async waitForLoad() {
-    await this.loadingText.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {
-      // ローディングが表示されない場合は無視
-    })
+    try {
+      await this.loadingText.waitFor({ state: 'hidden', timeout: 10000 })
+    } catch (error) {
+      if (error instanceof errors.TimeoutError) {
+        // ローディングが表示されないか既に非表示の場合は正常
+        return
+      }
+      throw error
+    }
   }
 
   async getErrorMessage(): Promise<string | null> {
     try {
       await this.errorMessage.waitFor({ state: 'visible', timeout: 5000 })
       return await this.errorMessage.textContent()
-    } catch {
-      return null
+    } catch (error) {
+      if (error instanceof errors.TimeoutError) {
+        return null
+      }
+      throw error
     }
   }
 }
