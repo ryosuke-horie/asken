@@ -1,8 +1,9 @@
-import Image from 'next/image'
-import { AuthProvider } from '@/contexts/AuthContext'
-import './globals.css'
-
 import type { Metadata } from 'next'
+import Image from 'next/image'
+
+import { AuthProvider } from '@/contexts/AuthContext'
+
+import './globals.css'
 
 export const metadata: Metadata = {
   title: {
