@@ -76,6 +76,11 @@
   color: #22c55e;
 }
 
+.deadline {
+  font-size: 12px;
+  color: #666;
+}
+
 .statsValue {
   font-size: 14px;
   font-weight: 500;

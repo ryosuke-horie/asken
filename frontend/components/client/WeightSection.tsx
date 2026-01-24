@@ -18,6 +18,14 @@ const PERIOD_LABELS: Record<WeightPeriod, string> = {
   '3months': '3ヶ月',
 }
 
+export function formatTargetDate(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) {
+    return '日付不明'
+  }
+  return new Intl.DateTimeFormat('ja-JP', { month: 'long', day: 'numeric' }).format(date)
+}
+
 export default function WeightSection() {
   const { token } = useAuth()
   const authFetcher = useMemo(() => createAuthFetcher(token), [token])
@@ -154,6 +162,11 @@ export default function WeightSection() {
             {goalData.weight_to_lose > 0 && (
               <span className={styles.diff}>(-{goalData.weight_to_lose} kg)</span>
             )}
+            <span className={styles.deadline}>
+              {goalData.days_remaining >= 0
+                ? `あと${goalData.days_remaining}日 / ${formatTargetDate(goalData.target_date)}まで`
+                : `${formatTargetDate(goalData.target_date)}（期限超過）`}
+            </span>
           </div>
         )}
         {stats && records.length > 0 && (
