@@ -33,6 +33,7 @@ updates:
           - "vitest"
           - "@testing-library/*"
           - "@vitejs/plugin-react"
+          - "@playwright/test"
           - "jsdom"
       linting:
         patterns:
