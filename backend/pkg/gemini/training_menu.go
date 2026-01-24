@@ -11,11 +11,11 @@ import (
 // MenuItem はトレーニングメニューの1項目を表す
 type MenuItem struct {
 	Name        string `json:"name"`
-	Duration    int    `json:"duration"`     // 分
-	Sets        int    `json:"sets"`         // セット数
-	Reps        string `json:"reps"`         // 回数（例: "10回", "30秒"）
-	Equipment   string `json:"equipment"`    // 使用器具
-	Description string `json:"description"`  // 説明・ポイント
+	Duration    int    `json:"duration"`    // 分
+	Sets        int    `json:"sets"`        // セット数
+	Reps        string `json:"reps"`        // 回数（例: "10回", "30秒"）
+	Equipment   string `json:"equipment"`   // 使用器具
+	Description string `json:"description"` // 説明・ポイント
 }
 
 // MenuSuggester はトレーニングメニューを提案するクライアント
@@ -37,6 +37,9 @@ func (ms *MenuSuggester) SuggestMenu(ctx context.Context, equipment []string, du
 	}
 	if durationMinutes <= 0 {
 		return nil, fmt.Errorf("トレーニング時間は0より大きい値が必要です")
+	}
+	if durationMinutes > 240 {
+		return nil, fmt.Errorf("トレーニング時間は240分（4時間）以下で指定してください")
 	}
 
 	equipmentList := strings.Join(equipment, "、")
@@ -72,7 +75,7 @@ func (ms *MenuSuggester) SuggestMenu(ctx context.Context, equipment []string, du
 
 	response, err := ms.client.Execute(ctx, prompt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Gemini APIによるメニュー提案に失敗: %w", err)
 	}
 
 	menuJSON := removeCodeBlock(response.Response)

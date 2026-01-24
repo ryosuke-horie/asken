@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -452,8 +453,12 @@ func (r *postgresTrainingRepository) GetRecords(ctx context.Context, userID uuid
 			return nil, fmt.Errorf("練習記録のスキャンに失敗: %w", err)
 		}
 		if locationID.Valid {
-			id, _ := uuid.Parse(locationID.String)
-			rec.LocationID = &id
+			id, err := uuid.Parse(locationID.String)
+			if err != nil {
+				log.Printf("警告: location_idのパースに失敗 (value=%s): %v", locationID.String, err)
+			} else {
+				rec.LocationID = &id
+			}
 		}
 		if locationName.Valid {
 			rec.LocationName = &locationName.String
@@ -498,8 +503,12 @@ func (r *postgresTrainingRepository) GetRecordByDate(ctx context.Context, userID
 	}
 
 	if locationID.Valid {
-		id, _ := uuid.Parse(locationID.String)
-		rec.LocationID = &id
+		id, err := uuid.Parse(locationID.String)
+		if err != nil {
+			log.Printf("警告: location_idのパースに失敗 (value=%s): %v", locationID.String, err)
+		} else {
+			rec.LocationID = &id
+		}
 	}
 	if locationName.Valid {
 		rec.LocationName = &locationName.String
@@ -547,15 +556,23 @@ func (r *postgresTrainingRepository) UpsertRecord(ctx context.Context, record *T
 	}
 
 	if locationID.Valid {
-		id, _ := uuid.Parse(locationID.String)
-		upserted.LocationID = &id
+		id, err := uuid.Parse(locationID.String)
+		if err != nil {
+			log.Printf("警告: location_idのパースに失敗 (value=%s): %v", locationID.String, err)
+		} else {
+			upserted.LocationID = &id
+		}
 	}
 
 	// 場所名を取得
 	if upserted.LocationID != nil {
 		nameQuery := `SELECT name FROM training_locations WHERE id = $1`
 		var name string
-		if err := r.db.QueryRowContext(ctx, nameQuery, *upserted.LocationID).Scan(&name); err == nil {
+		if err := r.db.QueryRowContext(ctx, nameQuery, *upserted.LocationID).Scan(&name); err != nil {
+			if err != sql.ErrNoRows {
+				log.Printf("警告: 場所名の取得に失敗 (location_id=%s): %v", *upserted.LocationID, err)
+			}
+		} else {
 			upserted.LocationName = &name
 		}
 	}
