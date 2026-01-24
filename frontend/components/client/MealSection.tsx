@@ -61,7 +61,9 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
         <div className={styles.mealsList}>
           {meals.map((meal) => (
             <div key={meal.id} className={styles.mealItem}>
-              {meal.input_type === 'text' ? (
+              {meal.input_type === 'skipped' ? (
+                <div className={styles.skippedIcon}>🚫</div>
+              ) : meal.input_type === 'text' ? (
                 <div className={styles.textPreview}>{meal.input_text}</div>
               ) : meal.image_path ? (
                 <MealThumbnail
@@ -72,14 +74,20 @@ export default function MealSection({ mealType, mealDate, meals, onDelete }: Mea
                 <div className={styles.noImage}>📋</div>
               )}
               <div className={styles.mealInfo}>
-                <div className={styles.mealCalories}>
-                  {Math.round(meal.total_calories)} <span className={styles.mealUnit}>kcal</span>
-                </div>
-                <div className={styles.nutrients}>
-                  <span>P: {meal.total_protein.toFixed(1)}g</span>
-                  <span>F: {meal.total_fat.toFixed(1)}g</span>
-                  <span>C: {meal.total_carbohydrates.toFixed(1)}g</span>
-                </div>
+                {meal.input_type === 'skipped' ? (
+                  <div className={styles.skippedText}>食べませんでした</div>
+                ) : (
+                  <>
+                    <div className={styles.mealCalories}>
+                      {Math.round(meal.total_calories)} <span className={styles.mealUnit}>kcal</span>
+                    </div>
+                    <div className={styles.nutrients}>
+                      <span>P: {meal.total_protein.toFixed(1)}g</span>
+                      <span>F: {meal.total_fat.toFixed(1)}g</span>
+                      <span>C: {meal.total_carbohydrates.toFixed(1)}g</span>
+                    </div>
+                  </>
+                )}
               </div>
               <div className={styles.deleteButton}>
                 <DeleteHistoryButton historyId={meal.id} iconOnly onSuccess={onDelete} />

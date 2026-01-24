@@ -108,7 +108,9 @@ export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUp
           <div className={styles.mealsList}>
             {meals.map((meal) => (
               <div key={meal.id} className={styles.mealItem}>
-                {meal.input_type === 'text' ? (
+                {meal.input_type === 'skipped' ? (
+                  <div className={styles.skippedIcon}>🚫</div>
+                ) : meal.input_type === 'text' ? (
                   <div className={styles.textPreview}>{meal.input_text}</div>
                 ) : (
                   <MealThumbnail
@@ -117,16 +119,22 @@ export default function MealUploadView({ mealType, mealDate, mealLabel }: MealUp
                   />
                 )}
                 <div className={styles.mealInfo}>
-                  <div className={styles.calories}>
-                    {Math.round(meal.total_calories)} <span className={styles.unit}>kcal</span>
-                  </div>
-                  <div className={styles.nutrients}>
-                    <span className={styles.nutrient}>P: {meal.total_protein.toFixed(1)}g</span>
-                    <span className={styles.nutrient}>F: {meal.total_fat.toFixed(1)}g</span>
-                    <span className={styles.nutrient}>
-                      C: {meal.total_carbohydrates.toFixed(1)}g
-                    </span>
-                  </div>
+                  {meal.input_type === 'skipped' ? (
+                    <div className={styles.skippedText}>食べませんでした</div>
+                  ) : (
+                    <>
+                      <div className={styles.calories}>
+                        {Math.round(meal.total_calories)} <span className={styles.unit}>kcal</span>
+                      </div>
+                      <div className={styles.nutrients}>
+                        <span className={styles.nutrient}>P: {meal.total_protein.toFixed(1)}g</span>
+                        <span className={styles.nutrient}>F: {meal.total_fat.toFixed(1)}g</span>
+                        <span className={styles.nutrient}>
+                          C: {meal.total_carbohydrates.toFixed(1)}g
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className={styles.deleteButton}>
                   <DeleteHistoryButton
