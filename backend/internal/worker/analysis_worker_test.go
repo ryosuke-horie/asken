@@ -97,6 +97,10 @@ func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, in
 	return uuid.Nil, nil
 }
 
+func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+	return uuid.Nil, nil
+}
+
 func TestProcessRequest_Success(t *testing.T) {
 	requestID := uuid.New()
 	imagePath := "/uploads/test.jpg"

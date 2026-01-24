@@ -68,6 +68,13 @@ func (s *Seeder) Run(ctx context.Context) error {
 			return fmt.Errorf("ユーザー %s の分析シードに失敗: %w", user.Email, err)
 		}
 		s.log(fmt.Sprintf("ユーザー %s に %d 件の分析データを作成しました", user.Email, s.config.AnalysesPerUser))
+
+		// 「食べなかった」記録を作成
+		skippedCount, err := s.seedSkippedMealsForUser(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("ユーザー %s のスキップ記録シードに失敗: %w", user.Email, err)
+		}
+		s.log(fmt.Sprintf("ユーザー %s に %d 件の「食べなかった」記録を作成しました", user.Email, skippedCount))
 	}
 
 	// 体重記録データを作成
@@ -357,6 +364,80 @@ func (s *Seeder) seedWeightGoalForUser(ctx context.Context, userID uuid.UUID) er
 	}
 
 	return nil
+}
+
+// seedSkippedMealsForUser はユーザーに対して「食べなかった」記録を作成する
+func (s *Seeder) seedSkippedMealsForUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	// 過去3日分のスキップ記録を作成（朝食と間食をスキップ）
+	dates := GeneratePastDates(3)
+	skippedMeals := []struct {
+		dateIndex int
+		mealType  string
+	}{
+		{0, "breakfast"}, // 今日の朝食
+		{1, "snack"},     // 昨日の間食
+		{2, "breakfast"}, // 2日前の朝食
+	}
+
+	count := 0
+	for _, meal := range skippedMeals {
+		mealDate := FormatDateForDB(dates[meal.dateIndex])
+
+		if err := s.createSkippedMeal(ctx, userID, meal.mealType, mealDate); err != nil {
+			return count, fmt.Errorf("スキップ記録作成に失敗: %w", err)
+		}
+		count++
+	}
+
+	return count, nil
+}
+
+// createSkippedMeal は「食べなかった」記録を作成する
+func (s *Seeder) createSkippedMeal(ctx context.Context, userID uuid.UUID, mealType, mealDate string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("トランザクション開始に失敗: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// analysis_requestsにskipped記録を作成
+	requestQuery := `
+		INSERT INTO analysis_requests (status, input_type, meal_type, meal_date, user_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+
+	var requestID uuid.UUID
+	err = tx.QueryRowContext(ctx, requestQuery,
+		repository.StatusCompleted,
+		repository.InputTypeSkipped,
+		mealType,
+		mealDate,
+		userID,
+	).Scan(&requestID)
+	if err != nil {
+		return fmt.Errorf("analysis_requestsの挿入に失敗: %w", err)
+	}
+
+	// analysis_resultsに空の結果を作成
+	resultQuery := `
+		INSERT INTO analysis_results (
+			analysis_request_id,
+			foods,
+			total_calories,
+			total_protein,
+			total_fat,
+			total_carbohydrates
+		) VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	emptyFoods := "[]"
+	_, err = tx.ExecContext(ctx, resultQuery, requestID, emptyFoods, 0, 0, 0, 0)
+	if err != nil {
+		return fmt.Errorf("analysis_resultsの挿入に失敗: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 // seedMylistForUser はユーザーに対してマイリストデータを作成する

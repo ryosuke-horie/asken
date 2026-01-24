@@ -1,6 +1,6 @@
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-export type InputType = 'image' | 'text' | 'mylist'
+export type InputType = 'image' | 'text' | 'mylist' | 'skipped'
 
 export interface NutritionInfo {
   name: string
