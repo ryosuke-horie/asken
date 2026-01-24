@@ -1,0 +1,17 @@
+.dragHandle {
+  cursor: grab;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  color: #999;
+  user-select: none;
+  touch-action: none;
+  margin-right: 0.5rem;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle:hover {
+  color: #666;
+}

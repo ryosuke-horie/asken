@@ -40,17 +40,18 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc         func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
-	CreateRequestWithTextFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
-	GetRequestFunc            func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
-	UpdateStatusFunc          func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
-	SaveResultFunc            func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
-	GetResultFunc             func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
-	GetPendingRequestsFunc    func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
-	GetHistoryListFunc        func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
-	GetHistoryDetailFunc      func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
-	DeleteHistoryFunc         func(ctx context.Context, id uuid.UUID) error
-	GetDailyMealsFunc         func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
+	CreateRequestFunc           func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequestWithTextFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	GetRequestFunc              func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
+	UpdateStatusFunc            func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
+	SaveResultFunc              func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	GetResultFunc               func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	GetPendingRequestsFunc      func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
+	GetHistoryListFunc          func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
+	GetHistoryDetailFunc        func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
+	DeleteHistoryFunc           func(ctx context.Context, id uuid.UUID) error
+	GetDailyMealsFunc           func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
+	CreateRequestFromMylistFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error)
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
@@ -130,6 +131,13 @@ func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string)
 	return nil, repository.DailyTotal{}, nil
 }
 
+func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+	if m.CreateRequestFromMylistFunc != nil {
+		return m.CreateRequestFromMylistFunc(ctx, inputText, mealType, mealDate, userID, result)
+	}
+	return uuid.Nil, nil
+}
+
 func TestAnalyzeHandler_Success(t *testing.T) {
 	// 非同期処理のため、FoodServiceは呼ばれない
 	mockService := &MockFoodService{}
@@ -170,11 +178,11 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 
 	// レスポンス形式を確認
 	var response struct {
-		AnalysisID string `json:"analysis_id"`
+		ID string `json:"id"`
 	}
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, expectedID.String(), response.AnalysisID)
+	assert.Equal(t, expectedID.String(), response.ID)
 
 	// ファイルが削除されていないことを確認（永続化のため）
 	// Note: テスト後のクリーンアップは別途必要
@@ -352,11 +360,11 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, w.Code)
 
 	var response struct {
-		AnalysisID string `json:"analysis_id"`
+		ID string `json:"id"`
 	}
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, expectedID.String(), response.AnalysisID)
+	assert.Equal(t, expectedID.String(), response.ID)
 }
 
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {

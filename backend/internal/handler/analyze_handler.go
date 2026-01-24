@@ -116,7 +116,7 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 	log.Printf("Text analysis request created with ID: %s", analysisID)
 
 	// 202 Accepted レスポンスを返却
-	if err := writeAnalysisResponse(w, analysisID); err != nil {
+	if err := writeAnalysisResponse(w, analysisID, ""); err != nil {
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
 	}
 }
@@ -197,7 +197,57 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	log.Printf("Analysis request created with ID: %s", analysisID)
 
 	// 5. 202 Accepted レスポンスを返却
-	if err := writeAnalysisResponse(w, analysisID); err != nil {
+	if err := writeAnalysisResponse(w, analysisID, permanentPath); err != nil {
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+	}
+}
+
+// HandleUploadImage は画像のみをアップロードし、パスを返す（分析なし）
+func (h *AnalyzeHandler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
+	// 1. multipart/form-data パース
+	err := r.ParseMultipartForm(10 << 20) // 10MB制限
+	if err != nil {
+		log.Printf("Error parsing multipart form: %v", err)
+		http.Error(w, "ファイルのパースに失敗しました", http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		log.Printf("Error getting form file: %v", err)
+		http.Error(w, "画像ファイルが見つかりません", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	log.Printf("Received file for upload: %s (size: %d bytes)", header.Filename, header.Size)
+
+	// 2. ファイルバリデーション
+	if err := validateImageFile(file, header); err != nil {
+		log.Printf("File validation error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// 3. ファイルを保存
+	permanentPath, err := savePermanentFile(file, header)
+	if err != nil {
+		log.Printf("Error saving file: %v", err)
+		http.Error(w, "ファイルの保存に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("File uploaded to: %s", permanentPath)
+
+	// 4. レスポンスを返す
+	response := map[string]string{
+		"image_path": permanentPath,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
 	}
 }
@@ -297,9 +347,12 @@ func isValidMealType(mealType string) bool {
 }
 
 // writeAnalysisResponse は分析IDを含む202 Acceptedレスポンスを書き込みます
-func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
+func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID, imagePath string) error {
 	response := map[string]string{
-		"analysis_id": analysisID.String(),
+		"id": analysisID.String(),
+	}
+	if imagePath != "" {
+		response["image_path"] = imagePath
 	}
 
 	// バッファに先にエンコードしてエラーを検出（ヘッダー書き込み前）
@@ -317,6 +370,6 @@ func writeAnalysisResponse(w http.ResponseWriter, analysisID uuid.UUID) error {
 		return err
 	}
 
-	log.Printf("Response sent successfully: analysis_id=%s", analysisID)
+	log.Printf("Response sent successfully: id=%s, image_path=%s", analysisID, imagePath)
 	return nil
 }

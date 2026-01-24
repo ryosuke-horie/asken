@@ -44,6 +44,163 @@ func main() {
 	}
 }
 
+type handlers struct {
+	auth          *handler.AuthHandler
+	analyze       *handler.AnalyzeHandler
+	status        *handler.StatusHandler
+	history       *handler.HistoryHandler
+	historyDelete *handler.HistoryDeleteHandler
+	image         *handler.ImageHandler
+	dailyMeals    *handler.DailyMealsHandler
+	weight        *handler.WeightHandler
+	mylist        *handler.MylistHandler
+}
+
+func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	// 認証エンドポイント（認証不要）
+	mux.HandleFunc("/api/auth/register", h.auth.HandleRegister)
+	mux.HandleFunc("/api/auth/login", h.auth.HandleLogin)
+
+	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
+	mux.HandleFunc("/api/images/", h.image.Handle)
+
+	// 認証が必要なエンドポイント
+	setupAnalyzeRoutes(mux, h, authMiddleware)
+	setupHistoryRoutes(mux, h, authMiddleware)
+	setupMealsRoutes(mux, h, authMiddleware)
+	setupWeightRoutes(mux, h, authMiddleware)
+	setupMylistRoutes(mux, h, authMiddleware)
+}
+
+func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.analyze.Handle(w, r)
+		case http.MethodGet:
+			h.status.Handle(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/analyze", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
+	mux.Handle("/api/analyze/", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
+
+	uploadImageRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.analyze.HandleUploadImage(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/upload-image", authMiddleware.Authenticate(http.HandlerFunc(uploadImageRouteHandler)))
+}
+
+func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(h.history.HandleList)))
+
+	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.history.HandleDetail(w, r)
+		case http.MethodDelete:
+			h.historyDelete.Handle(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
+}
+
+func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(h.dailyMeals.Handle)))
+
+	mealsFromMylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.mylist.HandleRecordFromMylist(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/meals/from-mylist", authMiddleware.Authenticate(http.HandlerFunc(mealsFromMylistRouteHandler)))
+}
+
+func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.weight.HandleCreateRecord(w, r)
+		case http.MethodGet:
+			h.weight.HandleGetRecords(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight-records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
+
+	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.weight.HandleGetGoal(w, r)
+		case http.MethodPut:
+			h.weight.HandleUpdateGoal(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+}
+
+func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	mylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.mylist.HandleList(w, r)
+		case http.MethodPost:
+			h.mylist.HandleCreate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist", authMiddleware.Authenticate(http.HandlerFunc(mylistRouteHandler)))
+
+	mylistReorderRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			h.mylist.HandleReorder(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/reorder", authMiddleware.Authenticate(http.HandlerFunc(mylistReorderRouteHandler)))
+
+	mylistAnalyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.mylist.HandleAnalyze(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/analyze", authMiddleware.Authenticate(http.HandlerFunc(mylistAnalyzeRouteHandler)))
+
+	mylistDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.mylist.HandleGetByID(w, r)
+		case http.MethodPut:
+			h.mylist.HandleUpdate(w, r)
+		case http.MethodDelete:
+			h.mylist.HandleDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/mylist/", authMiddleware.Authenticate(http.HandlerFunc(mylistDetailRouteHandler)))
+}
+
 func run() error {
 	// 環境変数から設定を読み込み
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -65,6 +222,7 @@ func run() error {
 	analysisRepo := repository.NewAnalysisRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	weightRepo := repository.NewWeightRepository(db)
+	mylistRepo := repository.NewMylistRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -87,15 +245,18 @@ func run() error {
 	authService := service.NewAuthService(jwtSecret, 24*time.Hour)
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 
-	// ハンドラーの初期化（リポジトリを渡す）
-	authHandler := handler.NewAuthHandler(authService, userRepo)
-	analyzeHandler := handler.NewAnalyzeHandler(foodService, analysisRepo)
-	statusHandler := handler.NewStatusHandler(analysisRepo)
-	historyHandler := handler.NewHistoryHandler(analysisRepo)
-	historyDeleteHandler := handler.NewHistoryDeleteHandler(analysisRepo)
-	imageHandler := handler.NewImageHandler("uploads")
-	dailyMealsHandler := handler.NewDailyMealsHandler(analysisRepo)
-	weightHandler := handler.NewWeightHandler(weightRepo)
+	// ハンドラーの初期化
+	h := handlers{
+		auth:          handler.NewAuthHandler(authService, userRepo),
+		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
+		status:        handler.NewStatusHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo),
+		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
+		image:         handler.NewImageHandler("uploads"),
+		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
+		weight:        handler.NewWeightHandler(weightRepo),
+		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
+	}
 
 	// ワーカーの初期化
 	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
@@ -109,83 +270,7 @@ func run() error {
 
 	// ルーティング
 	mux := http.NewServeMux()
-
-	// 認証エンドポイント（認証不要）
-	mux.HandleFunc("/api/auth/register", authHandler.HandleRegister)
-	mux.HandleFunc("/api/auth/login", authHandler.HandleLogin)
-
-	// POST /api/analyze - 画像アップロード（認証必須）
-	// GET /api/analyze/:id - ステータス取得（認証必須）
-	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			analyzeHandler.Handle(w, r)
-		case http.MethodGet:
-			statusHandler.Handle(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-
-	// 認証が必要なエンドポイントにミドルウェアを適用
-	mux.Handle("/api/analyze", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
-	mux.Handle("/api/analyze/", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
-
-	// 履歴エンドポイント（認証必須）
-	// GET /api/history - 履歴一覧
-	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(historyHandler.HandleList)))
-
-	// GET /api/history/:id - 履歴詳細
-	// DELETE /api/history/:id - 履歴削除
-	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			historyHandler.HandleDetail(w, r)
-		case http.MethodDelete:
-			historyDeleteHandler.Handle(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
-
-	// 画像配信エンドポイント（認証必須）
-	// GET /api/images/:filename
-	mux.Handle("/api/images/", authMiddleware.Authenticate(http.HandlerFunc(imageHandler.Handle)))
-
-	// 日次食事データエンドポイント（認証必須）
-	// GET /api/meals/daily
-	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(dailyMealsHandler.Handle)))
-
-	// 体重記録エンドポイント（認証必須）
-	// POST /api/weight-records - 体重記録作成
-	// GET /api/weight-records - 体重記録一覧取得
-	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			weightHandler.HandleCreateRecord(w, r)
-		case http.MethodGet:
-			weightHandler.HandleGetRecords(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/weight-records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
-
-	// 目標体重エンドポイント（認証必須）
-	// GET /api/weight-goal - 目標取得
-	// PUT /api/weight-goal - 目標更新
-	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			weightHandler.HandleGetGoal(w, r)
-		case http.MethodPut:
-			weightHandler.HandleUpdateGoal(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+	setupRoutes(mux, h, authMiddleware)
 
 	// CORSミドルウェアを適用
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
