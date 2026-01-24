@@ -292,7 +292,7 @@ func (r *postgresMylistRepository) Reorder(ctx context.Context, userID uuid.UUID
 	if err != nil {
 		return fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := `UPDATE mylist_items SET sort_order = $1 WHERE id = $2 AND user_id = $3`
 
