@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -17,14 +18,24 @@ import (
 // TrainingHandler はトレーニング関連のハンドラー
 type TrainingHandler struct {
 	repository          repository.TrainingRepository
+	conditionRepo       repository.ConditionRepository
+	profileRepo         repository.ProfileRepository
 	menuSuggester       *gemini.MenuSuggester
 	equipmentNormalizer *gemini.EquipmentNormalizer
 }
 
 // NewTrainingHandler は新しいTrainingHandlerを作成
-func NewTrainingHandler(repository repository.TrainingRepository, menuSuggester *gemini.MenuSuggester, equipmentNormalizer *gemini.EquipmentNormalizer) *TrainingHandler {
+func NewTrainingHandler(
+	repository repository.TrainingRepository,
+	conditionRepo repository.ConditionRepository,
+	profileRepo repository.ProfileRepository,
+	menuSuggester *gemini.MenuSuggester,
+	equipmentNormalizer *gemini.EquipmentNormalizer,
+) *TrainingHandler {
 	return &TrainingHandler{
 		repository:          repository,
+		conditionRepo:       conditionRepo,
+		profileRepo:         profileRepo,
 		menuSuggester:       menuSuggester,
 		equipmentNormalizer: equipmentNormalizer,
 	}
@@ -1075,6 +1086,45 @@ func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Requ
 
 // Gemini連携ハンドラー
 
+// enrichParamsWithCondition は体調記録からパラメータを補完する
+// NOTE: 体調記録はオプショナルな付加情報のため、取得に失敗しても
+// メニュー提案処理はブロックせず、基本パラメータのみで続行する（意図的なサイレントフォールバック）
+func (h *TrainingHandler) enrichParamsWithCondition(ctx context.Context, userID uuid.UUID, params *gemini.SuggestMenuParams) {
+	if h.conditionRepo == nil {
+		return
+	}
+	today := time.Now().Format("2006-01-02")
+	conditionRecord, err := h.conditionRepo.GetRecordByDate(ctx, userID, today)
+	if err != nil {
+		log.Printf("体調記録の取得に失敗 (user_id=%s): %v", userID, err)
+		return
+	}
+	if conditionRecord != nil {
+		params.Fatigue = &conditionRecord.Fatigue
+		params.Condition = &conditionRecord.Condition
+	}
+}
+
+// enrichParamsWithProfile はプロフィールからパラメータを補完する
+// NOTE: プロフィールはオプショナルな付加情報のため、取得に失敗しても
+// メニュー提案処理はブロックせず、基本パラメータのみで続行する（意図的なサイレントフォールバック）
+func (h *TrainingHandler) enrichParamsWithProfile(ctx context.Context, userID uuid.UUID, params *gemini.SuggestMenuParams) {
+	if h.profileRepo == nil {
+		return
+	}
+	profile, err := h.profileRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		log.Printf("プロフィールの取得に失敗 (user_id=%s): %v", userID, err)
+		return
+	}
+	if profile != nil {
+		params.SportType = profile.SportType
+		if len(profile.TrainingGoals) > 0 && len(params.Goals) == 0 {
+			params.Goals = profile.TrainingGoals
+		}
+	}
+}
+
 func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
@@ -1102,7 +1152,18 @@ func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	menu, err := h.menuSuggester.SuggestMenu(r.Context(), req.Equipment, req.Duration, req.Goals)
+	// パラメータを構築
+	params := gemini.SuggestMenuParams{
+		Equipment:       req.Equipment,
+		DurationMinutes: req.Duration,
+		Goals:           req.Goals,
+	}
+
+	// オプショナルな付加情報でパラメータを補完
+	h.enrichParamsWithCondition(r.Context(), userID, &params)
+	h.enrichParamsWithProfile(r.Context(), userID, &params)
+
+	menu, err := h.menuSuggester.SuggestMenu(r.Context(), params)
 	if err != nil {
 		log.Printf("メニュー提案に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "メニュー提案に失敗しました", http.StatusInternalServerError)

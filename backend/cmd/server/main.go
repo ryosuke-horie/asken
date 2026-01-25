@@ -57,6 +57,7 @@ type handlers struct {
 	skipMeal      *handler.SkipMealHandler
 	condition     *handler.ConditionHandler
 	training      *handler.TrainingHandler
+	profile       *handler.ProfileHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -75,6 +76,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.Auth
 	setupMylistRoutes(mux, h, authMiddleware)
 	setupConditionRoutes(mux, h, authMiddleware)
 	setupTrainingRoutes(mux, h, authMiddleware)
+	setupProfileRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
@@ -230,6 +232,20 @@ func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middle
 	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
 }
 
+func setupProfileRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	profileRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.profile.HandleGetProfile(w, r)
+		case http.MethodPut:
+			h.profile.HandleUpdateProfile(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/profile", authMiddleware.Authenticate(http.HandlerFunc(profileRouteHandler)))
+}
+
 //nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
 	// 場所一覧・作成
@@ -382,6 +398,7 @@ func run() error {
 	mylistRepo := repository.NewMylistRepository(db)
 	conditionRepo := repository.NewConditionRepository(db)
 	trainingRepo := repository.NewTrainingRepository(db)
+	profileRepo := repository.NewProfileRepository(db)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -419,7 +436,8 @@ func run() error {
 		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 		condition:     handler.NewConditionHandler(conditionRepo),
-		training:      handler.NewTrainingHandler(trainingRepo, menuSuggester, equipmentNormalizer),
+		training:      handler.NewTrainingHandler(trainingRepo, conditionRepo, profileRepo, menuSuggester, equipmentNormalizer),
+		profile:       handler.NewProfileHandler(profileRepo),
 	}
 
 	// ワーカーの初期化
