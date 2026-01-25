@@ -21,18 +21,10 @@ const SEED_MYLIST_ITEMS = [
 ]
 
 test.describe('食事記録', () => {
-  test.beforeEach(async ({ page, loginPage }) => {
-    await page.goto('/login')
-    await page.evaluate(() => {
-      localStorage.removeItem('uchikomi_auth_token')
-      localStorage.removeItem('uchikomi_user')
-      document.cookie = 'uchikomi_auth_token=; path=/; max-age=0'
-    })
-
+  test.beforeEach(async ({ loginPage }) => {
     await loginPage.goto()
-    await loginPage.waitForLoad()
     await loginPage.login(TEST_USER.email, TEST_USER.password)
-    await expect(page).toHaveURL('/')
+    await expect(loginPage.page).toHaveURL('/')
   })
 
   test.describe('ページ表示', () => {
