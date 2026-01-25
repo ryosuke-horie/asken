@@ -16,8 +16,9 @@ test.describe('認証フロー', () => {
     // 各テスト前に認証状態をクリア
     await page.goto('/login')
     await page.evaluate(() => {
-      localStorage.removeItem('asken_auth_token')
-      localStorage.removeItem('asken_user')
+      localStorage.removeItem('uchikomi_auth_token')
+      localStorage.removeItem('uchikomi_user')
+      document.cookie = 'uchikomi_auth_token=; path=/; max-age=0'
     })
   })
 
