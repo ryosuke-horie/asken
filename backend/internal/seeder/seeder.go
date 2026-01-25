@@ -368,15 +368,19 @@ func (s *Seeder) seedWeightGoalForUser(ctx context.Context, userID uuid.UUID) er
 
 // seedSkippedMealsForUser はユーザーに対して「食べなかった」記録を作成する
 func (s *Seeder) seedSkippedMealsForUser(ctx context.Context, userID uuid.UUID) (int, error) {
-	// 過去3日分のスキップ記録を作成（朝食と間食をスキップ）
+	// 過去3日分のスキップ記録を作成
+	// 注意: seedAnalysesForUserで使用される組み合わせ（AnalysesPerUser=5の場合）と
+	// 競合しないmeal_type + 日付の組み合わせを使用する
+	// seedAnalysesForUser: (0, breakfast), (1, lunch), (2, dinner), (3, snack), (4, breakfast)
+	// 以下は競合しない組み合わせを選択:
 	dates := GeneratePastDates(3)
 	skippedMeals := []struct {
 		dateIndex int
 		mealType  string
 	}{
-		{0, "breakfast"}, // 今日の朝食
-		{1, "snack"},     // 昨日の間食
-		{2, "breakfast"}, // 2日前の朝食
+		{0, "dinner"}, // 今日の夕食（通常記録は今日の朝食）
+		{1, "snack"},  // 昨日の間食（通常記録は昨日の昼食）
+		{2, "lunch"},  // 2日前の昼食（通常記録は2日前の夕食）
 	}
 
 	count := 0
