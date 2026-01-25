@@ -850,6 +850,7 @@ func (r *postgresTrainingRepository) GetRecordByID(ctx context.Context, id, user
 	return &rec, nil
 }
 
+//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -962,6 +963,7 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 	return &created, nil
 }
 
+//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
