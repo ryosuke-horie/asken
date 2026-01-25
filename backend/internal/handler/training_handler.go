@@ -808,7 +808,7 @@ func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Requ
 	}
 
 	// メニューIDをパース
-	var menuIDs []uuid.UUID
+	menuIDs := make([]uuid.UUID, 0, len(req.MenuIDs))
 	for _, menuIDStr := range req.MenuIDs {
 		menuID, err := uuid.Parse(menuIDStr)
 		if err != nil {
@@ -933,7 +933,7 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 	}
 
 	// メニューIDをパース
-	var menuIDs []uuid.UUID
+	menuIDs := make([]uuid.UUID, 0, len(req.MenuIDs))
 	for _, menuIDStr := range req.MenuIDs {
 		menuID, err := uuid.Parse(menuIDStr)
 		if err != nil {

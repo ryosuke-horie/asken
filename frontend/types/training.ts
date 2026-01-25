@@ -120,10 +120,6 @@ export interface SuggestMenuRequest {
   goals?: string[]
 }
 
-export interface NormalizeEquipmentRequest {
-  names: string[]
-}
-
 // レスポンス型
 export interface SuggestMenuResponse {
   menu: MenuItem[]

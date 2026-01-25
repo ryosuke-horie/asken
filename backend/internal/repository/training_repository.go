@@ -855,7 +855,7 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 	if err != nil {
 		return nil, fmt.Errorf("トランザクション開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := `
 		INSERT INTO training_records (user_id, location_id, recorded_at, completed, duration, intensity, satisfaction, notes)
@@ -967,7 +967,7 @@ func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *T
 	if err != nil {
 		return nil, fmt.Errorf("トランザクション開始に失敗: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := `
 		UPDATE training_records
