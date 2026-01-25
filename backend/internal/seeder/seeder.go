@@ -62,45 +62,67 @@ func (s *Seeder) Run(ctx context.Context) error {
 	}
 	s.log(fmt.Sprintf("%d件のユーザーを作成しました", len(users)))
 
-	// 各ユーザーに対して分析データを作成
+	// 各ユーザーに対してデータを作成
 	for _, user := range users {
-		if err := s.seedAnalysesForUser(ctx, user.ID); err != nil {
-			return fmt.Errorf("ユーザー %s の分析シードに失敗: %w", user.Email, err)
+		if err := s.seedDataForUser(ctx, user); err != nil {
+			return err
 		}
-		s.log(fmt.Sprintf("ユーザー %s に %d 件の分析データを作成しました", user.Email, s.config.AnalysesPerUser))
-
-		// 「食べなかった」記録を作成
-		skippedCount, err := s.seedSkippedMealsForUser(ctx, user.ID)
-		if err != nil {
-			return fmt.Errorf("ユーザー %s のスキップ記録シードに失敗: %w", user.Email, err)
-		}
-		s.log(fmt.Sprintf("ユーザー %s に %d 件の「食べなかった」記録を作成しました", user.Email, skippedCount))
 	}
+
+	return nil
+}
+
+// seedDataForUser はユーザーに対して各種データを作成する
+func (s *Seeder) seedDataForUser(ctx context.Context, user *repository.User) error {
+	// 分析データを作成
+	if err := s.seedAnalysesForUser(ctx, user.ID); err != nil {
+		return fmt.Errorf("ユーザー %s の分析シードに失敗: %w", user.Email, err)
+	}
+	s.log(fmt.Sprintf("ユーザー %s に %d 件の分析データを作成しました", user.Email, s.config.AnalysesPerUser))
+
+	// 「食べなかった」記録を作成
+	skippedCount, err := s.seedSkippedMealsForUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("ユーザー %s のスキップ記録シードに失敗: %w", user.Email, err)
+	}
+	s.log(fmt.Sprintf("ユーザー %s に %d 件の「食べなかった」記録を作成しました", user.Email, skippedCount))
 
 	// 体重記録データを作成
 	if s.config.WeightRecordDays > 0 {
-		for _, user := range users {
-			recordCount, err := s.seedWeightRecordsForUser(ctx, user.ID)
-			if err != nil {
-				return fmt.Errorf("ユーザー %s の体重記録シードに失敗: %w", user.Email, err)
-			}
-			s.log(fmt.Sprintf("ユーザー %s に %d 件の体重記録データを作成しました", user.Email, recordCount))
-
-			if err := s.seedWeightGoalForUser(ctx, user.ID); err != nil {
-				return fmt.Errorf("ユーザー %s の目標体重シードに失敗: %w", user.Email, err)
-			}
-			s.log(fmt.Sprintf("ユーザー %s に目標体重を設定しました", user.Email))
+		if err := s.seedWeightDataForUser(ctx, user); err != nil {
+			return err
 		}
 	}
 
 	// マイリストデータを作成
-	for _, user := range users {
-		count, err := s.seedMylistForUser(ctx, user.ID)
-		if err != nil {
-			return fmt.Errorf("ユーザー %s のマイリストシードに失敗: %w", user.Email, err)
-		}
-		s.log(fmt.Sprintf("ユーザー %s に %d 件のマイリストアイテムを作成しました", user.Email, count))
+	count, err := s.seedMylistForUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("ユーザー %s のマイリストシードに失敗: %w", user.Email, err)
 	}
+	s.log(fmt.Sprintf("ユーザー %s に %d 件のマイリストアイテムを作成しました", user.Email, count))
+
+	// トレーニング場所・器具データを作成
+	locCount, equipCount, err := s.seedTrainingLocationsForUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("ユーザー %s のトレーニング場所シードに失敗: %w", user.Email, err)
+	}
+	s.log(fmt.Sprintf("ユーザー %s に %d 件のトレーニング場所と %d 件の器具を作成しました", user.Email, locCount, equipCount))
+
+	return nil
+}
+
+// seedWeightDataForUser はユーザーに対して体重関連データを作成する
+func (s *Seeder) seedWeightDataForUser(ctx context.Context, user *repository.User) error {
+	recordCount, err := s.seedWeightRecordsForUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("ユーザー %s の体重記録シードに失敗: %w", user.Email, err)
+	}
+	s.log(fmt.Sprintf("ユーザー %s に %d 件の体重記録データを作成しました", user.Email, recordCount))
+
+	if err := s.seedWeightGoalForUser(ctx, user.ID); err != nil {
+		return fmt.Errorf("ユーザー %s の目標体重シードに失敗: %w", user.Email, err)
+	}
+	s.log(fmt.Sprintf("ユーザー %s に目標体重を設定しました", user.Email))
 
 	return nil
 }
@@ -113,6 +135,10 @@ func (s *Seeder) clean(ctx context.Context) error {
 		"DELETE FROM weight_records",
 		"DELETE FROM weight_goals",
 		"DELETE FROM mylist_items",
+		"DELETE FROM training_records",
+		"DELETE FROM training_equipment",
+		"DELETE FROM training_locations",
+		"DELETE FROM user_profiles",
 		"DELETE FROM users",
 	}
 
@@ -558,4 +584,79 @@ func copyFile(src, dst string) error {
 	}
 
 	return nil
+}
+
+// TrainingLocationSeed はトレーニング場所のシードデータ
+type TrainingLocationSeed struct {
+	Name      string
+	Equipment []string
+}
+
+// DefaultTrainingLocations はデフォルトのトレーニング場所データ
+var DefaultTrainingLocations = []TrainingLocationSeed{
+	{
+		Name:      "ジム",
+		Equipment: []string{"ダンベル", "バーベル", "ケトルベル", "懸垂バー", "ベンチプレス", "トレッドミル"},
+	},
+	{
+		Name:      "道場",
+		Equipment: []string{"サンドバッグ", "ミット", "マット", "ダミー人形"},
+	},
+	{
+		Name:      "自宅",
+		Equipment: []string{"ヨガマット", "チューブ", "ダンベル", "腹筋ローラー"},
+	},
+}
+
+// seedTrainingLocationsForUser はユーザーに対してトレーニング場所と器具を作成する
+func (s *Seeder) seedTrainingLocationsForUser(ctx context.Context, userID uuid.UUID) (locationCount, equipmentCount int, err error) {
+	locationCount = 0
+	equipmentCount = 0
+
+	for i, loc := range DefaultTrainingLocations {
+		// トレーニング場所を作成
+		locationID, err := s.createTrainingLocation(ctx, userID, loc.Name, i)
+		if err != nil {
+			return locationCount, equipmentCount, fmt.Errorf("トレーニング場所作成に失敗: %w", err)
+		}
+		locationCount++
+
+		// 器具を作成
+		for j, equipName := range loc.Equipment {
+			if err := s.createTrainingEquipment(ctx, locationID, equipName, j); err != nil {
+				return locationCount, equipmentCount, fmt.Errorf("器具作成に失敗: %w", err)
+			}
+			equipmentCount++
+		}
+	}
+
+	return locationCount, equipmentCount, nil
+}
+
+// createTrainingLocation はトレーニング場所を作成する
+func (s *Seeder) createTrainingLocation(ctx context.Context, userID uuid.UUID, name string, sortOrder int) (uuid.UUID, error) {
+	query := `
+		INSERT INTO training_locations (user_id, name, sort_order)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+
+	var id uuid.UUID
+	err := s.db.QueryRowContext(ctx, query, userID, name, sortOrder).Scan(&id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return id, nil
+}
+
+// createTrainingEquipment はトレーニング器具を作成する
+func (s *Seeder) createTrainingEquipment(ctx context.Context, locationID uuid.UUID, name string, sortOrder int) error {
+	query := `
+		INSERT INTO training_equipment (location_id, name, sort_order)
+		VALUES ($1, $2, $3)
+	`
+
+	_, err := s.db.ExecContext(ctx, query, locationID, name, sortOrder)
+	return err
 }
