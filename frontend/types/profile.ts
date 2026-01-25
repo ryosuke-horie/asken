@@ -27,7 +27,7 @@ export const SPORT_TYPES = [
   'その他',
 ] as const
 
-export type SportType = (typeof SPORT_TYPES)[number]
+type SportType = (typeof SPORT_TYPES)[number]
 
 export const TRAINING_GOALS = [
   '減量',

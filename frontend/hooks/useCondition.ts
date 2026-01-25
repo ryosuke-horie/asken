@@ -3,21 +3,12 @@
 import useSWR from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
 import { createAuthFetcher } from '@/lib/fetcher'
+import type { ConditionRecord } from '@/types/condition'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
-export interface ConditionRecord {
-  id: string
-  user_id: string
-  condition: number
-  fatigue: number
-  recorded_at: string
-  created_at: string
-  updated_at: string
-}
-
-// 指定日の体調記録を取得するフック
-export function useConditionRecord(date: string | null) {
+// 指定日の体調記録を取得するフック（内部使用）
+function useConditionRecord(date: string | null) {
   const { token } = useAuth()
   const fetcher = createAuthFetcher(token)
 
