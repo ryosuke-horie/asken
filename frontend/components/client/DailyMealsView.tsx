@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import DateNavigation from './DateNavigation'
 import WeightSection from './WeightSection'
 import ConditionSection from './ConditionSection'
+import TrainingSection from './TrainingSection'
 import MealSection from './MealSection'
 import DailyTotalSummary from './DailyTotalSummary'
 import styles from './DailyMealsView.module.css'
@@ -63,6 +64,8 @@ export default function DailyMealsView({ date }: DailyMealsViewProps) {
           />
         ))}
       </div>
+
+      <TrainingSection date={date} />
     </div>
   )
 }

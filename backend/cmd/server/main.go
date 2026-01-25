@@ -244,18 +244,55 @@ func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlew
 	}
 	mux.Handle("/api/training/locations", authMiddleware.Authenticate(http.HandlerFunc(locationsRouteHandler)))
 
+	// メニュー一覧・作成
+	menusRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.training.HandleListMenus(w, r)
+		case http.MethodPost:
+			h.training.HandleCreateMenu(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/menus", authMiddleware.Authenticate(http.HandlerFunc(menusRouteHandler)))
+
+	// メニュー詳細・削除
+	menusDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			h.training.HandleDeleteMenu(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/menus/", authMiddleware.Authenticate(http.HandlerFunc(menusDetailRouteHandler)))
+
 	// 練習記録一覧・作成
 	recordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h.training.HandleListRecords(w, r)
 		case http.MethodPost:
-			h.training.HandleUpsertRecord(w, r)
+			h.training.HandleCreateRecord(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
 	mux.Handle("/api/training/records", authMiddleware.Authenticate(http.HandlerFunc(recordsRouteHandler)))
+
+	// 練習記録詳細・更新・削除
+	recordsDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			h.training.HandleUpdateRecord(w, r)
+		case http.MethodDelete:
+			h.training.HandleDeleteRecord(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/training/records/", authMiddleware.Authenticate(http.HandlerFunc(recordsDetailRouteHandler)))
 
 	// メニュー提案
 	suggestMenuRouteHandler := func(w http.ResponseWriter, r *http.Request) {

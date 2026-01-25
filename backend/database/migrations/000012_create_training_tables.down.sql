@@ -1,4 +1,4 @@
--- 000011_create_training_tables.down.sql
+-- 000012_create_training_tables.down.sql
 -- トレーニング管理機能用テーブルの削除
 
 DROP TRIGGER IF EXISTS update_training_records_updated_at ON training_records;

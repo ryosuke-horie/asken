@@ -19,6 +19,17 @@ export interface TrainingEquipment {
   updated_at: string
 }
 
+// トレーニングメニュー
+export interface TrainingMenu {
+  id: string
+  user_id?: string
+  name: string
+  is_default: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 // 練習記録
 export interface TrainingRecord {
   id: string
@@ -27,6 +38,11 @@ export interface TrainingRecord {
   location_name?: string
   recorded_at: string
   completed: boolean
+  duration?: number
+  intensity?: number
+  satisfaction?: number
+  notes?: string
+  menus?: TrainingMenu[]
   created_at: string
   updated_at: string
 }
@@ -70,6 +86,32 @@ export interface UpsertRecordRequest {
   recorded_at: string
   location_id?: string
   completed: boolean
+}
+
+export interface CreateRecordRequest {
+  recorded_at: string
+  location_id?: string
+  completed?: boolean
+  duration?: number
+  intensity?: number
+  satisfaction?: number
+  notes?: string
+  menu_ids?: string[]
+}
+
+export interface UpdateRecordRequest {
+  recorded_at?: string
+  location_id?: string
+  completed?: boolean
+  duration?: number
+  intensity?: number
+  satisfaction?: number
+  notes?: string
+  menu_ids?: string[]
+}
+
+export interface CreateMenuRequest {
+  name: string
 }
 
 export interface SuggestMenuRequest {
