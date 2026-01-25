@@ -34,10 +34,21 @@ func TestCreateRequest(t *testing.T) {
 	mealDate := "2026-01-21"
 	expectedID := uuid.New()
 
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存skipped記録のチェック（空の結果）
+	mock.ExpectQuery(`SELECT id FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil, InputTypeSkipped).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
 	// モック設定（input_typeを追加、userIDはnil）
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
 		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate, nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
 
 	// 実行
 	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate, nil)
@@ -59,10 +70,21 @@ func TestCreateRequest_Error(t *testing.T) {
 	mealType := "lunch"
 	mealDate := "2026-01-21"
 
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存skipped記録のチェック（空の結果）
+	mock.ExpectQuery(`SELECT id FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil, InputTypeSkipped).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
 	// モック設定 - エラーを返す
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
 		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate, nil).
 		WillReturnError(sql.ErrConnDone)
+
+	// トランザクションロールバック
+	mock.ExpectRollback()
 
 	// 実行
 	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate, nil)
@@ -86,10 +108,21 @@ func TestCreateRequestWithText(t *testing.T) {
 	mealDate := "2026-01-21"
 	expectedID := uuid.New()
 
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存skipped記録のチェック（空の結果）
+	mock.ExpectQuery(`SELECT id FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil, InputTypeSkipped).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+
 	// モック設定
 	mock.ExpectQuery(`INSERT INTO analysis_requests`).
 		WithArgs(StatusPending, InputTypeText, inputText, mealType, mealDate, nil).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(expectedID))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
 
 	// 実行
 	id, err := repo.CreateRequestWithText(ctx, inputText, mealType, mealDate, nil)
@@ -753,5 +786,159 @@ func TestDeleteHistory_ResultsDeleteError(t *testing.T) {
 	// 検証
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "分析結果の削除に失敗")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// ===== 競合シナリオのテスト =====
+
+func TestCreateSkippedMeal_ReplacesExistingRecord(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	mealType := "breakfast"
+	mealDate := "2026-01-25"
+	existingID := uuid.New()
+	newID := uuid.New()
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存記録のチェック（通常記録が1件ある）
+	existingRows := sqlmock.NewRows([]string{"id", "input_type", "image_path"}).
+		AddRow(existingID, InputTypeImage, "/uploads/existing.jpg")
+	mock.ExpectQuery(`SELECT id, input_type, image_path FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil).
+		WillReturnRows(existingRows)
+
+	// 既存のanalysis_resultsを削除
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(existingID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 既存のanalysis_requestsを削除
+	mock.ExpectExec(`DELETE FROM analysis_requests WHERE id`).
+		WithArgs(existingID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 新しいskipped記録を作成
+	mock.ExpectQuery(`INSERT INTO analysis_requests`).
+		WithArgs(StatusCompleted, InputTypeSkipped, mealType, mealDate, nil).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(newID))
+
+	// 空の結果を保存
+	mock.ExpectExec(`INSERT INTO analysis_results`).
+		WithArgs(newID, []byte("[]"), 0, 0, 0, 0).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
+
+	// 実行
+	id, err := repo.CreateSkippedMeal(ctx, mealType, mealDate, nil)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, newID, id)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateRequest_DeletesExistingSkippedRecord(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	imagePath := "/uploads/new.jpg"
+	mealType := "lunch"
+	mealDate := "2026-01-25"
+	existingSkippedID := uuid.New()
+	newID := uuid.New()
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存skipped記録のチェック（1件ある）
+	skippedRows := sqlmock.NewRows([]string{"id"}).AddRow(existingSkippedID)
+	mock.ExpectQuery(`SELECT id FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil, InputTypeSkipped).
+		WillReturnRows(skippedRows)
+
+	// 既存のanalysis_resultsを削除
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(existingSkippedID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 既存のanalysis_requestsを削除
+	mock.ExpectExec(`DELETE FROM analysis_requests WHERE id`).
+		WithArgs(existingSkippedID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 新しい画像分析リクエストを作成
+	mock.ExpectQuery(`INSERT INTO analysis_requests`).
+		WithArgs(StatusPending, InputTypeImage, imagePath, mealType, mealDate, nil).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(newID))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
+
+	// 実行
+	id, err := repo.CreateRequest(ctx, imagePath, mealType, mealDate, nil)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, newID, id)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreateRequestWithText_DeletesExistingSkippedRecord(t *testing.T) {
+	db, mock := setupMockDB(t)
+	defer db.Close()
+
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	inputText := "ご飯, 味噌汁"
+	mealType := "dinner"
+	mealDate := "2026-01-25"
+	existingSkippedID := uuid.New()
+	newID := uuid.New()
+
+	// トランザクション開始
+	mock.ExpectBegin()
+
+	// 既存skipped記録のチェック（1件ある）
+	skippedRows := sqlmock.NewRows([]string{"id"}).AddRow(existingSkippedID)
+	mock.ExpectQuery(`SELECT id FROM analysis_requests WHERE meal_type`).
+		WithArgs(mealType, mealDate, nil, InputTypeSkipped).
+		WillReturnRows(skippedRows)
+
+	// 既存のanalysis_resultsを削除
+	mock.ExpectExec(`DELETE FROM analysis_results WHERE analysis_request_id`).
+		WithArgs(existingSkippedID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 既存のanalysis_requestsを削除
+	mock.ExpectExec(`DELETE FROM analysis_requests WHERE id`).
+		WithArgs(existingSkippedID).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 新しいテキスト分析リクエストを作成
+	mock.ExpectQuery(`INSERT INTO analysis_requests`).
+		WithArgs(StatusPending, InputTypeText, inputText, mealType, mealDate, nil).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(newID))
+
+	// トランザクションコミット
+	mock.ExpectCommit()
+
+	// 実行
+	id, err := repo.CreateRequestWithText(ctx, inputText, mealType, mealDate, nil)
+
+	// 検証
+	assert.NoError(t, err)
+	assert.Equal(t, newID, id)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
