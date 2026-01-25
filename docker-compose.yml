@@ -12,7 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/database/migrations:/docker-entrypoint-initdb.d
+      - ./backend/database/init:/docker-entrypoint-initdb.d
+      - ./backend/database/migrations:/migrations
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U uchikomi"]
       interval: 10s
