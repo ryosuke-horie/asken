@@ -4,6 +4,7 @@ import { HomePage } from '../pages/HomePage'
 import { TrainingPage } from '../pages/TrainingPage'
 import { LocationsPage } from '../pages/LocationsPage'
 import { EquipmentPage } from '../pages/EquipmentPage'
+import { MealsPage } from '../pages/MealsPage'
 
 type Fixtures = {
   loginPage: LoginPage
@@ -11,6 +12,7 @@ type Fixtures = {
   trainingPage: TrainingPage
   locationsPage: LocationsPage
   equipmentPage: EquipmentPage
+  mealsPage: MealsPage
 }
 
 export const test = base.extend<Fixtures>({
@@ -28,6 +30,9 @@ export const test = base.extend<Fixtures>({
   },
   equipmentPage: async ({ page }, use) => {
     await use(new EquipmentPage(page))
+  },
+  mealsPage: async ({ page }, use) => {
+    await use(new MealsPage(page))
   },
 })
 
