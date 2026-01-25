@@ -20,6 +20,12 @@ const SEED_MYLIST_ITEMS = [
   { name: '焼き鮭定食', calories: 440 },
 ]
 
+const TEST_DATES = {
+  mylistRecord: '2026-02-10',
+  skippedRecord: '2026-02-11',
+  deleteRecord: '2026-02-12',
+} as const
+
 test.describe('食事記録', () => {
   test.beforeEach(async ({ loginPage }) => {
     await loginPage.goto()
@@ -123,7 +129,7 @@ test.describe('食事記録', () => {
     })
 
     test('マイリストアイテムを選択して記録できるべき', async ({ mealsPage }) => {
-      await mealsPage.goto('lunch')
+      await mealsPage.goto('lunch', TEST_DATES.mylistRecord)
       await mealsPage.waitForLoad()
 
       const initialCount = await mealsPage.getMealsCount()
@@ -150,7 +156,7 @@ test.describe('食事記録', () => {
 
   test.describe('食べなかった記録', () => {
     test('食事をスキップとして記録できるべき', async ({ mealsPage }) => {
-      await mealsPage.goto('snack')
+      await mealsPage.goto('snack', TEST_DATES.skippedRecord)
       await mealsPage.waitForLoad()
 
       await mealsPage.selectInputType('skipped')
@@ -203,7 +209,7 @@ test.describe('食事記録', () => {
 
   test.describe('既存記録の操作', () => {
     test('登録済み食事を削除できるべき', async ({ mealsPage }) => {
-      await mealsPage.goto('lunch')
+      await mealsPage.goto('lunch', TEST_DATES.deleteRecord)
       await mealsPage.waitForLoad()
 
       await mealsPage.selectMylistItem(SEED_MYLIST_ITEMS[1].name)
