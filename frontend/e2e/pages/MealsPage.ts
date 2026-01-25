@@ -96,9 +96,12 @@ export class MealsPage {
   }
 
   async waitForLoad() {
-    const isLoadingVisible = await this.mylistLoading.isVisible()
-    if (isLoadingVisible) {
+    try {
       await this.mylistLoading.waitFor({ state: 'hidden', timeout: 10000 })
+    } catch (error) {
+      if (!(error instanceof errors.TimeoutError)) {
+        throw error
+      }
     }
     await this.page.waitForLoadState('networkidle')
   }
@@ -202,17 +205,50 @@ export class MealsPage {
     }
   }
 
-  async waitForAnalysisComplete() {
-    await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 60000 })
-  }
+  async waitForAnalysisComplete(context?: string) {
+    const description = context ? `analysis (${context})` : 'analysis'
+    const timeout = 60000
 
-  async getErrorMessage(): Promise<string | null> {
     try {
-      await this.errorMessage.waitFor({ state: 'visible', timeout: 3000 })
-      return await this.errorMessage.textContent()
+      await this.loadingIndicator.waitFor({ state: 'hidden', timeout })
     } catch (error) {
       if (error instanceof errors.TimeoutError) {
-        return null
+        const isStillLoading = await this.loadingIndicator.isVisible().catch(() => 'unknown')
+        const errorVisible = await this.errorMessage.isVisible().catch(() => 'unknown')
+        throw new Error(
+          `Timeout waiting for ${description} to complete after ${timeout}ms. ` +
+            `Loading indicator still visible: ${isStillLoading}, Error message visible: ${errorVisible}`
+        )
+      }
+      throw error
+    }
+  }
+
+  async getErrorMessage(): Promise<string> {
+    try {
+      await this.errorMessage.waitFor({ state: 'visible', timeout: 3000 })
+      const text = await this.errorMessage.textContent()
+      if (!text) {
+        throw new Error('Error message element is visible but has no text content')
+      }
+      return text
+    } catch (error) {
+      if (error instanceof errors.TimeoutError) {
+        throw new Error(
+          'No error message visible within 3000ms. If expecting no error, use isErrorMessageVisible() instead.'
+        )
+      }
+      throw error
+    }
+  }
+
+  async isErrorMessageVisible(): Promise<boolean> {
+    try {
+      await this.errorMessage.waitFor({ state: 'visible', timeout: 3000 })
+      return true
+    } catch (error) {
+      if (error instanceof errors.TimeoutError) {
+        return false
       }
       throw error
     }
@@ -222,13 +258,19 @@ export class MealsPage {
     return await this.mealItems.count()
   }
 
-  async isSuccessMessageVisible(): Promise<boolean> {
+  async waitForSuccessMessage(options?: { timeout?: number }): Promise<void> {
+    const timeout = options?.timeout ?? 5000
+
     try {
-      await this.successMessage.waitFor({ state: 'visible', timeout: 5000 })
-      return true
+      await this.successMessage.waitFor({ state: 'visible', timeout })
     } catch (error) {
       if (error instanceof errors.TimeoutError) {
-        return false
+        const errorVisible = await this.errorMessage.isVisible().catch(() => 'unknown')
+        const loadingVisible = await this.loadingIndicator.isVisible().catch(() => 'unknown')
+        throw new Error(
+          `Success message not visible within ${timeout}ms. ` +
+            `Error message visible: ${errorVisible}, Loading visible: ${loadingVisible}`
+        )
       }
       throw error
     }
