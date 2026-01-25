@@ -96,13 +96,11 @@ export class MealsPage {
   }
 
   async waitForLoad() {
-    try {
+    const isLoadingVisible = await this.mylistLoading.isVisible()
+    if (isLoadingVisible) {
       await this.mylistLoading.waitFor({ state: 'hidden', timeout: 10000 })
-    } catch (error) {
-      if (!(error instanceof errors.TimeoutError)) {
-        throw error
-      }
     }
+    await this.page.waitForLoadState('networkidle')
   }
 
   async selectInputType(inputType: InputType) {
@@ -124,6 +122,13 @@ export class MealsPage {
 
   async selectMylistItem(itemName: string) {
     const item = this.page.locator('[class*="itemCard"]').filter({ hasText: itemName })
+    const count = await item.count()
+    if (count === 0) {
+      const allItems = await this.mylistItems.allTextContents()
+      throw new Error(
+        `Mylist item "${itemName}" not found. Available items: ${allItems.join(', ') || 'none'}`
+      )
+    }
     await item.click()
   }
 
@@ -174,12 +179,27 @@ export class MealsPage {
     await this.waitForApiResponse('/api/history')
   }
 
-  async waitForApiResponse(urlPattern: string) {
-    await this.page.waitForResponse(
-      (res) =>
-        res.url().includes(urlPattern) &&
-        (res.status() === 200 || res.status() === 201 || res.status() === 204)
-    )
+  async waitForApiResponse(urlPattern: string, options?: { timeout?: number }) {
+    const timeout = options?.timeout ?? 15000
+
+    try {
+      const response = await this.page.waitForResponse(
+        (res) => res.url().includes(urlPattern),
+        { timeout }
+      )
+
+      if (!response.ok()) {
+        const body = await response.text().catch(() => 'Unable to read body')
+        throw new Error(`API ${urlPattern} returned error status ${response.status()}: ${body}`)
+      }
+
+      return response
+    } catch (error) {
+      if (error instanceof errors.TimeoutError) {
+        throw new Error(`Timeout waiting for API response matching "${urlPattern}" after ${timeout}ms`)
+      }
+      throw error
+    }
   }
 
   async waitForAnalysisComplete() {
