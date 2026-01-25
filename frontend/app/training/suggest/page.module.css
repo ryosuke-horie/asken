@@ -43,6 +43,114 @@
   margin-bottom: 1rem;
 }
 
+.conditionInfo {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.conditionHeader {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #15803d;
+  margin-bottom: 0.5rem;
+}
+
+.conditionItems {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.conditionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.conditionLabel {
+  font-size: 0.875rem;
+  color: #166534;
+}
+
+.conditionValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #15803d;
+  background-color: #dcfce7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.conditionNote {
+  font-size: 0.75rem;
+  color: #166534;
+  margin: 0.5rem 0 0 0;
+}
+
+.conditionInfoEmpty {
+  background-color: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.conditionInfoEmpty p {
+  font-size: 0.875rem;
+  color: #854d0e;
+  margin: 0;
+}
+
+.locationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.locationItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.locationItem:hover {
+  background-color: #f3f4f6;
+}
+
+.noLocations {
+  color: #666;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.link {
+  color: #f97316;
+  text-decoration: underline;
+}
+
+.labelHint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #16a34a;
+  margin-left: 0.5rem;
+}
+
 .form {
   background-color: #fff;
   border-radius: 12px;
@@ -306,6 +414,15 @@
   .backButton {
     text-align: center;
     justify-content: center;
+  }
+
+  .conditionItems {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .locationGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .equipmentGrid {
