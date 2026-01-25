@@ -1,6 +1,11 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
+import {
+  TOKEN_STORAGE_KEY,
+  USER_STORAGE_KEY,
+  TOKEN_COOKIE_NAME,
+} from '@/lib/constants/auth'
 
 interface User {
   id: string
@@ -24,10 +29,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_STORAGE_KEY = 'uchikomi_auth_token'
-const USER_STORAGE_KEY = 'uchikomi_user'
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
+function setTokenCookie(token: string): void {
+  const maxAge = 7 * 24 * 60 * 60 // 7日
+  const isProduction = process.env.NODE_ENV === 'production'
+  const secureFlag = isProduction ? '; Secure' : ''
+  document.cookie = `${TOKEN_COOKIE_NAME}=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`
+}
+
+function removeTokenCookie(): void {
+  document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -105,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
+        setTokenCookie(data.token)
 
         setToken(data.token)
         setUser(data.user)
@@ -165,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
+        setTokenCookie(data.token)
 
         setToken(data.token)
         setUser(data.user)
@@ -189,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem(TOKEN_STORAGE_KEY)
       localStorage.removeItem(USER_STORAGE_KEY)
+      removeTokenCookie()
     } catch (error) {
       console.error('Failed to clear auth state:', error)
     }
