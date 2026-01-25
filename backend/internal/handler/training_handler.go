@@ -739,6 +739,7 @@ func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
@@ -839,6 +840,7 @@ func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {

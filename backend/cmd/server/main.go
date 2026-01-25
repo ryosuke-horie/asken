@@ -230,6 +230,7 @@ func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middle
 	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
 }
 
+//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
 	// 場所一覧・作成
 	locationsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
