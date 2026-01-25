@@ -1,4 +1,4 @@
--- 000011_create_training_tables.up.sql
+-- 000012_create_training_tables.up.sql
 -- トレーニング管理機能用テーブル
 
 -- training_locations テーブル: トレーニング場所マスタ
