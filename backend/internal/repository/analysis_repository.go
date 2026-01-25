@@ -128,7 +128,20 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 }
 
 // CreateRequest は新しい画像分析リクエストを作成します
+// 既存のskipped記録がある場合は削除して置き換えます
 func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// 既存のskipped記録を削除（通常記録は複数追加可能なので削除しない）
+	if err := r.deleteSkippedRecordInTx(ctx, tx, mealType, mealDate, userID); err != nil {
+		return uuid.Nil, err
+	}
+
 	query := `
 		INSERT INTO analysis_requests (status, input_type, image_path, meal_type, meal_date, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -136,16 +149,34 @@ func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePat
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeImage, imagePath, mealType, mealDate, userID).Scan(&id)
+	err = tx.QueryRowContext(ctx, query, StatusPending, InputTypeImage, imagePath, mealType, mealDate, userID).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションのコミットに失敗: %w", err)
 	}
 
 	return id, nil
 }
 
 // CreateRequestWithText は新しいテキスト分析リクエストを作成します
+// 既存のskipped記録がある場合は削除して置き換えます
 func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// 既存のskipped記録を削除（通常記録は複数追加可能なので削除しない）
+	if err := r.deleteSkippedRecordInTx(ctx, tx, mealType, mealDate, userID); err != nil {
+		return uuid.Nil, err
+	}
+
 	query := `
 		INSERT INTO analysis_requests (status, input_type, input_text, meal_type, meal_date, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -153,9 +184,14 @@ func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, 
 	`
 
 	var id uuid.UUID
-	err := r.db.QueryRowContext(ctx, query, StatusPending, InputTypeText, inputText, mealType, mealDate, userID).Scan(&id)
+	err = tx.QueryRowContext(ctx, query, StatusPending, InputTypeText, inputText, mealType, mealDate, userID).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("分析リクエストの作成に失敗: %w", err)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, fmt.Errorf("トランザクションのコミットに失敗: %w", err)
 	}
 
 	return id, nil
@@ -713,6 +749,7 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 }
 
 // CreateRequestFromMylist はマイリストからの食事記録を作成します
+// 既存のskipped記録がある場合は削除して置き換えます
 func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -720,6 +757,11 @@ func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context
 		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	// 既存のskipped記録を削除（通常記録は複数追加可能なので削除しない）
+	if err := r.deleteSkippedRecordInTx(ctx, tx, mealType, mealDate, userID); err != nil {
+		return uuid.Nil, err
+	}
 
 	// analysis_requests に挿入（statusはcompleted）
 	requestQuery := `
@@ -772,7 +814,116 @@ func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context
 	return requestID, nil
 }
 
+// existingMealRecord は既存の食事記録情報を保持する構造体
+type existingMealRecord struct {
+	ID        uuid.UUID
+	InputType InputType
+	ImagePath sql.NullString
+}
+
+// deleteExistingMealRecordsInTx はトランザクション内で既存の食事記録を削除します
+// 削除対象の画像パスを返します（トランザクション成功後にファイルを削除するため）
+func (r *postgresAnalysisRepository) deleteExistingMealRecordsInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *uuid.UUID) ([]string, error) {
+	// 既存記録を取得
+	checkQuery := `
+		SELECT id, input_type, image_path
+		FROM analysis_requests
+		WHERE meal_type = $1 AND meal_date = $2 AND user_id = $3
+	`
+
+	rows, err := tx.QueryContext(ctx, checkQuery, mealType, mealDate, userID)
+	if err != nil {
+		return nil, fmt.Errorf("既存記録の確認に失敗: %w", err)
+	}
+	defer rows.Close()
+
+	var existingRecords []existingMealRecord
+	for rows.Next() {
+		var rec existingMealRecord
+		if err := rows.Scan(&rec.ID, &rec.InputType, &rec.ImagePath); err != nil {
+			return nil, fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+		existingRecords = append(existingRecords, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("行の反復処理に失敗: %w", err)
+	}
+
+	// 画像パスを収集（トランザクション成功後に削除）
+	var imagePaths []string
+
+	// 既存記録を削除
+	for _, rec := range existingRecords {
+		// analysis_results を先に削除
+		if _, err := tx.ExecContext(ctx, "DELETE FROM analysis_results WHERE analysis_request_id = $1", rec.ID); err != nil {
+			return nil, fmt.Errorf("分析結果の削除に失敗: %w", err)
+		}
+		// analysis_requests を削除
+		if _, err := tx.ExecContext(ctx, "DELETE FROM analysis_requests WHERE id = $1", rec.ID); err != nil {
+			return nil, fmt.Errorf("分析リクエストの削除に失敗: %w", err)
+		}
+		// 画像パスを記録
+		if rec.InputType == InputTypeImage && rec.ImagePath.Valid && rec.ImagePath.String != "" {
+			imagePaths = append(imagePaths, rec.ImagePath.String)
+		}
+	}
+
+	return imagePaths, nil
+}
+
+// deleteSkippedRecordInTx はトランザクション内で既存のskipped記録のみを削除します
+func (r *postgresAnalysisRepository) deleteSkippedRecordInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *uuid.UUID) error {
+	// 既存のskipped記録を取得
+	checkQuery := `
+		SELECT id
+		FROM analysis_requests
+		WHERE meal_type = $1 AND meal_date = $2 AND user_id = $3 AND input_type = $4
+	`
+
+	rows, err := tx.QueryContext(ctx, checkQuery, mealType, mealDate, userID, InputTypeSkipped)
+	if err != nil {
+		return fmt.Errorf("既存skipped記録の確認に失敗: %w", err)
+	}
+	defer rows.Close()
+
+	var existingIDs []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return fmt.Errorf("行のスキャンに失敗: %w", err)
+		}
+		existingIDs = append(existingIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("行の反復処理に失敗: %w", err)
+	}
+
+	// 既存skipped記録を削除
+	for _, id := range existingIDs {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM analysis_results WHERE analysis_request_id = $1", id); err != nil {
+			return fmt.Errorf("分析結果の削除に失敗: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, "DELETE FROM analysis_requests WHERE id = $1", id); err != nil {
+			return fmt.Errorf("分析リクエストの削除に失敗: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// removeImageFiles は画像ファイルを削除します（トランザクション成功後に呼び出す）
+func removeImageFiles(imagePaths []string) {
+	for _, path := range imagePaths {
+		if err := os.Remove(path); err != nil {
+			log.Printf("Warning: Failed to remove image file %s: %v", path, err)
+		} else {
+			log.Printf("Image file removed: %s", path)
+		}
+	}
+}
+
 // CreateSkippedMeal は「食べなかった」記録を作成します
+// 既存の記録（通常記録含む）がある場合は削除して置き換えます
 func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -780,6 +931,12 @@ func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, meal
 		return uuid.Nil, fmt.Errorf("トランザクションの開始に失敗: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+
+	// 既存記録を削除
+	imagePaths, err := r.deleteExistingMealRecordsInTx(ctx, tx, mealType, mealDate, userID)
+	if err != nil {
+		return uuid.Nil, err
+	}
 
 	// analysis_requests に挿入（statusはcompleted, input_typeはskipped）
 	requestQuery := `
@@ -823,6 +980,9 @@ func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, meal
 	if err := tx.Commit(); err != nil {
 		return uuid.Nil, fmt.Errorf("トランザクションのコミットに失敗: %w", err)
 	}
+
+	// 画像ファイルを削除（トランザクション成功後）
+	removeImageFiles(imagePaths)
 
 	return requestID, nil
 }
