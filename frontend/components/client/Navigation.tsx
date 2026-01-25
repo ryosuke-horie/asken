@@ -17,6 +17,7 @@ export default function Navigation() {
     { href: '/', label: 'ホーム' },
     { href: '/mylist', label: 'マイリスト' },
     { href: '/training', label: 'トレーニング' },
+    { href: '/settings', label: '設定' },
   ]
 
   return (
