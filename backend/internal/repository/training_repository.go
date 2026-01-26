@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,9 @@ import (
 
 // ErrTrainingNotFound はリソースが見つからない場合のエラー
 var ErrTrainingNotFound = errors.New("training resource not found")
+
+// ErrDuplicateEntry は重複エントリのエラー
+var ErrDuplicateEntry = errors.New("duplicate entry")
 
 // TrainingLocation はトレーニング場所を表す構造体
 type TrainingLocation struct {
@@ -198,6 +202,9 @@ func (r *postgresTrainingRepository) CreateLocation(ctx context.Context, locatio
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, fmt.Errorf("%w: 同じ名前の場所が既に存在します", ErrDuplicateEntry)
+		}
 		return nil, fmt.Errorf("トレーニング場所の作成に失敗: %w", err)
 	}
 
@@ -372,6 +379,9 @@ func (r *postgresTrainingRepository) CreateEquipment(ctx context.Context, equipm
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, fmt.Errorf("%w: 同じ名前の器具が既に存在します", ErrDuplicateEntry)
+		}
 		return nil, fmt.Errorf("器具の作成に失敗: %w", err)
 	}
 
@@ -481,7 +491,9 @@ func (r *postgresTrainingRepository) GetMenus(ctx context.Context, userID uuid.U
 		}
 		if userIDNull.Valid {
 			id, err := uuid.Parse(userIDNull.String)
-			if err == nil {
+			if err != nil {
+				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+			} else {
 				menu.UserID = &id
 			}
 		}
@@ -532,7 +544,9 @@ func (r *postgresTrainingRepository) CreateMenu(ctx context.Context, menu *Train
 
 	if userIDNull.Valid {
 		id, err := uuid.Parse(userIDNull.String)
-		if err == nil {
+		if err != nil {
+			log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+		} else {
 			created.UserID = &id
 		}
 	}
@@ -683,7 +697,9 @@ func (r *postgresTrainingRepository) getMenusByRecordID(ctx context.Context, rec
 		}
 		if userIDNull.Valid {
 			id, err := uuid.Parse(userIDNull.String)
-			if err == nil {
+			if err != nil {
+				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+			} else {
 				menu.UserID = &id
 			}
 		}
@@ -850,7 +866,91 @@ func (r *postgresTrainingRepository) GetRecordByID(ctx context.Context, id, user
 	return &rec, nil
 }
 
-//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
+// recordScanResult はスキャン結果を保持する中間構造体
+type recordScanResult struct {
+	LocationID   sql.NullString
+	Duration     sql.NullInt64
+	Intensity    sql.NullInt64
+	Satisfaction sql.NullInt64
+	Notes        sql.NullString
+}
+
+// applyToRecord はNullable値をTrainingRecordに適用する
+func (s *recordScanResult) applyToRecord(rec *TrainingRecord) {
+	if s.LocationID.Valid {
+		id, err := uuid.Parse(s.LocationID.String)
+		if err != nil {
+			log.Printf("警告: LocationIDのパースに失敗 (value=%s): %v", s.LocationID.String, err)
+		} else {
+			rec.LocationID = &id
+		}
+	}
+	if s.Duration.Valid {
+		d := int(s.Duration.Int64)
+		rec.Duration = &d
+	}
+	if s.Intensity.Valid {
+		i := int(s.Intensity.Int64)
+		rec.Intensity = &i
+	}
+	if s.Satisfaction.Valid {
+		sat := int(s.Satisfaction.Int64)
+		rec.Satisfaction = &sat
+	}
+	if s.Notes.Valid {
+		rec.Notes = &s.Notes.String
+	}
+}
+
+// insertRecordMenus はレコードとメニューの紐付けを挿入する
+func (r *postgresTrainingRepository) insertRecordMenus(ctx context.Context, tx *sql.Tx, recordID uuid.UUID, menuIDs []uuid.UUID) error {
+	if len(menuIDs) == 0 {
+		return nil
+	}
+	menuQuery := `INSERT INTO training_record_menus (record_id, menu_id) VALUES ($1, $2)`
+	for _, menuID := range menuIDs {
+		if _, err := tx.ExecContext(ctx, menuQuery, recordID, menuID); err != nil {
+			return fmt.Errorf("メニュー紐付けに失敗: %w", err)
+		}
+	}
+	return nil
+}
+
+// deleteRecordMenus はレコードのメニュー紐付けを削除する
+func (r *postgresTrainingRepository) deleteRecordMenus(ctx context.Context, tx *sql.Tx, recordID uuid.UUID) error {
+	deleteQuery := `DELETE FROM training_record_menus WHERE record_id = $1`
+	if _, err := tx.ExecContext(ctx, deleteQuery, recordID); err != nil {
+		return fmt.Errorf("メニュー紐付けの削除に失敗: %w", err)
+	}
+	return nil
+}
+
+// fetchLocationName は場所名を取得してレコードに設定する
+func (r *postgresTrainingRepository) fetchLocationName(ctx context.Context, rec *TrainingRecord) {
+	if rec.LocationID == nil {
+		return
+	}
+	nameQuery := `SELECT name FROM training_locations WHERE id = $1`
+	var name string
+	if err := r.db.QueryRowContext(ctx, nameQuery, *rec.LocationID).Scan(&name); err != nil {
+		if err != sql.ErrNoRows {
+			log.Printf("警告: 場所名の取得に失敗 (location_id=%s): %v", *rec.LocationID, err)
+		}
+		return
+	}
+	rec.LocationName = &name
+}
+
+// fetchMenus はメニュー情報を取得してレコードに設定する
+func (r *postgresTrainingRepository) fetchMenus(ctx context.Context, rec *TrainingRecord) {
+	menus, err := r.getMenusByRecordID(ctx, rec.ID)
+	if err != nil {
+		log.Printf("警告: メニューの取得に失敗 (record_id=%s): %v", rec.ID, err)
+		return
+	}
+	rec.Menus = menus
+}
+
 func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -858,6 +958,27 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	created, err := r.insertRecord(ctx, tx, record)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.insertRecordMenus(ctx, tx, created.ID, menuIDs); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("トランザクションコミットに失敗: %w", err)
+	}
+
+	r.fetchLocationName(ctx, created)
+	r.fetchMenus(ctx, created)
+
+	return created, nil
+}
+
+// insertRecord は練習記録をDBに挿入する
+func (r *postgresTrainingRepository) insertRecord(ctx context.Context, tx *sql.Tx, record *TrainingRecord) (*TrainingRecord, error) {
 	query := `
 		INSERT INTO training_records (user_id, location_id, recorded_at, completed, duration, intensity, satisfaction, notes)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -865,18 +986,14 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 	`
 
 	var created TrainingRecord
-	var locationID sql.NullString
-	var duration sql.NullInt64
-	var intensity sql.NullInt64
-	var satisfaction sql.NullInt64
-	var notes sql.NullString
+	var scanResult recordScanResult
 
 	var locationIDParam interface{}
 	if record.LocationID != nil {
 		locationIDParam = *record.LocationID
 	}
 
-	err = tx.QueryRowContext(ctx, query,
+	err := tx.QueryRowContext(ctx, query,
 		record.UserID,
 		locationIDParam,
 		record.RecordedAt,
@@ -888,13 +1005,13 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 	).Scan(
 		&created.ID,
 		&created.UserID,
-		&locationID,
+		&scanResult.LocationID,
 		&created.RecordedAt,
 		&created.Completed,
-		&duration,
-		&intensity,
-		&satisfaction,
-		&notes,
+		&scanResult.Duration,
+		&scanResult.Intensity,
+		&scanResult.Satisfaction,
+		&scanResult.Notes,
 		&created.CreatedAt,
 		&created.UpdatedAt,
 	)
@@ -903,67 +1020,10 @@ func (r *postgresTrainingRepository) CreateRecord(ctx context.Context, record *T
 		return nil, fmt.Errorf("練習記録の作成に失敗: %w", err)
 	}
 
-	if locationID.Valid {
-		id, err := uuid.Parse(locationID.String)
-		if err == nil {
-			created.LocationID = &id
-		}
-	}
-	if duration.Valid {
-		d := int(duration.Int64)
-		created.Duration = &d
-	}
-	if intensity.Valid {
-		i := int(intensity.Int64)
-		created.Intensity = &i
-	}
-	if satisfaction.Valid {
-		s := int(satisfaction.Int64)
-		created.Satisfaction = &s
-	}
-	if notes.Valid {
-		created.Notes = &notes.String
-	}
-
-	// メニュー紐付け
-	if len(menuIDs) > 0 {
-		menuQuery := `INSERT INTO training_record_menus (record_id, menu_id) VALUES ($1, $2)`
-		for _, menuID := range menuIDs {
-			if _, err := tx.ExecContext(ctx, menuQuery, created.ID, menuID); err != nil {
-				return nil, fmt.Errorf("メニュー紐付けに失敗: %w", err)
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("トランザクションコミットに失敗: %w", err)
-	}
-
-	// 場所名を取得
-	if created.LocationID != nil {
-		nameQuery := `SELECT name FROM training_locations WHERE id = $1`
-		var name string
-		if err := r.db.QueryRowContext(ctx, nameQuery, *created.LocationID).Scan(&name); err != nil {
-			if err != sql.ErrNoRows {
-				log.Printf("警告: 場所名の取得に失敗 (location_id=%s): %v", *created.LocationID, err)
-			}
-		} else {
-			created.LocationName = &name
-		}
-	}
-
-	// メニュー情報を取得
-	menus, err := r.getMenusByRecordID(ctx, created.ID)
-	if err != nil {
-		log.Printf("警告: メニューの取得に失敗 (record_id=%s): %v", created.ID, err)
-	} else {
-		created.Menus = menus
-	}
-
+	scanResult.applyToRecord(&created)
 	return &created, nil
 }
 
-//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -971,6 +1031,31 @@ func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *T
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	updated, err := r.updateRecordRow(ctx, tx, record)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.deleteRecordMenus(ctx, tx, record.ID); err != nil {
+		return nil, err
+	}
+
+	if err := r.insertRecordMenus(ctx, tx, updated.ID, menuIDs); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("トランザクションコミットに失敗: %w", err)
+	}
+
+	r.fetchLocationName(ctx, updated)
+	r.fetchMenus(ctx, updated)
+
+	return updated, nil
+}
+
+// updateRecordRow は練習記録をDBで更新する
+func (r *postgresTrainingRepository) updateRecordRow(ctx context.Context, tx *sql.Tx, record *TrainingRecord) (*TrainingRecord, error) {
 	query := `
 		UPDATE training_records
 		SET location_id = $1, recorded_at = $2, completed = $3, duration = $4, intensity = $5, satisfaction = $6, notes = $7
@@ -979,18 +1064,14 @@ func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *T
 	`
 
 	var updated TrainingRecord
-	var locationID sql.NullString
-	var duration sql.NullInt64
-	var intensity sql.NullInt64
-	var satisfaction sql.NullInt64
-	var notes sql.NullString
+	var scanResult recordScanResult
 
 	var locationIDParam interface{}
 	if record.LocationID != nil {
 		locationIDParam = *record.LocationID
 	}
 
-	err = tx.QueryRowContext(ctx, query,
+	err := tx.QueryRowContext(ctx, query,
 		locationIDParam,
 		record.RecordedAt,
 		record.Completed,
@@ -1003,13 +1084,13 @@ func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *T
 	).Scan(
 		&updated.ID,
 		&updated.UserID,
-		&locationID,
+		&scanResult.LocationID,
 		&updated.RecordedAt,
 		&updated.Completed,
-		&duration,
-		&intensity,
-		&satisfaction,
-		&notes,
+		&scanResult.Duration,
+		&scanResult.Intensity,
+		&scanResult.Satisfaction,
+		&scanResult.Notes,
 		&updated.CreatedAt,
 		&updated.UpdatedAt,
 	)
@@ -1021,69 +1102,7 @@ func (r *postgresTrainingRepository) UpdateRecord(ctx context.Context, record *T
 		return nil, fmt.Errorf("練習記録の更新に失敗: %w", err)
 	}
 
-	if locationID.Valid {
-		id, err := uuid.Parse(locationID.String)
-		if err == nil {
-			updated.LocationID = &id
-		}
-	}
-	if duration.Valid {
-		d := int(duration.Int64)
-		updated.Duration = &d
-	}
-	if intensity.Valid {
-		i := int(intensity.Int64)
-		updated.Intensity = &i
-	}
-	if satisfaction.Valid {
-		s := int(satisfaction.Int64)
-		updated.Satisfaction = &s
-	}
-	if notes.Valid {
-		updated.Notes = &notes.String
-	}
-
-	// 既存のメニュー紐付けを削除
-	deleteMenusQuery := `DELETE FROM training_record_menus WHERE record_id = $1`
-	if _, err := tx.ExecContext(ctx, deleteMenusQuery, record.ID); err != nil {
-		return nil, fmt.Errorf("メニュー紐付けの削除に失敗: %w", err)
-	}
-
-	// 新しいメニュー紐付け
-	if len(menuIDs) > 0 {
-		menuQuery := `INSERT INTO training_record_menus (record_id, menu_id) VALUES ($1, $2)`
-		for _, menuID := range menuIDs {
-			if _, err := tx.ExecContext(ctx, menuQuery, updated.ID, menuID); err != nil {
-				return nil, fmt.Errorf("メニュー紐付けに失敗: %w", err)
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("トランザクションコミットに失敗: %w", err)
-	}
-
-	// 場所名を取得
-	if updated.LocationID != nil {
-		nameQuery := `SELECT name FROM training_locations WHERE id = $1`
-		var name string
-		if err := r.db.QueryRowContext(ctx, nameQuery, *updated.LocationID).Scan(&name); err != nil {
-			if err != sql.ErrNoRows {
-				log.Printf("警告: 場所名の取得に失敗 (location_id=%s): %v", *updated.LocationID, err)
-			}
-		} else {
-			updated.LocationName = &name
-		}
-	}
-
-	// メニュー情報を取得
-	menus, err := r.getMenusByRecordID(ctx, updated.ID)
-	if err != nil {
-		log.Printf("警告: メニューの取得に失敗 (record_id=%s): %v", updated.ID, err)
-	} else {
-		updated.Menus = menus
-	}
-
+	scanResult.applyToRecord(&updated)
 	return &updated, nil
 }
 

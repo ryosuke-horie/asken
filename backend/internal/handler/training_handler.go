@@ -183,6 +183,10 @@ func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Re
 	created, err := h.repository.CreateLocation(r.Context(), location)
 	if err != nil {
 		log.Printf("トレーニング場所の作成に失敗 (user_id=%s): %v", userID, err)
+		if errors.Is(err, repository.ErrDuplicateEntry) {
+			http.Error(w, "同じ名前の場所が既に存在します", http.StatusConflict)
+			return
+		}
 		http.Error(w, "トレーニング場所の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -413,6 +417,10 @@ func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.R
 	created, err := h.repository.CreateEquipment(r.Context(), equipment)
 	if err != nil {
 		log.Printf("器具の作成に失敗 (location_id=%s): %v", locationID, err)
+		if errors.Is(err, repository.ErrDuplicateEntry) {
+			http.Error(w, "同じ名前の器具が既に存在します", http.StatusConflict)
+			return
+		}
 		http.Error(w, "器具の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -750,7 +758,6 @@ func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
@@ -764,34 +771,16 @@ func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if req.RecordedAt == "" {
-		http.Error(w, "recorded_atは必須です", http.StatusBadRequest)
-		return
-	}
-
-	recordedAt, err := time.Parse("2006-01-02", req.RecordedAt)
+	validationResult, err := h.validateCreateRecordRequest(r.Context(), userID, &req)
 	if err != nil {
-		http.Error(w, "無効な日付形式です（YYYY-MM-DD）", http.StatusBadRequest)
-		return
-	}
-
-	// バリデーション
-	if req.Intensity != nil && (*req.Intensity < 1 || *req.Intensity > 5) {
-		http.Error(w, "強度は1-5の範囲で指定してください", http.StatusBadRequest)
-		return
-	}
-	if req.Satisfaction != nil && (*req.Satisfaction < 1 || *req.Satisfaction > 5) {
-		http.Error(w, "満足度は1-5の範囲で指定してください", http.StatusBadRequest)
-		return
-	}
-	if req.Duration != nil && *req.Duration < 0 {
-		http.Error(w, "練習時間は0以上の値を指定してください", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	record := &repository.TrainingRecord{
 		UserID:       userID,
-		RecordedAt:   recordedAt,
+		RecordedAt:   validationResult.RecordedAt,
+		LocationID:   validationResult.LocationID,
 		Completed:    req.Completed,
 		Duration:     req.Duration,
 		Intensity:    req.Intensity,
@@ -799,59 +788,16 @@ func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Requ
 		Notes:        req.Notes,
 	}
 
-	if req.LocationID != nil {
-		locationID, err := uuid.Parse(*req.LocationID)
-		if err != nil {
-			http.Error(w, "無効なlocation_id形式です", http.StatusBadRequest)
-			return
-		}
-		// 場所の所有権確認
-		location, err := h.repository.GetLocationByID(r.Context(), locationID, userID)
-		if err != nil {
-			log.Printf("場所の取得に失敗 (location_id=%s, user_id=%s): %v", locationID, userID, err)
-			http.Error(w, "場所の取得に失敗しました", http.StatusInternalServerError)
-			return
-		}
-		if location == nil {
-			http.Error(w, "指定された場所が見つかりません", http.StatusBadRequest)
-			return
-		}
-		record.LocationID = &locationID
-	}
-
-	// メニューIDをパース
-	menuIDs := make([]uuid.UUID, 0, len(req.MenuIDs))
-	for _, menuIDStr := range req.MenuIDs {
-		menuID, err := uuid.Parse(menuIDStr)
-		if err != nil {
-			http.Error(w, "無効なmenu_id形式です", http.StatusBadRequest)
-			return
-		}
-		menuIDs = append(menuIDs, menuID)
-	}
-
-	created, err := h.repository.CreateRecord(r.Context(), record, menuIDs)
+	created, err := h.repository.CreateRecord(r.Context(), record, validationResult.MenuIDs)
 	if err != nil {
 		log.Printf("練習記録の作成に失敗 (user_id=%s): %v", userID, err)
 		http.Error(w, "練習記録の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(created)
-	if err != nil {
-		log.Printf("レスポンスのエンコードに失敗: %v", err)
-		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if _, err := w.Write(data); err != nil {
-		log.Printf("レスポンス書き込みに失敗: %v", err)
-		return
-	}
+	h.writeJSONResponse(w, created, http.StatusCreated)
 }
 
-//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
 func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
@@ -859,19 +805,12 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	idStr := extractTrainingIDFromPath(r.URL.Path, "/api/training/records/")
-	if idStr == "" {
-		http.Error(w, "IDが指定されていません", http.StatusBadRequest)
-		return
-	}
-
-	recordID, err := uuid.Parse(idStr)
+	recordID, err := extractAndValidateRecordID(r.URL.Path)
 	if err != nil {
-		http.Error(w, "無効なID形式です", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// 記録の存在確認
 	existing, err := h.repository.GetRecordByID(r.Context(), recordID, userID)
 	if err != nil {
 		log.Printf("練習記録の取得に失敗 (id=%s, user_id=%s): %v", recordID, userID, err)
@@ -889,35 +828,17 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if req.RecordedAt == "" {
-		http.Error(w, "recorded_atは必須です", http.StatusBadRequest)
-		return
-	}
-
-	recordedAt, err := time.Parse("2006-01-02", req.RecordedAt)
+	validationResult, err := h.validateUpdateRecordRequest(r.Context(), userID, &req)
 	if err != nil {
-		http.Error(w, "無効な日付形式です（YYYY-MM-DD）", http.StatusBadRequest)
-		return
-	}
-
-	// バリデーション
-	if req.Intensity != nil && (*req.Intensity < 1 || *req.Intensity > 5) {
-		http.Error(w, "強度は1-5の範囲で指定してください", http.StatusBadRequest)
-		return
-	}
-	if req.Satisfaction != nil && (*req.Satisfaction < 1 || *req.Satisfaction > 5) {
-		http.Error(w, "満足度は1-5の範囲で指定してください", http.StatusBadRequest)
-		return
-	}
-	if req.Duration != nil && *req.Duration < 0 {
-		http.Error(w, "練習時間は0以上の値を指定してください", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	record := &repository.TrainingRecord{
 		ID:           recordID,
 		UserID:       userID,
-		RecordedAt:   recordedAt,
+		RecordedAt:   validationResult.RecordedAt,
+		LocationID:   validationResult.LocationID,
 		Completed:    req.Completed,
 		Duration:     req.Duration,
 		Intensity:    req.Intensity,
@@ -925,38 +846,7 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 		Notes:        req.Notes,
 	}
 
-	if req.LocationID != nil {
-		locationID, err := uuid.Parse(*req.LocationID)
-		if err != nil {
-			http.Error(w, "無効なlocation_id形式です", http.StatusBadRequest)
-			return
-		}
-		// 場所の所有権確認
-		location, err := h.repository.GetLocationByID(r.Context(), locationID, userID)
-		if err != nil {
-			log.Printf("場所の取得に失敗 (location_id=%s, user_id=%s): %v", locationID, userID, err)
-			http.Error(w, "場所の取得に失敗しました", http.StatusInternalServerError)
-			return
-		}
-		if location == nil {
-			http.Error(w, "指定された場所が見つかりません", http.StatusBadRequest)
-			return
-		}
-		record.LocationID = &locationID
-	}
-
-	// メニューIDをパース
-	menuIDs := make([]uuid.UUID, 0, len(req.MenuIDs))
-	for _, menuIDStr := range req.MenuIDs {
-		menuID, err := uuid.Parse(menuIDStr)
-		if err != nil {
-			http.Error(w, "無効なmenu_id形式です", http.StatusBadRequest)
-			return
-		}
-		menuIDs = append(menuIDs, menuID)
-	}
-
-	updated, err := h.repository.UpdateRecord(r.Context(), record, menuIDs)
+	updated, err := h.repository.UpdateRecord(r.Context(), record, validationResult.MenuIDs)
 	if err != nil {
 		log.Printf("練習記録の更新に失敗 (id=%s, user_id=%s): %v", recordID, userID, err)
 		if errors.Is(err, repository.ErrTrainingNotFound) {
@@ -967,17 +857,7 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	data, err := json.Marshal(updated)
-	if err != nil {
-		log.Printf("レスポンスのエンコードに失敗: %v", err)
-		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(data); err != nil {
-		log.Printf("レスポンス書き込みに失敗: %v", err)
-		return
-	}
+	h.writeJSONResponse(w, updated, http.StatusOK)
 }
 
 func (h *TrainingHandler) HandleDeleteRecord(w http.ResponseWriter, r *http.Request) {
@@ -1244,4 +1124,19 @@ func extractTrainingIDFromPath(path, prefix string) string {
 		return ""
 	}
 	return parts[0]
+}
+
+// writeJSONResponse はJSONレスポンスを書き込む
+func (h *TrainingHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("レスポンスのエンコードに失敗: %v", err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if _, err := w.Write(jsonData); err != nil {
+		log.Printf("レスポンス書き込みに失敗: %v", err)
+	}
 }

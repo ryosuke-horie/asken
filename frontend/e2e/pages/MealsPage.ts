@@ -52,7 +52,7 @@ export class MealsPage {
     // ヘッダー
     this.backButton = page.getByRole('button', { name: '← 戻る' })
     this.dateInfo = page.locator('[class*="dateInfo"]')
-    this.title = page.locator('[class*="title"]')
+    this.title = page.locator('h1[class*="title"]')
 
     // 入力タブ
     this.mylistTab = page.getByRole('button', { name: 'マイリスト' })
@@ -177,7 +177,9 @@ export class MealsPage {
 
   async deleteMeal(index: number) {
     const mealItem = this.getMealItem(index)
-    const deleteButton = mealItem.locator('[class*="deleteButton"] button')
+    const deleteButton = mealItem.getByRole('button', { name: '削除' })
+    // confirmダイアログを自動的に受け入れる
+    this.page.once('dialog', (dialog) => dialog.accept())
     await deleteButton.click()
     await this.waitForApiResponse('/api/history')
   }

@@ -37,7 +37,11 @@ export class EquipmentPage {
   async createEquipment(name: string) {
     await this.newNameInput.fill(name)
     await this.createButton.click()
-    await this.page.waitForResponse((res) => res.url().includes('/equipment') && res.status() === 201)
+    // 201（成功）または409（重複エラー）を待つ
+    await this.page.waitForResponse(
+      (res) => res.url().includes('/equipment') &&
+               (res.status() === 201 || res.status() === 409)
+    )
   }
 
   getEquipmentCard(name: string) {
