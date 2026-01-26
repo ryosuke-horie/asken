@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,9 @@ import (
 
 // ErrTrainingNotFound はリソースが見つからない場合のエラー
 var ErrTrainingNotFound = errors.New("training resource not found")
+
+// ErrDuplicateEntry は重複エントリのエラー
+var ErrDuplicateEntry = errors.New("duplicate entry")
 
 // TrainingLocation はトレーニング場所を表す構造体
 type TrainingLocation struct {
@@ -198,6 +202,9 @@ func (r *postgresTrainingRepository) CreateLocation(ctx context.Context, locatio
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, fmt.Errorf("%w: 同じ名前の場所が既に存在します", ErrDuplicateEntry)
+		}
 		return nil, fmt.Errorf("トレーニング場所の作成に失敗: %w", err)
 	}
 
@@ -372,6 +379,9 @@ func (r *postgresTrainingRepository) CreateEquipment(ctx context.Context, equipm
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
+			return nil, fmt.Errorf("%w: 同じ名前の器具が既に存在します", ErrDuplicateEntry)
+		}
 		return nil, fmt.Errorf("器具の作成に失敗: %w", err)
 	}
 
@@ -481,7 +491,9 @@ func (r *postgresTrainingRepository) GetMenus(ctx context.Context, userID uuid.U
 		}
 		if userIDNull.Valid {
 			id, err := uuid.Parse(userIDNull.String)
-			if err == nil {
+			if err != nil {
+				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+			} else {
 				menu.UserID = &id
 			}
 		}
@@ -532,7 +544,9 @@ func (r *postgresTrainingRepository) CreateMenu(ctx context.Context, menu *Train
 
 	if userIDNull.Valid {
 		id, err := uuid.Parse(userIDNull.String)
-		if err == nil {
+		if err != nil {
+			log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+		} else {
 			created.UserID = &id
 		}
 	}
@@ -683,7 +697,9 @@ func (r *postgresTrainingRepository) getMenusByRecordID(ctx context.Context, rec
 		}
 		if userIDNull.Valid {
 			id, err := uuid.Parse(userIDNull.String)
-			if err == nil {
+			if err != nil {
+				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
+			} else {
 				menu.UserID = &id
 			}
 		}
