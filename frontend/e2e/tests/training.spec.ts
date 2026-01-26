@@ -166,7 +166,9 @@ test.describe('トレーニング管理', () => {
         await locationsPage.createButton.click()
         // 201（成功）または500（重複エラー）を待つ
         await page.waitForResponse(
-          (res) => res.url().includes('/api/training/locations') && !res.url().includes('/equipment')
+          (res) => res.url().includes('/api/training/locations') &&
+                   !res.url().includes('/equipment') &&
+                   (res.status() === 201 || res.status() === 500)
         )
         // 場所カードが表示されるまで待つ
         await locationCard.waitFor({ state: 'visible', timeout: 5000 })
@@ -195,7 +197,8 @@ test.describe('トレーニング管理', () => {
         await page.getByRole('button', { name: '追加', exact: true }).click()
         // 201（成功）または500（重複エラー）を待つ
         await page.waitForResponse(
-          (res) => res.url().includes('/api/training/equipment')
+          (res) => res.url().includes('/api/training/equipment') &&
+                   (res.status() === 201 || res.status() === 500)
         )
         // 器具カードが表示されるまで待つ
         await equipmentCard.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
