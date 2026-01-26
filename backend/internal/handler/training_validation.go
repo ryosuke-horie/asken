@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,6 +83,7 @@ func (h *TrainingHandler) validateAndParseLocationID(
 
 	location, err := h.repository.GetLocationByID(ctx, *locationID, userID)
 	if err != nil {
+		log.Printf("場所の取得に失敗 (location_id=%s, user_id=%s): %v", *locationID, userID, err)
 		return nil, fmt.Errorf("場所の取得に失敗しました")
 	}
 	if location == nil {
