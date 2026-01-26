@@ -33,11 +33,11 @@ export class LocationsPage {
   async createLocation(name: string) {
     await this.newNameInput.fill(name)
     await this.createButton.click()
-    // 201（成功）または500（重複エラー）を待つ
+    // 201（成功）または409（重複エラー）を待つ
     await this.page.waitForResponse(
       (res) => res.url().includes('/api/training/locations') &&
                !res.url().includes('/equipment') &&
-               (res.status() === 201 || res.status() === 500)
+               (res.status() === 201 || res.status() === 409)
     )
   }
 

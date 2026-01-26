@@ -183,6 +183,10 @@ func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Re
 	created, err := h.repository.CreateLocation(r.Context(), location)
 	if err != nil {
 		log.Printf("トレーニング場所の作成に失敗 (user_id=%s): %v", userID, err)
+		if errors.Is(err, repository.ErrDuplicateEntry) {
+			http.Error(w, "同じ名前の場所が既に存在します", http.StatusConflict)
+			return
+		}
 		http.Error(w, "トレーニング場所の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -413,6 +417,10 @@ func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.R
 	created, err := h.repository.CreateEquipment(r.Context(), equipment)
 	if err != nil {
 		log.Printf("器具の作成に失敗 (location_id=%s): %v", locationID, err)
+		if errors.Is(err, repository.ErrDuplicateEntry) {
+			http.Error(w, "同じ名前の器具が既に存在します", http.StatusConflict)
+			return
+		}
 		http.Error(w, "器具の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
