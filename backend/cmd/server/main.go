@@ -246,132 +246,120 @@ func setupProfileRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewa
 	mux.Handle("/api/profile", authMiddleware.Authenticate(http.HandlerFunc(profileRouteHandler)))
 }
 
-//nolint:gocyclo // TODO: リファクタリングで複雑度を下げる
-func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
-	// 場所一覧・作成
-	locationsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.training.HandleListLocations(w, r)
-		case http.MethodPost:
-			h.training.HandleCreateLocation(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/locations", authMiddleware.Authenticate(http.HandlerFunc(locationsRouteHandler)))
+// routeDefinition はルート定義を表す
+type routeDefinition struct {
+	pattern  string
+	handlers map[string]http.HandlerFunc
+}
 
-	// メニュー一覧・作成
-	menusRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.training.HandleListMenus(w, r)
-		case http.MethodPost:
-			h.training.HandleCreateMenu(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/menus", authMiddleware.Authenticate(http.HandlerFunc(menusRouteHandler)))
-
-	// メニュー詳細・削除
-	menusDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodDelete:
-			h.training.HandleDeleteMenu(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/menus/", authMiddleware.Authenticate(http.HandlerFunc(menusDetailRouteHandler)))
-
-	// 練習記録一覧・作成
-	recordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.training.HandleListRecords(w, r)
-		case http.MethodPost:
-			h.training.HandleCreateRecord(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/records", authMiddleware.Authenticate(http.HandlerFunc(recordsRouteHandler)))
-
-	// 練習記録詳細・更新・削除
-	recordsDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPut:
-			h.training.HandleUpdateRecord(w, r)
-		case http.MethodDelete:
-			h.training.HandleDeleteRecord(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/records/", authMiddleware.Authenticate(http.HandlerFunc(recordsDetailRouteHandler)))
-
-	// メニュー提案
-	suggestMenuRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.training.HandleSuggestMenu(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/suggest-menu", authMiddleware.Authenticate(http.HandlerFunc(suggestMenuRouteHandler)))
-
-	// 器具名正規化
-	normalizeEquipmentRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.training.HandleNormalizeEquipment(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/normalize-equipment", authMiddleware.Authenticate(http.HandlerFunc(normalizeEquipmentRouteHandler)))
-
-	// 器具の更新・削除
-	equipmentDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPut:
-			h.training.HandleUpdateEquipment(w, r)
-		case http.MethodDelete:
-			h.training.HandleDeleteEquipment(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/training/equipment/", authMiddleware.Authenticate(http.HandlerFunc(equipmentDetailRouteHandler)))
-
-	// 場所詳細・更新・削除、器具一覧・作成
-	locationsDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		// /api/training/locations/{id}/equipment のパターンをチェック
-		if strings.Contains(path, "/equipment") {
-			switch r.Method {
-			case http.MethodGet:
-				h.training.HandleListEquipment(w, r)
-			case http.MethodPost:
-				h.training.HandleCreateEquipment(w, r)
-			default:
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			}
+// createMethodRouter はメソッドごとのハンドラーを振り分けるルーターを作成
+func createMethodRouter(handlers map[string]http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if handler, ok := handlers[r.Method]; ok {
+			handler(w, r)
 			return
 		}
-		// /api/training/locations/{id} のパターン
-		switch r.Method {
-		case http.MethodPut:
-			h.training.HandleUpdateLocation(w, r)
-		case http.MethodDelete:
-			h.training.HandleDeleteLocation(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-	mux.Handle("/api/training/locations/", authMiddleware.Authenticate(http.HandlerFunc(locationsDetailRouteHandler)))
+}
+
+func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	routes := []routeDefinition{
+		{
+			pattern: "/api/training/locations",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodGet:  h.training.HandleListLocations,
+				http.MethodPost: h.training.HandleCreateLocation,
+			},
+		},
+		{
+			pattern: "/api/training/menus",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodGet:  h.training.HandleListMenus,
+				http.MethodPost: h.training.HandleCreateMenu,
+			},
+		},
+		{
+			pattern: "/api/training/menus/",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodDelete: h.training.HandleDeleteMenu,
+			},
+		},
+		{
+			pattern: "/api/training/records",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodGet:  h.training.HandleListRecords,
+				http.MethodPost: h.training.HandleCreateRecord,
+			},
+		},
+		{
+			pattern: "/api/training/records/",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodPut:    h.training.HandleUpdateRecord,
+				http.MethodDelete: h.training.HandleDeleteRecord,
+			},
+		},
+		{
+			pattern: "/api/training/suggest-menu",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodPost: h.training.HandleSuggestMenu,
+			},
+		},
+		{
+			pattern: "/api/training/normalize-equipment",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodPost: h.training.HandleNormalizeEquipment,
+			},
+		},
+		{
+			pattern: "/api/training/equipment/",
+			handlers: map[string]http.HandlerFunc{
+				http.MethodPut:    h.training.HandleUpdateEquipment,
+				http.MethodDelete: h.training.HandleDeleteEquipment,
+			},
+		},
+	}
+
+	for _, route := range routes {
+		handler := createMethodRouter(route.handlers)
+		mux.Handle(route.pattern, authMiddleware.Authenticate(handler))
+	}
+
+	// 場所詳細と器具は特殊なルーティングが必要
+	setupLocationDetailRoutes(mux, h, authMiddleware)
+}
+
+func setupLocationDetailRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/equipment") {
+			handleEquipmentRoutes(w, r, h)
+			return
+		}
+		handleLocationRoutes(w, r, h)
+	}
+	mux.Handle("/api/training/locations/", authMiddleware.Authenticate(http.HandlerFunc(handler)))
+}
+
+func handleEquipmentRoutes(w http.ResponseWriter, r *http.Request, h handlers) {
+	switch r.Method {
+	case http.MethodGet:
+		h.training.HandleListEquipment(w, r)
+	case http.MethodPost:
+		h.training.HandleCreateEquipment(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func handleLocationRoutes(w http.ResponseWriter, r *http.Request, h handlers) {
+	switch r.Method {
+	case http.MethodPut:
+		h.training.HandleUpdateLocation(w, r)
+	case http.MethodDelete:
+		h.training.HandleDeleteLocation(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func run() error {
