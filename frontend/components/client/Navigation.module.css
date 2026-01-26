@@ -7,12 +7,72 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hamburgerLine {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: #333;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.hamburgerLine::before,
+.hamburgerLine::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: #333;
+  position: absolute;
+  left: 0;
+  transition:
+    transform 0.2s,
+    top 0.2s;
+}
+
+.hamburgerLine::before {
+  top: -7px;
+}
+
+.hamburgerLine::after {
+  top: 7px;
+}
+
+.hamburgerLine.open {
+  background-color: transparent;
+}
+
+.hamburgerLine.open::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.hamburgerLine.open::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
 .list {
   display: flex;
+  flex: 1;
   gap: 1rem;
   list-style: none;
   margin: 0;
   padding: 0;
+  align-items: center;
 }
 
 .link {
@@ -25,6 +85,7 @@
   transition:
     color 0.2s,
     background-color 0.2s;
+  white-space: nowrap;
 }
 
 .link:hover {
@@ -35,6 +96,10 @@
 .link.active {
   color: #f97316;
   font-weight: 600;
+}
+
+.logoutItem {
+  margin-left: auto;
 }
 
 .logoutButton {
@@ -49,10 +114,67 @@
     color 0.2s,
     border-color 0.2s,
     background-color 0.2s;
+  white-space: nowrap;
 }
 
 .logoutButton:hover {
   color: #dc2626;
   border-color: #dc2626;
   background-color: #fef2f2;
+}
+
+@media (max-width: 640px) {
+  .nav {
+    position: relative;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background-color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    z-index: 100;
+  }
+
+  .listOpen {
+    display: flex;
+  }
+
+  .list li {
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .list li:last-child {
+    border-bottom: none;
+  }
+
+  .link {
+    display: block;
+    padding: 1rem;
+    border-radius: 0;
+  }
+
+  .logoutItem {
+    margin-left: 0;
+  }
+
+  .logoutButton {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 0;
+    text-align: left;
+  }
 }
