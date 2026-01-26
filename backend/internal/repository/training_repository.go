@@ -862,7 +862,10 @@ type recordScanResult struct {
 // applyToRecord はNullable値をTrainingRecordに適用する
 func (s *recordScanResult) applyToRecord(rec *TrainingRecord) {
 	if s.LocationID.Valid {
-		if id, err := uuid.Parse(s.LocationID.String); err == nil {
+		id, err := uuid.Parse(s.LocationID.String)
+		if err != nil {
+			log.Printf("警告: LocationIDのパースに失敗 (value=%s): %v", s.LocationID.String, err)
+		} else {
 			rec.LocationID = &id
 		}
 	}
