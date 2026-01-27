@@ -1,0 +1,166 @@
+version: "3"
+
+silent: true
+
+vars:
+  BACKEND_DIR: backend
+  DOCKER_COMPOSE: docker-compose
+
+tasks:
+  default:
+    desc: タスク一覧を表示
+    cmds:
+      - task --list
+
+  help:
+    desc: タスク一覧を表示
+    cmds:
+      - task --list
+
+  setup:
+    desc: 初期セットアップ（依存関係のダウンロード）
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Backend依存関係をダウンロード ==="
+      - go mod download
+      - echo "セットアップ完了"
+
+  clean:
+    desc: ビルド成果物を削除
+    cmds:
+      - echo "=== クリーンアップ ==="
+      - rm -f "{{.BACKEND_DIR}}/bin/"*
+      - echo "クリーンアップ完了"
+
+  test:
+    desc: Goテストを実行
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Goテスト実行 ==="
+      - go test ./...
+
+  lint:
+    desc: Goリント（golangci-lint）を実行
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Goリント実行 ==="
+      - golangci-lint run ./...
+
+  build:
+    desc: Goバイナリをビルド
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Goビルド ==="
+      - mkdir -p bin
+      - go build -o bin/server ./cmd/server
+
+  run:
+    desc: バックエンドサーバーを起動
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== サーバー起動 ==="
+      - go run ./cmd/server
+
+  frontend:install:
+    desc: フロントエンド依存関係をインストール
+    dir: frontend
+    cmds:
+      - npm ci
+
+  frontend:lint:
+    desc: フロントエンドのLintを実行
+    dir: frontend
+    cmds:
+      - npm run lint
+
+  frontend:knip:
+    desc: フロントエンドの未使用コードをチェック
+    dir: frontend
+    cmds:
+      - npm run knip
+
+  frontend:depcheck:
+    desc: フロントエンドの未使用依存をチェック
+    dir: frontend
+    cmds:
+      - npm run depcheck
+
+  frontend:test:
+    desc: フロントエンドのテストを実行
+    dir: frontend
+    cmds:
+      - npm test
+
+  frontend:build:
+    desc: フロントエンドをビルド
+    dir: frontend
+    cmds:
+      - npm run build
+
+  frontend:dev:
+    desc: フロントエンド開発サーバーを起動
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  frontend:e2e:
+    desc: フロントエンドのE2Eテストを実行
+    dir: frontend
+    cmds:
+      - npm run e2e
+
+  frontend:e2e:ui:
+    desc: フロントエンドのE2EテストをUIモードで実行
+    dir: frontend
+    cmds:
+      - npm run e2e:ui
+
+  frontend:ci:
+    desc: フロントエンドのCIタスクを実行
+    cmds:
+      - task frontend:install
+      - task frontend:lint
+      - task frontend:knip
+      - task frontend:depcheck
+      - task frontend:test
+      - task frontend:build
+
+  db-up:
+    desc: PostgreSQLを起動
+    cmds:
+      - echo "=== PostgreSQL起動 ==="
+      - "{{.DOCKER_COMPOSE}} up -d"
+
+  db-down:
+    desc: PostgreSQLを停止
+    cmds:
+      - echo "=== PostgreSQL停止 ==="
+      - "{{.DOCKER_COMPOSE}} down"
+
+  db-seed:
+    desc: テストデータを投入
+    cmds:
+      - echo "=== シードデータ投入 ==="
+      - |
+          if [ -f "{{.BACKEND_DIR}}/.env" ]; then
+            export $(cat "{{.BACKEND_DIR}}/.env" | grep -v '^#' | xargs)
+            (cd "{{.BACKEND_DIR}}" && go run ./cmd/seed -verbose)
+          else
+            (cd "{{.BACKEND_DIR}}" && go run ./cmd/seed -verbose)
+          fi
+
+  db-clean:
+    desc: DBをリセット（ボリューム削除+再起動）
+    cmds:
+      - echo "=== DBリセット ==="
+      - "{{.DOCKER_COMPOSE}} down -v"
+      - "{{.DOCKER_COMPOSE}} up -d"
+      - echo "DBの起動を待機中..."
+      - sleep 3
+      - echo "DBリセット完了"
+
+  deploy:
+    desc: 本番環境にデプロイ（deploy.sh実行）
+    cmds:
+      - echo "=== デプロイ実行 ==="
+      - ./deploy.sh
