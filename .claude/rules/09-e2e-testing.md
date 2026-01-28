@@ -13,24 +13,29 @@ frontend/e2e/
 ├── fixtures/         # テストフィクスチャ
 │   └── index.ts      # ページオブジェクトの注入
 ├── pages/            # ページオブジェクト
+│   ├── HomePage.ts
 │   ├── LoginPage.ts
-│   └── HomePage.ts
+│   ├── TrainingPage.ts
+│   ├── MealsPage.ts
+│   ├── LocationsPage.ts
+│   └── EquipmentPage.ts
 └── tests/            # テストファイル
-    └── auth.spec.ts
+    ├── auth.spec.ts
+    ├── meals.spec.ts
+    └── training.spec.ts
 ```
 
 ## 実行コマンド
 
 ```bash
-cd frontend
-
 # ヘッドレスモードで実行
-npm run e2e
+task frontend:e2e
 
 # UIモードで実行（デバッグ用）
-npm run e2e:ui
+task frontend:e2e:ui
 
 # 特定のテストファイルを実行
+cd frontend
 npx playwright test e2e/tests/auth.spec.ts
 
 # 特定のテストのみ実行
@@ -102,7 +107,7 @@ export class ExamplePage {
 
 ### 既存のdb-seedを活用
 
-テストデータは`make db-seed`で作成されるデータを使用:
+テストデータは`task db-seed`で作成されるデータを使用:
 
 ```typescript
 // テストユーザー
@@ -118,8 +123,9 @@ const TEST_USER = {
 test.beforeEach(async ({ page }) => {
   await page.goto('/login')
   await page.evaluate(() => {
-    localStorage.removeItem('asken_auth_token')
-    localStorage.removeItem('asken_user')
+    localStorage.removeItem('uchikomi_auth_token')
+    localStorage.removeItem('uchikomi_user')
+    document.cookie = 'uchikomi_auth_token=; path=/; max-age=0'
   })
 })
 ```
