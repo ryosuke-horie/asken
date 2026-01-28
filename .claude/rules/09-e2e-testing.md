@@ -13,10 +13,16 @@ frontend/e2e/
 ├── fixtures/         # テストフィクスチャ
 │   └── index.ts      # ページオブジェクトの注入
 ├── pages/            # ページオブジェクト
+│   ├── HomePage.ts
 │   ├── LoginPage.ts
-│   └── HomePage.ts
+│   ├── TrainingPage.ts
+│   ├── MealsPage.ts
+│   ├── LocationsPage.ts
+│   └── EquipmentPage.ts
 └── tests/            # テストファイル
-    └── auth.spec.ts
+    ├── auth.spec.ts
+    ├── meals.spec.ts
+    └── training.spec.ts
 ```
 
 ## 実行コマンド
@@ -117,8 +123,9 @@ const TEST_USER = {
 test.beforeEach(async ({ page }) => {
   await page.goto('/login')
   await page.evaluate(() => {
-    localStorage.removeItem('asken_auth_token')
-    localStorage.removeItem('asken_user')
+    localStorage.removeItem('uchikomi_auth_token')
+    localStorage.removeItem('uchikomi_user')
+    document.cookie = 'uchikomi_auth_token=; path=/; max-age=0'
   })
 })
 ```
