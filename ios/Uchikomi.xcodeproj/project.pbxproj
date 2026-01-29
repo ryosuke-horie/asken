@@ -1,0 +1,712 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00E5895F3F8D6ECDF23508C8 /* UchikomiWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C74CC5FCD58E6B82266ABD6 /* UchikomiWidget.swift */; };
+		083A2BDB4F66BA52B2F52B77 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031753C6CAFEA53D1C80D908 /* AuthManager.swift */; };
+		0A764374EE9687C0474468F5 /* WeightViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */; };
+		10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */; };
+		15FB70824FCCE86C38D34772 /* Meal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4D95F83E8D7B930C133A00 /* Meal.swift */; };
+		214BE413FC5F0DD36B7BBE0A /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29390303E2235204CDE4AE9C /* APIError.swift */; };
+		2923DD26E883C392599C112C /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6165C622DF45570CA60EEB39 /* Auth.swift */; };
+		393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB076D4C09182F8F36C28530 /* LoginViewModel.swift */; };
+		3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */; };
+		3CD21F6C4A04A28580C04A6D /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEF8440FE045302FDC253B8D /* AuthRepository.swift */; };
+		3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEAA9E272035A37D00E17345 /* TokenManager.swift */; };
+		5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */; };
+		637CDE165CE5FEE5C347490B /* CaloriesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBDB3DEFE309D4EF2196794 /* CaloriesWidget.swift */; };
+		6A79459D6863AAC882A8C908 /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E9C1B6E909118B10768FBC /* WidgetDataService.swift */; };
+		6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */; };
+		71049E8892D4C8F5F42BF598 /* WeightRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */; };
+		80C1E84D907E8AD6B18F82FC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7566864AF9A1104077390858 /* APIClient.swift */; };
+		8716E699C530D29B81E731BE /* WidgetDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA52E18B698007E592708C9 /* WidgetDataProvider.swift */; };
+		9011CBE04F0819CF5A2D075D /* MealInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */; };
+		928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */; };
+		936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */; };
+		9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFB317F298304ADE5A541E1 /* LoginView.swift */; };
+		9AC224A5F6470B885B8DDDC1 /* WeightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7618A20100D4B29C46ED6468 /* WeightView.swift */; };
+		A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EF1CA05F42093F7BCC75CA /* MealsView.swift */; };
+		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
+		BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */; };
+		DBA5B4E3B9C1B90E2A1B764A /* WeightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1A0031D353C97FED725180 /* WeightWidget.swift */; };
+		DEE1207B9FBBFB1B595CEDD3 /* MealsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */; };
+		F57576A8E0DDC948539E009C /* Weight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A70ECDEAE5D9DDABB0566A /* Weight.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3234D1B92F6B2307E02A0F8C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BF52F75889D6BB9E1968612B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B600300EE7A5CB7D431959E3;
+			remoteInfo = Uchikomi;
+		};
+		AE127F4E4D6C1DAA72D05084 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BF52F75889D6BB9E1968612B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B600300EE7A5CB7D431959E3;
+			remoteInfo = Uchikomi;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		031753C6CAFEA53D1C80D908 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		0A1A0031D353C97FED725180 /* WeightWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightWidget.swift; sourceTree = "<group>"; };
+		12EDB121AC061828D06504D0 /* MealInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputView.swift; sourceTree = "<group>"; };
+		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightViewModel.swift; sourceTree = "<group>"; };
+		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
+		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
+		4CA52E18B698007E592708C9 /* WidgetDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataProvider.swift; sourceTree = "<group>"; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
+		5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UchikomiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C74CC5FCD58E6B82266ABD6 /* UchikomiWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UchikomiWidget.swift; sourceTree = "<group>"; };
+		60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModel.swift; sourceTree = "<group>"; };
+		6165C622DF45570CA60EEB39 /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth.swift; sourceTree = "<group>"; };
+		62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModelTests.swift; sourceTree = "<group>"; };
+		636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRepository.swift; sourceTree = "<group>"; };
+		654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		74BA1A7B25B0A786BB8F9486 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7566864AF9A1104077390858 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		7618A20100D4B29C46ED6468 /* WeightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightView.swift; sourceTree = "<group>"; };
+		88A70ECDEAE5D9DDABB0566A /* Weight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weight.swift; sourceTree = "<group>"; };
+		8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UchikomiApp.swift; sourceTree = "<group>"; };
+		8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManagerTests.swift; sourceTree = "<group>"; };
+		9BBDB3DEFE309D4EF2196794 /* CaloriesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaloriesWidget.swift; sourceTree = "<group>"; };
+		A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSummaryCard.swift; sourceTree = "<group>"; };
+		AEAA9E272035A37D00E17345 /* TokenManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
+		B4E9C1B6E909118B10768FBC /* WidgetDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataService.swift; sourceTree = "<group>"; };
+		BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UchikomiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		CB8BB154C6FDEA30B57501CA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRepository.swift; sourceTree = "<group>"; };
+		D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModel.swift; sourceTree = "<group>"; };
+		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		EEF8440FE045302FDC253B8D /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		02BA6CCAEA7675BB188D6972 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */,
+				8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		03D462EB688278868763A4DF /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6165C622DF45570CA60EEB39 /* Auth.swift */,
+				3E4D95F83E8D7B930C133A00 /* Meal.swift */,
+				88A70ECDEAE5D9DDABB0566A /* Weight.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		0A83221E8E3DD07E300DB5F5 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				03D462EB688278868763A4DF /* Models */,
+				39EFFCC2C6BAC7A5B3FD52C6 /* Network */,
+				5B9BF1171E6F2B31EFAD1AA2 /* Repositories */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		12042A58C9A5CFE1847BA3BC /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		34DBA1FFAE0799A3F2A7A165 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				12042A58C9A5CFE1847BA3BC /* Components */,
+				59D09B36A028648E98271E99 /* Extensions */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		39EFFCC2C6BAC7A5B3FD52C6 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				7566864AF9A1104077390858 /* APIClient.swift */,
+				2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */,
+				29390303E2235204CDE4AE9C /* APIError.swift */,
+				AEAA9E272035A37D00E17345 /* TokenManager.swift */,
+				B4E9C1B6E909118B10768FBC /* WidgetDataService.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		3B0228BDF375C01D407BC1FA /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				6E44B8D5E3F2501D5107C6D2 /* Auth */,
+				F9A0E061855B4AD583027E8F /* Meals */,
+				48D4E8675EB9A2A16276CD97 /* Weight */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		3E651095F76332EA0358CD05 /* Uchikomi */ = {
+			isa = PBXGroup;
+			children = (
+				02BA6CCAEA7675BB188D6972 /* App */,
+				0A83221E8E3DD07E300DB5F5 /* Core */,
+				3B0228BDF375C01D407BC1FA /* Features */,
+				C38E632D2C00694840B6B798 /* Resources */,
+				34DBA1FFAE0799A3F2A7A165 /* Shared */,
+			);
+			path = Uchikomi;
+			sourceTree = "<group>";
+		};
+		48D4E8675EB9A2A16276CD97 /* Weight */ = {
+			isa = PBXGroup;
+			children = (
+				7618A20100D4B29C46ED6468 /* WeightView.swift */,
+				2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */,
+			);
+			path = Weight;
+			sourceTree = "<group>";
+		};
+		56AEE8194F648EC04B342D1A /* UchikomiWidget */ = {
+			isa = PBXGroup;
+			children = (
+				9BBDB3DEFE309D4EF2196794 /* CaloriesWidget.swift */,
+				CB8BB154C6FDEA30B57501CA /* Info.plist */,
+				5C74CC5FCD58E6B82266ABD6 /* UchikomiWidget.swift */,
+				0A1A0031D353C97FED725180 /* WeightWidget.swift */,
+				4CA52E18B698007E592708C9 /* WidgetDataProvider.swift */,
+			);
+			path = UchikomiWidget;
+			sourceTree = "<group>";
+		};
+		59D09B36A028648E98271E99 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		5B9BF1171E6F2B31EFAD1AA2 /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				EEF8440FE045302FDC253B8D /* AuthRepository.swift */,
+				636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */,
+				D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		61B0C77EB58EA0A5195F7B58 = {
+			isa = PBXGroup;
+			children = (
+				3E651095F76332EA0358CD05 /* Uchikomi */,
+				A8DE7C8137F0E4A153447581 /* UchikomiTests */,
+				56AEE8194F648EC04B342D1A /* UchikomiWidget */,
+				BB3F36FCD59322D0DFB26D37 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6E44B8D5E3F2501D5107C6D2 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				031753C6CAFEA53D1C80D908 /* AuthManager.swift */,
+				BDFB317F298304ADE5A541E1 /* LoginView.swift */,
+				DB076D4C09182F8F36C28530 /* LoginViewModel.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		A8DE7C8137F0E4A153447581 /* UchikomiTests */ = {
+			isa = PBXGroup;
+			children = (
+				8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */,
+				62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */,
+			);
+			path = UchikomiTests;
+			sourceTree = "<group>";
+		};
+		BB3F36FCD59322D0DFB26D37 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */,
+				5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */,
+				BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C38E632D2C00694840B6B798 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				74BA1A7B25B0A786BB8F9486 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		F9A0E061855B4AD583027E8F /* Meals */ = {
+			isa = PBXGroup;
+			children = (
+				12EDB121AC061828D06504D0 /* MealInputView.swift */,
+				60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */,
+				51EF1CA05F42093F7BCC75CA /* MealsView.swift */,
+				D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */,
+			);
+			path = Meals;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		04C65093A4929E413A52D0B2 /* UchikomiWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C6B68A640ADF8223D818E8C /* Build configuration list for PBXNativeTarget "UchikomiWidget" */;
+			buildPhases = (
+				6608BCA69AC9DEE7D416A5F7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9A03A82972478C179308163D /* PBXTargetDependency */,
+			);
+			name = UchikomiWidget;
+			packageProductDependencies = (
+			);
+			productName = UchikomiWidget;
+			productReference = BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		B600300EE7A5CB7D431959E3 /* Uchikomi */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1C6F994B0B167391E287E1E3 /* Build configuration list for PBXNativeTarget "Uchikomi" */;
+			buildPhases = (
+				A7C6EE458C981F09D5C370FD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Uchikomi;
+			packageProductDependencies = (
+			);
+			productName = Uchikomi;
+			productReference = 4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D56DBD4CBE8568DC0A99CA74 /* UchikomiTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 99E35EDC7BE967FFEE91F483 /* Build configuration list for PBXNativeTarget "UchikomiTests" */;
+			buildPhases = (
+				0B683739C9C9462AD5169B8F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5D6EF3CA9284C9E2CDE0E270 /* PBXTargetDependency */,
+			);
+			name = UchikomiTests;
+			packageProductDependencies = (
+			);
+			productName = UchikomiTests;
+			productReference = 5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BF52F75889D6BB9E1968612B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					04C65093A4929E413A52D0B2 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					B600300EE7A5CB7D431959E3 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					D56DBD4CBE8568DC0A99CA74 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 06459838C6F4B37A3EA10A13 /* Build configuration list for PBXProject "Uchikomi" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 61B0C77EB58EA0A5195F7B58;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B600300EE7A5CB7D431959E3 /* Uchikomi */,
+				D56DBD4CBE8568DC0A99CA74 /* UchikomiTests */,
+				04C65093A4929E413A52D0B2 /* UchikomiWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0B683739C9C9462AD5169B8F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
+				DEE1207B9FBBFB1B595CEDD3 /* MealsViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6608BCA69AC9DEE7D416A5F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				637CDE165CE5FEE5C347490B /* CaloriesWidget.swift in Sources */,
+				00E5895F3F8D6ECDF23508C8 /* UchikomiWidget.swift in Sources */,
+				DBA5B4E3B9C1B90E2A1B764A /* WeightWidget.swift in Sources */,
+				8716E699C530D29B81E731BE /* WidgetDataProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A7C6EE458C981F09D5C370FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				80C1E84D907E8AD6B18F82FC /* APIClient.swift in Sources */,
+				3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */,
+				214BE413FC5F0DD36B7BBE0A /* APIError.swift in Sources */,
+				BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */,
+				2923DD26E883C392599C112C /* Auth.swift in Sources */,
+				083A2BDB4F66BA52B2F52B77 /* AuthManager.swift in Sources */,
+				3CD21F6C4A04A28580C04A6D /* AuthRepository.swift in Sources */,
+				9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */,
+				393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */,
+				15FB70824FCCE86C38D34772 /* Meal.swift in Sources */,
+				BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */,
+				9011CBE04F0819CF5A2D075D /* MealInputViewModel.swift in Sources */,
+				5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */,
+				A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */,
+				10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */,
+				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
+				3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */,
+				6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */,
+				F57576A8E0DDC948539E009C /* Weight.swift in Sources */,
+				71049E8892D4C8F5F42BF598 /* WeightRepository.swift in Sources */,
+				9AC224A5F6470B885B8DDDC1 /* WeightView.swift in Sources */,
+				0A764374EE9687C0474468F5 /* WeightViewModel.swift in Sources */,
+				6A79459D6863AAC882A8C908 /* WidgetDataService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5D6EF3CA9284C9E2CDE0E270 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B600300EE7A5CB7D431959E3 /* Uchikomi */;
+			targetProxy = AE127F4E4D6C1DAA72D05084 /* PBXContainerItemProxy */;
+		};
+		9A03A82972478C179308163D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B600300EE7A5CB7D431959E3 /* Uchikomi */;
+			targetProxy = 3234D1B92F6B2307E02A0F8C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		017293BDFFD92F8FDE3CFA51 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		04D3A9BAE111C1289ECC3344 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/Uchikomi";
+			};
+			name = Debug;
+		};
+		3EB7D9D3899E3BAB77275BCE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = UchikomiWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		417D6A7551A7AEAD3D2D0277 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		48DED03C5CCA4B5066CDBC5D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/Uchikomi";
+			};
+			name = Release;
+		};
+		4D44ADCC09DF6E3C9A232A4B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = UchikomiWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A66008966D14AE9CCC19BCCA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		E31EB0D6397E2A86747FC61D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		06459838C6F4B37A3EA10A13 /* Build configuration list for PBXProject "Uchikomi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E31EB0D6397E2A86747FC61D /* Debug */,
+				A66008966D14AE9CCC19BCCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		1C6F994B0B167391E287E1E3 /* Build configuration list for PBXNativeTarget "Uchikomi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				417D6A7551A7AEAD3D2D0277 /* Debug */,
+				017293BDFFD92F8FDE3CFA51 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7C6B68A640ADF8223D818E8C /* Build configuration list for PBXNativeTarget "UchikomiWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D44ADCC09DF6E3C9A232A4B /* Debug */,
+				3EB7D9D3899E3BAB77275BCE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		99E35EDC7BE967FFEE91F483 /* Build configuration list for PBXNativeTarget "UchikomiTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				04D3A9BAE111C1289ECC3344 /* Debug */,
+				48DED03C5CCA4B5066CDBC5D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BF52F75889D6BB9E1968612B /* Project object */;
+}
