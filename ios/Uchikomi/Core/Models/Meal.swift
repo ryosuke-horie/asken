@@ -18,7 +18,7 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .breakfast: return "sun.rise"
+        case .breakfast: return "sunrise"
         case .lunch: return "sun.max"
         case .dinner: return "moon"
         case .snack: return "cup.and.saucer"
