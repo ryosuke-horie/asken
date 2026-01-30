@@ -8,10 +8,12 @@ struct MealInputView: View {
     @State private var showingCamera = false
 
     let mealDate: Date
+    let initialMealType: MealType
     let onSaved: () -> Void
 
-    init(mealDate: Date = Date(), onSaved: @escaping () -> Void = {}) {
+    init(mealDate: Date = Date(), initialMealType: MealType = .lunch, onSaved: @escaping () -> Void = {}) {
         self.mealDate = mealDate
+        self.initialMealType = initialMealType
         self.onSaved = onSaved
     }
 
@@ -127,6 +129,7 @@ struct MealInputView: View {
         }
         .onAppear {
             viewModel.mealDate = mealDate
+            viewModel.selectedMealType = initialMealType
         }
     }
 }
