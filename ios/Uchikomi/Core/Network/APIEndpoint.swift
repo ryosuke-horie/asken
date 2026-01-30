@@ -13,7 +13,9 @@ struct APIEndpoint {
     let requiresAuth: Bool
 
     var url: URL {
-        AppEnvironment.current.apiBaseURL.appendingPathComponent(path)
+        let baseURLString = AppEnvironment.current.apiBaseURL.absoluteString
+        let urlString = baseURLString.hasSuffix("/") ? baseURLString + path : baseURLString + "/" + path
+        return URL(string: urlString)!
     }
 
     // MARK: - Auth Endpoints
