@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
-    @State private var showingMealInput = false
+    @State private var selectedMealTypeForInput: MealType?
 
     var body: some View {
         NavigationStack {
@@ -43,7 +43,10 @@ struct MealsView: View {
                             ForEach(MealType.allCases, id: \.self) { mealType in
                                 MealTypeSection(
                                     mealType: mealType,
-                                    meals: dailyMeals.meals.meals(for: mealType)
+                                    meals: dailyMeals.meals.meals(for: mealType),
+                                    onAddTapped: {
+                                        selectedMealTypeForInput = mealType
+                                    }
                                 )
                             }
                         }
@@ -57,18 +60,11 @@ struct MealsView: View {
                 }
             }
             .navigationTitle("食事記録")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingMealInput = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingMealInput) {
-                MealInputView(mealDate: viewModel.selectedDate) {
+            .sheet(item: $selectedMealTypeForInput) { mealType in
+                MealInputView(
+                    mealDate: viewModel.selectedDate,
+                    initialMealType: mealType
+                ) {
                     Task {
                         await viewModel.loadMeals()
                     }
@@ -126,18 +122,25 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
+    let onAddTapped: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: mealType.icon)
+                    .foregroundStyle(Theme.primary)
                 Text(mealType.displayName)
                     .font(.headline)
                 Spacer()
                 if !meals.isEmpty {
                     Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.primary)
+                }
+                Button(action: onAddTapped) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.title3)
+                        .foregroundStyle(Theme.primary)
                 }
             }
 
@@ -170,7 +173,7 @@ private struct MealCard: View {
                     Spacer()
                     Text("\(Int(food.caloriesKcal)) kcal")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.primary)
                 }
             }
         }

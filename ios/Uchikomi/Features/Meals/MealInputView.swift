@@ -8,10 +8,12 @@ struct MealInputView: View {
     @State private var showingCamera = false
 
     let mealDate: Date
+    let initialMealType: MealType
     let onSaved: () -> Void
 
-    init(mealDate: Date = Date(), onSaved: @escaping () -> Void = {}) {
+    init(mealDate: Date = Date(), initialMealType: MealType = .lunch, onSaved: @escaping () -> Void = {}) {
         self.mealDate = mealDate
+        self.initialMealType = initialMealType
         self.onSaved = onSaved
     }
 
@@ -49,7 +51,7 @@ struct MealInputView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(Theme.primary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .disabled(viewModel.isAnalyzing)
@@ -57,7 +59,7 @@ struct MealInputView: View {
 
                     // Analysis Result
                     if let result = viewModel.analysisResult {
-                        AnalysisResultSection(result: result)
+                        AnalysisResultSection(response: result)
                     }
 
                     // Error Message
@@ -66,32 +68,6 @@ struct MealInputView: View {
                             .font(.caption)
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
-                    }
-
-                    // Save Button
-                    if viewModel.canSave {
-                        Button {
-                            Task {
-                                await viewModel.saveMeal()
-                            }
-                        } label: {
-                            if viewModel.isSaving {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                    Text("保存中...")
-                                }
-                            } else {
-                                Label("食事を保存", systemImage: "checkmark.circle")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .disabled(viewModel.isSaving)
                     }
                 }
                 .padding()
@@ -127,6 +103,7 @@ struct MealInputView: View {
         }
         .onAppear {
             viewModel.mealDate = mealDate
+            viewModel.selectedMealType = initialMealType
         }
     }
 }
@@ -170,7 +147,7 @@ private struct MealTypeButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.blue : Color(.secondarySystemBackground))
+            .background(isSelected ? Theme.primary : Color(.secondarySystemBackground))
             .foregroundStyle(isSelected ? .white : .primary)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
@@ -219,7 +196,9 @@ private struct ImageSelectionSection: View {
 }
 
 private struct AnalysisResultSection: View {
-    let result: AnalysisResultResponse
+    let response: AnalysisResultResponse
+
+    private var result: AnalysisResult { response.result }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -245,7 +224,7 @@ private struct AnalysisResultSection: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("\(Int(food.caloriesKcal)) kcal")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.primary)
                     }
                     .font(.subheadline)
                 }

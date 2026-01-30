@@ -13,7 +13,12 @@ struct APIEndpoint {
     let requiresAuth: Bool
 
     var url: URL {
-        AppEnvironment.current.apiBaseURL.appendingPathComponent(path)
+        let baseURLString = AppEnvironment.current.apiBaseURL.absoluteString
+        let urlString = baseURLString.hasSuffix("/") ? baseURLString + path : baseURLString + "/" + path
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid URL configuration: \(urlString)")
+        }
+        return url
     }
 
     // MARK: - Auth Endpoints
@@ -61,12 +66,6 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
-
-    static let saveMeal = APIEndpoint(
-        path: "meals",
-        method: .post,
-        requiresAuth: true
-    )
 
     // MARK: - Weight Endpoints
 

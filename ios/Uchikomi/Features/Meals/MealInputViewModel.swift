@@ -4,12 +4,21 @@ import PhotosUI
 
 @Observable
 final class MealInputViewModel {
+    // MARK: - Constants
+
+    private enum Constants {
+        static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
+        static let maxPollingAttempts = 60
+        static let pollingTimeoutSeconds = 120
+    }
+
+    // MARK: - Properties
+
     var selectedMealType: MealType = .lunch
     var mealDate = Date()
     var selectedImage: UIImage?
     var analysisResult: AnalysisResultResponse?
     var isAnalyzing = false
-    var isSaving = false
     var errorMessage: String?
     var isCompleted = false
 
@@ -18,10 +27,6 @@ final class MealInputViewModel {
 
     init(repository: MealRepositoryProtocol = MealRepository()) {
         self.repository = repository
-    }
-
-    var canSave: Bool {
-        analysisResult != nil && !isSaving
     }
 
     func analyzeImage() async {
@@ -35,8 +40,14 @@ final class MealInputViewModel {
         errorMessage = nil
 
         do {
-            // 画像アップロード
-            let id = try await repository.uploadImage(data: imageData, filename: "meal.jpg")
+            // 画像アップロード（meal_typeとmeal_dateも一緒に送信）
+            // バックエンドは分析完了時に自動的に食事データを保存する
+            let id = try await repository.uploadImage(
+                data: imageData,
+                filename: "meal.jpg",
+                mealType: selectedMealType,
+                mealDate: mealDate
+            )
             analysisId = id
 
             // ポーリングで完了を待つ
@@ -44,16 +55,22 @@ final class MealInputViewModel {
 
             // 結果を取得
             analysisResult = try await repository.getAnalysisResult(id: id)
+
+            // 分析完了 = 保存完了（バックエンドで自動保存される）
+            isCompleted = true
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "画像分析に失敗しました"
+            #if DEBUG
+            print("[MealInputViewModel] Unexpected error: \(error)")
+            #endif
+            errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
         }
 
         isAnalyzing = false
     }
 
-    private func pollForCompletion(id: String, maxAttempts: Int = 30) async throws {
+    private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
         for _ in 0..<maxAttempts {
             let status = try await repository.checkAnalysisStatus(id: id)
 
@@ -61,40 +78,21 @@ final class MealInputViewModel {
             case "completed":
                 return
             case "failed":
-                throw APIError.serverError("分析に失敗しました")
+                let errorMessage = status.error ?? "分析に失敗しました"
+                throw APIError.serverError(errorMessage)
+            case "pending", "processing":
+                try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
             default:
-                // pending or processing
-                try await Task.sleep(nanoseconds: 2_000_000_000) // 2秒待機
+                #if DEBUG
+                print("[MealInputViewModel] Unknown analysis status: \(status.status)")
+                #endif
+                throw APIError.serverError("分析ステータスが不明です: \(status.status)")
             }
         }
 
-        throw APIError.serverError("分析がタイムアウトしました")
+        throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
     }
 
-    func saveMeal() async {
-        guard let analysisId = analysisId else {
-            errorMessage = "分析が完了していません"
-            return
-        }
-
-        isSaving = true
-        errorMessage = nil
-
-        do {
-            try await repository.saveMeal(
-                analysisId: analysisId,
-                mealType: selectedMealType,
-                mealDate: mealDate
-            )
-            isCompleted = true
-        } catch let error as APIError {
-            errorMessage = error.localizedDescription
-        } catch {
-            errorMessage = "保存に失敗しました"
-        }
-
-        isSaving = false
-    }
 
     func reset() {
         selectedImage = nil

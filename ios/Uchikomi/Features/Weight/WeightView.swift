@@ -68,6 +68,7 @@ struct WeightView: View {
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
+                            .foregroundStyle(Theme.primary)
                     }
                 }
             }
@@ -102,6 +103,7 @@ private struct CurrentWeightCard: View {
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(weight)
                     .font(.system(size: 48, weight: .bold))
+                    .foregroundStyle(Theme.primary)
                 Text("kg")
                     .font(.title2)
                     .foregroundStyle(.secondary)
@@ -110,7 +112,7 @@ private struct CurrentWeightCard: View {
             if let diff = goalDifference {
                 Text(diff)
                     .font(.subheadline)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.primary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -140,13 +142,13 @@ private struct WeightChart: View {
                     x: .value("日付", item.date),
                     y: .value("体重", item.weight)
                 )
-                .foregroundStyle(.blue)
+                .foregroundStyle(Theme.primary)
 
                 PointMark(
                     x: .value("日付", item.date),
                     y: .value("体重", item.weight)
                 )
-                .foregroundStyle(.blue)
+                .foregroundStyle(Theme.primary)
             }
 
             if let goal = goal {
