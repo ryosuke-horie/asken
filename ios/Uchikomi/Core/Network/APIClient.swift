@@ -113,6 +113,12 @@ actor APIClient {
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
+                #if DEBUG
+                print("[APIClient] Decoding Error: \(error)")
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("[APIClient] Raw Response: \(jsonString)")
+                }
+                #endif
                 throw APIError.decodingError(error)
             }
 
@@ -133,5 +139,4 @@ actor APIClient {
 
 struct AnalyzeResponse: Decodable {
     let id: String
-    let imagePath: String?
 }
