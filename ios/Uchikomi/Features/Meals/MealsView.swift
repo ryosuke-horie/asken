@@ -64,6 +64,7 @@ struct MealsView: View {
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.title2)
+                            .foregroundStyle(Theme.primary)
                     }
                 }
             }
@@ -131,13 +132,14 @@ private struct MealTypeSection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: mealType.icon)
+                    .foregroundStyle(Theme.primary)
                 Text(mealType.displayName)
                     .font(.headline)
                 Spacer()
                 if !meals.isEmpty {
                     Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.primary)
                 }
             }
 
@@ -170,7 +172,7 @@ private struct MealCard: View {
                     Spacer()
                     Text("\(Int(food.caloriesKcal)) kcal")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.primary)
                 }
             }
         }

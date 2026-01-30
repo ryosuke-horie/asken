@@ -49,7 +49,7 @@ struct MealInputView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(Theme.primary)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .disabled(viewModel.isAnalyzing)
@@ -170,7 +170,7 @@ private struct MealTypeButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.blue : Color(.secondarySystemBackground))
+            .background(isSelected ? Theme.primary : Color(.secondarySystemBackground))
             .foregroundStyle(isSelected ? .white : .primary)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
@@ -245,7 +245,7 @@ private struct AnalysisResultSection: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("\(Int(food.caloriesKcal)) kcal")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.primary)
                     }
                     .font(.subheadline)
                 }

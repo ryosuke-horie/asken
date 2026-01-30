@@ -30,6 +30,7 @@
 		936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */; };
 		9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFB317F298304ADE5A541E1 /* LoginView.swift */; };
 		9AC224A5F6470B885B8DDDC1 /* WeightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7618A20100D4B29C46ED6468 /* WeightView.swift */; };
+		9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA2222E86DCD9A696476C35 /* Theme.swift */; };
 		A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EF1CA05F42093F7BCC75CA /* MealsView.swift */; };
 		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
 		BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */; };
@@ -85,6 +86,7 @@
 		B4E9C1B6E909118B10768FBC /* WidgetDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataService.swift; sourceTree = "<group>"; };
 		BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UchikomiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CB8BB154C6FDEA30B57501CA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRepository.swift; sourceTree = "<group>"; };
 		D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModel.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 		34DBA1FFAE0799A3F2A7A165 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				BFA2222E86DCD9A696476C35 /* Theme.swift */,
 				12042A58C9A5CFE1847BA3BC /* Components */,
 				59D09B36A028648E98271E99 /* Extensions */,
 			);
@@ -410,6 +413,7 @@
 				A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */,
 				10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */,
 				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
+				9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */,
 				3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */,
 				6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */,
 				F57576A8E0DDC948539E009C /* Weight.swift in Sources */,
