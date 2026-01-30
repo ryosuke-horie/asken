@@ -59,7 +59,7 @@ struct MealInputView: View {
 
                     // Analysis Result
                     if let result = viewModel.analysisResult {
-                        AnalysisResultSection(result: result)
+                        AnalysisResultSection(response: result)
                     }
 
                     // Error Message
@@ -196,7 +196,9 @@ private struct ImageSelectionSection: View {
 }
 
 private struct AnalysisResultSection: View {
-    let result: AnalysisResultResponse
+    let response: AnalysisResultResponse
+
+    private var result: AnalysisResult { response.result }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

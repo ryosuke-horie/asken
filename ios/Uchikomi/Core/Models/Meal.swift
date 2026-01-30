@@ -97,7 +97,11 @@ struct AnalysisStatusResponse: Decodable {
 }
 
 struct AnalysisResultResponse: Decodable {
-    let id: String
+    let status: String
+    let result: AnalysisResult
+}
+
+struct AnalysisResult: Decodable {
     let foods: [NutritionInfo]
     let totalCalories: Double
     let totalProtein: Double
