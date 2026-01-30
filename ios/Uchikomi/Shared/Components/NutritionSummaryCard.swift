@@ -16,6 +16,7 @@ struct NutritionSummaryCard: View {
                 Text("\(Int(calories))")
                     .font(.title)
                     .fontWeight(.bold)
+                    .foregroundStyle(Theme.primary)
                 Text("kcal")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
