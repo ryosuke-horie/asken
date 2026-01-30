@@ -57,7 +57,7 @@ final class MealInputViewModel {
         isAnalyzing = false
     }
 
-    private func pollForCompletion(id: String, maxAttempts: Int = 30) async throws {
+    private func pollForCompletion(id: String, maxAttempts: Int = 60) async throws {
         for _ in 0..<maxAttempts {
             let status = try await repository.checkAnalysisStatus(id: id)
 
@@ -65,14 +65,16 @@ final class MealInputViewModel {
             case "completed":
                 return
             case "failed":
-                throw APIError.serverError("分析に失敗しました")
+                // バックエンドのエラーメッセージがあれば表示
+                let errorMessage = status.error ?? "分析に失敗しました"
+                throw APIError.serverError(errorMessage)
             default:
                 // pending or processing
                 try await Task.sleep(nanoseconds: 2_000_000_000) // 2秒待機
             }
         }
 
-        throw APIError.serverError("分析がタイムアウトしました")
+        throw APIError.serverError("分析がタイムアウトしました（2分経過）")
     }
 
 
