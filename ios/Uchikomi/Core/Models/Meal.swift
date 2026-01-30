@@ -91,8 +91,8 @@ struct DailyMeals: Codable {
 // MARK: - API Request/Response
 
 struct AnalysisStatusResponse: Decodable {
-    let id: String
     let status: String
+    // message, error, result are optional depending on status
 }
 
 struct AnalysisResultResponse: Decodable {
