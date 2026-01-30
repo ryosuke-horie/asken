@@ -133,5 +133,5 @@ actor APIClient {
 
 struct AnalyzeResponse: Decodable {
     let id: String
-    let status: String
+    let imagePath: String?
 }

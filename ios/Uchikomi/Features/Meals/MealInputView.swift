@@ -69,32 +69,6 @@ struct MealInputView: View {
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
                     }
-
-                    // Save Button
-                    if viewModel.canSave {
-                        Button {
-                            Task {
-                                await viewModel.saveMeal()
-                            }
-                        } label: {
-                            if viewModel.isSaving {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                    Text("保存中...")
-                                }
-                            } else {
-                                Label("食事を保存", systemImage: "checkmark.circle")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .disabled(viewModel.isSaving)
-                    }
                 }
                 .padding()
             }
