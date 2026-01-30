@@ -34,7 +34,7 @@ func NewNutritionCalculator(timeout time.Duration) *NutritionCalculator {
 func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []FoodItem) ([]NutritionInfo, error) {
 	// 食材リストが空の場合はエラー
 	if len(foods) == 0 {
-		return nil, fmt.Errorf("食材リストが空です")
+		return nil, fmt.Errorf("画像から食材を認識できませんでした。食べ物が写っている鮮明な画像を使用してください")
 	}
 
 	// タイムアウト付きコンテキストを作成
