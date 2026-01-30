@@ -92,7 +92,8 @@ struct DailyMeals: Codable {
 
 struct AnalysisStatusResponse: Decodable {
     let status: String
-    // message, error, result are optional depending on status
+    let error: String?
+    let message: String?
 }
 
 struct AnalysisResultResponse: Decodable {
