@@ -108,9 +108,3 @@ struct AnalysisResult: Decodable {
     let totalFat: Double
     let totalCarbohydrates: Double
 }
-
-struct SaveMealRequest: Encodable {
-    let analysisId: String
-    let mealType: MealType
-    let mealDate: String
-}

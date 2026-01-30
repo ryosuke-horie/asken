@@ -106,7 +106,7 @@ private class MockMealRepository: MealRepositoryProtocol {
         }
     }
 
-    func uploadImage(data: Data, filename: String) async throws -> String {
+    func uploadImage(data: Data, filename: String, mealType: MealType, mealDate: Date) async throws -> String {
         switch uploadImageResult {
         case .success(let id):
             return id
@@ -131,9 +131,5 @@ private class MockMealRepository: MealRepositoryProtocol {
         case .failure(let error):
             throw error
         }
-    }
-
-    func saveMeal(analysisId: String, mealType: MealType, mealDate: Date) async throws {
-        // No-op for tests
     }
 }
