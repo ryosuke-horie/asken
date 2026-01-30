@@ -57,6 +57,7 @@ tasks:
   run:
     desc: バックエンドサーバーを起動
     dir: "{{.BACKEND_DIR}}"
+    dotenv: [".env"]
     cmds:
       - echo "=== サーバー起動 ==="
       - go run ./cmd/server
