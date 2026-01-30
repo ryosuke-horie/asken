@@ -48,7 +48,7 @@ func TestCalculateNutrition_EmptyFoods(t *testing.T) {
 	_, err := calculator.CalculateNutrition(ctx, foods)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "食材リストが空です")
+	assert.Contains(t, err.Error(), "画像から食材を認識できませんでした")
 }
 
 func TestCalculateNutrition_InvalidResponse(t *testing.T) {
