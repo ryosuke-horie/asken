@@ -64,12 +64,6 @@ struct APIEndpoint {
         )
     }
 
-    static let saveMeal = APIEndpoint(
-        path: "meals",
-        method: .post,
-        requiresAuth: true
-    )
-
     // MARK: - Weight Endpoints
 
     static func weightRecords(period: String) -> APIEndpoint {

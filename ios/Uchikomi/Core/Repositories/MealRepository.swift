@@ -42,4 +42,6 @@ final class MealRepository: MealRepositoryProtocol {
     }
 }
 
+// MARK: - Shared Response Types
+
 struct EmptyResponse: Decodable {}
