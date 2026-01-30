@@ -1,6 +1,7 @@
 import Foundation
 
-enum MealType: String, Codable, CaseIterable {
+enum MealType: String, Codable, CaseIterable, Identifiable {
+    var id: String { rawValue }
     case breakfast
     case lunch
     case dinner
@@ -90,21 +91,20 @@ struct DailyMeals: Codable {
 // MARK: - API Request/Response
 
 struct AnalysisStatusResponse: Decodable {
-    let id: String
     let status: String
+    let error: String?
+    let message: String?
 }
 
 struct AnalysisResultResponse: Decodable {
-    let id: String
+    let status: String
+    let result: AnalysisResult
+}
+
+struct AnalysisResult: Decodable {
     let foods: [NutritionInfo]
     let totalCalories: Double
     let totalProtein: Double
     let totalFat: Double
     let totalCarbohydrates: Double
-}
-
-struct SaveMealRequest: Encodable {
-    let analysisId: String
-    let mealType: MealType
-    let mealDate: String
 }

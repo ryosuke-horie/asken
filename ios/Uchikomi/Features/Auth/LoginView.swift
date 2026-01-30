@@ -13,7 +13,7 @@ struct LoginView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "figure.martial.arts")
                         .font(.system(size: 60))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Theme.primary)
 
                     Text("ウチコミ")
                         .font(.largeTitle)
@@ -85,7 +85,7 @@ private struct LoginForm: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(viewModel.isValid ? Color.blue : Color.gray)
+            .background(viewModel.isValid ? Theme.primary : Color.gray)
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .disabled(!viewModel.isValid || viewModel.isLoading)

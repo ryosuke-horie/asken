@@ -39,5 +39,6 @@ struct MainTabView: View {
                     Label("体重", systemImage: "scalemass")
                 }
         }
+        .tint(Theme.primary)
     }
 }
