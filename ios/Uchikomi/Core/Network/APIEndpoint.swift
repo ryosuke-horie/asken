@@ -15,7 +15,10 @@ struct APIEndpoint {
     var url: URL {
         let baseURLString = AppEnvironment.current.apiBaseURL.absoluteString
         let urlString = baseURLString.hasSuffix("/") ? baseURLString + path : baseURLString + "/" + path
-        return URL(string: urlString)!
+        guard let url = URL(string: urlString) else {
+            fatalError("Invalid URL configuration: \(urlString)")
+        }
+        return url
     }
 
     // MARK: - Auth Endpoints

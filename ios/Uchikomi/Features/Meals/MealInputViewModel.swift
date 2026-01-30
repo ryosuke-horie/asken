@@ -4,6 +4,16 @@ import PhotosUI
 
 @Observable
 final class MealInputViewModel {
+    // MARK: - Constants
+
+    private enum Constants {
+        static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
+        static let maxPollingAttempts = 60
+        static let pollingTimeoutSeconds = 120
+    }
+
+    // MARK: - Properties
+
     var selectedMealType: MealType = .lunch
     var mealDate = Date()
     var selectedImage: UIImage?
@@ -51,13 +61,16 @@ final class MealInputViewModel {
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "画像分析に失敗しました"
+            #if DEBUG
+            print("[MealInputViewModel] Unexpected error: \(error)")
+            #endif
+            errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
         }
 
         isAnalyzing = false
     }
 
-    private func pollForCompletion(id: String, maxAttempts: Int = 60) async throws {
+    private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
         for _ in 0..<maxAttempts {
             let status = try await repository.checkAnalysisStatus(id: id)
 
@@ -65,16 +78,19 @@ final class MealInputViewModel {
             case "completed":
                 return
             case "failed":
-                // バックエンドのエラーメッセージがあれば表示
                 let errorMessage = status.error ?? "分析に失敗しました"
                 throw APIError.serverError(errorMessage)
+            case "pending", "processing":
+                try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
             default:
-                // pending or processing
-                try await Task.sleep(nanoseconds: 2_000_000_000) // 2秒待機
+                #if DEBUG
+                print("[MealInputViewModel] Unknown analysis status: \(status.status)")
+                #endif
+                throw APIError.serverError("分析ステータスが不明です: \(status.status)")
             }
         }
 
-        throw APIError.serverError("分析がタイムアウトしました（2分経過）")
+        throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
     }
 
 
