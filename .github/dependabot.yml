@@ -82,12 +82,12 @@ updates:
     groups:
       testing:
         patterns:
-          - "pointfreeco/swift-snapshot-testing"
-          - "pointfreeco/swift-custom-dump"
-          - "pointfreeco/xctest-dynamic-overlay"
+          - "swift-snapshot-testing"
+          - "swift-custom-dump"
+          - "xctest-dynamic-overlay"
       swift-ecosystem:
         patterns:
-          - "swiftlang/*"
+          - "swift-syntax"
 
   # Docker (root)
   - package-ecosystem: "docker"

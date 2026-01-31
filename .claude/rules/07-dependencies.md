@@ -27,7 +27,7 @@ dependabotは`.github/dependabot.yml`で設定されており、週次（月曜�
 | グループ | パッケージ |
 |:---|:---|
 | testing | swift-snapshot-testing, swift-custom-dump, xctest-dynamic-overlay |
-| swift-ecosystem | swiftlang/* |
+| swift-ecosystem | swift-syntax |
 
 ### ライブラリ追加時の対応
 
