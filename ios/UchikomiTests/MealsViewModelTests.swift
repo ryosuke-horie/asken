@@ -1,135 +1,117 @@
-import XCTest
+import Foundation
+import Testing
 @testable import Uchikomi
 
-final class MealsViewModelTests: XCTestCase {
+@Suite struct MealsViewModelTests {
 
-    func testFormattedDateInJapanese() {
-        let viewModel = MealsViewModel(repository: MockMealRepository())
+    private func createMockRepository() -> MealRepositoryProtocolMock {
+        let mock = MealRepositoryProtocolMock()
+        mock.getDailyMealsHandler = { _ in
+            DailyMeals(
+                date: "2024-01-15",
+                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+                dailyTotal: DailyTotal(
+                    totalCalories: 0,
+                    totalProtein: 0,
+                    totalFat: 0,
+                    totalCarbohydrates: 0
+                )
+            )
+        }
+        return mock
+    }
 
-        // 特定の日付を設定
+    @Test func 日付が日本語形式でフォーマットされるべき() {
+        let viewModel = MealsViewModel(repository: createMockRepository())
+
         let calendar = Calendar.current
         let components = DateComponents(year: 2024, month: 1, day: 15)
         if let date = calendar.date(from: components) {
             viewModel.selectedDate = date
-            XCTAssertEqual(viewModel.formattedDate, "1月15日(月)")
+            #expect(viewModel.formattedDate == "1月15日(月)")
         }
     }
 
-    func testIsTodayCheck() {
-        let viewModel = MealsViewModel(repository: MockMealRepository())
+    @Test func 今日が選択されている場合isTodayがtrueになるべき() {
+        let viewModel = MealsViewModel(repository: createMockRepository())
+        #expect(viewModel.isToday == true)
+    }
 
-        // デフォルトは今日
-        XCTAssertTrue(viewModel.isToday)
+    @Test func 昨日が選択されている場合isTodayがfalseになるべき() {
+        let viewModel = MealsViewModel(repository: createMockRepository())
 
-        // 昨日に設定
         if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) {
             viewModel.selectedDate = yesterday
-            XCTAssertFalse(viewModel.isToday)
+            #expect(viewModel.isToday == false)
         }
     }
 
-    func testGoToPreviousDay() {
-        let viewModel = MealsViewModel(repository: MockMealRepository())
+    @Test func 前日へ移動すると日付が1日前になるべき() async throws {
+        let mockRepo = createMockRepository()
+        let viewModel = MealsViewModel(repository: mockRepo)
         let originalDate = viewModel.selectedDate
 
         viewModel.goToPreviousDay()
 
+        try await Task.sleep(nanoseconds: 100_000_000)
+
         let expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: originalDate)!
-        XCTAssertEqual(
-            Calendar.current.startOfDay(for: viewModel.selectedDate),
+        #expect(
+            Calendar.current.startOfDay(for: viewModel.selectedDate) ==
             Calendar.current.startOfDay(for: expectedDate)
         )
     }
 
-    func testGoToNextDayNotAllowedWhenToday() {
-        let viewModel = MealsViewModel(repository: MockMealRepository())
+    @Test func 今日の場合は翌日へ移動できないべき() async throws {
+        let mockRepo = createMockRepository()
+        let viewModel = MealsViewModel(repository: mockRepo)
         let originalDate = viewModel.selectedDate
 
         viewModel.goToNextDay()
 
-        // 今日の場合は日付が変わらない
-        XCTAssertEqual(
-            Calendar.current.startOfDay(for: viewModel.selectedDate),
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        #expect(
+            Calendar.current.startOfDay(for: viewModel.selectedDate) ==
             Calendar.current.startOfDay(for: originalDate)
         )
     }
 
-    func testLoadMealsSuccess() async {
-        let mockRepo = MockMealRepository()
-        mockRepo.dailyMealsResult = .success(DailyMeals(
-            date: "2024-01-15",
-            meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-            dailyTotal: DailyTotal(
-                totalCalories: 1500,
-                totalProtein: 60,
-                totalFat: 50,
-                totalCarbohydrates: 180
+    @Test func 食事データの取得が成功した場合dailyMealsが設定されるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.getDailyMealsHandler = { _ in
+            DailyMeals(
+                date: "2024-01-15",
+                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+                dailyTotal: DailyTotal(
+                    totalCalories: 1500,
+                    totalProtein: 60,
+                    totalFat: 50,
+                    totalCarbohydrates: 180
+                )
             )
-        ))
+        }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 
         await viewModel.loadMeals()
 
-        XCTAssertNotNil(viewModel.dailyMeals)
-        XCTAssertEqual(viewModel.dailyMeals?.dailyTotal.totalCalories, 1500)
-        XCTAssertNil(viewModel.errorMessage)
+        #expect(viewModel.dailyMeals != nil)
+        #expect(viewModel.dailyMeals?.dailyTotal.totalCalories == 1500)
+        #expect(viewModel.errorMessage == nil)
     }
 
-    func testLoadMealsFailure() async {
-        let mockRepo = MockMealRepository()
-        mockRepo.dailyMealsResult = .failure(APIError.networkError(NSError(domain: "", code: -1)))
+    @Test func 食事データの取得が失敗した場合エラーメッセージが設定されるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.getDailyMealsHandler = { _ in
+            throw APIError.networkError(NSError(domain: "", code: -1))
+        }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 
         await viewModel.loadMeals()
 
-        XCTAssertNil(viewModel.dailyMeals)
-        XCTAssertNotNil(viewModel.errorMessage)
-    }
-}
-
-// MARK: - Mock
-
-private class MockMealRepository: MealRepositoryProtocol {
-    var dailyMealsResult: Result<DailyMeals, Error> = .failure(APIError.notFound)
-    var uploadImageResult: Result<String, Error> = .failure(APIError.notFound)
-    var analysisStatusResult: Result<AnalysisStatusResponse, Error> = .failure(APIError.notFound)
-    var analysisResultResult: Result<AnalysisResultResponse, Error> = .failure(APIError.notFound)
-
-    func getDailyMeals(date: Date) async throws -> DailyMeals {
-        switch dailyMealsResult {
-        case .success(let response):
-            return response
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func uploadImage(data: Data, filename: String, mealType: MealType, mealDate: Date) async throws -> String {
-        switch uploadImageResult {
-        case .success(let id):
-            return id
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func checkAnalysisStatus(id: String) async throws -> AnalysisStatusResponse {
-        switch analysisStatusResult {
-        case .success(let response):
-            return response
-        case .failure(let error):
-            throw error
-        }
-    }
-
-    func getAnalysisResult(id: String) async throws -> AnalysisResultResponse {
-        switch analysisResultResult {
-        case .success(let response):
-            return response
-        case .failure(let error):
-            throw error
-        }
+        #expect(viewModel.dailyMeals == nil)
+        #expect(viewModel.errorMessage != nil)
     }
 }

@@ -1,5 +1,6 @@
 import Foundation
 
+/// @mockable
 protocol AuthRepositoryProtocol {
     func login(email: String, password: String) async throws -> AuthResponse
     func register(email: String, password: String, name: String) async throws -> AuthResponse

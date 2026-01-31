@@ -1,5 +1,6 @@
 import Foundation
 
+/// @mockable
 protocol MealRepositoryProtocol {
     func getDailyMeals(date: Date) async throws -> DailyMeals
     func uploadImage(data: Data, filename: String, mealType: MealType, mealDate: Date) async throws -> String

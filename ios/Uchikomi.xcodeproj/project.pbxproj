@@ -18,6 +18,7 @@
 		3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEAA9E272035A37D00E17345 /* TokenManager.swift */; };
 		5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */; };
 		6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */; };
+		6C077CE8CE8874143A6BA70C /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 10E2B29939E6D92AB198963D /* SnapshotTesting */; };
 		80C1E84D907E8AD6B18F82FC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7566864AF9A1104077390858 /* APIClient.swift */; };
 		9011CBE04F0819CF5A2D075D /* MealInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */; };
 		928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */; };
@@ -25,8 +26,10 @@
 		9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFB317F298304ADE5A541E1 /* LoginView.swift */; };
 		9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA2222E86DCD9A696476C35 /* Theme.swift */; };
 		A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EF1CA05F42093F7BCC75CA /* MealsView.swift */; };
+		B23480B7F40DBAD7F89E64B8 /* NutritionSummaryCardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B3531562B441305693C25D /* NutritionSummaryCardSnapshotTests.swift */; };
 		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
 		BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */; };
+		C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */; };
 		DEE1207B9FBBFB1B595CEDD3 /* MealsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -46,11 +49,13 @@
 		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
+		42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGenerated.swift; sourceTree = "<group>"; };
 		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UchikomiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModel.swift; sourceTree = "<group>"; };
 		6165C622DF45570CA60EEB39 /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth.swift; sourceTree = "<group>"; };
+		61B3531562B441305693C25D /* NutritionSummaryCardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSummaryCardSnapshotTests.swift; sourceTree = "<group>"; };
 		62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModelTests.swift; sourceTree = "<group>"; };
 		636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRepository.swift; sourceTree = "<group>"; };
 		654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
@@ -66,6 +71,17 @@
 		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		EEF8440FE045302FDC253B8D /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		510175C1A9A9DDE74791F652 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6C077CE8CE8874143A6BA70C /* SnapshotTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		02BA6CCAEA7675BB188D6972 /* App */ = {
@@ -109,7 +125,6 @@
 			children = (
 				BFA2222E86DCD9A696476C35 /* Theme.swift */,
 				12042A58C9A5CFE1847BA3BC /* Components */,
-				59D09B36A028648E98271E99 /* Extensions */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -146,11 +161,12 @@
 			path = Uchikomi;
 			sourceTree = "<group>";
 		};
-		59D09B36A028648E98271E99 /* Extensions */ = {
+		4E699630AEF3C222781043E7 /* Snapshots */ = {
 			isa = PBXGroup;
 			children = (
+				61B3531562B441305693C25D /* NutritionSummaryCardSnapshotTests.swift */,
 			);
-			path = Extensions;
+			path = Snapshots;
 			sourceTree = "<group>";
 		};
 		5B9BF1171E6F2B31EFAD1AA2 /* Repositories */ = {
@@ -181,11 +197,21 @@
 			path = Auth;
 			sourceTree = "<group>";
 		};
+		9E652BE1B68421105C6F032B /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
 		A8DE7C8137F0E4A153447581 /* UchikomiTests */ = {
 			isa = PBXGroup;
 			children = (
 				8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */,
 				62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */,
+				9E652BE1B68421105C6F032B /* Generated */,
+				4E699630AEF3C222781043E7 /* Snapshots */,
 			);
 			path = UchikomiTests;
 			sourceTree = "<group>";
@@ -243,6 +269,7 @@
 			buildConfigurationList = 99E35EDC7BE967FFEE91F483 /* Build configuration list for PBXNativeTarget "UchikomiTests" */;
 			buildPhases = (
 				0B683739C9C9462AD5169B8F /* Sources */,
+				510175C1A9A9DDE74791F652 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -251,6 +278,7 @@
 			);
 			name = UchikomiTests;
 			packageProductDependencies = (
+				10E2B29939E6D92AB198963D /* SnapshotTesting */,
 			);
 			productName = UchikomiTests;
 			productReference = 5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */;
@@ -285,6 +313,9 @@
 			);
 			mainGroup = 61B0C77EB58EA0A5195F7B58;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
@@ -302,6 +333,8 @@
 			files = (
 				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
 				DEE1207B9FBBFB1B595CEDD3 /* MealsViewModelTests.swift in Sources */,
+				C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */,
+				B23480B7F40DBAD7F89E64B8 /* NutritionSummaryCardSnapshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,6 +398,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -400,6 +434,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -566,6 +601,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		10E2B29939E6D92AB198963D /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BF52F75889D6BB9E1968612B /* Project object */;
 }
