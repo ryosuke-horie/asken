@@ -1,35 +1,21 @@
-# ADR-002: サーバレスインフラへの移行
+# ADR-002: サーバレスインフラ設計
 
 ## コンテキスト
 
-ウチコミは以下の構成で運用されていた：
-
-- ホスティング: exe.dev（Ubuntu VM）
-- バックエンド: Go（:8080）
-- データベース: PostgreSQL
-- AI: Gemini CLI（gemini-3-flash-preview）
-
-（Next.jsフロントエンドは廃止済み）
-
-以下の課題がある：
-
-1. コスト: VMは常時稼働で課金される
-2. 運用負荷: OS/ミドルウェアの管理が必要
-3. スケーラビリティ: 手動スケーリングが必要
-4. iOSアプリ対応: iOSからAPIへのアクセスが主要ユースケースになる
+iOSアプリからAPIへのアクセスが主要ユースケースとなるため、サーバレス構成で低コスト運用を実現する。
 
 ## 決定
 
 ### インフラ構成
 
-| コンポーネント | 現行 | 移行先 |
-|:---|:---|:---|
-| クライアント | iOS | iOS |
-| バックエンドAPI | exe.dev VM (Go) | Cloud Run (Go) |
-| データベース | PostgreSQL | Firestore |
-| AI | Gemini CLI | Gemini API (gemini-2.0-flash) |
-| 画像ストレージ | ローカルファイル | Cloud Storage |
-| 認証 | 自前JWT | Firebase Authentication |
+| コンポーネント | 技術 |
+|:---|:---|
+| クライアント | iOS (SwiftUI) |
+| バックエンドAPI | Cloud Run (Go) |
+| データベース | Firestore |
+| AI | Gemini API (gemini-2.0-flash) |
+| 画像ストレージ | Cloud Storage |
+| 認証 | Firebase Authentication |
 
 ### アーキテクチャ図
 
@@ -151,68 +137,92 @@ service cloud.firestore {
 
 ### コスト見積もり
 
-想定使用量（個人利用）:
-- API呼び出し: 50リクエスト/日
-- Firestore読み取り: 200回/日
-- Firestore書き込み: 50回/日
-- 画像ストレージ: 100MB/月
-- Gemini API: 10リクエスト/日
+#### GCP各サービスの料金詳細
 
-| 項目 | 想定使用量 | 無料枠 | 超過時単価 |
+Cloud Run:
+
+| 項目 | 無料枠 | 超過時単価 |
+|:---|:---|:---|
+| CPU | 180,000 vCPU-seconds/月 | $0.00002400/vCPU-second |
+| メモリ | 360,000 GiB-seconds/月 | $0.00000250/GiB-second |
+| リクエスト | 200万リクエスト/月 | $0.40/100万リクエスト |
+
+Firestore:
+
+| 項目 | 無料枠 | 超過時単価 |
+|:---|:---|:---|
+| ドキュメント読み取り | 50,000回/日 | $0.036/10万回 |
+| ドキュメント書き込み | 20,000回/日 | $0.108/10万回 |
+| ストレージ | 1GB | $0.108/GB/月 |
+
+Cloud Storage:
+
+| 項目 | 無料枠 | 超過時単価 |
+|:---|:---|:---|
+| ストレージ（Standard） | 5GB | $0.020/GB/月 |
+| Class A操作 | 5,000回/月 | $0.05/1万回 |
+
+Gemini API:
+
+| モデル | 無料枠 | 有料（入力） | 有料（出力） |
 |:---|:---|:---|:---|
-| Cloud Run | 1,500リクエスト/月 | 200万リクエスト/月 | $0.00002400/リクエスト |
-| Firestore読み取り | 6,000回/月 | 150万回/月 | $0.036/10万回 |
-| Firestore書き込み | 1,500回/月 | 60万回/月 | $0.108/10万回 |
-| Cloud Storage | 100MB | 5GB | $0.020/GB/月 |
-| Gemini API | 300リクエスト/月 | 1分15リクエスト | 無料枠内で運用 |
+| gemini-2.0-flash | 10 RPM, 250 req/日 | $0.10/100万トークン | $0.40/100万トークン |
 
-想定月額コスト: $0（すべて無料枠内）
+Firebase Authentication:
 
-## 移行計画
+| 項目 | 無料枠 |
+|:---|:---|
+| Email/Password認証 | 50,000 MAU |
+| Apple Sign-In | 50,000 MAU |
 
-### フェーズ1: GCPプロジェクト準備
+#### 使用量シナリオ別見積もり
 
-1. GCPプロジェクト作成
-2. Firebase プロジェクト連携
-3. 必要なAPIの有効化（Cloud Run, Firestore, Cloud Storage, Gemini API）
-4. サービスアカウント設定
+シナリオ1: 最小利用（週2-3回の記録）
 
-### フェーズ2: バックエンド移行
+| 項目 | 月間使用量 | 無料枠 | コスト |
+|:---|:---|:---|:---|
+| Cloud Run | 300回 | 200万回 | $0 |
+| Firestore読み取り | 3,000回 | 150万回/月 | $0 |
+| Firestore書き込み | 500回 | 60万回/月 | $0 |
+| Cloud Storage | 10MB | 5GB | $0 |
+| Gemini API | 30回 | 250回/日 | $0 |
 
-1. Firestore Repositoryの実装
-2. Gemini API Serviceの実装
-3. Firebase Auth ミドルウェアの実装
-4. Cloud Storage連携の実装
-5. Cloud Runへのデプロイ
+月額: $0
 
-### フェーズ2.5: データ移行
+シナリオ2: 通常利用（毎日3食 + 体重 + 体調）
 
-1. PostgreSQL → Firestoreのマイグレーションスクリプト作成
-2. 既存ユーザーデータの移行
-3. データ整合性の検証
-4. ロールバック手順の準備
+| 項目 | 月間使用量 | 無料枠 | コスト |
+|:---|:---|:---|:---|
+| Cloud Run | 3,000回 | 200万回 | $0 |
+| Firestore読み取り | 30,000回 | 150万回/月 | $0 |
+| Firestore書き込み | 6,000回 | 60万回/月 | $0 |
+| Cloud Storage | 200MB | 5GB | $0 |
+| Gemini API | 90回 | 250回/日 | $0 |
 
-### フェーズ3: iOSアプリ対応
+月額: $0
 
-1. Firebase Auth SDK導入
-2. API Base URL切り替え
-3. 画像アップロードをCloud Storage経由に変更
+シナリオ3: ヘビー利用（毎日フル活用 + 頻繁な閲覧）
 
-### フェーズ4: 廃止作業
+| 項目 | 月間使用量 | 無料枠 | コスト |
+|:---|:---|:---|:---|
+| Cloud Run | 10,000回 | 200万回 | $0 |
+| Firestore読み取り | 100,000回 | 150万回/月 | $0 |
+| Firestore書き込み | 15,000回 | 60万回/月 | $0 |
+| Cloud Storage | 1GB | 5GB | $0 |
+| Gemini API | 200回 | 250回/日 | $0 |
 
-1. exe.dev VMの停止
-2. PostgreSQLデータのバックアップ・廃止
+月額: $0
 
-### ロールバック戦略
+#### 無料枠を超える可能性があるケース
 
-移行中に重大な問題が発生した場合：
+Gemini APIのレート制限:
+- 1分あたり10リクエストの制限
+- 対策: リクエスト間に適切な間隔、429エラー時のExponential Backoff
 
-1. iOS APIのBase URLを旧環境（exe.dev）に切り替え
-2. exe.dev VMは並行稼働期間中（1週間）は維持
-3. Firestoreのデータは一時保持
-4. 問題解決後に再度移行を実施
-
-並行稼働期間: フェーズ3完了後、1週間は両環境を維持
+Cloud Storageの長期蓄積:
+- 1年後: 約550MB（無料枠内）
+- 3年後: 約1.6GB（無料枠内）
+- 10年後: 約5.5GB（超過時 $0.01/月）
 
 ## 理由
 
@@ -229,15 +239,11 @@ service cloud.firestore {
 - 無料枠が個人利用に十分
 - Firebase Authと自然に統合
 - iOS SDKが充実（オフライン対応も可能）
-- NoSQLだが、ウチコミのデータモデルに適合
-  - ユーザーごとのデータが独立
-  - 複雑なJOINが不要
-  - 日付ベースのシンプルなクエリ
+- ウチコミのデータモデルに適合（ユーザーごとのデータが独立、複雑なJOINが不要）
 
-Firestoreの注意点:
+注意点:
 - 複雑なクエリ（複数フィールドでのOR条件）に制限がある
 - 複合インデックスの事前定義が必要
-- PostgreSQLからのデータ移行にスクリプトが必要
 
 ### Cloud Runのコールドスタート対策
 
@@ -247,7 +253,7 @@ Firestoreの注意点:
 
 ### Gemini APIのレート制限対策
 
-- 無料枠: 1分あたり15リクエスト
+- 無料枠: 1分あたり10リクエスト、1日250リクエスト
 - 対策:
   - 画像分析リクエストにレート制限ミドルウェアを実装
   - 429エラー時のリトライ戦略（Exponential Backoff）
@@ -277,21 +283,7 @@ Firebaseサービス:
 iOSライブラリ:
 - Firebase iOS SDK (Auth)
 
-### 削除対象
-
-- exe.dev VM
-- PostgreSQL関連のマイグレーション・コード
-
-### 移行の影響
-
-| 影響 | 対応 |
-|:---|:---|
-| PostgreSQL → Firestore | Repository層の書き換え |
-| Gemini CLI → API | Service層の書き換え |
-| 自前JWT → Firebase Auth | ミドルウェア・iOS側の変更 |
-| ローカル画像 → Cloud Storage | アップロード処理の変更 |
-
-### テスト戦略への影響
+### テスト戦略
 
 - iOSアプリのUIテスト（XCUITest）がE2Eテストの役割を担う
 - ADR-001で定義したiOSテスト戦略が主要なテスト戦略となる
@@ -299,5 +291,5 @@ iOSライブラリ:
 
 ### 関連ドキュメント
 
-- [全体アーキテクチャ](../CODEMAPS/architecture.md)（移行後に更新）
-- [バックエンド構造](../CODEMAPS/backend.md)（移行後に更新）
+- [全体アーキテクチャ](../CODEMAPS/architecture.md)
+- [バックエンド構造](../CODEMAPS/backend.md)
