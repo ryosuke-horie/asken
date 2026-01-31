@@ -42,4 +42,28 @@ import Testing
             #expect(authManager.isAuthenticated == false)
         }
     }
+
+    @Test func ログアウト後に認証状態がfalseになるべき() async throws {
+        let mockRepo = AuthRepositoryProtocolMock()
+        mockRepo.loginHandler = { _, _ in
+            AuthResponse(
+                token: "test-token",
+                user: User(id: "1", email: "test@example.com", name: "Test User")
+            )
+        }
+
+        let authManager = AuthManager(repository: mockRepo)
+
+        // ログイン
+        try await authManager.login(email: "test@example.com", password: "Pass0123")
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(authManager.isAuthenticated == true)
+
+        // ログアウト
+        await authManager.logout()
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        #expect(authManager.isAuthenticated == false)
+        #expect(authManager.currentUser == nil)
+    }
 }
