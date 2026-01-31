@@ -8,7 +8,7 @@ description: 開発環境を起動します。事前チェック（ポート、D
 
 ## 重要: 作業ディレクトリの確認
 
-**このスキルは `/Users/r-horie/Workspaces/utikomi/main` でのみ自動実行可能です。**
+このスキルは `/Users/r-horie/Workspaces/utikomi/main` でのみ自動実行可能です。
 
 他のディレクトリ（worktreeなど）で実行する場合は、必ずAskUserQuestionツールで確認を取ってください：
 
@@ -55,7 +55,7 @@ pgrep -l xcodebuild
 ```
 
 Xcodeが動作中の場合：
-- **ビルドやテスト中は開発環境の起動を避ける**
+- ビルドやテスト中は開発環境の起動を避ける
 - ユーザーに「Xcodeでビルド/テスト中のようです。開発環境を起動してもよいですか？」と確認
 
 ## 起動手順
