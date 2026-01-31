@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -144,6 +145,10 @@ func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType
 		return m.CreateSkippedMealFunc(ctx, mealType, mealDate, userID)
 	}
 	return uuid.Nil, nil
+}
+
+func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, id uuid.UUID, foods []gemini.NutritionInfo) error {
+	return nil
 }
 
 func TestAnalyzeHandler_Success(t *testing.T) {

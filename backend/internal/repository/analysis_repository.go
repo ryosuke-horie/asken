@@ -115,6 +115,9 @@ type AnalysisRepository interface {
 
 	// CreateSkippedMeal は「食べなかった」記録を作成します
 	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+
+	// UpdateResult は分析結果を更新します（foods配列と合計値を再計算）
+	UpdateResult(ctx context.Context, historyID uuid.UUID, foods []gemini.NutritionInfo) error
 }
 
 // postgresAnalysisRepository はPostgreSQLを使用したAnalysisRepositoryの実装
@@ -985,4 +988,78 @@ func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, meal
 	removeImageFiles(imagePaths)
 
 	return requestID, nil
+}
+
+// UpdateResult は分析結果を更新します（foods配列と合計値を再計算）
+func (r *postgresAnalysisRepository) UpdateResult(ctx context.Context, historyID uuid.UUID, foods []gemini.NutritionInfo) error {
+	// トランザクション開始
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("トランザクションの開始に失敗: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// 対象のレコードが存在するか確認
+	var exists bool
+	checkQuery := `SELECT EXISTS(SELECT 1 FROM analysis_requests WHERE id = $1 AND status = $2)`
+	if err := tx.QueryRowContext(ctx, checkQuery, historyID, StatusCompleted).Scan(&exists); err != nil {
+		return fmt.Errorf("レコードの確認に失敗: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("履歴が見つかりません: %s", historyID)
+	}
+
+	// 合計値を計算
+	var totalCalories, totalProtein, totalFat, totalCarbohydrates float64
+	for _, food := range foods {
+		totalCalories += food.Calories
+		totalProtein += food.Protein
+		totalFat += food.Fat
+		totalCarbohydrates += food.Carbohydrates
+	}
+
+	// foods をJSONBに変換
+	foodsJSON, err := json.Marshal(foods)
+	if err != nil {
+		return fmt.Errorf("foods のJSON変換に失敗: %w", err)
+	}
+
+	// analysis_results を更新
+	updateQuery := `
+		UPDATE analysis_results
+		SET foods = $1,
+			total_calories = $2,
+			total_protein = $3,
+			total_fat = $4,
+			total_carbohydrates = $5
+		WHERE analysis_request_id = $6
+	`
+
+	result, err := tx.ExecContext(ctx, updateQuery,
+		foodsJSON,
+		totalCalories,
+		totalProtein,
+		totalFat,
+		totalCarbohydrates,
+		historyID,
+	)
+	if err != nil {
+		return fmt.Errorf("分析結果の更新に失敗: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("影響を受けた行数の取得に失敗: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("更新対象のレコードが見つかりません: %s", historyID)
+	}
+
+	// トランザクションコミット
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("トランザクションのコミットに失敗: %w", err)
+	}
+
+	return nil
 }
