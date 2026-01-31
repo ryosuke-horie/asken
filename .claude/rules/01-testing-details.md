@@ -2,43 +2,40 @@
 
 ## 基本方針
 
-- テストフレームワークはVitestを使用すること
-- テストファイルは実装ファイルと同じディレクトリに配置すること（例: `Button.tsx` → `Button.test.tsx`）
-- UIコンポーネントはReact Testing Libraryを使用すること
-- E2EテストはPlaywrightを使用すること
+- Goのテストは標準ライブラリの`testing`パッケージとtestifyを使用すること
 - テストカバレッジは80%以上を目標とすること
+- iOSのテストについては`10-ios-testing.md`を参照
 
 ## 単体テストの書き方
 
 古典派（Classicist）のテストスタイルを採用する。
 
 - テストは仕様を表現するドキュメントとして機能させる
-- テスト名は「〜〜すべき」という表現を用いる
 - モックは外部依存（API、DB）に限定し、内部実装のモックは避ける
 - 実際のオブジェクトを使用して振る舞いを検証する
 
-## テスト名の命名規則
+## テスト構造（Go）
 
-```typescript
-describe("emailSchema", () => {
-  it("有効なメールアドレスを受け入れるべき", () => {});
-  it("不正な形式のメールアドレスを拒否すべき", () => {});
-  it("255文字を超えるメールアドレスを拒否すべき", () => {});
-});
-```
+テーブル駆動テストを使用:
 
-## テスト構造
+```go
+func TestCalculateCalories(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    Food
+        expected int
+    }{
+        {"valid food", Food{Protein: 10, Fat: 5, Carbs: 20}, 165},
+        {"zero values", Food{}, 0},
+    }
 
-```typescript
-describe("対象の名前", () => {
-  describe("メソッド名や条件", () => {
-    it("期待される振る舞いを〜〜すべき", () => {
-      // Arrange: 準備
-      // Act: 実行
-      // Assert: 検証
-    });
-  });
-});
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := CalculateCalories(tt.input)
+            assert.Equal(t, tt.expected, result)
+        })
+    }
+}
 ```
 
 ## モックの使用基準
@@ -62,4 +59,3 @@ describe("対象の名前", () => {
 | エージェント | 用途 | 使用タイミング |
 | :--- | :--- | :--- |
 | tdd-guide | TDD方法論の徹底 | 新機能実装、バグ修正時 |
-| e2e-runner | Playwright E2Eテスト | 重要なユーザーフローのテスト |

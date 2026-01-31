@@ -10,42 +10,6 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
-  # npm (frontend)
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "chore(deps)"
-    groups:
-      react-ecosystem:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "next"
-          - "eslint-config-next"
-          - "swr"
-      testing:
-        patterns:
-          - "vitest"
-          - "@testing-library/*"
-          - "@vitejs/plugin-react"
-          - "@playwright/test"
-          - "jsdom"
-      linting:
-        patterns:
-          - "eslint"
-          - "prettier"
-          - "knip"
-          - "depcheck"
-      types:
-        patterns:
-          - "typescript"
-          - "@types/*"
-
   # Go modules (backend)
   - package-ecosystem: "gomod"
     directory: "/backend"
@@ -68,6 +32,26 @@ updates:
       database:
         patterns:
           - "github.com/lib/pq"
+
+  # Swift (iOS)
+  - package-ecosystem: "swift"
+    directory: "/ios"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      testing:
+        patterns:
+          - "swift-snapshot-testing"
+          - "swift-custom-dump"
+          - "xctest-dynamic-overlay"
+      swift-ecosystem:
+        patterns:
+          - "swift-syntax"
 
   # Docker (root)
   - package-ecosystem: "docker"
