@@ -28,17 +28,7 @@ struct ContentView: View {
 
 struct MainTabView: View {
     var body: some View {
-        TabView {
-            MealsView()
-                .tabItem {
-                    Label("食事", systemImage: "fork.knife")
-                }
-
-            WeightView()
-                .tabItem {
-                    Label("体重", systemImage: "scalemass")
-                }
-        }
-        .tint(Theme.primary)
+        MealsView()
+            .tint(Theme.primary)
     }
 }

@@ -66,32 +66,4 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
-
-    // MARK: - Weight Endpoints
-
-    static func weightRecords(period: String) -> APIEndpoint {
-        APIEndpoint(
-            path: "weight-records?period=\(period)",
-            method: .get,
-            requiresAuth: true
-        )
-    }
-
-    static let createWeightRecord = APIEndpoint(
-        path: "weight-records",
-        method: .post,
-        requiresAuth: true
-    )
-
-    static let weightGoal = APIEndpoint(
-        path: "weight-goals/current",
-        method: .get,
-        requiresAuth: true
-    )
-
-    static let setWeightGoal = APIEndpoint(
-        path: "weight-goals",
-        method: .post,
-        requiresAuth: true
-    )
 }

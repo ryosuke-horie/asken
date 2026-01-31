@@ -24,13 +24,11 @@ ios/
 │   │   └── Repositories/ # データアクセス層
 │   ├── Features/
 │   │   ├── Auth/         # ログイン画面
-│   │   ├── Meals/        # 食事記録画面
-│   │   └── Weight/       # 体重管理画面
+│   │   └── Meals/        # 食事記録画面
 │   ├── Shared/
 │   │   ├── Components/   # 共通UIコンポーネント
 │   │   └── Extensions/   # Swift拡張
 │   └── Resources/        # アセット、Info.plist
-├── UchikomiWidget/       # WidgetKit Extension
 └── UchikomiTests/        # ユニットテスト
 ```
 
@@ -56,21 +54,7 @@ ios/
 2. File > Add Files to "Uchikomi"
 3. `Uchikomi/` フォルダ以下のすべてのファイルを追加
 
-### 3. Widget Extension の追加
-
-1. File > New > Target
-2. iOS > Widget Extension を選択
-3. Product Name: `UchikomiWidget`
-4. ✅ Include Configuration Intent をオフ
-5. 作成後、`UchikomiWidget/` フォルダのファイルで置き換え
-
-### 4. App Groups の設定（メインアプリとウィジェット間のデータ共有）
-
-1. プロジェクト設定 > Signing & Capabilities
-2. メインアプリとウィジェットの両方に App Groups を追加
-3. Group ID: `group.dev.exe.utikomi`
-
-### 5. 開発用の設定
+### 3. 開発用の設定
 
 `AppEnvironment.swift` で開発環境のURLを設定:
 
@@ -113,15 +97,6 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 - 食事タイプ（朝食/昼食/夕食/間食）選択
 - 日別の栄養素サマリー表示
 
-### 体重管理
-- 体重の記録と履歴表示
-- Swift Charts によるグラフ表示
-- 目標設定と進捗トラッキング
-
-### ウィジェット
-- 体重ウィジェット（現在の体重、目標差分）
-- カロリーウィジェット（今日の摂取カロリー）
-
 ## API エンドポイント
 
 バックエンドAPI（Go）をそのまま使用:
@@ -134,7 +109,3 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 | GET /api/analyze/:id/status | 分析ステータス確認 |
 | GET /api/analyze/:id/result | 分析結果取得 |
 | POST /api/meals | 食事保存 |
-| GET /api/weight-records | 体重履歴取得 |
-| POST /api/weight-records | 体重記録 |
-| GET /api/weight-goals/current | 現在の目標取得 |
-| POST /api/weight-goals | 目標設定 |

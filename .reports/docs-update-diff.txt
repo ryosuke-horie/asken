@@ -1,0 +1,54 @@
+ドキュメント更新レポート
+========================
+実行日時: 2026-01-31
+
+## 情報源の確認
+
+### Taskfile.yml
+- 全タスクがCONTRIB.mdに正しく記載されていることを確認
+- 差分なし
+
+### frontend/package.json
+- 全npmスクリプトがCONTRIB.mdに正しく記載されていることを確認
+- 差分なし
+
+### 環境変数
+- backend/.env.example が存在（読み取り権限なし）
+- frontend/.env.local が存在
+- CONTRIB.mdに環境変数の説明が記載済み
+
+## 更新内容
+
+### docs/CONTRIB.md
+- 最終更新日を2026-01-31に更新
+- 内容に変更なし（最新状態を維持）
+
+### docs/RUNBOOK.md
+- 最終更新日を2026-01-31に更新
+- 内容に変更なし（最新状態を維持）
+
+### docs/weight-management-design.md
+- 最終更新日を追加
+- iOSアプリからの削除に関する注意書きを追加
+  - EDG-535で削除されたことを明記
+  - WebフロントエンドとバックエンドAPIでは引き続き利用可能
+
+## 古いドキュメントの検出
+
+90日以上更新されていないドキュメント: **なし**
+（プロジェクトが新しいため）
+
+## 差分サマリー
+
+| ファイル | 変更種別 | 変更行数 |
+|:---------|:---------|:---------|
+| CONTRIB.md | 日付更新 | 1行 |
+| RUNBOOK.md | 日付更新 | 1行 |
+| weight-management-design.md | 注記追加 | 5行 |
+| CODEMAPS/ios.md | 別タスクで更新済み | -96行 |
+| CODEMAPS/architecture.md | 別タスクで更新済み | -3行 |
+
+## 関連PR
+
+- EDG-535: iOSアプリを食事記録機能に絞る
+- https://github.com/ryosuke-horie/utikomi/pull/76
