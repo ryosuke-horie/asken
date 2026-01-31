@@ -100,6 +100,17 @@ struct MealInputView: View {
                     viewModel.selectedImage = image
                 }
             }
+            .sheet(isPresented: $viewModel.showEditor) {
+                if let analysisId = viewModel.analysisId,
+                   let result = viewModel.analysisResult {
+                    NutritionEditorView(
+                        historyId: analysisId,
+                        foods: result.result.foods
+                    ) {
+                        viewModel.markCompleted()
+                    }
+                }
+            }
         }
         .onAppear {
             viewModel.mealDate = mealDate

@@ -78,6 +78,46 @@ actor APIClient {
         return try await performRequest(request)
     }
 
+    // MARK: - Request without response body
+
+    func requestWithoutResponse(
+        endpoint: APIEndpoint,
+        body: (any Encodable)? = nil
+    ) async throws {
+        var request = try await createRequest(endpoint: endpoint)
+
+        if let body = body {
+            let bodyData = try encoder.encode(body)
+            request.httpBody = bodyData
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        #if DEBUG
+        print("[APIClient] Response Status: \(httpResponse.statusCode)")
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("[APIClient] Response Body: \(responseString)")
+        }
+        #endif
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            return
+        case 401:
+            throw APIError.unauthorized
+        case 404:
+            throw APIError.notFound
+        default:
+            let message = String(data: data, encoding: .utf8)
+            throw APIError.httpError(statusCode: httpResponse.statusCode, message: message)
+        }
+    }
+
     // MARK: - Private Helpers
 
     private func createRequest(endpoint: APIEndpoint) async throws -> URLRequest {

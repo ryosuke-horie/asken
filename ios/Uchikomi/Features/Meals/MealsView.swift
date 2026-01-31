@@ -3,6 +3,8 @@ import SwiftUI
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
+    @State private var editingMeal: HistoryDetail?
+    @State private var deletingMeal: HistoryDetail?
 
     var body: some View {
         NavigationStack {
@@ -46,6 +48,12 @@ struct MealsView: View {
                                     meals: dailyMeals.meals.meals(for: mealType),
                                     onAddTapped: {
                                         selectedMealTypeForInput = mealType
+                                    },
+                                    onEditTapped: { meal in
+                                        editingMeal = meal
+                                    },
+                                    onDeleteTapped: { meal in
+                                        deletingMeal = meal
                                     }
                                 )
                             }
@@ -69,6 +77,34 @@ struct MealsView: View {
                         await viewModel.loadMeals()
                     }
                 }
+            }
+            .sheet(item: $editingMeal) { meal in
+                NutritionEditorView(
+                    historyId: meal.id,
+                    foods: meal.foods
+                ) {
+                    Task {
+                        await viewModel.loadMeals()
+                    }
+                }
+            }
+            .alert("削除の確認", isPresented: Binding(
+                get: { deletingMeal != nil },
+                set: { if !$0 { deletingMeal = nil } }
+            )) {
+                Button("キャンセル", role: .cancel) {
+                    deletingMeal = nil
+                }
+                Button("削除", role: .destructive) {
+                    if let meal = deletingMeal {
+                        Task {
+                            await viewModel.deleteHistory(id: meal.id)
+                        }
+                    }
+                    deletingMeal = nil
+                }
+            } message: {
+                Text("この食事記録を削除しますか？")
             }
         }
         .task {
@@ -123,6 +159,8 @@ private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
     let onAddTapped: () -> Void
+    let onEditTapped: (HistoryDetail) -> Void
+    let onDeleteTapped: (HistoryDetail) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -151,7 +189,11 @@ private struct MealTypeSection: View {
                     .padding(.vertical, 8)
             } else {
                 ForEach(meals) { meal in
-                    MealCard(meal: meal)
+                    MealCard(
+                        meal: meal,
+                        onEdit: { onEditTapped(meal) },
+                        onDelete: { onDeleteTapped(meal) }
+                    )
                 }
             }
         }
@@ -163,6 +205,8 @@ private struct MealTypeSection: View {
 
 private struct MealCard: View {
     let meal: HistoryDetail
+    let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -175,6 +219,23 @@ private struct MealCard: View {
                         .font(.caption)
                         .foregroundStyle(Theme.primary)
                 }
+            }
+
+            HStack {
+                Spacer()
+                Button(action: onEdit) {
+                    Label("編集", systemImage: "pencil")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.primary)
+
+                Button(action: onDelete) {
+                    Label("削除", systemImage: "trash")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
             }
         }
         .padding()
