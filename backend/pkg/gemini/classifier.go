@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-// FoodItem は食材情報を表す構造体（分類のみ）
+// FoodItem は料理情報を表す構造体（分類のみ）
 type FoodItem struct {
 	Name            string `json:"name"`
 	EstimatedAmount string `json:"estimated_amount"`
 }
 
-// Classifier は食材分類を行うクライアント
+// Classifier は料理分類を行うクライアント
 type Classifier struct {
 	timeout time.Duration
 }
@@ -28,7 +28,7 @@ func NewClassifier(timeout time.Duration) *Classifier {
 	}
 }
 
-// ClassifyFoods は画像から食材を分類する（カロリー・栄養素情報は含まない）
+// ClassifyFoods は画像から料理を分類する（カロリー・栄養素情報は含まない）
 func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]FoodItem, error) {
 	// タイムアウト付きコンテキストを作成
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
@@ -45,18 +45,24 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 		return nil, fmt.Errorf("絶対パス変換エラー: %w", err)
 	}
 
-	// プロンプトを構築（食材分類のみに集中）
-	prompt := fmt.Sprintf(`この画像に写っている食材や料理を特定し、各食材の名前と推定量（グラム数または個数）をJSON形式のリストで出力してください。
+	// プロンプトを構築（料理名の分類に集中）
+	prompt := fmt.Sprintf(`この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
+
+料理名は可能な限り具体的に出力してください。
+例:
+- ラーメン → 「家系ラーメン」「味噌ラーメン」「博多豚骨ラーメン」など
+- カレー → 「カレーライス」「キーマカレー」「バターチキンカレー」など
+- 丼物 → 「牛丼」「親子丼」「海鮮丼」など
 
 出力フォーマット:
 [
   {
-    "name": "食材名",
-    "estimated_amount": "推定量（例: 100g, 3切れ, 1杯）"
+    "name": "料理名",
+    "estimated_amount": "推定量（例: 1人前, 1杯, 1皿）"
   }
 ]
 
-カロリーや栄養素の情報は不要です。食材の特定と量の推定のみを行ってください。
+カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。
 
 @%s`, absPath)
 
@@ -88,10 +94,10 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 	// レスポンス内のJSONコードブロックを抽出（Geminiが```json```で囲んでいる場合）
 	foodListJSON := removeCodeBlock(response.Response)
 
-	// 食材リストをパース
+	// 料理リストをパース
 	var foods []FoodItem
 	if err := json.Unmarshal([]byte(foodListJSON), &foods); err != nil {
-		return nil, fmt.Errorf("食材リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
+		return nil, fmt.Errorf("料理リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
 	}
 
 	return foods, nil
