@@ -40,9 +40,9 @@ func TestClassifyFoods_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, foods)
 
-	// 各食材が適切な構造を持っているか確認
+	// 各料理が適切な構造を持っているか確認
 	for _, food := range foods {
-		assert.NotEmpty(t, food.Name, "食材名が空です")
+		assert.NotEmpty(t, food.Name, "料理名が空です")
 		assert.NotEmpty(t, food.EstimatedAmount, "推定量が空です")
 	}
 }
