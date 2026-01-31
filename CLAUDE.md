@@ -16,7 +16,7 @@
 
 ### 技術スタック
 
-- **フロントエンド**: Next.js (React + TypeScript)
+- **iOS**: Swift / SwiftUI
 - **バックエンド**: Golang
 - **AI**: Gemini CLI（Gemini 3 API）via シェルコマンド
 - **データベース**: PostgreSQL
@@ -33,7 +33,7 @@
 
 詳細なコーディング規約、ベストプラクティス、セキュリティガイドライン等は `.claude/rules/` ディレクトリを参照してください。
 
-- **フロントエンド**: `.claude/rules/frontend-nextjs.md`
+- **iOS**: `.claude/rules/10-ios-testing.md`
 - **バックエンド**: `.claude/rules/backend-golang.md`
 - **データベース**: `.claude/rules/database.md`
 - **Gemini API**: `.claude/rules/gemini-api.md`
