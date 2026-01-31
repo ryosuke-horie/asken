@@ -9,17 +9,16 @@
 /* Begin PBXBuildFile section */
 		083A2BDB4F66BA52B2F52B77 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031753C6CAFEA53D1C80D908 /* AuthManager.swift */; };
 		10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */; };
-		11111111111111111111111A /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11111111111111111111111B /* FoodEditItem.swift */; };
-		11111111111111111111111C /* NutritionEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11111111111111111111111D /* NutritionEditorViewModel.swift */; };
-		11111111111111111111111E /* FoodItemEditRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11111111111111111111111F /* FoodItemEditRow.swift */; };
-		111111111111111111111120 /* NutritionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111111111111111111111121 /* NutritionEditorView.swift */; };
 		15FB70824FCCE86C38D34772 /* Meal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4D95F83E8D7B930C133A00 /* Meal.swift */; };
+		1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */; };
 		214BE413FC5F0DD36B7BBE0A /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29390303E2235204CDE4AE9C /* APIError.swift */; };
 		2923DD26E883C392599C112C /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6165C622DF45570CA60EEB39 /* Auth.swift */; };
 		393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB076D4C09182F8F36C28530 /* LoginViewModel.swift */; };
 		3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */; };
 		3CD21F6C4A04A28580C04A6D /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEF8440FE045302FDC253B8D /* AuthRepository.swift */; };
 		3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEAA9E272035A37D00E17345 /* TokenManager.swift */; };
+		547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */; };
+		56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 73781A308EDE339E10EA5366 /* Assets.xcassets */; };
 		5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */; };
 		6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */; };
 		6C077CE8CE8874143A6BA70C /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 10E2B29939E6D92AB198963D /* SnapshotTesting */; };
@@ -34,7 +33,9 @@
 		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
 		BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */; };
 		C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */; };
+		C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */; };
 		DEE1207B9FBBFB1B595CEDD3 /* MealsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */; };
+		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,10 +50,6 @@
 
 /* Begin PBXFileReference section */
 		031753C6CAFEA53D1C80D908 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
-		11111111111111111111111B /* FoodEditItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditItem.swift; sourceTree = "<group>"; };
-		11111111111111111111111D /* NutritionEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorViewModel.swift; sourceTree = "<group>"; };
-		11111111111111111111111F /* FoodItemEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItemEditRow.swift; sourceTree = "<group>"; };
-		111111111111111111111121 /* NutritionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorView.swift; sourceTree = "<group>"; };
 		12EDB121AC061828D06504D0 /* MealInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputView.swift; sourceTree = "<group>"; };
 		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
@@ -67,17 +64,22 @@
 		62B06629C50F8033CFFCE1B5 /* MealsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModelTests.swift; sourceTree = "<group>"; };
 		636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealRepository.swift; sourceTree = "<group>"; };
 		654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		7270033D73999E560F355AF4 /* FoodEditItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditItem.swift; sourceTree = "<group>"; };
+		73781A308EDE339E10EA5366 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74BA1A7B25B0A786BB8F9486 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7566864AF9A1104077390858 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorView.swift; sourceTree = "<group>"; };
 		8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UchikomiApp.swift; sourceTree = "<group>"; };
 		8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManagerTests.swift; sourceTree = "<group>"; };
 		A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSummaryCard.swift; sourceTree = "<group>"; };
 		AEAA9E272035A37D00E17345 /* TokenManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
+		B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorViewModel.swift; sourceTree = "<group>"; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModel.swift; sourceTree = "<group>"; };
 		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		EEF8440FE045302FDC253B8D /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
+		FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItemEditRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,6 +207,14 @@
 			path = Auth;
 			sourceTree = "<group>";
 		};
+		723A4593E934E94E364F0CC8 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 		9E652BE1B68421105C6F032B /* Generated */ = {
 			isa = PBXGroup;
 			children = (
@@ -224,6 +234,14 @@
 			path = UchikomiTests;
 			sourceTree = "<group>";
 		};
+		AEEEEAF83C83135A29BD459B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7270033D73999E560F355AF4 /* FoodEditItem.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		BB3F36FCD59322D0DFB26D37 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -236,32 +254,17 @@
 		C38E632D2C00694840B6B798 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				73781A308EDE339E10EA5366 /* Assets.xcassets */,
 				74BA1A7B25B0A786BB8F9486 /* Info.plist */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		111111111111111111111122 /* Models */ = {
+		E8CF10AE782A231A542D265C /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				11111111111111111111111B /* FoodEditItem.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		111111111111111111111123 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				11111111111111111111111D /* NutritionEditorViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		111111111111111111111124 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				11111111111111111111111F /* FoodItemEditRow.swift */,
-				111111111111111111111121 /* NutritionEditorView.swift */,
+				FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */,
+				8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -269,13 +272,13 @@
 		F9A0E061855B4AD583027E8F /* Meals */ = {
 			isa = PBXGroup;
 			children = (
-				111111111111111111111122 /* Models */,
-				111111111111111111111123 /* ViewModels */,
-				111111111111111111111124 /* Views */,
 				12EDB121AC061828D06504D0 /* MealInputView.swift */,
 				60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */,
 				51EF1CA05F42093F7BCC75CA /* MealsView.swift */,
 				D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */,
+				AEEEEAF83C83135A29BD459B /* Models */,
+				723A4593E934E94E364F0CC8 /* ViewModels */,
+				E8CF10AE782A231A542D265C /* Views */,
 			);
 			path = Meals;
 			sourceTree = "<group>";
@@ -288,6 +291,7 @@
 			buildConfigurationList = 1C6F994B0B167391E287E1E3 /* Build configuration list for PBXNativeTarget "Uchikomi" */;
 			buildPhases = (
 				A7C6EE458C981F09D5C370FD /* Sources */,
+				15D315F86BE1D07F7B956D34 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -362,6 +366,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		15D315F86BE1D07F7B956D34 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		0B683739C9C9462AD5169B8F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -385,8 +400,8 @@
 				2923DD26E883C392599C112C /* Auth.swift in Sources */,
 				083A2BDB4F66BA52B2F52B77 /* AuthManager.swift in Sources */,
 				3CD21F6C4A04A28580C04A6D /* AuthRepository.swift in Sources */,
-				11111111111111111111111A /* FoodEditItem.swift in Sources */,
-				11111111111111111111111E /* FoodItemEditRow.swift in Sources */,
+				EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */,
+				1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */,
 				9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */,
 				393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */,
 				15FB70824FCCE86C38D34772 /* Meal.swift in Sources */,
@@ -395,8 +410,8 @@
 				5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */,
 				A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */,
 				10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */,
-				11111111111111111111111C /* NutritionEditorViewModel.swift in Sources */,
-				111111111111111111111120 /* NutritionEditorView.swift in Sources */,
+				C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */,
+				547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */,
 				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
 				9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */,
 				3DFFD251968BE797BF0B1C6B /* TokenManager.swift in Sources */,
