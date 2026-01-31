@@ -107,4 +107,15 @@ final class MealInputViewModel {
     func markCompleted() {
         isCompleted = true
     }
+
+    func deleteHistory(id: String) async {
+        do {
+            try await repository.deleteHistory(historyId: id)
+        } catch {
+            #if DEBUG
+            print("[MealInputViewModel] Delete error: \(error)")
+            #endif
+            errorMessage = "削除に失敗しました"
+        }
+    }
 }

@@ -1,19 +1,33 @@
 import SwiftUI
 import PhotosUI
 
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
 struct MealInputView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = MealInputViewModel()
     @State private var selectedItem: PhotosPickerItem?
     @State private var showingCamera = false
+    @State private var editingMeal: HistoryDetail?
+    @State private var deletingMeal: HistoryDetail?
+    @State private var showingImagePreview: URL?
 
     let mealDate: Date
     let initialMealType: MealType
+    let existingMeals: [HistoryDetail]
     let onSaved: () -> Void
 
-    init(mealDate: Date = Date(), initialMealType: MealType = .lunch, onSaved: @escaping () -> Void = {}) {
+    init(
+        mealDate: Date = Date(),
+        initialMealType: MealType = .lunch,
+        existingMeals: [HistoryDetail] = [],
+        onSaved: @escaping () -> Void = {}
+    ) {
         self.mealDate = mealDate
         self.initialMealType = initialMealType
+        self.existingMeals = existingMeals
         self.onSaved = onSaved
     }
 
@@ -21,8 +35,23 @@ struct MealInputView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Meal Type Picker
-                    MealTypePicker(selectedType: $viewModel.selectedMealType)
+                    // Existing Meals Section
+                    if !existingMeals.isEmpty {
+                        ExistingMealsSection(
+                            meals: existingMeals,
+                            onEdit: { meal in editingMeal = meal },
+                            onDelete: { meal in deletingMeal = meal },
+                            onImageTap: { url in showingImagePreview = url }
+                        )
+                    }
+
+                    Divider()
+                        .padding(.horizontal)
+
+                    // New Meal Section
+                    Text("新しく記録する")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Image Selection
                     ImageSelectionSection(
@@ -72,11 +101,11 @@ struct MealInputView: View {
                 }
                 .padding()
             }
-            .navigationTitle("食事を記録")
+            .navigationTitle("\(initialMealType.displayName)を記録")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
+                    Button("閉じる") {
                         dismiss()
                     }
                 }
@@ -111,6 +140,36 @@ struct MealInputView: View {
                     }
                 }
             }
+            .sheet(item: $editingMeal) { meal in
+                NutritionEditorView(
+                    historyId: meal.id,
+                    foods: meal.foods
+                ) {
+                    onSaved()
+                }
+            }
+            .sheet(item: $showingImagePreview) { url in
+                ImagePreviewView(imageURL: url)
+            }
+            .alert("削除の確認", isPresented: Binding(
+                get: { deletingMeal != nil },
+                set: { if !$0 { deletingMeal = nil } }
+            )) {
+                Button("キャンセル", role: .cancel) {
+                    deletingMeal = nil
+                }
+                Button("削除", role: .destructive) {
+                    if let meal = deletingMeal {
+                        Task {
+                            await viewModel.deleteHistory(id: meal.id)
+                            onSaved()
+                        }
+                    }
+                    deletingMeal = nil
+                }
+            } message: {
+                Text("この食事記録を削除しますか？")
+            }
         }
         .onAppear {
             viewModel.mealDate = mealDate
@@ -119,23 +178,152 @@ struct MealInputView: View {
     }
 }
 
-// MARK: - Subviews
+// MARK: - Existing Meals Section
 
-private struct MealTypePicker: View {
-    @Binding var selectedType: MealType
+private struct ExistingMealsSection: View {
+    let meals: [HistoryDetail]
+    let onEdit: (HistoryDetail) -> Void
+    let onDelete: (HistoryDetail) -> Void
+    let onImageTap: (URL) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("食事タイプ")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("登録済みの記録")
                 .font(.headline)
 
-            HStack(spacing: 12) {
-                ForEach(MealType.allCases, id: \.self) { type in
-                    MealTypeButton(
-                        type: type,
-                        isSelected: selectedType == type
-                    ) {
-                        selectedType = type
+            ForEach(meals) { meal in
+                ExistingMealCard(
+                    meal: meal,
+                    onEdit: { onEdit(meal) },
+                    onDelete: { onDelete(meal) },
+                    onImageTap: onImageTap
+                )
+            }
+        }
+    }
+}
+
+private struct ExistingMealCard: View {
+    let meal: HistoryDetail
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    let onImageTap: (URL) -> Void
+
+    private var imageURL: URL? {
+        guard let imagePath = meal.imagePath, !imagePath.isEmpty else { return nil }
+        // imagePath is stored as "uploads/xxx.jpg", extract just the filename
+        let filename = (imagePath as NSString).lastPathComponent
+        let baseURL = AppEnvironment.current.baseURL
+        return baseURL.appendingPathComponent("api/images/\(filename)")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Image preview if available
+            if let url = imageURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(height: 120)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .onTapGesture {
+                                onImageTap(url)
+                            }
+                    case .failure:
+                        Image(systemName: "photo")
+                            .frame(height: 120)
+                            .foregroundStyle(.secondary)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+
+            // Food list
+            ForEach(meal.foods) { food in
+                HStack {
+                    Text(food.name)
+                        .font(.subheadline)
+                    Text("(\(food.estimatedAmount))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(Int(food.caloriesKcal)) kcal")
+                        .font(.caption)
+                        .foregroundStyle(Theme.primary)
+                }
+            }
+
+            // Total and action buttons
+            HStack {
+                Text("合計: \(Int(meal.totalCalories)) kcal")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Theme.primary)
+
+                Spacer()
+
+                Button(action: onEdit) {
+                    Label("編集", systemImage: "pencil")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.primary)
+
+                Button(action: onDelete) {
+                    Label("削除", systemImage: "trash")
+                        .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Image Preview View
+
+private struct ImagePreviewView: View {
+    @Environment(\.dismiss) private var dismiss
+    let imageURL: URL
+
+    var body: some View {
+        NavigationStack {
+            AsyncImage(url: imageURL) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                case .failure:
+                    VStack {
+                        Image(systemName: "photo")
+                            .font(.largeTitle)
+                        Text("画像を読み込めませんでした")
+                    }
+                    .foregroundStyle(.secondary)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .navigationTitle("画像プレビュー")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("閉じる") {
+                        dismiss()
                     }
                 }
             }
@@ -143,27 +331,7 @@ private struct MealTypePicker: View {
     }
 }
 
-private struct MealTypeButton: View {
-    let type: MealType
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: type.icon)
-                    .font(.title3)
-                Text(type.displayName)
-                    .font(.caption)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(isSelected ? Theme.primary : Color(.secondarySystemBackground))
-            .foregroundStyle(isSelected ? .white : .primary)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-    }
-}
+// MARK: - Image Selection Section
 
 private struct ImageSelectionSection: View {
     let selectedImage: UIImage?
@@ -173,7 +341,8 @@ private struct ImageSelectionSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("食事の画像")
-                .font(.headline)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
             if let image = selectedImage {
                 Image(uiImage: image)
@@ -205,6 +374,8 @@ private struct ImageSelectionSection: View {
         }
     }
 }
+
+// MARK: - Analysis Result Section
 
 private struct AnalysisResultSection: View {
     let response: AnalysisResultResponse

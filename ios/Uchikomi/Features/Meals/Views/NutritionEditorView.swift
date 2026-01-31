@@ -26,12 +26,22 @@ struct NutritionEditorView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 16) {
-                            NutritionSummaryCard(
-                                calories: viewModel.totalCalories,
-                                protein: viewModel.totalProtein,
-                                fat: viewModel.totalFat,
-                                carbohydrates: viewModel.totalCarbohydrates
-                            )
+                            // 説明テキスト
+                            Text("料理名と量を編集してください。\n栄養素は保存後に自動計算されます。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+
+                            // 現在の栄養素サマリー（参考値）
+                            if viewModel.totalCalories > 0 {
+                                NutritionSummaryCard(
+                                    calories: viewModel.totalCalories,
+                                    protein: viewModel.totalProtein,
+                                    fat: viewModel.totalFat,
+                                    carbohydrates: viewModel.totalCarbohydrates
+                                )
+                            }
 
                             ForEach(viewModel.foods) { food in
                                 FoodItemEditRow(item: food) {
@@ -60,7 +70,7 @@ struct NutritionEditorView: View {
                     }
                 }
             }
-            .navigationTitle("栄養素を編集")
+            .navigationTitle("食事を編集")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
