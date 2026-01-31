@@ -13,30 +13,6 @@
 - 不要な機能追加、リファクタリング、コメント追加は行わない
 - テストコードを必ず書く（TDDに従う）
 
-### Next.js / Reactコーディング時の必須事項
-
-1. **Server Componentsを優先**
-   - デフォルトでServer Componentsを使用し、必要な場合のみClient Components（`'use client'`）を使用
-   - `components/server/`と`components/client/`でファイルを明確に分離
-
-2. **パフォーマンス最適化を適用**
-   - Barrel Importsを避け、直接インポートを使用（または`optimizePackageImports`を設定）
-   - 重いコンポーネントは`next/dynamic`で遅延ロード
-   - 並列データフェッチングを実現（Promise.all()、コンポーネント構成）
-   - `React.cache()`でServer Side のデータ取得を重複排除（プリミティブ型の引数を使用）
-   - クライアントサイドのデータフェッチングにはSWRを使用
-
-3. **適切なコンポーネント設計**
-   - 高コストな計算は`memo`で最適化
-   - 静的JSXはコンポーネント外にホイスト
-   - Suspense境界を戦略的に配置（必要な部分のみブロック）
-
-4. **避けるべきパターン**
-   - Server Componentsでの逐次的なデータ取得（並列化すること）
-   - `React.cache()`の引数にオブジェクトを使用（プリミティブ型を使用）
-   - Barrel Importsによる不要なモジュールロード
-   - クライアントサイドでの個別fetch（SWRを使用）
-
 ### Gemini API連携時の注意
 
 - Gemini CLIのコマンド実行時は**タイムアウトを設定**する
