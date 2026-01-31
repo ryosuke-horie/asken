@@ -1,6 +1,6 @@
 ---
 paths:
-  - "**/*test*.{ts,tsx,go}"
+  - "**/*test*.{go,swift}"
   - "**/tests/**/*"
   - "**/__tests__/**/*"
 ---
@@ -14,36 +14,7 @@ paths:
 3. テストは**独立性**を保ち、実行順序に依存しない
 4. テストコードも**リファクタリング対象**とする
 
-## フロントエンドテスト
-
-### ツール
-
-- **Jest**: ユニットテスト
-- **React Testing Library**: コンポーネントテスト
-- **Playwright**: E2Eテスト（オプション、MVP後）
-
-### テスト方針
-
-- コンポーネントは**ユーザーの視点**でテストする
-- **モック**は最小限に留め、実際の動作に近い環境でテストする
-- API呼び出しはモックする（MSWなどを使用）
-
-```typescript
-// ✅ 良い例
-test('画像をアップロードすると分析結果が表示される', async () => {
-  const file = new File(['dummy'], 'food.jpg', { type: 'image/jpeg' });
-
-  render(<ImageUpload />);
-
-  const input = screen.getByLabelText(/画像をアップロード/i);
-  await userEvent.upload(input, file);
-
-  // 分析結果が表示されるまで待機
-  expect(await screen.findByText(/カロリー:/i)).toBeInTheDocument();
-});
-```
-
-## バックエンドテスト
+## バックエンドテスト（Go）
 
 ### ツール
 
@@ -88,17 +59,26 @@ func TestFoodService_AnalyzeFoodImage(t *testing.T) {
 }
 ```
 
+## iOSテスト
+
+iOSテストの詳細は`10-ios-testing.md`を参照。
+
+### 概要
+
+- **Swift Testing**: ユニットテスト
+- **XCUITest**: UIテスト
+- **Mockolo**: モック生成
+- **swift-snapshot-testing**: スナップショットテスト
+
 ## テスト実行
 
 ```bash
-# フロントエンド
-cd frontend
-npm test              # ユニットテスト
-npm run test:watch    # ウォッチモード
-
 # バックエンド
 cd backend
 go test ./...         # すべてのテスト
 go test -cover ./...  # カバレッジ付き
 go test -v ./...      # 詳細モード
+
+# iOS
+task ios:test
 ```
