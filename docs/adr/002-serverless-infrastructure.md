@@ -13,7 +13,7 @@ iOSアプリからAPIへのアクセスが主要ユースケースとなるた�
 | クライアント | iOS (SwiftUI) |
 | バックエンドAPI | Cloud Run (Go) |
 | データベース | Firestore |
-| AI | Gemini API (gemini-2.0-flash) |
+| AI | Gemini API (gemini-3.0-flash) |
 | 画像ストレージ | Cloud Storage |
 | 認証 | Firebase Authentication |
 
@@ -166,7 +166,7 @@ Gemini API:
 
 | モデル | 無料枠 | 有料（入力） | 有料（出力） |
 |:---|:---|:---|:---|
-| gemini-2.0-flash | 10 RPM, 250 req/日 | $0.10/100万トークン | $0.40/100万トークン |
+| gemini-3.0-flash | 5 RPM（プレビュー） | $0.50/100万トークン | $3.00/100万トークン |
 
 Firebase Authentication:
 
@@ -253,7 +253,7 @@ Cloud Storageの長期蓄積:
 
 ### Gemini APIのレート制限対策
 
-- 無料枠: 1分あたり10リクエスト、1日250リクエスト
+- 無料枠: 1分あたり5リクエスト（プレビュー期間中）
 - 対策:
   - 画像分析リクエストにレート制限ミドルウェアを実装
   - 429エラー時のリトライ戦略（Exponential Backoff）
