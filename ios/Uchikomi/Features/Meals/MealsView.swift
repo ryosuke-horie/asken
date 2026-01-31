@@ -3,8 +3,6 @@ import SwiftUI
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
-    @State private var editingMeal: HistoryDetail?
-    @State private var deletingMeal: HistoryDetail?
 
     var body: some View {
         NavigationStack {
@@ -33,6 +31,18 @@ struct MealsView: View {
                 } else if let dailyMeals = viewModel.dailyMeals {
                     ScrollView {
                         VStack(spacing: 16) {
+                            // Recalculating indicator
+                            if viewModel.isRecalculating {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("栄養素を計算中...")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+
                             // Daily Total
                             NutritionSummaryCard(
                                 calories: dailyMeals.dailyTotal.totalCalories,
@@ -46,14 +56,8 @@ struct MealsView: View {
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
-                                    onAddTapped: {
+                                    onTapped: {
                                         selectedMealTypeForInput = mealType
-                                    },
-                                    onEditTapped: { meal in
-                                        editingMeal = meal
-                                    },
-                                    onDeleteTapped: { meal in
-                                        deletingMeal = meal
                                     }
                                 )
                             }
@@ -71,40 +75,14 @@ struct MealsView: View {
             .sheet(item: $selectedMealTypeForInput) { mealType in
                 MealInputView(
                     mealDate: viewModel.selectedDate,
-                    initialMealType: mealType
+                    initialMealType: mealType,
+                    existingMeals: viewModel.dailyMeals?.meals.meals(for: mealType) ?? []
                 ) {
                     Task {
                         await viewModel.loadMeals()
+                        viewModel.scheduleAutoReload()
                     }
                 }
-            }
-            .sheet(item: $editingMeal) { meal in
-                NutritionEditorView(
-                    historyId: meal.id,
-                    foods: meal.foods
-                ) {
-                    Task {
-                        await viewModel.loadMeals()
-                    }
-                }
-            }
-            .alert("削除の確認", isPresented: Binding(
-                get: { deletingMeal != nil },
-                set: { if !$0 { deletingMeal = nil } }
-            )) {
-                Button("キャンセル", role: .cancel) {
-                    deletingMeal = nil
-                }
-                Button("削除", role: .destructive) {
-                    if let meal = deletingMeal {
-                        Task {
-                            await viewModel.deleteHistory(id: meal.id)
-                        }
-                    }
-                    deletingMeal = nil
-                }
-            } message: {
-                Text("この食事記録を削除しますか？")
             }
         }
         .task {
@@ -158,89 +136,49 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
-    let onAddTapped: () -> Void
-    let onEditTapped: (HistoryDetail) -> Void
-    let onDeleteTapped: (HistoryDetail) -> Void
+    let onTapped: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: mealType.icon)
-                    .foregroundStyle(Theme.primary)
-                Text(mealType.displayName)
-                    .font(.headline)
-                Spacer()
-                if !meals.isEmpty {
-                    Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
-                        .font(.subheadline)
+        Button(action: onTapped) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: mealType.icon)
                         .foregroundStyle(Theme.primary)
-                }
-                Button(action: onAddTapped) {
+                    Text(mealType.displayName)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if !meals.isEmpty {
+                        Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.primary)
+                    }
                     Image(systemName: "square.and.pencil")
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
-            }
 
-            if meals.isEmpty {
-                Text("記録なし")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(meals) { meal in
-                    MealCard(
-                        meal: meal,
-                        onEdit: { onEditTapped(meal) },
-                        onDelete: { onDeleteTapped(meal) }
-                    )
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-private struct MealCard: View {
-    let meal: HistoryDetail
-    let onEdit: () -> Void
-    let onDelete: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(meal.foods) { food in
-                HStack {
-                    Text(food.name)
+                if meals.isEmpty {
+                    Text("記録なし")
                         .font(.subheadline)
-                    Spacer()
-                    Text("\(Int(food.caloriesKcal)) kcal")
-                        .font(.caption)
-                        .foregroundStyle(Theme.primary)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                } else {
+                    // 食材名のサマリーを表示
+                    let foodNames = meals.flatMap { $0.foods.map { $0.name } }
+                    let summary = foodNames.prefix(3).joined(separator: "、")
+                    let suffix = foodNames.count > 3 ? " 他\(foodNames.count - 3)品" : ""
+                    Text(summary + suffix)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
-
-            HStack {
-                Spacer()
-                Button(action: onEdit) {
-                    Label("編集", systemImage: "pencil")
-                        .font(.caption)
-                }
-                .buttonStyle(.bordered)
-                .tint(Theme.primary)
-
-                Button(action: onDelete) {
-                    Label("削除", systemImage: "trash")
-                        .font(.caption)
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-            }
+            .padding()
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .buttonStyle(.plain)
     }
 }
 

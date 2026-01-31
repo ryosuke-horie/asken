@@ -418,7 +418,7 @@ func run() error {
 		auth:          handler.NewAuthHandler(authService, userRepo),
 		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo, foodService),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler("uploads"),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),

@@ -17,17 +17,21 @@ struct FoodItemEditRow: View {
                 }
             }
 
-            TextField("食材名", text: $item.name)
+            TextField("料理名（例：鶏むね肉、ご飯）", text: $item.name)
                 .textFieldStyle(.roundedBorder)
 
-            TextField("量（例：100g、1個）", text: $item.quantity)
+            TextField("量（例：100g、1杯、大盛り）", text: $item.quantity)
                 .textFieldStyle(.roundedBorder)
 
-            HStack(spacing: 8) {
-                NutrientTextField(label: "kcal", value: $item.calories)
-                NutrientTextField(label: "P", value: $item.protein)
-                NutrientTextField(label: "F", value: $item.fat)
-                NutrientTextField(label: "C", value: $item.carbohydrates)
+            // 現在の栄養素を参考情報として表示（読み取り専用）
+            if item.calories > 0 {
+                HStack(spacing: 12) {
+                    NutrientLabel(label: "kcal", value: item.calories)
+                    NutrientLabel(label: "P", value: item.protein)
+                    NutrientLabel(label: "F", value: item.fat)
+                    NutrientLabel(label: "C", value: item.carbohydrates)
+                }
+                .padding(.top, 4)
             }
         }
         .padding()
@@ -36,32 +40,20 @@ struct FoodItemEditRow: View {
     }
 }
 
-private struct NutrientTextField: View {
+private struct NutrientLabel: View {
     let label: String
-    @Binding var value: Double
-
-    @State private var text: String = ""
+    let value: Double
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-
-            TextField("0", text: $text)
-                .textFieldStyle(.roundedBorder)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .onChange(of: text) { _, newValue in
-                    if let parsed = Double(newValue) {
-                        value = parsed
-                    }
-                }
+            Text(String(format: "%.0f", value))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .onAppear {
-            text = value > 0 ? String(format: "%.1f", value) : ""
-        }
+        .frame(maxWidth: .infinity)
     }
 }
 
