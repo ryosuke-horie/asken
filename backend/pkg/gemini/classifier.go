@@ -16,7 +16,7 @@ type FoodItem struct {
 	EstimatedAmount string `json:"estimated_amount"`
 }
 
-// Classifier は食材分類を行うクライアント
+// Classifier は料理分類を行うクライアント
 type Classifier struct {
 	timeout time.Duration
 }
@@ -94,10 +94,10 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 	// レスポンス内のJSONコードブロックを抽出（Geminiが```json```で囲んでいる場合）
 	foodListJSON := removeCodeBlock(response.Response)
 
-	// 食材リストをパース
+	// 料理リストをパース
 	var foods []FoodItem
 	if err := json.Unmarshal([]byte(foodListJSON), &foods); err != nil {
-		return nil, fmt.Errorf("食材リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
+		return nil, fmt.Errorf("料理リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
 	}
 
 	return foods, nil
