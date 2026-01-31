@@ -69,6 +69,26 @@ updates:
         patterns:
           - "github.com/lib/pq"
 
+  # Swift (iOS)
+  - package-ecosystem: "swift"
+    directory: "/ios"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      testing:
+        patterns:
+          - "swift-snapshot-testing"
+          - "swift-custom-dump"
+          - "xctest-dynamic-overlay"
+      swift-ecosystem:
+        patterns:
+          - "swift-syntax"
+
   # Docker (root)
   - package-ecosystem: "docker"
     directory: "/"
