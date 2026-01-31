@@ -31,6 +31,18 @@ struct MealsView: View {
                 } else if let dailyMeals = viewModel.dailyMeals {
                     ScrollView {
                         VStack(spacing: 16) {
+                            // Recalculating indicator
+                            if viewModel.isRecalculating {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("栄養素を計算中...")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+
                             // Daily Total
                             NutritionSummaryCard(
                                 calories: dailyMeals.dailyTotal.totalCalories,
@@ -44,7 +56,7 @@ struct MealsView: View {
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
-                                    onAddTapped: {
+                                    onTapped: {
                                         selectedMealTypeForInput = mealType
                                     }
                                 )
@@ -63,10 +75,12 @@ struct MealsView: View {
             .sheet(item: $selectedMealTypeForInput) { mealType in
                 MealInputView(
                     mealDate: viewModel.selectedDate,
-                    initialMealType: mealType
+                    initialMealType: mealType,
+                    existingMeals: viewModel.dailyMeals?.meals.meals(for: mealType) ?? []
                 ) {
                     Task {
                         await viewModel.loadMeals()
+                        viewModel.scheduleAutoReload()
                     }
                 }
             }
@@ -122,64 +136,49 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
-    let onAddTapped: () -> Void
+    let onTapped: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: mealType.icon)
-                    .foregroundStyle(Theme.primary)
-                Text(mealType.displayName)
-                    .font(.headline)
-                Spacer()
-                if !meals.isEmpty {
-                    Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
-                        .font(.subheadline)
+        Button(action: onTapped) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: mealType.icon)
                         .foregroundStyle(Theme.primary)
-                }
-                Button(action: onAddTapped) {
+                    Text(mealType.displayName)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if !meals.isEmpty {
+                        Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.primary)
+                    }
                     Image(systemName: "square.and.pencil")
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
-            }
 
-            if meals.isEmpty {
-                Text("記録なし")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(meals) { meal in
-                    MealCard(meal: meal)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-private struct MealCard: View {
-    let meal: HistoryDetail
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(meal.foods) { food in
-                HStack {
-                    Text(food.name)
+                if meals.isEmpty {
+                    Text("記録なし")
                         .font(.subheadline)
-                    Spacer()
-                    Text("\(Int(food.caloriesKcal)) kcal")
-                        .font(.caption)
-                        .foregroundStyle(Theme.primary)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                } else {
+                    // 食材名のサマリーを表示
+                    let foodNames = meals.flatMap { $0.foods.map { $0.name } }
+                    let summary = foodNames.prefix(3).joined(separator: "、")
+                    let suffix = foodNames.count > 3 ? " 他\(foodNames.count - 3)品" : ""
+                    Text(summary + suffix)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .buttonStyle(.plain)
     }
 }
 

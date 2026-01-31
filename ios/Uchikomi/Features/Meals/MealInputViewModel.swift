@@ -21,8 +21,9 @@ final class MealInputViewModel {
     var isAnalyzing = false
     var errorMessage: String?
     var isCompleted = false
+    var showEditor = false
 
-    private var analysisId: String?
+    private(set) var analysisId: String?
     private let repository: MealRepositoryProtocol
 
     init(repository: MealRepositoryProtocol = MealRepository()) {
@@ -56,8 +57,8 @@ final class MealInputViewModel {
             // 結果を取得
             analysisResult = try await repository.getAnalysisResult(id: id)
 
-            // 分析完了 = 保存完了（バックエンドで自動保存される）
-            isCompleted = true
+            // 編集画面を表示
+            showEditor = true
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
@@ -100,5 +101,21 @@ final class MealInputViewModel {
         analysisId = nil
         errorMessage = nil
         isCompleted = false
+        showEditor = false
+    }
+
+    func markCompleted() {
+        isCompleted = true
+    }
+
+    func deleteHistory(id: String) async {
+        do {
+            try await repository.deleteHistory(historyId: id)
+        } catch {
+            #if DEBUG
+            print("[MealInputViewModel] Delete error: \(error)")
+            #endif
+            errorMessage = "削除に失敗しました"
+        }
     }
 }

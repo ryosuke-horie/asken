@@ -52,7 +52,7 @@ func TestHistoryHandler_HandleList_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	w := httptest.NewRecorder()
@@ -82,7 +82,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history?page=2&limit=10", nil)
 	w := httptest.NewRecorder()
@@ -102,7 +102,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 
 func TestHistoryHandler_HandleList_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history", nil)
 	w := httptest.NewRecorder()
@@ -119,7 +119,7 @@ func TestHistoryHandler_HandleList_RepositoryError(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	w := httptest.NewRecorder()
@@ -163,7 +163,7 @@ func TestHistoryHandler_HandleDetail_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	w := httptest.NewRecorder()
@@ -190,7 +190,7 @@ func TestHistoryHandler_HandleDetail_NotFound(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	w := httptest.NewRecorder()
@@ -202,7 +202,7 @@ func TestHistoryHandler_HandleDetail_NotFound(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/invalid-uuid", nil)
 	w := httptest.NewRecorder()
@@ -214,7 +214,7 @@ func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history/"+uuid.New().String(), nil)
 	w := httptest.NewRecorder()

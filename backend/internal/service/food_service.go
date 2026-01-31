@@ -23,6 +23,12 @@ type AnalysisResult struct {
 	TotalCarbohydrates float64                `json:"total_carbohydrates"`
 }
 
+// FoodServiceInterface は食品分析サービスのインターフェース
+type FoodServiceInterface interface {
+	AnalyzeFoodImage(ctx context.Context, imagePath string) (*AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*AnalysisResult, error)
+}
+
 // FoodService は食品分析サービス
 type FoodService struct {
 	geminiClient GeminiClient

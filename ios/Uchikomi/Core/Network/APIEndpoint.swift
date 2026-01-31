@@ -66,4 +66,30 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
+
+    // MARK: - History Endpoints
+
+    static func historyDetail(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "history/\(id)",
+            method: .get,
+            requiresAuth: true
+        )
+    }
+
+    static func updateHistory(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "history/\(id)",
+            method: .put,
+            requiresAuth: true
+        )
+    }
+
+    static func deleteHistory(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "history/\(id)",
+            method: .delete,
+            requiresAuth: true
+        )
+    }
 }

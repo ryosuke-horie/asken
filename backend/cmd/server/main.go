@@ -111,6 +111,8 @@ func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewa
 		switch r.Method {
 		case http.MethodGet:
 			h.history.HandleDetail(w, r)
+		case http.MethodPut:
+			h.history.HandleUpdate(w, r)
 		case http.MethodDelete:
 			h.historyDelete.Handle(w, r)
 		default:
@@ -416,7 +418,7 @@ func run() error {
 		auth:          handler.NewAuthHandler(authService, userRepo),
 		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo, foodService),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler("uploads"),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
