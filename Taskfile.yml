@@ -165,3 +165,18 @@ tasks:
     cmds:
       - echo "=== デプロイ実行 ==="
       - ./deploy.sh
+
+  ios:generate-mocks:
+    desc: Mockoloでモックを生成
+    dir: ios
+    cmds:
+      - echo "=== Mockを生成 ==="
+      - mkdir -p UchikomiTests/Generated
+      - mockolo -s Uchikomi -d UchikomiTests/Generated/MockGenerated.swift --testable-imports Uchikomi
+
+  ios:test:
+    desc: iOSのテストを実行
+    dir: ios
+    cmds:
+      - echo "=== iOSテスト実行 ==="
+      - xcodebuild test -project Uchikomi.xcodeproj -scheme Uchikomi -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet

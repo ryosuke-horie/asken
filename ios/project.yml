@@ -6,6 +6,11 @@ options:
   xcodeVersion: "15.0"
   generateEmptyDirectories: true
 
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.17.0"
+
 settings:
   base:
     DEVELOPMENT_TEAM: ""
@@ -43,11 +48,15 @@ targets:
       - path: UchikomiTests
         excludes:
           - "**/.DS_Store"
+          - "**/Snapshots/__Snapshots__/**"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.exe.uchikomi.tests
+        GENERATE_INFOPLIST_FILE: "YES"
     dependencies:
       - target: Uchikomi
+      - package: SnapshotTesting
+        product: SnapshotTesting
 
 schemes:
   Uchikomi:
