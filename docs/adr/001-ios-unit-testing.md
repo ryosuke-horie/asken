@@ -71,7 +71,7 @@ UIテストはClaude Codeスキルを使用してPR作成前にローカル実�
 - 新規プロジェクトであり、最新フレームワークを採用するメリットが大きい
 - `@Test`マクロによるモダンな記法
 - デフォルトで並列実行され、テスト実行が高速
-- Frontendの日本語テスト名（「〜すべき」）との一貫性を保てる
+- 日本語テスト名（「〜すべき」）で可読性が高い
 
 ### Mockolo を選定した理由
 
@@ -101,9 +101,9 @@ UIテストはClaude Codeスキルを使用してPR作成前にローカル実�
 
 ### 導入が必要なもの
 
-1. **Mockolo**: Swift Package Managerで追加
-2. **swift-snapshot-testing**: Swift Package Managerで追加
-3. **Claude Codeスキル**: PR作成前UIテスト実行用
+1. Mockolo: Swift Package Managerで追加
+2. swift-snapshot-testing: Swift Package Managerで追加
+3. Claude Codeスキル: PR作成前UIテスト実行用
 
 ### 既存テストへの影響
 
