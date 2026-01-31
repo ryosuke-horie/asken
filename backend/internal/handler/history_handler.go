@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // HistoryHandler は履歴取得エンドポイントのハンドラー
@@ -133,4 +134,78 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("History detail response sent successfully for ID: %s", historyID)
+}
+
+// UpdateHistoryRequest は履歴更新リクエストの構造体
+type UpdateHistoryRequest struct {
+	Foods []gemini.NutritionInfo `json:"foods"`
+}
+
+// HandleUpdate はPUT /api/history/:idリクエストを処理（履歴更新）
+func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received history update request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
+
+	// PUTメソッドのみ許可
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// URLからhistory_idを抽出
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 4 {
+		log.Printf("Invalid URL path: %s", r.URL.Path)
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	historyIDStr := pathParts[3]
+	historyID, err := uuid.Parse(historyIDStr)
+	if err != nil {
+		log.Printf("Invalid UUID: %s, error: %v", historyIDStr, err)
+		http.Error(w, "Invalid history ID", http.StatusBadRequest)
+		return
+	}
+
+	// リクエストボディをパース
+	var req UpdateHistoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Updating history for ID: %s with %d foods", historyID, len(req.Foods))
+
+	// リポジトリで更新
+	if err := h.repository.UpdateResult(r.Context(), historyID, req.Foods); err != nil {
+		log.Printf("Error updating history: %v", err)
+		if strings.Contains(err.Error(), "見つかりません") {
+			http.Error(w, "History not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update history", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	log.Printf("History updated successfully for ID: %s", historyID)
+
+	// 更新後の詳細を取得して返却
+	detail, err := h.repository.GetHistoryDetail(r.Context(), historyID)
+	if err != nil {
+		log.Printf("Error getting updated history detail: %v", err)
+		http.Error(w, "Failed to get updated history", http.StatusInternalServerError)
+		return
+	}
+
+	// JSONレスポンスを返却
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(detail); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("History update response sent successfully for ID: %s", historyID)
 }

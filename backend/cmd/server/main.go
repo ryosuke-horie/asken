@@ -111,6 +111,8 @@ func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewa
 		switch r.Method {
 		case http.MethodGet:
 			h.history.HandleDetail(w, r)
+		case http.MethodPut:
+			h.history.HandleUpdate(w, r)
 		case http.MethodDelete:
 			h.historyDelete.Handle(w, r)
 		default:

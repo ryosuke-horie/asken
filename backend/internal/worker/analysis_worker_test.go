@@ -101,6 +101,10 @@ func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType
 	return uuid.Nil, nil
 }
 
+func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, id uuid.UUID, foods []gemini.NutritionInfo) error {
+	return nil
+}
+
 func TestProcessRequest_Success(t *testing.T) {
 	requestID := uuid.New()
 	imagePath := "/uploads/test.jpg"
