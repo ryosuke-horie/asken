@@ -14,16 +14,44 @@ ios/
 │   │   └── AppEnvironment.swift # 環境設定
 │   ├── Core/
 │   │   ├── Models/             # データモデル
+│   │   │   ├── Auth.swift
+│   │   │   └── Meal.swift
 │   │   ├── Network/            # API通信
+│   │   │   ├── APIClient.swift
+│   │   │   ├── APIEndpoint.swift
+│   │   │   ├── APIError.swift
+│   │   │   └── TokenManager.swift
 │   │   └── Repositories/       # データアクセス
+│   │       ├── AuthRepository.swift
+│   │       └── MealRepository.swift
 │   ├── Features/               # 機能モジュール
 │   │   ├── Auth/               # 認証
+│   │   │   ├── AuthManager.swift
+│   │   │   ├── LoginView.swift
+│   │   │   └── LoginViewModel.swift
 │   │   └── Meals/              # 食事
+│   │       ├── MealsView.swift
+│   │       ├── MealsViewModel.swift
+│   │       ├── MealInputView.swift
+│   │       ├── MealInputViewModel.swift
+│   │       ├── Models/
+│   │       │   └── FoodEditItem.swift
+│   │       ├── ViewModels/
+│   │       │   └── NutritionEditorViewModel.swift
+│   │       └── Views/
+│   │           ├── NutritionEditorView.swift
+│   │           └── FoodItemEditRow.swift
 │   └── Shared/
-│       └── Components/         # 共通コンポーネント
+│       ├── Components/
+│       │   └── NutritionSummaryCard.swift
+│       └── Theme.swift
 └── UchikomiTests/               # テスト
+    ├── Generated/
+    │   └── MockGenerated.swift  # Mockolo生成
     ├── AuthManagerTests.swift
-    └── MealsViewModelTests.swift
+    ├── MealsViewModelTests.swift
+    └── Snapshots/
+        └── NutritionSummaryCardSnapshotTests.swift
 ```
 
 ## アーキテクチャパターン
@@ -35,7 +63,7 @@ View (SwiftUI)
     ↓ @State / @Environment
  ViewModel (@Observable)
     ↓
-Repository
+Repository (Protocol)
     ↓
 APIClient (actor)
     ↓
@@ -82,8 +110,12 @@ struct UchikomiApp: App {
 |:---|:---|
 | MealsViewModel.swift | 食事一覧ロジック |
 | MealInputViewModel.swift | 食事入力ロジック |
+| NutritionEditorViewModel.swift | 栄養素編集ロジック |
 | MealsView.swift | 食事一覧UI |
 | MealInputView.swift | 食事入力UI |
+| NutritionEditorView.swift | 栄養素編集UI |
+| FoodItemEditRow.swift | 食品アイテム行 |
+| FoodEditItem.swift | 編集用食品モデル |
 
 ## Core層
 
@@ -91,8 +123,8 @@ struct UchikomiApp: App {
 
 | ファイル | 内容 |
 |:---|:---|
-| Auth.swift | 認証関連モデル |
-| Meal.swift | 食事・栄養素モデル |
+| Auth.swift | 認証関連モデル (AuthResponse, User) |
+| Meal.swift | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
 
 ### Network (Core/Network/)
 
@@ -101,7 +133,7 @@ struct UchikomiApp: App {
 | APIClient.swift | HTTP通信 (actor) |
 | APIEndpoint.swift | エンドポイント定義 |
 | APIError.swift | エラー定義 |
-| TokenManager.swift | トークン管理 |
+| TokenManager.swift | トークン管理 (Keychain) |
 
 ### Repositories (Core/Repositories/)
 
@@ -110,11 +142,12 @@ struct UchikomiApp: App {
 | AuthRepository.swift | 認証データアクセス |
 | MealRepository.swift | 食事データアクセス |
 
-## 共通コンポーネント (Shared/Components/)
+## 共通コンポーネント (Shared/)
 
 | ファイル | 用途 |
 |:---|:---|
 | NutritionSummaryCard.swift | 栄養素サマリーカード |
+| Theme.swift | アプリテーマ定義 |
 
 ## データモデル
 
@@ -167,9 +200,12 @@ UchikomiApp.swift
     │       └── AuthRepository
     │           └── APIClient
     └── MealsView (認証済み)
-        └── MealsViewModel
-            └── MealRepository
-                └── APIClient
+        ├── MealsViewModel
+        │   └── MealRepository
+        │       └── APIClient
+        └── MealInputView
+            └── MealInputViewModel
+                └── MealRepository
 ```
 
 ## API通信 (APIClient)
@@ -194,6 +230,31 @@ enum APIEndpoint {
     case analysisResult(id: String)
 }
 ```
+
+## テスト構成
+
+### ユニットテスト
+
+| ファイル | テスト対象 |
+|:---|:---|
+| AuthManagerTests.swift | 認証状態管理 |
+| MealsViewModelTests.swift | 食事一覧ロジック |
+
+### スナップショットテスト
+
+| ファイル | テスト対象 |
+|:---|:---|
+| NutritionSummaryCardSnapshotTests.swift | 栄養素カードUI |
+
+### モック生成
+
+Mockoloを使用してプロトコルからモックを自動生成:
+
+```bash
+task ios:generate-mocks
+```
+
+生成先: `UchikomiTests/Generated/MockGenerated.swift`
 
 ## 関連コードマップ
 
