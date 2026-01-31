@@ -23,6 +23,12 @@ dependabotは`.github/dependabot.yml`で設定されており、週次（月曜�
 | security | jwt, crypto |
 | database | pq |
 
+**swift (iOS)**
+| グループ | パッケージ |
+|:---|:---|
+| testing | swift-snapshot-testing, swift-custom-dump, xctest-dynamic-overlay |
+| swift-ecosystem | swiftlang/* |
+
 ### ライブラリ追加時の対応
 
 新しいライブラリを追加した場合、以下を確認すること：
