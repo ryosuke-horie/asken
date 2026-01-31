@@ -164,14 +164,24 @@ private struct MealTypeSection: View {
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
                 } else {
-                    // 食材名のサマリーを表示
-                    let foodNames = meals.flatMap { $0.foods.map { $0.name } }
-                    let summary = foodNames.prefix(3).joined(separator: "、")
-                    let suffix = foodNames.count > 3 ? " 他\(foodNames.count - 3)品" : ""
-                    Text(summary + suffix)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    let allFoods = meals.flatMap { $0.foods }
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
+                            HStack {
+                                Text(food.name)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Text("\(Int(food.caloriesKcal)) kcal")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
                 }
             }
             .padding()

@@ -114,4 +114,72 @@ import Testing
         #expect(viewModel.dailyMeals == nil)
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func goToTodayで今日の日付に戻るべき() async throws {
+        let mockRepo = createMockRepository()
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        if let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) {
+            viewModel.selectedDate = threeDaysAgo
+        }
+
+        viewModel.goToToday()
+
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        #expect(viewModel.isToday == true)
+    }
+
+    @Test func 履歴削除が成功した場合食事データがリロードされるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.deleteHistoryHandler = { _ in }
+        mockRepo.getDailyMealsHandler = { _ in
+            DailyMeals(
+                date: "2024-01-15",
+                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+                dailyTotal: DailyTotal(
+                    totalCalories: 0,
+                    totalProtein: 0,
+                    totalFat: 0,
+                    totalCarbohydrates: 0
+                )
+            )
+        }
+
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        await viewModel.deleteHistory(id: "test-id")
+
+        #expect(mockRepo.deleteHistoryCallCount == 1)
+        #expect(mockRepo.getDailyMealsCallCount == 1)
+        #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.isDeleting == false)
+    }
+
+    @Test func 履歴削除が失敗した場合エラーメッセージが設定されるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.deleteHistoryHandler = { _ in
+            throw APIError.networkError(NSError(domain: "", code: -1))
+        }
+        mockRepo.getDailyMealsHandler = { _ in
+            DailyMeals(
+                date: "2024-01-15",
+                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+                dailyTotal: DailyTotal(
+                    totalCalories: 0,
+                    totalProtein: 0,
+                    totalFat: 0,
+                    totalCarbohydrates: 0
+                )
+            )
+        }
+
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        await viewModel.deleteHistory(id: "test-id")
+
+        #expect(mockRepo.deleteHistoryCallCount == 1)
+        #expect(viewModel.errorMessage != nil)
+        #expect(viewModel.isDeleting == false)
+    }
 }

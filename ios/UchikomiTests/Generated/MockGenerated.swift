@@ -8,7 +8,7 @@ import Foundation
 @testable import Uchikomi
 
 
-class AuthRepositoryProtocolMock: AuthRepositoryProtocol {
+final class AuthRepositoryProtocolMock: AuthRepositoryProtocol {
     init() { }
 
 
@@ -33,7 +33,7 @@ class AuthRepositoryProtocolMock: AuthRepositoryProtocol {
     }
 }
 
-class MealRepositoryProtocolMock: MealRepositoryProtocol {
+final class MealRepositoryProtocolMock: MealRepositoryProtocol {
     init() { }
 
 
@@ -75,6 +75,36 @@ class MealRepositoryProtocolMock: MealRepositoryProtocol {
             return try await getAnalysisResultHandler(id)
         }
         fatalError("getAnalysisResultHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var getHistoryDetailCallCount = 0
+    var getHistoryDetailHandler: ((String) async throws -> HistoryDetail)?
+    func getHistoryDetail(id: String) async throws -> HistoryDetail {
+        getHistoryDetailCallCount += 1
+        if let getHistoryDetailHandler = getHistoryDetailHandler {
+            return try await getHistoryDetailHandler(id)
+        }
+        fatalError("getHistoryDetailHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var updateHistoryCallCount = 0
+    var updateHistoryHandler: ((String, [UpdateFoodItem]) async throws -> HistoryDetail)?
+    func updateHistory(historyId: String, foods: [UpdateFoodItem]) async throws -> HistoryDetail {
+        updateHistoryCallCount += 1
+        if let updateHistoryHandler = updateHistoryHandler {
+            return try await updateHistoryHandler(historyId, foods)
+        }
+        fatalError("updateHistoryHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var deleteHistoryCallCount = 0
+    var deleteHistoryHandler: ((String) async throws -> ())?
+    func deleteHistory(historyId: String) async throws {
+        deleteHistoryCallCount += 1
+        if let deleteHistoryHandler = deleteHistoryHandler {
+            try await deleteHistoryHandler(historyId)
+        }
+        
     }
 }
 
