@@ -14,7 +14,6 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@v4
@@ -25,57 +24,10 @@ jobs:
         id: filter
         with:
           filters: |
-            frontend:
-              - 'frontend/**'
-              - '.github/workflows/ci.yml'
-              - 'Taskfile.yml'
             backend:
               - 'backend/**'
               - '.github/workflows/ci.yml'
               - 'Taskfile.yml'
-
-  frontend:
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.23'
-
-      - name: Install Task
-        run: |
-          go install github.com/go-task/task/v3/cmd/task@v3.39.2
-          echo "$HOME/go/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: task frontend:install
-
-      - name: Lint
-        run: task frontend:lint
-
-      - name: Check unused code
-        run: task frontend:knip
-
-      - name: Check unused dependencies
-        run: task frontend:depcheck
-
-      - name: Run tests
-        run: task frontend:test
-
-      - name: Build
-        run: task frontend:build
 
   backend:
     needs: changes
