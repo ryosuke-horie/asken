@@ -1,0 +1,44 @@
+コードマップ差分レポート
+========================
+実行日時: 2026-01-31
+
+## 変更概要
+
+今回のコードマップ更新は、iOSアプリから体重管理機能とウィジェット機能を削除した
+リファクタリング（EDG-535）に伴うものです。
+
+## ファイル別変更率
+
+| ファイル | 変更前行数 | 変更後行数 | 差分率 |
+|:---------|:-----------|:-----------|:-------|
+| ios.md | 259行 | 163行 | -37.1% |
+| architecture.md | 135行 | 132行 | -2.2% |
+| backend.md | 変更なし | - | 0% |
+| frontend.md | 変更なし | - | 0% |
+| data.md | 変更なし | - | 0% |
+
+## ios.md の主な変更
+
+### 削除されたセクション
+- Features/Weight/（体重管理機能）
+- UchikomiWidget/（ウィジェット）
+- Core/Models/Weight.swift
+- Core/Network/WidgetDataService.swift
+- Core/Repositories/WeightRepository.swift
+
+### 更新されたセクション
+- ディレクトリ構造（Weight、Widget削除）
+- タブ構成 → 画面構成に変更（タブなし）
+- 依存関係図（WeightView、Widget削除）
+- エンドポイント（weightRecords削除）
+
+## architecture.md の主な変更
+
+- システム構成図からiOS Widgetを削除
+- 技術スタックからWidgetKitを削除
+- ディレクトリ構造からUchikomiWidgetを削除
+
+## 関連PR
+
+- EDG-535: iOSアプリを食事記録機能に絞る
+- https://github.com/ryosuke-horie/utikomi/pull/76
