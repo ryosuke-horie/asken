@@ -1,25 +1,22 @@
 # ADR-002: サーバレスインフラへの移行
 
-## ステータス
-
-承認済み
-
 ## コンテキスト
 
-現在のウチコミは以下の構成で運用されている：
+ウチコミは以下の構成で運用されていた：
 
-- **ホスティング**: exe.dev（Ubuntu VM）
-- **バックエンド**: Go（:8080）
-- **フロントエンド**: Next.js（:3000）
-- **データベース**: PostgreSQL
-- **AI**: Gemini CLI（gemini-3-flash-preview）
+- ホスティング: exe.dev（Ubuntu VM）
+- バックエンド: Go（:8080）
+- データベース: PostgreSQL
+- AI: Gemini CLI（gemini-3-flash-preview）
+
+（Next.jsフロントエンドは廃止済み）
 
 以下の課題がある：
 
-1. **コスト**: VMは常時稼働で課金される
-2. **運用負荷**: OS/ミドルウェアの管理が必要
-3. **スケーラビリティ**: 手動スケーリングが必要
-4. **iOSアプリ対応**: iOSからAPIへのアクセスが主要ユースケースになる
+1. コスト: VMは常時稼働で課金される
+2. 運用負荷: OS/ミドルウェアの管理が必要
+3. スケーラビリティ: 手動スケーリングが必要
+4. iOSアプリ対応: iOSからAPIへのアクセスが主要ユースケースになる
 
 ## 決定
 
@@ -27,12 +24,12 @@
 
 | コンポーネント | 現行 | 移行先 |
 |:---|:---|:---|
-| クライアント | Next.js + iOS | **iOSのみ** |
-| バックエンドAPI | exe.dev VM (Go) | **Cloud Run (Go)** |
-| データベース | PostgreSQL | **Firestore** |
-| AI | Gemini CLI | **Gemini API (gemini-2.0-flash)** |
-| 画像ストレージ | ローカルファイル | **Cloud Storage** |
-| 認証 | 自前JWT | **Firebase Authentication** |
+| クライアント | iOS | iOS |
+| バックエンドAPI | exe.dev VM (Go) | Cloud Run (Go) |
+| データベース | PostgreSQL | Firestore |
+| AI | Gemini CLI | Gemini API (gemini-2.0-flash) |
+| 画像ストレージ | ローカルファイル | Cloud Storage |
+| 認証 | 自前JWT | Firebase Authentication |
 
 ### アーキテクチャ図
 
@@ -154,7 +151,7 @@ service cloud.firestore {
 
 ### コスト見積もり
 
-**想定使用量（個人利用）:**
+想定使用量（個人利用）:
 - API呼び出し: 50リクエスト/日
 - Firestore読み取り: 200回/日
 - Firestore書き込み: 50回/日
@@ -169,7 +166,7 @@ service cloud.firestore {
 | Cloud Storage | 100MB | 5GB | $0.020/GB/月 |
 | Gemini API | 300リクエスト/月 | 1分15リクエスト | 無料枠内で運用 |
 
-**想定月額コスト: $0**（すべて無料枠内）
+想定月額コスト: $0（すべて無料枠内）
 
 ## 移行計画
 
@@ -203,9 +200,8 @@ service cloud.firestore {
 
 ### フェーズ4: 廃止作業
 
-1. Next.jsフロントエンドの削除
-2. exe.dev VMの停止
-3. PostgreSQLデータのバックアップ・廃止
+1. exe.dev VMの停止
+2. PostgreSQLデータのバックアップ・廃止
 
 ### ロールバック戦略
 
@@ -216,7 +212,7 @@ service cloud.firestore {
 3. Firestoreのデータは一時保持
 4. 問題解決後に再度移行を実施
 
-**並行稼働期間**: フェーズ3完了後、1週間は両環境を維持
+並行稼働期間: フェーズ3完了後、1週間は両環境を維持
 
 ## 理由
 
@@ -238,7 +234,7 @@ service cloud.firestore {
   - 複雑なJOINが不要
   - 日付ベースのシンプルなクエリ
 
-**Firestoreの注意点:**
+Firestoreの注意点:
 - 複雑なクエリ（複数フィールドでのOR条件）に制限がある
 - 複合インデックスの事前定義が必要
 - PostgreSQLからのデータ移行にスクリプトが必要
@@ -264,32 +260,25 @@ service cloud.firestore {
 - 認証実装の工数削減
 - 無料枠で十分（月5万MAU）
 
-### Next.jsを廃止する理由
-
-- iOSアプリが主要なクライアントになる
-- Web版の利用頻度が低い
-- 運用コスト・複雑性の削減
-
 ## 結果
 
 ### 導入が必要なもの
 
-**GCPサービス:**
+GCPサービス:
 - Cloud Run
 - Firestore
 - Cloud Storage
 - Gemini API
 
-**Firebaseサービス:**
+Firebaseサービス:
 - Firebase Authentication
 - Firebase Admin SDK (Go)
 
-**iOSライブラリ:**
+iOSライブラリ:
 - Firebase iOS SDK (Auth)
 
 ### 削除対象
 
-- `frontend/` ディレクトリ全体
 - exe.dev VM
 - PostgreSQL関連のマイグレーション・コード
 
@@ -304,7 +293,6 @@ service cloud.firestore {
 
 ### テスト戦略への影響
 
-- `frontend/e2e/` のPlaywrightテストは廃止
 - iOSアプリのUIテスト（XCUITest）がE2Eテストの役割を担う
 - ADR-001で定義したiOSテスト戦略が主要なテスト戦略となる
 - バックエンドAPIの統合テストは維持（Firestoreエミュレータ使用）
