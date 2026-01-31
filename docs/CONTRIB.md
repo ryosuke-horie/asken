@@ -9,10 +9,11 @@
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
 | Go | 1.23以上 | バックエンド開発 |
-| Node.js | 18以上 | フロントエンド開発 |
 | Docker / Docker Compose | 最新 | PostgreSQL起動 |
 | Task | 3.x | タスクランナー |
 | golangci-lint | 最新 | Goリント |
+| Xcode | 16以上 | iOS開発 |
+| Mockolo | 最新 | iOSモック生成 |
 
 ## 環境セットアップ
 
@@ -28,9 +29,6 @@ cd uchikomi
 ```bash
 # Go依存関係
 task setup
-
-# フロントエンド依存関係
-task frontend:install
 ```
 
 ### 3. 環境変数の設定
@@ -43,14 +41,6 @@ task frontend:install
 |:---|:---|:---|
 | DATABASE_URL | PostgreSQL接続文字列 | `postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable` |
 
-#### フロントエンド
-
-`frontend/.env.local`を作成:
-
-| 環境変数 | 説明 | 例 |
-|:---|:---|:---|
-| NEXT_PUBLIC_API_URL | バックエンドAPIのURL | `http://localhost:8080`（ローカル）<br>`https://utikomi.exe.xyz:8080`（本番） |
-
 ## 開発ワークフロー
 
 ### 日常の開発サイクル
@@ -62,14 +52,8 @@ task db-up
 # 2. テストデータを投入（必要に応じて）
 task db-seed
 
-# 3. バックエンドサーバーを起動（ターミナル1）
+# 3. バックエンドサーバーを起動
 task run
-
-# 4. フロントエンドサーバーを起動（ターミナル2）
-task frontend:dev
-
-# 5. ブラウザでアクセス
-open http://localhost:3000
 ```
 
 ### コード変更後の確認
@@ -79,8 +63,8 @@ open http://localhost:3000
 task lint
 task test
 
-# フロントエンド
-task frontend:ci
+# iOS
+task ios:test
 ```
 
 ### 開発終了時
@@ -109,21 +93,6 @@ task db-down
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
 
-### フロントエンド
-
-| コマンド | 説明 |
-|:---|:---|
-| `task frontend:install` | npm依存関係をインストール |
-| `task frontend:lint` | ESLintを実行 |
-| `task frontend:knip` | 未使用コードをチェック |
-| `task frontend:depcheck` | 未使用依存をチェック |
-| `task frontend:test` | Vitestを実行 |
-| `task frontend:build` | 本番ビルド |
-| `task frontend:dev` | 開発サーバーを起動 |
-| `task frontend:e2e` | Playwrightテストを実行 |
-| `task frontend:e2e:ui` | PlaywrightをUIモードで実行 |
-| `task frontend:ci` | CI用の全チェックを実行 |
-
 ### データベース
 
 | コマンド | 説明 |
@@ -133,33 +102,18 @@ task db-down
 | `task db-seed` | テストデータを投入 |
 | `task db-clean` | DBをリセット（ボリューム削除+再起動） |
 
+### iOS
+
+| コマンド | 説明 |
+|:---|:---|
+| `task ios:generate-mocks` | Mockoloでモックを生成 |
+| `task ios:test` | iOSのテストを実行 |
+
 ### デプロイ
 
 | コマンド | 説明 |
 |:---|:---|
 | `task deploy` | 本番デプロイ（本番サーバーでのみ実行） |
-
-## フロントエンドnpmスクリプト
-
-`frontend/package.json`で定義:
-
-| スクリプト | 説明 |
-|:---|:---|
-| `npm run dev` | 開発サーバーを起動 |
-| `npm run build` | 本番ビルド |
-| `npm start` | 本番サーバーを起動 |
-| `npm run lint` | ESLintを実行 |
-| `npm run lint:fix` | ESLintで自動修正 |
-| `npm run format` | Prettierでフォーマット |
-| `npm run format:check` | フォーマットをチェック |
-| `npm run typecheck` | TypeScriptの型チェック |
-| `npm test` | Vitestを実行 |
-| `npm run test:watch` | Vitestをウォッチモードで実行 |
-| `npm run test:coverage` | カバレッジレポートを生成 |
-| `npm run e2e` | Playwrightテストを実行 |
-| `npm run e2e:ui` | PlaywrightをUIモードで実行 |
-| `npm run knip` | 未使用コードをチェック |
-| `npm run depcheck` | 未使用依存をチェック |
 
 ## テスト手順
 
@@ -176,32 +130,15 @@ cd backend && go test ./... -v
 cd backend && go test ./... -cover
 ```
 
-### フロントエンドテスト
+### iOSテスト
 
 ```bash
 # ユニットテスト
-task frontend:test
+task ios:test
 
-# ウォッチモード（開発中に便利）
-cd frontend && npm run test:watch
-
-# カバレッジレポート
-cd frontend && npm run test:coverage
+# モック再生成（Protocolを変更した場合）
+task ios:generate-mocks
 ```
-
-### E2Eテスト
-
-```bash
-# ヘッドレスモードで実行
-task frontend:e2e
-
-# UIモードで実行（デバッグ用）
-task frontend:e2e:ui
-```
-
-E2Eテストの前提:
-- バックエンドサーバーが起動している（`task run`）
-- DBにテストデータが投入されている（`task db-seed`）
 
 テストユーザー:
 - メール: `test@example.com`
@@ -227,7 +164,7 @@ Conventional Commits形式:
 例:
 feat: 食事画像アップロード機能を追加
 fix: 栄養素計算のバリデーションエラーを修正
-refactor: NutritionDisplayコンポーネントを分割
+refactor: AuthManagerのリファクタリング
 ```
 
 ### 作業フロー
@@ -254,4 +191,5 @@ gh pr create --title "タイトル" --body "Fixes EDG-305"
 - [README.md](../README.md) - プロジェクト概要
 - [DEPLOY.md](../DEPLOY.md) - デプロイ手順
 - [RUNBOOK.md](./RUNBOOK.md) - 運用手順書
+- [ios/README.md](../ios/README.md) - iOSアプリ開発ガイド
 - [.claude/rules/](../.claude/rules/) - 詳細規約
