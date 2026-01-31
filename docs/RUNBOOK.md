@@ -10,14 +10,13 @@
 |:---|:---|:---|:---|
 | PostgreSQL | Docker Compose + systemd | 5432 | データベース |
 | Backend (Go) | systemd | 8080 | APIサーバー |
-| Frontend (Next.js) | systemd | 3000 | Webアプリケーション |
 
 ### URL
 
-| 環境 | フロントエンド | バックエンドAPI |
-|:---|:---|:---|
-| 本番 | https://utikomi.exe.xyz:3000 | https://utikomi.exe.xyz:8080 |
-| ローカル | http://localhost:3000 | http://localhost:8080 |
+| 環境 | バックエンドAPI |
+|:---|:---|
+| 本番 | https://utikomi.exe.xyz:8080 |
+| ローカル | http://localhost:8080 |
 
 ## デプロイ手順
 
@@ -39,7 +38,6 @@ cd /home/exedev/uchikomi
 - PostgreSQLの稼働確認（停止中なら起動）
 - DBマイグレーションの実行（golang-migrate）
 - バックエンドサービスの再起動
-- フロントエンドサービスの再起動
 - 各サービスの状態表示
 
 ### 手動デプロイ
@@ -58,11 +56,9 @@ migrate -path backend/database/migrations \
 
 # サービス再起動
 sudo systemctl restart uchikomi-backend
-sudo systemctl restart uchikomi-frontend
 
 # 状態確認
 systemctl status uchikomi-backend
-systemctl status uchikomi-frontend
 ```
 
 ## サービス管理コマンド
@@ -73,10 +69,9 @@ systemctl status uchikomi-frontend
 # 個別サービス
 systemctl status docker-postgres
 systemctl status uchikomi-backend
-systemctl status uchikomi-frontend
 
 # 全サービス一括
-systemctl status docker-postgres uchikomi-backend uchikomi-frontend
+systemctl status docker-postgres uchikomi-backend
 ```
 
 ### ログ確認
@@ -84,11 +79,9 @@ systemctl status docker-postgres uchikomi-backend uchikomi-frontend
 ```bash
 # リアルタイムログ
 journalctl -u uchikomi-backend -f
-journalctl -u uchikomi-frontend -f
 
 # 直近のログ（100行）
 journalctl -u uchikomi-backend -n 100
-journalctl -u uchikomi-frontend -n 100
 
 # 特定時間以降のログ
 journalctl -u uchikomi-backend --since "2026-01-30 10:00:00"
@@ -103,16 +96,13 @@ journalctl -u uchikomi-backend -p err
 # 全サービス起動
 sudo systemctl start docker-postgres
 sudo systemctl start uchikomi-backend
-sudo systemctl start uchikomi-frontend
 
 # 全サービス停止
-sudo systemctl stop uchikomi-frontend
 sudo systemctl stop uchikomi-backend
 sudo systemctl stop docker-postgres
 
 # 再起動
 sudo systemctl restart uchikomi-backend
-sudo systemctl restart uchikomi-frontend
 ```
 
 ## 監視とアラート
@@ -122,9 +112,6 @@ sudo systemctl restart uchikomi-frontend
 ```bash
 # バックエンドAPI
 curl -s http://localhost:8080/health || echo "Backend is down"
-
-# フロントエンド
-curl -s http://localhost:3000 || echo "Frontend is down"
 
 # PostgreSQL
 docker exec uchikomi-postgres pg_isready -U uchikomi || echo "Database is down"
@@ -152,9 +139,6 @@ docker stats --no-stream
 ```bash
 # バックエンドエラー
 journalctl -u uchikomi-backend -p err --since "1 hour ago"
-
-# フロントエンドエラー
-journalctl -u uchikomi-frontend -p err --since "1 hour ago"
 ```
 
 ## よくある問題と修正
@@ -184,31 +168,7 @@ sleep 5
 docker ps
 ```
 
-### 3. フロントエンドのビルドが失敗する
-
-```bash
-# 手動でビルドを実行してエラーを確認
-cd /home/exedev/uchikomi/frontend
-npm install
-npm run build
-```
-
-### 4. API接続エラー（「サーバーに接続できません」）
-
-1. 環境変数の確認:
-```bash
-grep NEXT_PUBLIC_API_URL /home/exedev/uchikomi/frontend/uchikomi-frontend.service
-```
-
-2. CORS設定の確認（`backend/cmd/server/main.go`でオリジンが許可されているか）
-
-3. サービス再起動:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart uchikomi-frontend
-```
-
-### 5. マイグレーションエラー
+### 3. マイグレーションエラー
 
 ```bash
 # 現在のバージョンを確認
@@ -222,7 +182,7 @@ migrate -path backend/database/migrations \
         force <version>
 ```
 
-### 6. ディスク容量不足
+### 4. ディスク容量不足
 
 ```bash
 # Dockerの不要イメージ削除
@@ -247,7 +207,6 @@ git checkout <commit-hash>
 
 # サービス再起動
 sudo systemctl restart uchikomi-backend
-sudo systemctl restart uchikomi-frontend
 ```
 
 ### データベースのロールバック
@@ -279,11 +238,9 @@ migrate -path backend/database/migrations \
 
 # 3. サービス再起動
 sudo systemctl restart uchikomi-backend
-sudo systemctl restart uchikomi-frontend
 
 # 4. 動作確認
 curl -s http://localhost:8080/health
-curl -s http://localhost:3000
 ```
 
 ## 初回セットアップ

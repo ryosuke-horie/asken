@@ -1,44 +1,59 @@
-コードマップ差分レポート
-========================
+# コードマップ更新レポート
+
 実行日時: 2026-01-31
+実行者: Claude Code
 
-## 変更概要
+## 変更サマリー
 
-今回のコードマップ更新は、iOSアプリから体重管理機能とウィジェット機能を削除した
-リファクタリング（EDG-535）に伴うものです。
+| ファイル | 変更内容 | 差分率 |
+|:---|:---|:---|
+| architecture.md | フロントエンド参照を削除、iOSにフォーカス | -25% |
+| backend.md | 日付更新のみ | <1% |
+| data.md | 日付更新のみ | <1% |
+| frontend.md | 削除（ソースコード削除に伴い） | -100% |
+| ios.md | ファイル構成を詳細化、テスト構成追加 | +75% |
 
-## ファイル別変更率
+## 詳細変更
 
-| ファイル | 変更前行数 | 変更後行数 | 差分率 |
-|:---------|:-----------|:-----------|:-------|
-| ios.md | 259行 | 163行 | -37.1% |
-| architecture.md | 135行 | 132行 | -2.2% |
-| backend.md | 変更なし | - | 0% |
-| frontend.md | 変更なし | - | 0% |
-| data.md | 変更なし | - | 0% |
+### architecture.md
+- 技術スタックからNext.jsを削除
+- システム構成図からフロントエンドを削除
+- ディレクトリ構造からfrontend/を削除
+- 関連コードマップからフロントエンドを削除
 
-## ios.md の主な変更
+### frontend.md
+- 削除: フロントエンドソースコードが削除されたため
 
-### 削除されたセクション
-- Features/Weight/（体重管理機能）
-- UchikomiWidget/（ウィジェット）
-- Core/Models/Weight.swift
-- Core/Network/WidgetDataService.swift
-- Core/Repositories/WeightRepository.swift
+### ios.md
+- ディレクトリ構造を現在のファイル構成に更新
+- Features/Meals/配下の詳細構成を追加
+  - ViewModels/NutritionEditorViewModel.swift
+  - Views/NutritionEditorView.swift, FoodItemEditRow.swift
+  - Models/FoodEditItem.swift
+- Shared/Theme.swiftを追加
+- テスト構成セクションを追加
+  - スナップショットテスト
+  - モック生成コマンド
 
-### 更新されたセクション
-- ディレクトリ構造（Weight、Widget削除）
-- タブ構成 → 画面構成に変更（タブなし）
-- 依存関係図（WeightView、Widget削除）
-- エンドポイント（weightRecords削除）
+## 差分統計
 
-## architecture.md の主な変更
+```
+ docs/CODEMAPS/architecture.md |  33 +++----
+ docs/CODEMAPS/backend.md      |   2 +-
+ docs/CODEMAPS/data.md         |   2 +-
+ docs/CODEMAPS/frontend.md     | 201 ------------------------------------------
+ docs/CODEMAPS/ios.md          |  81 ++++++++++++++---
+ 5 files changed, 84 insertions(+), 235 deletions(-)
+```
 
-- システム構成図からiOS Widgetを削除
-- 技術スタックからWidgetKitを削除
-- ディレクトリ構造からUchikomiWidgetを削除
+## 全体差分率
 
-## 関連PR
+削除行: 235行
+追加行: 84行
+総差分率: 約64%（フロントエンド削除を含む）
 
-- EDG-535: iOSアプリを食事記録機能に絞る
-- https://github.com/ryosuke-horie/utikomi/pull/76
+## 注意事項
+
+- フロントエンド（Next.js）が削除されたため、関連ドキュメントを更新
+- iOSアプリが主要なクライアントとなる
+- バックエンドAPIの仕様に変更なし
