@@ -1,0 +1,48 @@
+# =============================================================================
+# Terraform Variables for dev environment
+# =============================================================================
+# このファイルをコピーして terraform.tfvars を作成してください
+# cp terraform.tfvars.example terraform.tfvars
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# GCP設定
+# -----------------------------------------------------------------------------
+
+gcp_project_id = "utikomi-dev"
+gcp_region     = "asia-northeast1"
+
+# -----------------------------------------------------------------------------
+# Firestore設定
+# -----------------------------------------------------------------------------
+
+firestore_location          = "asia-northeast1"
+firestore_delete_protection = false
+
+# -----------------------------------------------------------------------------
+# Cloud Storage設定
+# -----------------------------------------------------------------------------
+
+storage_location              = "ASIA-NORTHEAST1"
+storage_versioning            = false
+storage_lifecycle_delete_days = 90
+storage_cors_origins          = ["*"]
+storage_force_destroy         = true
+
+# -----------------------------------------------------------------------------
+# GitHub設定
+# -----------------------------------------------------------------------------
+
+github_repository = "ryosuke-horie/uchikomi"
+
+# GitHub Personal Access Token
+# github_token = "ghp_xxxx..."
+
+# GCPサービスアカウントキー（JSON形式）
+# gcp_sa_key = <<EOF
+# {
+#   "type": "service_account",
+#   "project_id": "utikomi-dev",
+#   ...
+# }
+# EOF
