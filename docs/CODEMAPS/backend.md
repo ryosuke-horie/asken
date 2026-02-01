@@ -59,6 +59,7 @@ Handler → Service → Repository → PostgreSQL
 |:---|:---|:---|:---|
 | GET | /api/history | HistoryHandler | 履歴一覧 |
 | GET | /api/history/{id} | HistoryHandler | 履歴詳細 |
+| PUT | /api/history/{id} | HistoryHandler | 履歴更新（食材編集） |
 | DELETE | /api/history/{id} | HistoryDeleteHandler | 履歴削除 |
 
 ### 体重管理 (認証必要)
@@ -148,7 +149,7 @@ Handler → Service → Repository → PostgreSQL
 
 | ファイル | 責務 |
 |:---|:---|
-| analysis_repository.go | 分析リクエスト・結果 |
+| analysis_repository.go | 分析リクエスト・結果（UpdateResult含む） |
 | user_repository.go | ユーザー |
 | weight_repository.go | 体重記録・目標 |
 | mylist_repository.go | マイリスト |
