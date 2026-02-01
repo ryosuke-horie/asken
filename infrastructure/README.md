@@ -76,7 +76,7 @@ cp terraform.tfvars.example terraform.tfvars
 
 ```hcl
 gcp_project_id    = "utikomi-dev"
-github_repository = "ryosuke-horie/uchikomi"
+github_repository = "ryosuke-horie/utikomi"
 github_token      = "ghp_xxxx..."  # 手順5で取得したトークン
 gcp_sa_key        = <<EOF
 {
