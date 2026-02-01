@@ -71,3 +71,23 @@ frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+
+# Terraform
+infrastructure/**/*.tfvars
+infrastructure/**/*.tfvars.json
+!infrastructure/**/*.tfvars.example
+infrastructure/**/.terraform/
+infrastructure/**/*.tfstate
+infrastructure/**/*.tfstate.*
+infrastructure/**/.terraform.lock.hcl
+infrastructure/**/crash.log
+infrastructure/**/crash.*.log
+infrastructure/**/*.tfplan
+infrastructure/**/override.tf
+infrastructure/**/override.tf.json
+infrastructure/**/*_override.tf
+infrastructure/**/*_override.tf.json
+
+# GCP credentials
+**/sa-key.json
+**/service-account*.json
