@@ -1,6 +1,8 @@
 import Foundation
 import Security
 
+// MARK: - TokenManager
+
 actor TokenManager {
     static let shared = TokenManager()
 
@@ -16,7 +18,7 @@ actor TokenManager {
         let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: accountName
+            kSecAttrAccount as String: accountName,
         ]
         SecItemDelete(deleteQuery as CFDictionary)
 
@@ -26,7 +28,7 @@ actor TokenManager {
             kSecAttrService as String: serviceName,
             kSecAttrAccount as String: accountName,
             kSecValueData as String: tokenData,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
 
         let status = SecItemAdd(addQuery as CFDictionary, nil)
@@ -41,7 +43,7 @@ actor TokenManager {
             kSecAttrService as String: serviceName,
             kSecAttrAccount as String: accountName,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
 
         var result: AnyObject?
@@ -60,11 +62,13 @@ actor TokenManager {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceName,
-            kSecAttrAccount as String: accountName
+            kSecAttrAccount as String: accountName,
         ]
         SecItemDelete(query as CFDictionary)
     }
 }
+
+// MARK: - TokenError
 
 enum TokenError: LocalizedError {
     case saveFailed(OSStatus)
@@ -72,10 +76,10 @@ enum TokenError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .saveFailed(let status):
-            return "トークンの保存に失敗しました (status: \(status))"
+        case let .saveFailed(status):
+            "トークンの保存に失敗しました (status: \(status))"
         case .notFound:
-            return "トークンが見つかりません"
+            "トークンが見つかりません"
         }
     }
 }

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - NutritionSummaryCard
+
 struct NutritionSummaryCard: View {
     let calories: Double
     let protein: Double
@@ -54,6 +56,8 @@ struct NutritionSummaryCard: View {
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }
+
+// MARK: - MacroItem
 
 private struct MacroItem: View {
     let name: String

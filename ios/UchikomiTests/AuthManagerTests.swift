@@ -1,14 +1,16 @@
 import Testing
 @testable import Uchikomi
 
-@Suite struct AuthManagerTests {
-
-    @Test func 初期状態で認証されていないべき() async {
+@Suite
+struct AuthManagerTests {
+    @Test
+    func 初期状態で認証されていないべき() {
         let authManager = AuthManager(repository: AuthRepositoryProtocolMock())
         #expect(authManager.isAuthenticated == false)
     }
 
-    @Test func ログイン成功時に認証状態がtrueになるべき() async throws {
+    @Test
+    func ログイン成功時に認証状態がtrueになるべき() async throws {
         let mockRepo = AuthRepositoryProtocolMock()
         mockRepo.loginHandler = { _, _ in
             AuthResponse(
@@ -27,7 +29,8 @@ import Testing
         #expect(authManager.currentUser?.email == "test@example.com")
     }
 
-    @Test func ログイン失敗時に認証状態がfalseのままであるべき() async {
+    @Test
+    func ログイン失敗時に認証状態がfalseのままであるべき() async {
         let mockRepo = AuthRepositoryProtocolMock()
         mockRepo.loginHandler = { _, _ in
             throw APIError.unauthorized

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - MealsView
+
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
@@ -91,7 +93,7 @@ struct MealsView: View {
     }
 }
 
-// MARK: - Subviews
+// MARK: - DateNavigationBar
 
 private struct DateNavigationBar: View {
     let formattedDate: String
@@ -133,6 +135,8 @@ private struct DateNavigationBar: View {
     }
 }
 
+// MARK: - MealTypeSection
+
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
@@ -164,7 +168,7 @@ private struct MealTypeSection: View {
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
                 } else {
-                    let allFoods = meals.flatMap { $0.foods }
+                    let allFoods = meals.flatMap(\.foods)
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
                             HStack {
@@ -191,6 +195,8 @@ private struct MealTypeSection: View {
         .buttonStyle(.plain)
     }
 }
+
+// MARK: - ErrorView
 
 private struct ErrorView: View {
     let message: String

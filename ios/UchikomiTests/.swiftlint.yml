@@ -1,0 +1,7 @@
+# SwiftLint Configuration for UchikomiTests
+# テストファイルでは日本語関数名を許可するため、identifier_name を無効化
+
+disabled_rules:
+  - identifier_name
+  - force_unwrapping
+  - implicitly_unwrapped_optional

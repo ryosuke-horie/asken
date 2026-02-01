@@ -15,12 +15,12 @@ enum APIError: LocalizedError {
         switch self {
         case .invalidURL:
             return "無効なURLです"
-        case .networkError(let error):
+        case let .networkError(error):
             return "ネットワークエラー: \(error.localizedDescription)"
         case .invalidResponse:
             return "無効なレスポンスです"
-        case .httpError(let statusCode, let message):
-            if let message = message {
+        case let .httpError(statusCode, message):
+            if let message {
                 return message
             }
             return "HTTPエラー: \(statusCode)"
@@ -32,7 +32,7 @@ enum APIError: LocalizedError {
             return "認証が必要です"
         case .notFound:
             return "データが見つかりません"
-        case .serverError(let message):
+        case let .serverError(message):
             return "サーバーエラー: \(message)"
         }
     }

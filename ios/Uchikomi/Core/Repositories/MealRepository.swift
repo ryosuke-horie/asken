@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - MealRepositoryProtocol
+
 /// @mockable
 protocol MealRepositoryProtocol {
     func getDailyMeals(date: Date) async throws -> DailyMeals
@@ -11,6 +13,8 @@ protocol MealRepositoryProtocol {
     func deleteHistory(historyId: String) async throws
 }
 
+// MARK: - UpdateFoodItem
+
 struct UpdateFoodItem: Encodable {
     let name: String
     let estimatedAmount: String
@@ -20,9 +24,13 @@ struct UpdateFoodItem: Encodable {
     let carbohydratesG: Double
 }
 
+// MARK: - UpdateHistoryRequest
+
 struct UpdateHistoryRequest: Encodable {
     let foods: [UpdateFoodItem]
 }
+
+// MARK: - MealRepository
 
 final class MealRepository: MealRepositoryProtocol {
     private let apiClient = APIClient.shared
@@ -44,22 +52,22 @@ final class MealRepository: MealRepositoryProtocol {
             filename: filename,
             additionalFields: [
                 "meal_type": mealType.rawValue,
-                "meal_date": dateFormatter.string(from: mealDate)
+                "meal_date": dateFormatter.string(from: mealDate),
             ]
         )
         return response.id
     }
 
     func checkAnalysisStatus(id: String) async throws -> AnalysisStatusResponse {
-        return try await apiClient.request(endpoint: .analysisStatus(id: id))
+        try await apiClient.request(endpoint: .analysisStatus(id: id))
     }
 
     func getAnalysisResult(id: String) async throws -> AnalysisResultResponse {
-        return try await apiClient.request(endpoint: .analysisResult(id: id))
+        try await apiClient.request(endpoint: .analysisResult(id: id))
     }
 
     func getHistoryDetail(id: String) async throws -> HistoryDetail {
-        return try await apiClient.request(endpoint: .historyDetail(id: id))
+        try await apiClient.request(endpoint: .historyDetail(id: id))
     }
 
     func updateHistory(historyId: String, foods: [UpdateFoodItem]) async throws -> HistoryDetail {
@@ -72,6 +80,6 @@ final class MealRepository: MealRepositoryProtocol {
     }
 }
 
-// MARK: - Shared Response Types
+// MARK: - EmptyResponse
 
 struct EmptyResponse: Decodable {}

@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import PhotosUI
+import SwiftUI
 
 @Observable
 final class MealInputViewModel {
@@ -63,7 +63,7 @@ final class MealInputViewModel {
             errorMessage = error.localizedDescription
         } catch {
             #if DEBUG
-            print("[MealInputViewModel] Unexpected error: \(error)")
+            debugPrint("[MealInputViewModel] Unexpected error: \(error)")
             #endif
             errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
         }
@@ -72,7 +72,7 @@ final class MealInputViewModel {
     }
 
     private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
-        for _ in 0..<maxAttempts {
+        for _ in 0 ..< maxAttempts {
             let status = try await repository.checkAnalysisStatus(id: id)
 
             switch status.status {
@@ -85,7 +85,7 @@ final class MealInputViewModel {
                 try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
             default:
                 #if DEBUG
-                print("[MealInputViewModel] Unknown analysis status: \(status.status)")
+                debugPrint("[MealInputViewModel] Unknown analysis status: \(status.status)")
                 #endif
                 throw APIError.serverError("分析ステータスが不明です: \(status.status)")
             }
@@ -93,7 +93,6 @@ final class MealInputViewModel {
 
         throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
     }
-
 
     func reset() {
         selectedImage = nil
@@ -113,7 +112,7 @@ final class MealInputViewModel {
             try await repository.deleteHistory(historyId: id)
         } catch {
             #if DEBUG
-            print("[MealInputViewModel] Delete error: \(error)")
+            debugPrint("[MealInputViewModel] Delete error: \(error)")
             #endif
             errorMessage = "削除に失敗しました"
         }
