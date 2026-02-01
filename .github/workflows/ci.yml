@@ -63,18 +63,31 @@ jobs:
   ios-lint:
     needs: changes
     if: ${{ needs.changes.outputs.ios == 'true' }}
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install tools
+      - name: Install SwiftLint
         run: |
-          brew install swiftlint swiftformat
-          brew install go-task/tap/go-task
+          SWIFTLINT_VERSION=0.57.0
+          curl -sL "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/swiftlint_linux.zip" -o swiftlint.zip
+          unzip -q swiftlint.zip -d swiftlint
+          sudo mv swiftlint/swiftlint /usr/local/bin/
+          rm -rf swiftlint swiftlint.zip
+
+      - name: Install SwiftFormat
+        run: |
+          SWIFTFORMAT_VERSION=0.54.6
+          curl -sL "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat_linux.zip" -o swiftformat.zip
+          unzip -q swiftformat.zip
+          sudo mv swiftformat /usr/local/bin/
+          rm swiftformat.zip
 
       - name: SwiftLint
-        run: task ios:lint
+        working-directory: ios
+        run: swiftlint lint --strict
 
       - name: SwiftFormat Check
-        run: task ios:format-check
+        working-directory: ios
+        run: swiftformat . --lint
