@@ -1,0 +1,112 @@
+# SwiftLint Configuration for Uchikomi
+
+# 除外ディレクトリ
+excluded:
+  - .build
+  - DerivedData
+  - Pods
+  - Carthage
+  - UchikomiTests/Generated
+
+# テストファイルでは日本語関数名を許可
+included:
+  - Uchikomi
+  - UchikomiTests
+
+# 無効化するルール
+disabled_rules:
+  - trailing_comma # 末尾カンマは SwiftFormat で統一
+  - opening_brace # SwiftFormat で統一
+  - statement_position # SwiftFormat で統一
+  - todo # TODO コメントを許可
+  - orphaned_doc_comment # ドキュメントコメントの警告を無効化
+  - non_optional_string_data_conversion # マルチパートフォーム構築で使用
+
+# 追加で有効化するルール
+opt_in_rules:
+  - closure_spacing
+  - empty_count
+  - explicit_init
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - redundant_nil_coalescing
+  - sorted_imports
+  - unneeded_parentheses_in_closure_argument
+  - vertical_whitespace_closing_braces
+
+# force_unwrapping と implicitly_unwrapped_optional は警告のみ
+force_unwrapping:
+  severity: warning
+
+implicitly_unwrapped_optional:
+  severity: warning
+
+# ルール設定
+line_length:
+  warning: 120
+  error: 200
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_comments: true
+
+file_length:
+  warning: 500
+  error: 800
+
+type_body_length:
+  warning: 250
+  error: 500
+
+function_body_length:
+  warning: 50
+  error: 100
+
+function_parameter_count:
+  warning: 6
+  error: 10
+
+type_name:
+  min_length: 3
+  max_length: 50
+
+identifier_name:
+  min_length: 2
+  max_length: 50
+  excluded:
+    - id
+    - x
+    - y
+    - i
+    - j
+    - to
+    - ok
+    - a
+    - r
+    - g
+    - b
+  validates_start_with_lowercase:
+    severity: warning
+  allowed_symbols:
+    - _
+
+nesting:
+  type_level: 2
+  function_level: 4
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# カスタムルール
+custom_rules:
+  no_print:
+    name: "No print statements"
+    regex: "\\bprint\\s*\\("
+    message: "本番コードでは print() の代わりに Logger を使用してください"
+    severity: warning
+    excluded: ".*Tests\\.swift"

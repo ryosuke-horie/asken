@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - FoodItemEditRow
+
 struct FoodItemEditRow: View {
     @Bindable var item: FoodEditItem
     let onDelete: () -> Void
@@ -39,6 +41,8 @@ struct FoodItemEditRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
+
+// MARK: - NutrientLabel
 
 private struct NutrientLabel: View {
     let label: String

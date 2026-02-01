@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - APIClient
+
 actor APIClient {
     static let shared = APIClient()
 
@@ -28,14 +30,14 @@ actor APIClient {
     ) async throws -> T {
         var request = try await createRequest(endpoint: endpoint)
 
-        if let body = body {
+        if let body {
             let bodyData = try encoder.encode(body)
             request.httpBody = bodyData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             #if DEBUG
+            debugPrint("[APIClient] Request URL: \(endpoint.url)")
             if let jsonString = String(data: bodyData, encoding: .utf8) {
-                print("[APIClient] Request URL: \(endpoint.url)")
-                print("[APIClient] Request Body: \(jsonString)")
+                debugPrint("[APIClient] Request Body: \(jsonString)")
             }
             #endif
         }
@@ -60,18 +62,18 @@ actor APIClient {
 
         // Add additional fields
         for (key, value) in additionalFields {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(value)\r\n".data(using: .utf8)!)
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".utf8))
+            body.append(Data("\(value)\r\n".utf8))
         }
 
         // Add image data
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".utf8))
+        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
         body.append(imageData)
-        body.append("\r\n".data(using: .utf8)!)
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append(Data("\r\n".utf8))
+        body.append(Data("--\(boundary)--\r\n".utf8))
 
         request.httpBody = body
 
@@ -86,7 +88,7 @@ actor APIClient {
     ) async throws {
         var request = try await createRequest(endpoint: endpoint)
 
-        if let body = body {
+        if let body {
             let bodyData = try encoder.encode(body)
             request.httpBody = bodyData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -99,14 +101,14 @@ actor APIClient {
         }
 
         #if DEBUG
-        print("[APIClient] Response Status: \(httpResponse.statusCode)")
+        debugPrint("[APIClient] Response Status: \(httpResponse.statusCode)")
         if let responseString = String(data: data, encoding: .utf8) {
-            print("[APIClient] Response Body: \(responseString)")
+            debugPrint("[APIClient] Response Body: \(responseString)")
         }
         #endif
 
         switch httpResponse.statusCode {
-        case 200...299:
+        case 200 ... 299:
             return
         case 401:
             throw APIError.unauthorized
@@ -142,21 +144,21 @@ actor APIClient {
         }
 
         #if DEBUG
-        print("[APIClient] Response Status: \(httpResponse.statusCode)")
+        debugPrint("[APIClient] Response Status: \(httpResponse.statusCode)")
         if let responseString = String(data: data, encoding: .utf8) {
-            print("[APIClient] Response Body: \(responseString)")
+            debugPrint("[APIClient] Response Body: \(responseString)")
         }
         #endif
 
         switch httpResponse.statusCode {
-        case 200...299:
+        case 200 ... 299:
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
                 #if DEBUG
-                print("[APIClient] Decoding Error: \(error)")
+                debugPrint("[APIClient] Decoding Error: \(error)")
                 if let jsonString = String(data: data, encoding: .utf8) {
-                    print("[APIClient] Raw Response: \(jsonString)")
+                    debugPrint("[APIClient] Raw Response: \(jsonString)")
                 }
                 #endif
                 throw APIError.decodingError(error)
@@ -175,7 +177,7 @@ actor APIClient {
     }
 }
 
-// MARK: - Analyze Response (used for multipart upload)
+// MARK: - AnalyzeResponse
 
 struct AnalyzeResponse: Decodable {
     let id: String

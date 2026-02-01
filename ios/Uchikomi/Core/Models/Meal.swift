@@ -1,7 +1,12 @@
 import Foundation
 
+// MARK: - MealType
+
 enum MealType: String, Codable, CaseIterable, Identifiable {
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
+
     case breakfast
     case lunch
     case dinner
@@ -9,22 +14,24 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .breakfast: return "朝食"
-        case .lunch: return "昼食"
-        case .dinner: return "夕食"
-        case .snack: return "間食"
+        case .breakfast: "朝食"
+        case .lunch: "昼食"
+        case .dinner: "夕食"
+        case .snack: "間食"
         }
     }
 
     var icon: String {
         switch self {
-        case .breakfast: return "sunrise"
-        case .lunch: return "sun.max"
-        case .dinner: return "moon"
-        case .snack: return "cup.and.saucer"
+        case .breakfast: "sunrise"
+        case .lunch: "sun.max"
+        case .dinner: "moon"
+        case .snack: "cup.and.saucer"
         }
     }
 }
+
+// MARK: - InputType
 
 enum InputType: String, Codable {
     case image
@@ -33,8 +40,12 @@ enum InputType: String, Codable {
     case skipped
 }
 
+// MARK: - NutritionInfo
+
 struct NutritionInfo: Codable, Identifiable, Equatable {
-    var id: String { name }
+    var id: String {
+        name
+    }
 
     let name: String
     let estimatedAmount: String
@@ -43,6 +54,8 @@ struct NutritionInfo: Codable, Identifiable, Equatable {
     let fatG: Double
     let carbohydratesG: Double
 }
+
+// MARK: - HistoryDetail
 
 struct HistoryDetail: Codable, Identifiable {
     let id: String
@@ -59,6 +72,8 @@ struct HistoryDetail: Codable, Identifiable {
     let foods: [NutritionInfo]
 }
 
+// MARK: - MealsByType
+
 struct MealsByType: Codable {
     let breakfast: [HistoryDetail]
     let lunch: [HistoryDetail]
@@ -67,13 +82,15 @@ struct MealsByType: Codable {
 
     func meals(for type: MealType) -> [HistoryDetail] {
         switch type {
-        case .breakfast: return breakfast
-        case .lunch: return lunch
-        case .dinner: return dinner
-        case .snack: return snack
+        case .breakfast: breakfast
+        case .lunch: lunch
+        case .dinner: dinner
+        case .snack: snack
         }
     }
 }
+
+// MARK: - DailyTotal
 
 struct DailyTotal: Codable {
     let totalCalories: Double
@@ -82,13 +99,15 @@ struct DailyTotal: Codable {
     let totalCarbohydrates: Double
 }
 
+// MARK: - DailyMeals
+
 struct DailyMeals: Codable {
     let date: String
     let meals: MealsByType
     let dailyTotal: DailyTotal
 }
 
-// MARK: - API Request/Response
+// MARK: - AnalysisStatusResponse
 
 struct AnalysisStatusResponse: Decodable {
     let status: String
@@ -96,10 +115,14 @@ struct AnalysisStatusResponse: Decodable {
     let message: String?
 }
 
+// MARK: - AnalysisResultResponse
+
 struct AnalysisResultResponse: Decodable {
     let status: String
     let result: AnalysisResult
 }
+
+// MARK: - AnalysisResult
 
 struct AnalysisResult: Decodable {
     let foods: [NutritionInfo]

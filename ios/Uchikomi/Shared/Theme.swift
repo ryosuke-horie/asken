@@ -1,19 +1,25 @@
 import SwiftUI
 
+// MARK: - Theme
+
 enum Theme {
     // MARK: - Primary Colors (from frontend: #f97316)
+
     static let primary = Color(hex: "f97316")
     static let primaryDark = Color(hex: "ea580c")
 
     // MARK: - Text Colors
+
     static let textPrimary = Color(hex: "1f2937")
     static let textSecondary = Color(hex: "666666")
 
     // MARK: - Background Colors
+
     static let background = Color.white
     static let backgroundSecondary = Color(hex: "f5f5f5")
 
     // MARK: - Accent Colors
+
     static let success = Color.green
     static let warning = Color.orange
     static let error = Color.red
@@ -27,11 +33,11 @@ extension Color {
         let a, r, g, b: UInt64
         switch hex.count {
         case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xf) * 17, (int & 0xf) * 17)
         case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xff, int & 0xff)
         case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xff, int >> 8 & 0xff, int & 0xff)
         default:
             (a, r, g, b) = (255, 0, 0, 0)
         }

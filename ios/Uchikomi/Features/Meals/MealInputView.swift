@@ -1,9 +1,15 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
+
+// MARK: - URL + @retroactive Identifiable
 
 extension URL: @retroactive Identifiable {
-    public var id: String { absoluteString }
+    public var id: String {
+        absoluteString
+    }
 }
+
+// MARK: - MealInputView
 
 struct MealInputView: View {
     @Environment(\.dismiss) private var dismiss
@@ -61,7 +67,7 @@ struct MealInputView: View {
                     )
 
                     // Analysis Button
-                    if viewModel.selectedImage != nil && viewModel.analysisResult == nil {
+                    if viewModel.selectedImage != nil, viewModel.analysisResult == nil {
                         Button {
                             Task {
                                 await viewModel.analyzeImage()
@@ -178,7 +184,7 @@ struct MealInputView: View {
     }
 }
 
-// MARK: - Existing Meals Section
+// MARK: - ExistingMealsSection
 
 private struct ExistingMealsSection: View {
     let meals: [HistoryDetail]
@@ -203,6 +209,8 @@ private struct ExistingMealsSection: View {
     }
 }
 
+// MARK: - ExistingMealCard
+
 private struct ExistingMealCard: View {
     let meal: HistoryDetail
     let onEdit: () -> Void
@@ -226,7 +234,7 @@ private struct ExistingMealCard: View {
                     case .empty:
                         ProgressView()
                             .frame(height: 120)
-                    case .success(let image):
+                    case let .success(image):
                         image
                             .resizable()
                             .scaledToFill()
@@ -291,7 +299,7 @@ private struct ExistingMealCard: View {
     }
 }
 
-// MARK: - Image Preview View
+// MARK: - ImagePreviewView
 
 private struct ImagePreviewView: View {
     @Environment(\.dismiss) private var dismiss
@@ -303,7 +311,7 @@ private struct ImagePreviewView: View {
                 switch phase {
                 case .empty:
                     ProgressView()
-                case .success(let image):
+                case let .success(image):
                     image
                         .resizable()
                         .scaledToFit()
@@ -331,7 +339,7 @@ private struct ImagePreviewView: View {
     }
 }
 
-// MARK: - Image Selection Section
+// MARK: - ImageSelectionSection
 
 private struct ImageSelectionSection: View {
     let selectedImage: UIImage?
@@ -375,12 +383,14 @@ private struct ImageSelectionSection: View {
     }
 }
 
-// MARK: - Analysis Result Section
+// MARK: - AnalysisResultSection
 
 private struct AnalysisResultSection: View {
     let response: AnalysisResultResponse
 
-    private var result: AnalysisResult { response.result }
+    private var result: AnalysisResult {
+        response.result
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -418,7 +428,7 @@ private struct AnalysisResultSection: View {
     }
 }
 
-// MARK: - Camera View
+// MARK: - CameraView
 
 struct CameraView: UIViewControllerRepresentable {
     @Environment(\.dismiss) private var dismiss
@@ -431,7 +441,7 @@ struct CameraView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -445,7 +455,7 @@ struct CameraView: UIViewControllerRepresentable {
         }
 
         func imagePickerController(
-            _ picker: UIImagePickerController,
+            _: UIImagePickerController,
             didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
         ) {
             if let image = info[.originalImage] as? UIImage {
@@ -454,7 +464,7 @@ struct CameraView: UIViewControllerRepresentable {
             parent.dismiss()
         }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        func imagePickerControllerDidCancel(_: UIImagePickerController) {
             parent.dismiss()
         }
     }

@@ -1,0 +1,77 @@
+# SwiftFormat Configuration for Uchikomi
+
+# Swift バージョン
+--swiftversion 5.9
+
+# 除外ディレクトリ
+--exclude .build,DerivedData,Pods,Carthage,UchikomiTests/Generated
+
+# インデント設定
+--indent 4
+--tabwidth 4
+--smarttabs disabled
+--indentcase false
+--ifdef no-indent
+
+# 空白設定
+--trimwhitespace always
+--insertlines disabled
+--removelines disabled
+--maxwidth 120
+
+# ブレース設定
+--allman false
+--elseposition same-line
+--guardelse same-line
+
+# ラップ設定
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--wrapconditions preserve
+--wrapreturntype preserve
+--closingparen balanced
+
+# 空行設定
+--emptybraces no-space
+--funcattributes prev-line
+--typeattributes prev-line
+--varattributes same-line
+
+# インポート設定
+--importgrouping testable-last
+
+# その他
+--self remove
+--selfrequired
+--semicolons inline
+--commas always
+--decimalgrouping 3
+--binarygrouping 4,8
+--octalgrouping 4,8
+--hexgrouping 4,8
+--fractiongrouping disabled
+--exponentgrouping disabled
+--hexliteralcase lowercase
+--exponentcase lowercase
+--operatorfunc spaced
+--ranges spaced
+--nospaceoperators
+--header ignore
+--marktypes always
+--markextensions always
+--markcategories true
+--categorymark "MARK: - %c"
+--extensionmark "MARK: - %t + %c"
+--groupedextension "MARK: %c"
+
+# 無効化するルール
+--disable redundantSelf
+--disable wrapMultilineStatementBraces
+--disable blankLineAfterImports
+
+# 有効化するルール
+--enable isEmpty
+--enable markTypes
+--enable sortImports
+--enable trailingCommas

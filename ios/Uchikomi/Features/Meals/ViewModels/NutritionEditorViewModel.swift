@@ -42,7 +42,7 @@ final class NutritionEditorViewModel {
     }
 
     func loadFromHistory() async {
-        guard let historyId = historyId else { return }
+        guard let historyId else { return }
 
         isLoading = true
         errorMessage = nil
@@ -68,7 +68,7 @@ final class NutritionEditorViewModel {
     }
 
     func save() async {
-        guard let historyId = historyId, canSave else { return }
+        guard let historyId, canSave else { return }
 
         isSaving = true
         errorMessage = nil

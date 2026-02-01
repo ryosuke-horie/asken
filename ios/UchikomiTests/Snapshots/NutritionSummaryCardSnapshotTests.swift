@@ -3,9 +3,10 @@ import SwiftUI
 import Testing
 @testable import Uchikomi
 
-@Suite @MainActor struct NutritionSummaryCardSnapshotTests {
-
-    @Test func 標準データでの表示() {
+@Suite @MainActor
+struct NutritionSummaryCardSnapshotTests {
+    @Test
+    func 標準データでの表示() {
         let card = NutritionSummaryCard(
             calories: 650,
             protein: 25.5,
@@ -23,7 +24,8 @@ import Testing
         assertSnapshot(of: hostingController, as: .image)
     }
 
-    @Test func ゼロ値での表示() {
+    @Test
+    func ゼロ値での表示() {
         let card = NutritionSummaryCard(
             calories: 0,
             protein: 0,
@@ -41,9 +43,10 @@ import Testing
         assertSnapshot(of: hostingController, as: .image)
     }
 
-    @Test func 大きな値での表示() {
+    @Test
+    func 大きな値での表示() {
         let card = NutritionSummaryCard(
-            calories: 9999,
+            calories: 9_999,
             protein: 999.9,
             fat: 999.9,
             carbohydrates: 999.9
