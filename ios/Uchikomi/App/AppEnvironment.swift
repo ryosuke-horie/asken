@@ -12,6 +12,7 @@ enum AppEnvironment {
         #endif
     }
 
+    // 静的な文字列リテラルからのURL生成は必ず成功するため、強制アンラップを許可
     // swiftlint:disable force_unwrapping
     var baseURL: URL {
         switch self {
