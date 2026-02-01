@@ -33,7 +33,7 @@ storage_force_destroy         = true
 # GitHub設定
 # -----------------------------------------------------------------------------
 
-github_repository = "ryosuke-horie/uchikomi"
+github_repository = "ryosuke-horie/utikomi"
 
 # GitHub Personal Access Token
 # github_token = "ghp_xxxx..."
