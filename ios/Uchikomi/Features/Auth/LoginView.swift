@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - LoginView
+
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var viewModel: LoginViewModel?
@@ -27,7 +29,7 @@ struct LoginView: View {
                 Spacer()
 
                 // Form
-                if let viewModel = viewModel {
+                if let viewModel {
                     LoginForm(viewModel: viewModel)
                 }
 
@@ -43,6 +45,8 @@ struct LoginView: View {
         }
     }
 }
+
+// MARK: - LoginForm
 
 private struct LoginForm: View {
     @Bindable var viewModel: LoginViewModel

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - UchikomiApp
+
 @main
 struct UchikomiApp: App {
     @State private var authManager = AuthManager()
@@ -11,6 +13,8 @@ struct UchikomiApp: App {
         }
     }
 }
+
+// MARK: - ContentView
 
 struct ContentView: View {
     @Environment(AuthManager.self) private var authManager
@@ -25,6 +29,8 @@ struct ContentView: View {
         }
     }
 }
+
+// MARK: - MainTabView
 
 struct MainTabView: View {
     var body: some View {

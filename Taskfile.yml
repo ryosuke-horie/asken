@@ -116,3 +116,24 @@ tasks:
     cmds:
       - echo "=== iOSテスト実行 ==="
       - xcodebuild test -project Uchikomi.xcodeproj -scheme Uchikomi -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
+
+  ios:lint:
+    desc: SwiftLintを実行
+    dir: ios
+    cmds:
+      - echo "=== SwiftLint実行 ==="
+      - swiftlint lint --strict
+
+  ios:format:
+    desc: SwiftFormatを実行（コードを整形）
+    dir: ios
+    cmds:
+      - echo "=== SwiftFormat実行 ==="
+      - swiftformat .
+
+  ios:format-check:
+    desc: SwiftFormatのチェック（変更なし、CI用）
+    dir: ios
+    cmds:
+      - echo "=== SwiftFormatチェック ==="
+      - swiftformat . --lint

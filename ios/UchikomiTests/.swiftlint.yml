@@ -1,0 +1,9 @@
+# SwiftLint Configuration for UchikomiTests
+
+disabled_rules:
+  # テストでは日本語関数名を使用するため（例: func ログイン成功時に認証状態がtrueになるべき()）
+  - identifier_name
+  # テストではモックの設定等で強制アンラップを許容する
+  - force_unwrapping
+  # テストでは暗黙的アンラップを許容する
+  - implicitly_unwrapped_optional

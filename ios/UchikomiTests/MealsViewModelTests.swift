@@ -2,8 +2,8 @@ import Foundation
 import Testing
 @testable import Uchikomi
 
-@Suite struct MealsViewModelTests {
-
+@Suite
+struct MealsViewModelTests {
     private func createMockRepository() -> MealRepositoryProtocolMock {
         let mock = MealRepositoryProtocolMock()
         mock.getDailyMealsHandler = { _ in
@@ -21,23 +21,26 @@ import Testing
         return mock
     }
 
-    @Test func 日付が日本語形式でフォーマットされるべき() {
+    @Test
+    func 日付が日本語形式でフォーマットされるべき() {
         let viewModel = MealsViewModel(repository: createMockRepository())
 
         let calendar = Calendar.current
-        let components = DateComponents(year: 2024, month: 1, day: 15)
+        let components = DateComponents(year: 2_024, month: 1, day: 15)
         if let date = calendar.date(from: components) {
             viewModel.selectedDate = date
             #expect(viewModel.formattedDate == "1月15日(月)")
         }
     }
 
-    @Test func 今日が選択されている場合isTodayがtrueになるべき() {
+    @Test
+    func 今日が選択されている場合isTodayがtrueになるべき() {
         let viewModel = MealsViewModel(repository: createMockRepository())
         #expect(viewModel.isToday == true)
     }
 
-    @Test func 昨日が選択されている場合isTodayがfalseになるべき() {
+    @Test
+    func 昨日が選択されている場合isTodayがfalseになるべき() {
         let viewModel = MealsViewModel(repository: createMockRepository())
 
         if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) {
@@ -46,7 +49,8 @@ import Testing
         }
     }
 
-    @Test func 前日へ移動すると日付が1日前になるべき() async throws {
+    @Test
+    func 前日へ移動すると日付が1日前になるべき() async throws {
         let mockRepo = createMockRepository()
         let viewModel = MealsViewModel(repository: mockRepo)
         let originalDate = viewModel.selectedDate
@@ -55,14 +59,15 @@ import Testing
 
         try await Task.sleep(nanoseconds: 100_000_000)
 
-        let expectedDate = Calendar.current.date(byAdding: .day, value: -1, to: originalDate)!
+        let expectedDate = try #require(Calendar.current.date(byAdding: .day, value: -1, to: originalDate))
         #expect(
             Calendar.current.startOfDay(for: viewModel.selectedDate) ==
-            Calendar.current.startOfDay(for: expectedDate)
+                Calendar.current.startOfDay(for: expectedDate)
         )
     }
 
-    @Test func 今日の場合は翌日へ移動できないべき() async throws {
+    @Test
+    func 今日の場合は翌日へ移動できないべき() async throws {
         let mockRepo = createMockRepository()
         let viewModel = MealsViewModel(repository: mockRepo)
         let originalDate = viewModel.selectedDate
@@ -73,18 +78,19 @@ import Testing
 
         #expect(
             Calendar.current.startOfDay(for: viewModel.selectedDate) ==
-            Calendar.current.startOfDay(for: originalDate)
+                Calendar.current.startOfDay(for: originalDate)
         )
     }
 
-    @Test func 食事データの取得が成功した場合dailyMealsが設定されるべき() async {
+    @Test
+    func 食事データの取得が成功した場合dailyMealsが設定されるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.getDailyMealsHandler = { _ in
             DailyMeals(
                 date: "2024-01-15",
                 meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
                 dailyTotal: DailyTotal(
-                    totalCalories: 1500,
+                    totalCalories: 1_500,
                     totalProtein: 60,
                     totalFat: 50,
                     totalCarbohydrates: 180
@@ -97,11 +103,12 @@ import Testing
         await viewModel.loadMeals()
 
         #expect(viewModel.dailyMeals != nil)
-        #expect(viewModel.dailyMeals?.dailyTotal.totalCalories == 1500)
+        #expect(viewModel.dailyMeals?.dailyTotal.totalCalories == 1_500)
         #expect(viewModel.errorMessage == nil)
     }
 
-    @Test func 食事データの取得が失敗した場合エラーメッセージが設定されるべき() async {
+    @Test
+    func 食事データの取得が失敗した場合エラーメッセージが設定されるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.getDailyMealsHandler = { _ in
             throw APIError.networkError(NSError(domain: "", code: -1))
@@ -115,7 +122,8 @@ import Testing
         #expect(viewModel.errorMessage != nil)
     }
 
-    @Test func goToTodayで今日の日付に戻るべき() async throws {
+    @Test
+    func goToTodayで今日の日付に戻るべき() async throws {
         let mockRepo = createMockRepository()
         let viewModel = MealsViewModel(repository: mockRepo)
 
@@ -130,7 +138,8 @@ import Testing
         #expect(viewModel.isToday == true)
     }
 
-    @Test func 履歴削除が成功した場合食事データがリロードされるべき() async {
+    @Test
+    func 履歴削除が成功した場合食事データがリロードされるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in }
         mockRepo.getDailyMealsHandler = { _ in
@@ -156,7 +165,8 @@ import Testing
         #expect(viewModel.isDeleting == false)
     }
 
-    @Test func 履歴削除が失敗した場合エラーメッセージが設定されるべき() async {
+    @Test
+    func 履歴削除が失敗した場合エラーメッセージが設定されるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in
             throw APIError.networkError(NSError(domain: "", code: -1))

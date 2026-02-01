@@ -115,7 +115,7 @@ struct NutritionEditorView: View {
                 proteinG: 31,
                 fatG: 3.6,
                 carbohydratesG: 0
-            )
+            ),
         ]
     )
 }
