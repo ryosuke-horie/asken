@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,9 +18,6 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
-
-// emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）
-var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {

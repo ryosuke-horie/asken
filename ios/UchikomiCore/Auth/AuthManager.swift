@@ -79,16 +79,3 @@ public final class AuthManager {
         }
     }
 }
-
-// MARK: - AuthManagerError
-
-public enum AuthManagerError: LocalizedError {
-    case googleSignInFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .googleSignInFailed:
-            return "Google サインインに失敗しました"
-        }
-    }
-}

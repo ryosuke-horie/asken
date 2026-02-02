@@ -39,7 +39,11 @@ func (m *DevAuthMiddleware) Authenticate(next http.Handler) http.Handler {
 
 		token := parts[1]
 		if token != DevMockToken {
-			log.Printf("[DEV] Invalid dev token received: %s", token)
+			maskedToken := token
+			if len(token) > 8 {
+				maskedToken = token[:4] + "..." + token[len(token)-4:]
+			}
+			log.Printf("[DEV] Invalid dev token received: %s", maskedToken)
 			http.Error(w, "無効な開発用トークンです", http.StatusUnauthorized)
 			return
 		}
