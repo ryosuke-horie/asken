@@ -15,8 +15,9 @@ Terraformによるインフラ管理
 
 - `GCP_PROJECT_ID` - GCPプロジェクトID
 - `GCP_REGION` - GCPリージョン
-- `GCLOUD_CONFIG_NAME` - gcloud構成名
-- `TF_VAR_*` - Terraform変数
+- `CLOUDSDK_ACTIVE_CONFIG_NAME` - gcloud構成名（自動切り替え）
+- `GOOGLE_APPLICATION_CREDENTIALS` - サービスアカウントキーのパス
+- `TF_VAR_*` - Terraform変数（1Password CLI経由で自動注入）
 
 初回のみ信頼設定が必要です：
 
@@ -124,6 +125,25 @@ cd infrastructure
 
 ### 8. Terraform変数設定
 
+シークレットの設定方法は2つあります：
+
+#### 方法1: 1Password CLI使用（推奨）
+
+`.mise.toml`により、1Password CLIを通じてシークレットが自動注入されます。
+この場合、`terraform.tfvars`への設定は不要です。
+
+1Password CLIのセットアップ:
+
+```bash
+# 1Password CLIをインストール（https://1password.com/downloads/command-line/）
+# 認証
+op signin
+```
+
+#### 方法2: 手動設定
+
+1Password CLIを使用しない場合:
+
 ```bash
 cd environments/dev
 cp terraform.tfvars.example terraform.tfvars
@@ -142,6 +162,8 @@ gcp_sa_key        = <<EOF
 }
 EOF
 ```
+
+> **Note**: 方法1を使用する場合、`.mise.toml`の`TF_VAR_*`変数が優先されます。
 
 ### 9. Terraformの実行
 
@@ -184,13 +206,15 @@ infrastructure/
 
 ## 環境ごとの設定
 
-| 項目 | dev | prod |
+| 項目 | dev | prod（予定） |
 |:---|:---|:---|
 | プロジェクトID | utikomi-dev | utikomi-prod |
 | Firestore削除保護 | 無効 | 有効 |
 | Storageバージョニング | 無効 | 有効 |
 | Storage自動削除 | 90日 | 無効 |
 | CORS | 全許可 | 特定ドメイン |
+
+> **Note**: prod環境は将来実装予定です。現在は`environments/prod/.gitkeep`のみ存在します。
 
 ## トラブルシューティング
 
@@ -217,3 +241,35 @@ Error: Failed to get existing workspaces: querying Cloud Storage failed: ...
 ```
 
 tfstateバケットが存在するか、アクセス権があるか確認してください。
+
+### GitHub認証エラー
+
+```
+Error: GET https://api.github.com/repos/xxx: 404 Not Found
+```
+
+- Personal Access Tokenが有効か確認してください
+- Tokenに`repo`スコープがあるか確認してください
+- リポジトリ名（owner/repo形式）が正しいか確認してください
+
+### Firebase/Identity Platformエラー
+
+```
+Error: Error creating IdentityPlatformConfig: ...
+```
+
+- Identity Platform APIが有効になっているか確認してください（`enable-apis.sh`を実行）
+- サービスアカウントに`roles/firebase.admin`が付与されているか確認してください
+
+### gcloud認証エラー
+
+```
+ERROR: (gcloud.services.enable) PERMISSION_DENIED: ...
+```
+
+gcloud認証が切れている可能性があります:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+```
