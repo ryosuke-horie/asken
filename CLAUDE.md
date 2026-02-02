@@ -4,24 +4,21 @@
 
 ## プロジェクト概要
 
-**ウチコミ**は、柔術/キックボクシングなど格闘技の減量・体重コントロールを支援する個人用アプリケーションです。日々の記録（体重、食事、体調、疲労度）とAI相談で合意形成しながら進めるツールを目指します。Gemini API（Gemini 3）を活用してMVP（Minimum Viable Product）を構築します。
+ウチコミは、柔術/キックボクシングなど格闘技の減量・体重コントロールを支援する個人用アプリケーションです。日々の記録（体重、食事、体調、疲労度）とAI相談で合意形成しながら進めるツールを目指します。Gemini API（Gemini 3）を活用して構築します。
 
 ### 主要機能
 
-- 🔐 **ユーザー認証**: メールアドレス/パスワードによるログイン認証
-- 📸 **画像認識**: 食事の画像をアップロードして食材を自動判定
-- 🔍 **カロリー検索**: 食品名からカロリーと栄養素を検索
-- 📊 **栄養素計算**: タンパク質、脂質、炭水化物などの栄養素を計算
-- 💾 **データ管理**: 食品データベース（PostgreSQL）とGemini APIを組み合わせた高精度な判定
+- ユーザー認証: メールアドレス/パスワードによるログイン認証
+- 画像認識: 食事の画像をアップロードして食材を自動判定
+- カロリー検索: 食品名からカロリーと栄養素を検索
+- 栄養素計算: タンパク質、脂質、炭水化物などの栄養素を計算
+- AIエージェント: 減量サポートを提供
 
 ### 技術スタック
 
-- **iOS**: Swift / SwiftUI
-- **バックエンド**: Golang
-- **AI**: Gemini CLI（Gemini 3 API）via シェルコマンド
-- **データベース**: PostgreSQL
-- **ホスティング**: exe.dev（Ubuntu環境）
-- **バージョン管理**: Git
+- iOS: Swift / SwiftUI
+- バックエンド: Golang
+- AI: Gemini API（将来的にLangChain等でAIエージェント自作予定）
 
 ### 対象ユーザー
 
@@ -33,11 +30,49 @@
 
 詳細なコーディング規約、ベストプラクティス、セキュリティガイドライン等は `.claude/rules/` ディレクトリを参照してください。
 
-- **iOS**: `.claude/rules/10-ios-testing.md`
-- **バックエンド**: `.claude/rules/backend-golang.md`
-- **データベース**: `.claude/rules/database.md`
-- **Gemini API**: `.claude/rules/gemini-api.md`
-- **テスト**: `.claude/rules/testing.md`
-- **セキュリティ**: `.claude/rules/security.md`
-- **Git運用**: `.claude/rules/git-workflow.md`
-- **Claude Code指示**: `.claude/rules/claude-instructions.md`
+### 基本ルール
+
+| ファイル | 内容 |
+|:---|:---|
+| `00-common.md` | 共通ルール |
+| `01-testing-details.md` | テスト詳細（古典派スタイル、モック基準） |
+| `02-git-workflow-details.md` | Git/GitHubワークフロー詳細（Linear連携） |
+| `03-coding-style.md` | コーディングスタイル（KISS, DRY, YAGNI） |
+| `04-security-details.md` | セキュリティ詳細（コミット前チェック） |
+| `05-performance.md` | パフォーマンス最適化（モデル選択、コンテキスト管理） |
+| `06-patterns.md` | 共通パターン（Result型、APIレスポンス形式） |
+| `07-dependencies.md` | 依存関係管理（dependabot設定） |
+| `08-development-commands.md` | 開発コマンド（Taskfile） |
+| `09-documentation.md` | ドキュメント更新ルール |
+
+### 技術別ルール
+
+| ファイル | 内容 |
+|:---|:---|
+| `10-ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
+| `11-backend-golang.md` | バックエンド開発規約（Go） |
+| `12-gemini-api.md` | Gemini API連携のベストプラクティス |
+| `13-database.md` | データベース規約 |
+| `14-testing-tdd.md` | テスト駆動開発（TDD） |
+| `15-security-practices.md` | セキュリティガイドライン |
+| `16-git-workflow-general.md` | Git運用とコードレビュー |
+
+### Claude Code拡張
+
+| ファイル | 内容 |
+|:---|:---|
+| `30-claude-instructions.md` | Claude Codeへの指示 |
+| `31-hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
+| `32-agents.md` | エージェントオーケストレーション |
+
+---
+
+## 関連ドキュメント
+
+| ドキュメント | 内容 |
+|:---|:---|
+| [docs/CONTRIB.md](./docs/CONTRIB.md) | 開発者ガイド（環境セットアップ、コマンド一覧） |
+| [docs/RUNBOOK.md](./docs/RUNBOOK.md) | 運用手順書 |
+| [docs/CODEMAPS/](./docs/CODEMAPS/) | コードマップ |
+| [docs/adr/](./docs/adr/) | アーキテクチャ決定記録 |
+
