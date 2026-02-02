@@ -56,11 +56,9 @@ task db-down
 | `task db-down` | PostgreSQLを停止 |
 | `task db-seed` | テストデータを投入 |
 | `task db-clean` | DBをリセット |
-| `task deploy` | 本番デプロイ（本番サーバーで実行） |
 | `task ios:generate-mocks` | Mockoloでモックを生成 |
 | `task ios:test` | iOSのテストを実行 |
 
 ## 注意
 
 - **db-seed**は`backend/.env`の環境変数を読み込む
-- **deploy**は本番サーバーでのみ実行すること
