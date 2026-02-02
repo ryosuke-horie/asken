@@ -3,7 +3,11 @@ import Foundation
 import Testing
 @testable import UchikomiCore
 
+// MARK: - MockAuthStateListener
+
 class MockAuthStateListener: NSObject {}
+
+// MARK: - AuthManagerTests
 
 @Suite
 struct AuthManagerTests {

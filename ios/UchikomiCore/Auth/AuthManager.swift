@@ -59,8 +59,15 @@ public final class AuthManager {
 
     @MainActor
     public func logout() throws {
-        try firebaseAuthService.signOut()
-        currentUser = nil
+        do {
+            try firebaseAuthService.signOut()
+            currentUser = nil
+        } catch {
+            #if DEBUG
+            debugPrint("[AuthManager] Logout failed: \(error)")
+            #endif
+            throw error
+        }
     }
 
     private func setupAuthStateListener() {

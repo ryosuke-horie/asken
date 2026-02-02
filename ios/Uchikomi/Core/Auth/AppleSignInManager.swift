@@ -48,15 +48,13 @@ public final class AppleSignInManager: NSObject, AppleSignInManagerProtocol {
     private func sha256(_ input: String) -> String {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
-        let hashString = hashedData.compactMap {
+        return hashedData.compactMap {
             String(format: "%02x", $0)
         }.joined()
-
-        return hashString
     }
 }
 
-// MARK: - ASAuthorizationControllerDelegate
+// MARK: ASAuthorizationControllerDelegate
 
 extension AppleSignInManager: ASAuthorizationControllerDelegate {
     public func authorizationController(
@@ -90,9 +88,9 @@ public enum AppleSignInError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidCredential:
-            return "Apple IDの認証情報が無効です"
-        case .nonceGenerationFailed(let osStatus):
-            return "ノンス生成に失敗しました (OSStatus: \(osStatus))"
+            "Apple IDの認証情報が無効です"
+        case let .nonceGenerationFailed(osStatus):
+            "ノンス生成に失敗しました (OSStatus: \(osStatus))"
         }
     }
 }

@@ -115,7 +115,7 @@ private struct SignInButtons: View {
                             Task {
                                 await viewModel.signInWithApple()
                             }
-                        case .failure(let error):
+                        case let .failure(error):
                             if let authError = error as? ASAuthorizationError,
                                authError.code == .canceled {
                                 // ユーザーキャンセルは無視
