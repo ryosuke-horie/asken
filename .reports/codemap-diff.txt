@@ -1,59 +1,42 @@
-# コードマップ更新レポート
+# コードマップ差分レポート
 
-実行日時: 2026-01-31
-実行者: Claude Code
+生成日時: 2026-02-02
 
 ## 変更サマリー
 
-| ファイル | 変更内容 | 差分率 |
-|:---|:---|:---|
-| architecture.md | フロントエンド参照を削除、iOSにフォーカス | -25% |
-| backend.md | 日付更新のみ | <1% |
-| data.md | 日付更新のみ | <1% |
-| frontend.md | 削除（ソースコード削除に伴い） | -100% |
-| ios.md | ファイル構成を詳細化、テスト構成追加 | +75% |
+| ファイル | 追加行 | 削除行 | 変更率 |
+|:---|:---|:---|:---|
+| docs/CODEMAPS/architecture.md | +58 | -2 | 47.2% |
+| docs/CODEMAPS/backend.md | 0 | 0 | 0% |
+| docs/CODEMAPS/ios.md | 0 | 0 | 0% |
+| docs/CODEMAPS/data.md | 0 | 0 | 0% |
 
-## 詳細変更
+## 変更内容
 
-### architecture.md
-- 技術スタックからNext.jsを削除
-- システム構成図からフロントエンドを削除
-- ディレクトリ構造からfrontend/を削除
-- 関連コードマップからフロントエンドを削除
+### architecture.md (変更率: 47.2%)
 
-### frontend.md
-- 削除: フロントエンドソースコードが削除されたため
+#### 追加内容:
+1. 新アーキテクチャ（GCPサーバレス）セクション
+   - Firestore, Cloud Storage, Firebase Auth, Gemini API
+2. ディレクトリ構造にinfrastructure/を追加
+3. インフラ構成（Terraform）セクション
+   - environments/dev/の構成
+   - modules/の構成
+4. 外部依存関係に新アーキテクチャ（GCP）を追加
+5. Terraformで管理するリソース一覧
 
-### ios.md
-- ディレクトリ構造を現在のファイル構成に更新
-- Features/Meals/配下の詳細構成を追加
-  - ViewModels/NutritionEditorViewModel.swift
-  - Views/NutritionEditorView.swift, FoodItemEditRow.swift
-  - Models/FoodEditItem.swift
-- Shared/Theme.swiftを追加
-- テスト構成セクションを追加
-  - スナップショットテスト
-  - モック生成コマンド
-
-## 差分統計
-
-```
- docs/CODEMAPS/architecture.md |  33 +++----
- docs/CODEMAPS/backend.md      |   2 +-
- docs/CODEMAPS/data.md         |   2 +-
- docs/CODEMAPS/frontend.md     | 201 ------------------------------------------
- docs/CODEMAPS/ios.md          |  81 ++++++++++++++---
- 5 files changed, 84 insertions(+), 235 deletions(-)
-```
-
-## 全体差分率
-
-削除行: 235行
-追加行: 84行
-総差分率: 約64%（フロントエンド削除を含む）
+#### 変更なし:
+- backend.md - バックエンドAPI構造は変更なし
+- ios.md - iOSアプリ構造は変更なし
+- data.md - PostgreSQLスキーマは変更なし（新Firestoreスキーマは別途追加予定）
 
 ## 注意事項
 
-- フロントエンド（Next.js）が削除されたため、関連ドキュメントを更新
-- iOSアプリが主要なクライアントとなる
-- バックエンドAPIの仕様に変更なし
+- architecture.mdの変更率が30%を超えています（47.2%）
+- 変更は主にTerraformインフラ管理の追加によるものです
+- データモデル（data.md）にはFirestoreスキーマがまだ追加されていません
+
+## 推奨アクション
+
+1. Firestoreスキーマが確定次第、data.mdを更新
+2. Cloud Functions追加時にbackend.mdを更新
