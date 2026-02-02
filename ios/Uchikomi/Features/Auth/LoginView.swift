@@ -109,9 +109,19 @@ private struct SignInButtons: View {
                     onRequest: { request in
                         request.requestedScopes = [.fullName, .email]
                     },
-                    onCompletion: { _ in
-                        Task {
-                            await viewModel.signInWithApple()
+                    onCompletion: { result in
+                        switch result {
+                        case .success:
+                            Task {
+                                await viewModel.signInWithApple()
+                            }
+                        case .failure(let error):
+                            if let authError = error as? ASAuthorizationError,
+                               authError.code == .canceled {
+                                // ユーザーキャンセルは無視
+                                return
+                            }
+                            viewModel.errorMessage = error.localizedDescription
                         }
                     }
                 )

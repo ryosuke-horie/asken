@@ -10,7 +10,7 @@ public final class AppleSignInManager: NSObject, AppleSignInManagerProtocol {
     private var continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>?
 
     public func signIn() async throws -> (credential: ASAuthorizationAppleIDCredential, nonce: String) {
-        let nonce = randomNonceString()
+        let nonce = try randomNonceString()
         currentNonce = nonce
 
         let appleIDProvider = ASAuthorizationAppleIDProvider()
@@ -29,12 +29,12 @@ public final class AppleSignInManager: NSObject, AppleSignInManagerProtocol {
         return (credential, nonce)
     }
 
-    private func randomNonceString(length: Int = 32) -> String {
+    private func randomNonceString(length: Int = 32) throws -> String {
         precondition(length > 0)
         var randomBytes = [UInt8](repeating: 0, count: length)
         let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
         if errorCode != errSecSuccess {
-            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+            throw AppleSignInError.nonceGenerationFailed(osStatus: errorCode)
         }
 
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
@@ -85,11 +85,14 @@ extension AppleSignInManager: ASAuthorizationControllerDelegate {
 
 public enum AppleSignInError: LocalizedError {
     case invalidCredential
+    case nonceGenerationFailed(osStatus: OSStatus)
 
     public var errorDescription: String? {
         switch self {
         case .invalidCredential:
             return "Apple IDの認証情報が無効です"
+        case .nonceGenerationFailed(let osStatus):
+            return "ノンス生成に失敗しました (OSStatus: \(osStatus))"
         }
     }
 }

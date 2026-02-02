@@ -157,6 +157,9 @@ actor APIClient {
                 let token = try await AuthServiceProvider.shared.getIDToken()
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             } catch {
+                #if DEBUG
+                debugPrint("[APIClient] Token retrieval failed: \(error)")
+                #endif
                 throw APIError.unauthorized
             }
         }
