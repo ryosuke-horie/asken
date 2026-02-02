@@ -10,6 +10,12 @@ packages:
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: "1.17.0"
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: "11.15.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "8.0.0"
 
 settings:
   base:
@@ -18,6 +24,19 @@ settings:
     SWIFT_VERSION: "5.9"
 
 targets:
+  UchikomiCore:
+    type: framework
+    platform: iOS
+    sources:
+      - path: UchikomiCore
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.exe.uchikomi.core
+        GENERATE_INFOPLIST_FILE: "YES"
+        DEFINES_MODULE: "YES"
+
   Uchikomi:
     type: application
     platform: iOS
@@ -33,6 +52,22 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_EMIT_LOC_STRINGS: "YES"
+        CODE_SIGN_ENTITLEMENTS: Uchikomi/Uchikomi.entitlements
+    entitlements:
+      path: Uchikomi/Uchikomi.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+    dependencies:
+      - target: UchikomiCore
+        embed: true
+        link: true
+      - package: Firebase
+        product: FirebaseAuth
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
     info:
       path: Uchikomi/Resources/Info.plist
       properties:
@@ -49,12 +84,17 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "**/Snapshots/__Snapshots__/**"
+          - "**/Disabled/**"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.exe.uchikomi.tests
         GENERATE_INFOPLIST_FILE: "YES"
+        TEST_HOST: ""
+        BUNDLE_LOADER: ""
     dependencies:
-      - target: Uchikomi
+      - target: UchikomiCore
+        embed: false
+        link: true
       - package: SnapshotTesting
         product: SnapshotTesting
 

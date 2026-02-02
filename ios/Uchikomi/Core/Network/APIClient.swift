@@ -127,10 +127,12 @@ actor APIClient {
         request.httpMethod = endpoint.method.rawValue
 
         if endpoint.requiresAuth {
-            guard let token = await TokenManager.shared.getToken() else {
+            do {
+                let token = try await FirebaseAuthService.shared.getIDToken()
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } catch {
                 throw APIError.unauthorized
             }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         return request
