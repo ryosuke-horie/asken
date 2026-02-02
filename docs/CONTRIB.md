@@ -8,7 +8,8 @@
 
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
-| Go | 1.23以上 | バックエンド開発 |
+| mise | 最新 | ツールバージョン管理 |
+| Go | 1.25以上 | バックエンド開発 |
 | Docker / Docker Compose | 最新 | PostgreSQL起動 |
 | Task | 3.x | タスクランナー |
 | golangci-lint | 最新 | Goリント |
@@ -24,7 +25,18 @@ git clone https://github.com/ryosuke-horie/uchikomi.git
 cd uchikomi
 ```
 
-### 2. 依存関係のインストール
+### 2. miseのインストールとツールセットアップ
+
+```bash
+# miseをインストール（未インストールの場合）
+curl https://mise.run | sh
+
+# プロジェクトのツールをインストール
+mise trust
+mise install
+```
+
+### 3. 依存関係のインストール
 
 ```bash
 # Go依存関係
