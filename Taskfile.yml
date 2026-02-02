@@ -47,7 +47,7 @@ tasks:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -func=coverage.out
       - echo ""
-      - echo "HTMLレポートを生成: coverage.html"
+      - 'echo "HTMLレポートを生成: coverage.html"'
       - go tool cover -html=coverage.out -o coverage.html
 
   lint:
