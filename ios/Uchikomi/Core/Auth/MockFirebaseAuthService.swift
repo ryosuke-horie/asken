@@ -20,8 +20,13 @@ final class MockFirebaseAuthService: FirebaseAuthServiceProtocol {
     private var mockUser: FirebaseAuthUser?
     private var stateChangeListeners: [(AuthStateListenerHandle, (FirebaseAuthUser?) -> Void)] = []
 
-    var currentUser: FirebaseAuthUser? { mockUser }
-    var isSignedIn: Bool { mockUser != nil }
+    var currentUser: FirebaseAuthUser? {
+        mockUser
+    }
+
+    var isSignedIn: Bool {
+        mockUser != nil
+    }
 
     /// 開発用のモックサインイン（Google/Apple共通）
     func signInWithMock() async throws -> FirebaseAuthUser {
@@ -39,7 +44,10 @@ final class MockFirebaseAuthService: FirebaseAuthServiceProtocol {
         try await signInWithMock()
     }
 
-    func signInWithApple(credential _: ASAuthorizationAppleIDCredential, nonce _: String) async throws -> FirebaseAuthUser {
+    func signInWithApple(
+        credential _: ASAuthorizationAppleIDCredential,
+        nonce _: String
+    ) async throws -> FirebaseAuthUser {
         try await signInWithMock()
     }
 

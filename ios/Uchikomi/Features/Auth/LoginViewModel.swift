@@ -4,6 +4,8 @@ import GoogleSignIn
 import UchikomiCore
 import UIKit
 
+// MARK: - LoginViewModel
+
 @Observable
 final class LoginViewModel {
     var isLoading = false
@@ -97,11 +99,11 @@ enum LoginError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noRootViewController:
-            return "画面の取得に失敗しました"
+            "画面の取得に失敗しました"
         case .firebaseNotConfigured:
-            return "Firebase の設定に問題があります"
+            "Firebase の設定に問題があります"
         case .tokenRetrievalFailed:
-            return "トークンの取得に失敗しました"
+            "トークンの取得に失敗しました"
         }
     }
 }

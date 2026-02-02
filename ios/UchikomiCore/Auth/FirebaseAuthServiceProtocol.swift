@@ -56,11 +56,11 @@ public enum FirebaseAuthError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .notSignedIn:
-            return "サインインしていません"
+            "サインインしていません"
         case .tokenRetrievalFailed:
-            return "トークンの取得に失敗しました"
+            "トークンの取得に失敗しました"
         case .configurationError:
-            return "Firebase の設定に問題があります"
+            "Firebase の設定に問題があります"
         }
     }
 }

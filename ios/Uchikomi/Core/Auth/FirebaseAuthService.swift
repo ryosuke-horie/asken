@@ -70,6 +70,9 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
     func signOut() throws {
         try Auth.auth().signOut()
         GIDSignIn.sharedInstance.signOut()
+        #if DEBUG
+        debugPrint("[FirebaseAuthService] User signed out from Firebase and Google")
+        #endif
     }
 
     func getIDToken() async throws -> String {
