@@ -8,31 +8,49 @@
 
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
-| mise | 最新 | ツールバージョン管理 |
-| Go | 1.25以上 | バックエンド開発 |
+| mise | 最新 | ツール・環境変数管理 |
+| Go | 1.25以上 | バックエンド開発（miseで自動インストール） |
+| Terraform | 1.10以上 | インフラ管理（miseで自動インストール） |
 | Docker / Docker Compose | 最新 | PostgreSQL起動 |
 | Task | 3.x | タスクランナー |
 | golangci-lint | 最新 | Goリント |
 | Xcode | 16以上 | iOS開発 |
 | Mockolo | 最新 | iOSモック生成 |
+| 1Password CLI | 最新 | シークレット管理（オプション） |
 
 ## 環境セットアップ
 
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/ryosuke-horie/uchikomi.git
-cd uchikomi
+git clone https://github.com/ryosuke-horie/utikomi.git
+cd utikomi
 ```
 
-### 2. 依存関係のインストール
+### 2. miseのセットアップ
+
+このプロジェクトではmiseを使用してツールと環境変数を管理しています。
+
+```bash
+# 初回のみ信頼設定
+mise trust
+mise install
+```
+
+miseが自動的に以下を管理します:
+- **ツールバージョン**: Go 1.25.6, Terraform 1.10
+- **GCP環境変数**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ZONE`
+- **gcloud構成の自動切り替え**: `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev`
+- **Terraform変数**: `TF_VAR_*` プレフィックスで自動設定
+
+### 3. 依存関係のインストール
 
 ```bash
 # Go依存関係
 task setup
 ```
 
-### 3. 環境変数の設定
+### 4. 環境変数の設定
 
 #### バックエンド
 
@@ -41,6 +59,13 @@ task setup
 | 環境変数 | 説明 | 例 |
 |:---|:---|:---|
 | DATABASE_URL | PostgreSQL接続文字列 | `postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable` |
+
+#### インフラ管理（Terraform）
+
+Terraform用の環境変数は`.mise.toml`で管理されています。
+1Password CLIを使用している場合、シークレットは自動的に注入されます。
+
+詳細は[infrastructure/README.md](../infrastructure/README.md)を参照してください。
 
 ## 開発ワークフロー
 
@@ -192,10 +217,41 @@ git push -u origin edg-305
 gh pr create --title "タイトル" --body "Fixes EDG-305"
 ```
 
+## インフラ管理（Terraform）
+
+### 概要
+
+GCPリソースはTerraformで管理しています。
+
+| リソース | 用途 |
+|:---|:---|
+| Firestore | データベース |
+| Cloud Storage | 画像保存 |
+| Firebase Auth | ユーザー認証 |
+| GitHub Secrets/Variables | CI/CD用シークレット |
+
+### セットアップ
+
+詳細は[infrastructure/README.md](../infrastructure/README.md)を参照してください。
+
+```bash
+cd infrastructure/environments/dev
+
+# 初期化
+terraform init
+
+# プラン確認
+terraform plan
+
+# 適用
+terraform apply
+```
+
 ## 関連ドキュメント
 
 - [README.md](../README.md) - プロジェクト概要
 - [DEPLOY.md](../DEPLOY.md) - デプロイ手順
 - [RUNBOOK.md](./RUNBOOK.md) - 運用手順書
+- [infrastructure/README.md](../infrastructure/README.md) - Terraformインフラ管理
 - [ios/README.md](../ios/README.md) - iOSアプリ開発ガイド
 - [.claude/rules/](../.claude/rules/) - 詳細規約
