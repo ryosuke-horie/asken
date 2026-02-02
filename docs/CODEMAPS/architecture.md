@@ -11,6 +11,7 @@
 | レイヤー | 技術 |
 |:---|:---|
 | iOSアプリ | Swift, SwiftUI |
+| バックエンド | Golang (Cloud Functions) |
 | データベース | Firestore |
 | ストレージ | Cloud Storage |
 | 認証 | Firebase Auth |
@@ -27,18 +28,21 @@
 │                         (SwiftUI)                               │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
-                     ┌─────────┼─────────┐
-                     ▼         ▼         ▼
-              ┌──────────┐ ┌──────────┐ ┌──────────┐
-              │ Firebase │ │ Firestore│ │  Cloud   │
-              │   Auth   │ │          │ │ Storage  │
-              └──────────┘ └──────────┘ └──────────┘
-                               │
+                               │ HTTP/REST
                                ▼
-                        ┌──────────┐
-                        │  Gemini  │
-                        │   API    │
-                        └──────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                   Go Backend (Cloud Functions)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  認証検証 (Firebase Auth)                                        │
+│  ビジネスロジック                                                 │
+│  データアクセス                                                   │
+└──────────┬─────────────────┬─────────────────┬──────────────────┘
+           │                 │                 │
+           ▼                 ▼                 ▼
+    ┌──────────┐      ┌──────────┐      ┌──────────┐
+    │ Firestore│      │  Cloud   │      │  Gemini  │
+    │          │      │ Storage  │      │   API    │
+    └──────────┘      └──────────┘      └──────────┘
 ```
 
 ## データフロー
@@ -46,25 +50,32 @@
 ### 食事画像分析フロー
 
 ```
-1. 画像アップロード → Cloud Storage
-2. Gemini API呼び出し → 画像分析
-3. 結果をFirestoreに保存
-4. iOSアプリで結果取得
+1. iOSアプリ → Go Backend: 画像アップロード
+2. Go Backend → Cloud Storage: 画像保存
+3. Go Backend → Gemini API: 画像分析リクエスト
+4. Go Backend → Firestore: 結果保存
+5. iOSアプリ → Go Backend: 結果取得
 ```
 
 ### 認証フロー
 
 ```
-1. ログイン/登録 → Firebase Auth
-2. トークン取得
-3. クライアント保存 (Keychain)
-4. API呼び出し時にトークン検証
+1. iOSアプリ → Firebase Auth: ログイン/登録
+2. Firebase Auth → iOSアプリ: IDトークン発行
+3. iOSアプリ: トークンをKeychain保存
+4. iOSアプリ → Go Backend: API呼び出し (Authorization: Bearer {token})
+5. Go Backend → Firebase Auth: トークン検証
+6. Go Backend: リクエスト処理
 ```
 
 ## ディレクトリ構造
 
 ```
 utikomi/
+├── backend/           # Goバックエンド (Cloud Functions)
+│   ├── cmd/          # エントリーポイント
+│   ├── internal/     # 内部パッケージ
+│   └── pkg/          # 共有パッケージ
 ├── ios/               # iOSアプリ
 │   ├── Uchikomi/     # メインアプリ
 │   └── UchikomiTests/ # テスト
@@ -115,5 +126,6 @@ infrastructure/
 
 ## 関連コードマップ
 
+- [バックエンド構造](./backend.md)
 - [iOS構造](./ios.md)
 - [データモデル](./data.md)
