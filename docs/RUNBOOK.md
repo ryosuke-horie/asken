@@ -1,21 +1,34 @@
 # 運用手順書（RUNBOOK）
 
-最終更新: 2026-01-31
+最終更新: 2026-02-02
 
-本番環境（exe.dev VM）の運用手順、監視、トラブルシューティング、ロールバック手順を説明します。
+本番環境の運用手順、監視、トラブルシューティング、ロールバック手順を説明します。
 
-## サービス構成
+## アーキテクチャ
+
+### 現行環境（exe.dev VM）
 
 | サービス | 管理方法 | ポート | 説明 |
 |:---|:---|:---|:---|
 | PostgreSQL | Docker Compose + systemd | 5432 | データベース |
 | Backend (Go) | systemd | 8080 | APIサーバー |
 
+### 新アーキテクチャ（GCPサーバレス）- 移行中
+
+| サービス | GCPサービス | 説明 |
+|:---|:---|:---|
+| データベース | Firestore | NoSQLデータベース |
+| ストレージ | Cloud Storage | 画像保存 |
+| 認証 | Firebase Auth | ユーザー認証 |
+| AI | Gemini API | 画像認識・栄養素分析 |
+
+インフラはTerraformで管理: [infrastructure/README.md](../infrastructure/README.md)
+
 ### URL
 
 | 環境 | バックエンドAPI |
 |:---|:---|
-| 本番 | https://utikomi.exe.xyz:8080 |
+| 本番（現行） | https://utikomi.exe.xyz:8080 |
 | ローカル | http://localhost:8080 |
 
 ## デプロイ手順
@@ -247,8 +260,60 @@ curl -s http://localhost:8080/health
 
 新しい環境に初めてデプロイする場合の手順は[DEPLOY.md](../DEPLOY.md#初回セットアップ)を参照してください。
 
+## GCPインフラ管理（Terraform）
+
+### インフラの変更
+
+```bash
+cd infrastructure/environments/dev
+
+# 変更内容を確認
+terraform plan
+
+# 変更を適用
+terraform apply
+```
+
+### リソースの状態確認
+
+```bash
+# Terraform状態を確認
+terraform state list
+
+# 特定リソースの詳細
+terraform state show <resource_name>
+```
+
+### よくある問題
+
+#### Firebase権限エラー
+
+```
+Error: Error creating Database: googleapi: Error 403
+```
+
+サービスアカウントに`roles/firebase.admin`が付与されているか確認:
+
+```bash
+gcloud projects get-iam-policy utikomi-dev \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:terraform-admin@utikomi-dev.iam.gserviceaccount.com"
+```
+
+#### Terraform認証エラー
+
+`GOOGLE_APPLICATION_CREDENTIALS`が正しく設定されているか確認:
+
+```bash
+echo $GOOGLE_APPLICATION_CREDENTIALS
+# miseを使用している場合は自動設定される
+```
+
+詳細は[infrastructure/README.md](../infrastructure/README.md#トラブルシューティング)を参照。
+
 ## 関連ドキュメント
 
 - [README.md](../README.md) - プロジェクト概要
 - [DEPLOY.md](../DEPLOY.md) - デプロイ詳細手順
 - [CONTRIB.md](./CONTRIB.md) - 開発者ガイド
+- [infrastructure/README.md](../infrastructure/README.md) - Terraformインフラ管理
