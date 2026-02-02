@@ -11,7 +11,7 @@ import (
 
 type WeightRecord struct {
 	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"user_id"`
+	UserID     string    `json:"user_id"`
 	Weight     float64   `json:"weight"`
 	RecordedAt string    `json:"recorded_at"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -19,7 +19,7 @@ type WeightRecord struct {
 
 type WeightGoal struct {
 	ID           uuid.UUID `json:"id"`
-	UserID       uuid.UUID `json:"user_id"`
+	UserID       string    `json:"user_id"`
 	TargetWeight float64   `json:"target_weight"`
 	TargetDate   string    `json:"target_date"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -33,12 +33,12 @@ type WeightStats struct {
 }
 
 type WeightRepository interface {
-	CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, weight float64, recordedAt string) (*WeightRecord, error)
-	GetRecordsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) ([]*WeightRecord, error)
-	GetLatestRecord(ctx context.Context, userID uuid.UUID) (*WeightRecord, error)
-	GetStatsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) (*WeightStats, error)
-	GetGoal(ctx context.Context, userID uuid.UUID) (*WeightGoal, error)
-	CreateOrUpdateGoal(ctx context.Context, userID uuid.UUID, targetWeight float64, targetDate string) (*WeightGoal, error)
+	CreateOrUpdateRecord(ctx context.Context, userID string, weight float64, recordedAt string) (*WeightRecord, error)
+	GetRecordsByPeriod(ctx context.Context, userID string, startDate, endDate string) ([]*WeightRecord, error)
+	GetLatestRecord(ctx context.Context, userID string) (*WeightRecord, error)
+	GetStatsByPeriod(ctx context.Context, userID string, startDate, endDate string) (*WeightStats, error)
+	GetGoal(ctx context.Context, userID string) (*WeightGoal, error)
+	CreateOrUpdateGoal(ctx context.Context, userID string, targetWeight float64, targetDate string) (*WeightGoal, error)
 }
 
 type postgresWeightRepository struct {
@@ -49,7 +49,7 @@ func NewWeightRepository(db *sql.DB) WeightRepository {
 	return &postgresWeightRepository{db: db}
 }
 
-func (r *postgresWeightRepository) CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, weight float64, recordedAt string) (*WeightRecord, error) {
+func (r *postgresWeightRepository) CreateOrUpdateRecord(ctx context.Context, userID string, weight float64, recordedAt string) (*WeightRecord, error) {
 	query := `
 		INSERT INTO weight_records (user_id, weight, recorded_at)
 		VALUES ($1, $2, $3)
@@ -77,7 +77,7 @@ func (r *postgresWeightRepository) CreateOrUpdateRecord(ctx context.Context, use
 	return &record, nil
 }
 
-func (r *postgresWeightRepository) GetRecordsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) ([]*WeightRecord, error) {
+func (r *postgresWeightRepository) GetRecordsByPeriod(ctx context.Context, userID string, startDate, endDate string) ([]*WeightRecord, error) {
 	query := `
 		SELECT id, user_id, weight, recorded_at, created_at
 		FROM weight_records
@@ -117,7 +117,7 @@ func (r *postgresWeightRepository) GetRecordsByPeriod(ctx context.Context, userI
 	return records, nil
 }
 
-func (r *postgresWeightRepository) GetLatestRecord(ctx context.Context, userID uuid.UUID) (*WeightRecord, error) {
+func (r *postgresWeightRepository) GetLatestRecord(ctx context.Context, userID string) (*WeightRecord, error) {
 	query := `
 		SELECT id, user_id, weight, recorded_at, created_at
 		FROM weight_records
@@ -148,7 +148,7 @@ func (r *postgresWeightRepository) GetLatestRecord(ctx context.Context, userID u
 	return &record, nil
 }
 
-func (r *postgresWeightRepository) GetStatsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) (*WeightStats, error) {
+func (r *postgresWeightRepository) GetStatsByPeriod(ctx context.Context, userID string, startDate, endDate string) (*WeightStats, error) {
 	query := `
 		SELECT
 			COALESCE(MIN(weight), 0) as min,
@@ -172,7 +172,7 @@ func (r *postgresWeightRepository) GetStatsByPeriod(ctx context.Context, userID 
 	return &stats, nil
 }
 
-func (r *postgresWeightRepository) GetGoal(ctx context.Context, userID uuid.UUID) (*WeightGoal, error) {
+func (r *postgresWeightRepository) GetGoal(ctx context.Context, userID string) (*WeightGoal, error) {
 	query := `
 		SELECT id, user_id, target_weight, target_date, created_at, updated_at
 		FROM weight_goals
@@ -202,7 +202,7 @@ func (r *postgresWeightRepository) GetGoal(ctx context.Context, userID uuid.UUID
 	return &goal, nil
 }
 
-func (r *postgresWeightRepository) CreateOrUpdateGoal(ctx context.Context, userID uuid.UUID, targetWeight float64, targetDate string) (*WeightGoal, error) {
+func (r *postgresWeightRepository) CreateOrUpdateGoal(ctx context.Context, userID string, targetWeight float64, targetDate string) (*WeightGoal, error) {
 	query := `
 		INSERT INTO weight_goals (user_id, target_weight, target_date)
 		VALUES ($1, $2, $3)

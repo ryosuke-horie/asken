@@ -1,48 +1,97 @@
+import AuthenticationServices
+import Foundation
 import Testing
-@testable import Uchikomi
+@testable import UchikomiCore
+
+// MARK: - MockAuthStateListener
+
+class MockAuthStateListener: NSObject {}
+
+// MARK: - AuthManagerTests
 
 @Suite
 struct AuthManagerTests {
     @Test
     func 初期状態で認証されていないべき() {
-        let authManager = AuthManager(repository: AuthRepositoryProtocolMock())
+        let mockFirebaseService = FirebaseAuthServiceProtocolMock()
+        mockFirebaseService.addStateDidChangeListenerHandler = { _ in
+            MockAuthStateListener() as AuthStateListenerHandle
+        }
+        let mockAppleSignIn = AppleSignInManagerProtocolMock()
+
+        let authManager = AuthManager(
+            firebaseAuthService: mockFirebaseService,
+            appleSignInManager: mockAppleSignIn
+        )
         #expect(authManager.isAuthenticated == false)
     }
 
     @Test
-    func ログイン成功時に認証状態がtrueになるべき() async throws {
-        let mockRepo = AuthRepositoryProtocolMock()
-        mockRepo.loginHandler = { _, _ in
-            AuthResponse(
-                token: "test-token",
-                user: User(id: "1", email: "test@example.com", name: "Test User")
-            )
+    @MainActor
+    func ログアウト成功時に認証状態がnilになるべき() throws {
+        let mockFirebaseService = FirebaseAuthServiceProtocolMock()
+        mockFirebaseService.addStateDidChangeListenerHandler = { _ in
+            MockAuthStateListener() as AuthStateListenerHandle
         }
+        mockFirebaseService.signOutHandler = {}
+        let mockAppleSignIn = AppleSignInManagerProtocolMock()
 
-        let authManager = AuthManager(repository: mockRepo)
+        let authManager = AuthManager(
+            firebaseAuthService: mockFirebaseService,
+            appleSignInManager: mockAppleSignIn
+        )
 
-        try await authManager.login(email: "test@example.com", password: "Pass0123")
+        try authManager.logout()
 
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        #expect(authManager.isAuthenticated == true)
-        #expect(authManager.currentUser?.email == "test@example.com")
+        #expect(authManager.currentUser == nil)
+        #expect(mockFirebaseService.signOutCallCount == 1)
     }
 
     @Test
-    func ログイン失敗時に認証状態がfalseのままであるべき() async {
-        let mockRepo = AuthRepositoryProtocolMock()
-        mockRepo.loginHandler = { _, _ in
-            throw APIError.unauthorized
+    @MainActor
+    func ログアウト失敗時にエラーがスローされるべき() {
+        let mockFirebaseService = FirebaseAuthServiceProtocolMock()
+        mockFirebaseService.addStateDidChangeListenerHandler = { _ in
+            MockAuthStateListener() as AuthStateListenerHandle
         }
-
-        let authManager = AuthManager(repository: mockRepo)
-
-        do {
-            try await authManager.login(email: "test@example.com", password: "wrong")
-            Issue.record("Login should fail")
-        } catch {
-            #expect(authManager.isAuthenticated == false)
+        mockFirebaseService.signOutHandler = {
+            throw FirebaseAuthError.notSignedIn
         }
+        let mockAppleSignIn = AppleSignInManagerProtocolMock()
+
+        let authManager = AuthManager(
+            firebaseAuthService: mockFirebaseService,
+            appleSignInManager: mockAppleSignIn
+        )
+
+        #expect(throws: FirebaseAuthError.self) {
+            try authManager.logout()
+        }
+    }
+
+    @Test
+    @MainActor
+    func Googleサインイン成功時にユーザーが設定されるべき() async throws {
+        let mockFirebaseService = FirebaseAuthServiceProtocolMock()
+        mockFirebaseService.addStateDidChangeListenerHandler = { _ in
+            MockAuthStateListener() as AuthStateListenerHandle
+        }
+        mockFirebaseService.signInWithGoogleHandler = { _ in
+            FirebaseAuthUser(uid: "test-uid", email: "test@example.com", displayName: "Test User")
+        }
+        let mockAppleSignIn = AppleSignInManagerProtocolMock()
+
+        let authManager = AuthManager(
+            firebaseAuthService: mockFirebaseService,
+            appleSignInManager: mockAppleSignIn
+        )
+
+        let credential = GoogleCredential(idToken: "test-id-token", accessToken: "test-access-token")
+        try await authManager.signInWithGoogle(credential: credential)
+
+        #expect(authManager.currentUser?.id == "test-uid")
+        #expect(authManager.currentUser?.email == "test@example.com")
+        #expect(authManager.currentUser?.name == "Test User")
+        #expect(mockFirebaseService.signInWithGoogleCallCount == 1)
     }
 }

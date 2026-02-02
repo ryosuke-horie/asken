@@ -1,15 +1,29 @@
+import GoogleSignIn
 import SwiftUI
+import UchikomiCore
 
 // MARK: - UchikomiApp
 
 @main
 struct UchikomiApp: App {
-    @State private var authManager = AuthManager()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var authManager: AuthManager
+
+    init() {
+        // AuthServiceProvider.shared を使用して、APIClient と同じサービスを共有
+        _authManager = State(initialValue: AuthManager(
+            firebaseAuthService: AuthServiceProvider.shared,
+            appleSignInManager: AppleSignInManager()
+        ))
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(authManager)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

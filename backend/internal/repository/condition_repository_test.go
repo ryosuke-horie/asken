@@ -26,7 +26,7 @@ func TestConditionRepository_CreateOrUpdateRecord_Success(t *testing.T) {
 	repo := NewConditionRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 	condition := 3
 	fatigue := 2
@@ -60,7 +60,7 @@ func TestConditionRepository_CreateOrUpdateRecord_DBError(t *testing.T) {
 	repo := NewConditionRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	condition := 3
 	fatigue := 2
 	recordedAt := "2024-01-15"
@@ -84,7 +84,7 @@ func TestConditionRepository_GetRecordByDate_Success(t *testing.T) {
 	repo := NewConditionRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 	date := "2024-01-15"
 	recordedAtTime, _ := time.Parse("2006-01-02", date)
@@ -115,7 +115,7 @@ func TestConditionRepository_GetRecordByDate_NotFound(t *testing.T) {
 	repo := NewConditionRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	date := "2024-01-15"
 
 	mock.ExpectQuery(`SELECT id, user_id, condition, fatigue, recorded_at, created_at FROM condition_records`).
@@ -136,7 +136,7 @@ func TestConditionRepository_GetRecordByDate_DBError(t *testing.T) {
 	repo := NewConditionRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	date := "2024-01-15"
 
 	mock.ExpectQuery(`SELECT id, user_id, condition, fatigue, recorded_at, created_at FROM condition_records`).

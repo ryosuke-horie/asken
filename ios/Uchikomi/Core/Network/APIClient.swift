@@ -1,4 +1,30 @@
 import Foundation
+import UchikomiCore
+
+// MARK: - AuthServiceProvider
+
+/// 環境に応じた認証サービスを提供する
+enum AuthServiceProvider {
+    private static var _shared: FirebaseAuthServiceProtocol?
+
+    static var shared: FirebaseAuthServiceProtocol {
+        if let service = _shared {
+            return service
+        }
+        #if DEBUG && targetEnvironment(simulator)
+        let service = MockFirebaseAuthService()
+        #else
+        let service = FirebaseAuthService.shared
+        #endif
+        _shared = service
+        return service
+    }
+
+    /// テスト用: サービスを設定する
+    static func setShared(_ service: FirebaseAuthServiceProtocol) {
+        _shared = service
+    }
+}
 
 // MARK: - APIClient
 
@@ -127,10 +153,15 @@ actor APIClient {
         request.httpMethod = endpoint.method.rawValue
 
         if endpoint.requiresAuth {
-            guard let token = await TokenManager.shared.getToken() else {
+            do {
+                let token = try await AuthServiceProvider.shared.getIDToken()
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } catch {
+                #if DEBUG
+                debugPrint("[APIClient] Token retrieval failed: \(error)")
+                #endif
                 throw APIError.unauthorized
             }
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
         return request

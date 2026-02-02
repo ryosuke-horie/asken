@@ -1,6 +1,6 @@
 # 全体アーキテクチャ
 
-最終更新: 2026-02-02
+最終更新: 2026-02-03
 
 ## システム概要
 
@@ -60,12 +60,24 @@
 ### 認証フロー
 
 ```
-1. iOSアプリ → Firebase Auth: ログイン/登録
-2. Firebase Auth → iOSアプリ: IDトークン発行
-3. iOSアプリ: トークンをKeychain保存
-4. iOSアプリ → Go Backend: API呼び出し (Authorization: Bearer {token})
-5. Go Backend → Firebase Auth: トークン検証
+1. iOSアプリ → Firebase Auth: Google Sign-In / Apple Sign-In
+2. Firebase Auth → iOSアプリ: FirebaseAuthUser (IDトークン取得可能)
+3. iOSアプリ → Go Backend: API呼び出し (Authorization: Bearer {token})
+4. Go Backend → Firebase Admin SDK: トークン検証
+5. Go Backend: firebase_uid をContextに設定
 6. Go Backend: リクエスト処理
+```
+
+### 開発環境の認証フロー
+
+シミュレータではGoogle Sign-Inのパスキー認証が動作しないため、モック認証を使用:
+
+```
+1. iOSアプリ (シミュレータ): MockFirebaseAuthService使用
+2. 「開発用ログイン」ボタンタップ
+3. 固定トークン "dev-mock-token" を返す
+4. Go Backend (APP_ENV=development): DevAuthMiddleware使用
+5. トークン "dev-mock-token" を検証 → UID "dev-mock-user" を設定
 ```
 
 ## ディレクトリ構造

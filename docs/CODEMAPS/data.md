@@ -1,7 +1,8 @@
 # データモデルとスキーマ
 
-最終更新: 2026-01-31
+最終更新: 2026-02-03
 データベース: PostgreSQL
+認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
 ## ER図
 
@@ -29,16 +30,17 @@ users
 
 ### users
 
-ユーザーマスタ
+ユーザーマスタ（Firebase Authentication連携）
 
 | カラム | 型 | 説明 |
 |:---|:---|:---|
-| id | UUID | 主キー |
-| email | VARCHAR(255) | メールアドレス (UNIQUE) |
-| password_hash | VARCHAR(255) | パスワードハッシュ (bcrypt) |
+| id | VARCHAR(128) | 主キー（Firebase UID） |
+| email | VARCHAR(255) | メールアドレス |
 | name | VARCHAR(255) | 表示名 |
 | created_at | TIMESTAMP | 作成日時 |
 | updated_at | TIMESTAMP | 更新日時 |
+
+**注意**: 認証はFirebase Authenticationで管理。パスワードはFirebase側で管理されるため、DBには保存しない。
 
 ### analysis_requests
 

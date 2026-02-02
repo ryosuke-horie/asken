@@ -27,7 +27,7 @@ func TestProfileRepository_GetByUserID_Success(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 	sportType := "柔術"
 	trainingGoals := pq.StringArray{"減量", "スタミナ強化"}
@@ -61,7 +61,7 @@ func TestProfileRepository_GetByUserID_NotFound(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mock.ExpectQuery(`SELECT id, user_id, sport_type, training_goals, weight_class, created_at, updated_at FROM user_profiles`).
 		WithArgs(userID).
@@ -81,7 +81,7 @@ func TestProfileRepository_GetByUserID_DBError(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mock.ExpectQuery(`SELECT id, user_id, sport_type, training_goals, weight_class, created_at, updated_at FROM user_profiles`).
 		WithArgs(userID).
@@ -102,7 +102,7 @@ func TestProfileRepository_CreateOrUpdate_Success(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 	sportType := "柔術"
 	trainingGoals := []string{"減量", "スタミナ強化"}
@@ -143,7 +143,7 @@ func TestProfileRepository_CreateOrUpdate_DBError(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	sportType := "柔術"
 	trainingGoals := []string{"減量"}
 	weightClass := 65
@@ -174,7 +174,7 @@ func TestProfileRepository_CreateOrUpdate_WithNilValues(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 	createdAt := time.Now()
 	updatedAt := time.Now()

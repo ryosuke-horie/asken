@@ -12,7 +12,7 @@ import (
 
 type UserProfile struct {
 	ID            uuid.UUID `json:"id"`
-	UserID        uuid.UUID `json:"user_id"`
+	UserID        string    `json:"user_id"`
 	SportType     *string   `json:"sport_type"`
 	TrainingGoals []string  `json:"training_goals"`
 	WeightClass   *int      `json:"weight_class"`
@@ -21,7 +21,7 @@ type UserProfile struct {
 }
 
 type ProfileRepository interface {
-	GetByUserID(ctx context.Context, userID uuid.UUID) (*UserProfile, error)
+	GetByUserID(ctx context.Context, userID string) (*UserProfile, error)
 	CreateOrUpdate(ctx context.Context, profile *UserProfile) (*UserProfile, error)
 }
 
@@ -33,7 +33,7 @@ func NewProfileRepository(db *sql.DB) ProfileRepository {
 	return &postgresProfileRepository{db: db}
 }
 
-func (r *postgresProfileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*UserProfile, error) {
+func (r *postgresProfileRepository) GetByUserID(ctx context.Context, userID string) (*UserProfile, error) {
 	query := `
 		SELECT id, user_id, sport_type, training_goals, weight_class, created_at, updated_at
 		FROM user_profiles

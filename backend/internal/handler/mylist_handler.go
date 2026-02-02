@@ -80,8 +80,8 @@ type RecordFromMylistResponse struct {
 }
 
 func (h *MylistHandler) HandleList(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -105,8 +105,8 @@ func (h *MylistHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -163,8 +163,8 @@ func (h *MylistHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -237,8 +237,8 @@ func (h *MylistHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -255,7 +255,7 @@ func (h *MylistHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repository.Delete(r.Context(), itemID, userID); err != nil {
+	if err := h.repository.Delete(r.Context(), itemID.String(), userID); err != nil {
 		log.Printf("マイリストアイテムの削除に失敗 (user_id=%s, id=%s): %v", userID, itemID, err)
 		if strings.Contains(err.Error(), "見つかりません") {
 			http.Error(w, "マイリストアイテムが見つかりません", http.StatusNotFound)
@@ -269,8 +269,8 @@ func (h *MylistHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleReorder(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -310,8 +310,8 @@ func (h *MylistHandler) HandleReorder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleAnalyze(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -350,8 +350,8 @@ func (h *MylistHandler) HandleAnalyze(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MylistHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -368,7 +368,7 @@ func (h *MylistHandler) HandleGetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.repository.GetByID(r.Context(), itemID, userID)
+	item, err := h.repository.GetByID(r.Context(), itemID.String(), userID)
 	if err != nil {
 		log.Printf("マイリストアイテムの取得に失敗 (user_id=%s, id=%s): %v", userID, itemID, err)
 		http.Error(w, "マイリストアイテムの取得に失敗しました", http.StatusInternalServerError)
@@ -400,8 +400,8 @@ func extractIDFromPath(path, prefix string) string {
 }
 
 func (h *MylistHandler) HandleRecordFromMylist(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -441,7 +441,7 @@ func (h *MylistHandler) HandleRecordFromMylist(w http.ResponseWriter, r *http.Re
 	}
 
 	// マイリストアイテムを取得
-	item, err := h.repository.GetByID(r.Context(), itemID, userID)
+	item, err := h.repository.GetByID(r.Context(), itemID.String(), userID)
 	if err != nil {
 		log.Printf("マイリストアイテムの取得に失敗 (user_id=%s, id=%s): %v", userID, itemID, err)
 		http.Error(w, "マイリストアイテムの取得に失敗しました", http.StatusInternalServerError)

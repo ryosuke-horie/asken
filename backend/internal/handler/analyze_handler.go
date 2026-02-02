@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,9 +18,6 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
-
-// emailRegex はメールアドレスバリデーション用の正規表現（パッケージ初期化時に一度だけコンパイル）
-var emailRegex = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
@@ -97,9 +93,9 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 	}
 
 	// contextからユーザーIDを取得
-	userID := middleware.GetUserIDFromContext(r.Context())
-	var userIDPtr *uuid.UUID
-	if userID != uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	var userIDPtr *string
+	if userID != "" {
 		userIDPtr = &userID
 	}
 
@@ -176,9 +172,9 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	}
 
 	// contextからユーザーIDを取得
-	userID := middleware.GetUserIDFromContext(r.Context())
-	var userIDPtr *uuid.UUID
-	if userID != uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	var userIDPtr *string
+	if userID != "" {
 		userIDPtr = &userID
 	}
 

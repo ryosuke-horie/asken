@@ -25,8 +25,8 @@ type CreateConditionRecordRequest struct {
 }
 
 func (h *ConditionHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -78,8 +78,8 @@ func (h *ConditionHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Req
 }
 
 func (h *ConditionHandler) HandleGetRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}

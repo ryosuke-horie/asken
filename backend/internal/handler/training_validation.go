@@ -70,7 +70,7 @@ func parseMenuIDs(menuIDStrs []string) ([]uuid.UUID, error) {
 // validateAndParseLocationID はlocation_idをパースし、所有権を確認する
 func (h *TrainingHandler) validateAndParseLocationID(
 	ctx context.Context,
-	userID uuid.UUID,
+	userID string,
 	locationIDStr *string,
 ) (*uuid.UUID, error) {
 	locationID, err := parseLocationID(locationIDStr)
@@ -81,7 +81,7 @@ func (h *TrainingHandler) validateAndParseLocationID(
 		return nil, nil
 	}
 
-	location, err := h.repository.GetLocationByID(ctx, *locationID, userID)
+	location, err := h.repository.GetLocationByID(ctx, (*locationID).String(), userID)
 	if err != nil {
 		log.Printf("場所の取得に失敗 (location_id=%s, user_id=%s): %v", *locationID, userID, err)
 		return nil, fmt.Errorf("場所の取得に失敗しました")
@@ -95,7 +95,7 @@ func (h *TrainingHandler) validateAndParseLocationID(
 // validateCreateRecordRequest はCreateRecordリクエストをバリデーションする
 func (h *TrainingHandler) validateCreateRecordRequest(
 	ctx context.Context,
-	userID uuid.UUID,
+	userID string,
 	req *CreateRecordRequest,
 ) (*RecordValidationResult, error) {
 	recordedAt, err := validateRecordDate(req.RecordedAt)
@@ -127,7 +127,7 @@ func (h *TrainingHandler) validateCreateRecordRequest(
 // validateUpdateRecordRequest はUpdateRecordリクエストをバリデーションする
 func (h *TrainingHandler) validateUpdateRecordRequest(
 	ctx context.Context,
-	userID uuid.UUID,
+	userID string,
 	req *UpdateRecordRequest,
 ) (*RecordValidationResult, error) {
 	recordedAt, err := validateRecordDate(req.RecordedAt)

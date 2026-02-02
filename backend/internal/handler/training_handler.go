@@ -123,8 +123,8 @@ type SuggestMenuResponse struct {
 // Location ハンドラー
 
 func (h *TrainingHandler) HandleListLocations(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -154,8 +154,8 @@ func (h *TrainingHandler) HandleListLocations(w http.ResponseWriter, r *http.Req
 }
 
 func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -206,8 +206,8 @@ func (h *TrainingHandler) HandleCreateLocation(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TrainingHandler) HandleUpdateLocation(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -270,8 +270,8 @@ func (h *TrainingHandler) HandleUpdateLocation(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TrainingHandler) HandleDeleteLocation(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -288,7 +288,7 @@ func (h *TrainingHandler) HandleDeleteLocation(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := h.repository.DeleteLocation(r.Context(), locationID, userID); err != nil {
+	if err := h.repository.DeleteLocation(r.Context(), locationID.String(), userID); err != nil {
 		log.Printf("トレーニング場所の削除に失敗 (user_id=%s, id=%s): %v", userID, locationID, err)
 		if errors.Is(err, repository.ErrTrainingNotFound) {
 			http.Error(w, "トレーニング場所が見つかりません", http.StatusNotFound)
@@ -304,8 +304,8 @@ func (h *TrainingHandler) HandleDeleteLocation(w http.ResponseWriter, r *http.Re
 // Equipment ハンドラー
 
 func (h *TrainingHandler) HandleListEquipment(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -325,7 +325,7 @@ func (h *TrainingHandler) HandleListEquipment(w http.ResponseWriter, r *http.Req
 	}
 
 	// 場所の所有権確認
-	location, err := h.repository.GetLocationByID(r.Context(), locationID, userID)
+	location, err := h.repository.GetLocationByID(r.Context(), locationID.String(), userID)
 	if err != nil {
 		log.Printf("トレーニング場所の取得に失敗 (user_id=%s, id=%s): %v", userID, locationID, err)
 		http.Error(w, "トレーニング場所の取得に失敗しました", http.StatusInternalServerError)
@@ -361,8 +361,8 @@ func (h *TrainingHandler) HandleListEquipment(w http.ResponseWriter, r *http.Req
 }
 
 func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -382,7 +382,7 @@ func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.R
 	}
 
 	// 場所の所有権確認
-	location, err := h.repository.GetLocationByID(r.Context(), locationID, userID)
+	location, err := h.repository.GetLocationByID(r.Context(), locationID.String(), userID)
 	if err != nil {
 		log.Printf("トレーニング場所の取得に失敗 (user_id=%s, id=%s): %v", userID, locationID, err)
 		http.Error(w, "トレーニング場所の取得に失敗しました", http.StatusInternalServerError)
@@ -440,8 +440,8 @@ func (h *TrainingHandler) HandleCreateEquipment(w http.ResponseWriter, r *http.R
 }
 
 func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -471,7 +471,7 @@ func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.R
 	}
 
 	// 場所の所有権確認
-	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID, userID)
+	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID.String(), userID)
 	if err != nil {
 		log.Printf("場所の所有権確認に失敗 (location_id=%s, user_id=%s): %v", existing.LocationID, userID, err)
 		http.Error(w, "場所の所有権確認に失敗しました", http.StatusInternalServerError)
@@ -528,8 +528,8 @@ func (h *TrainingHandler) HandleUpdateEquipment(w http.ResponseWriter, r *http.R
 }
 
 func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -559,7 +559,7 @@ func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.R
 	}
 
 	// 場所の所有権確認
-	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID, userID)
+	location, err := h.repository.GetLocationByID(r.Context(), existing.LocationID.String(), userID)
 	if err != nil {
 		log.Printf("場所の所有権確認に失敗 (location_id=%s, user_id=%s): %v", existing.LocationID, userID, err)
 		http.Error(w, "場所の所有権確認に失敗しました", http.StatusInternalServerError)
@@ -586,8 +586,8 @@ func (h *TrainingHandler) HandleDeleteEquipment(w http.ResponseWriter, r *http.R
 // Menu ハンドラー
 
 func (h *TrainingHandler) HandleListMenus(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -617,8 +617,8 @@ func (h *TrainingHandler) HandleListMenus(w http.ResponseWriter, r *http.Request
 }
 
 func (h *TrainingHandler) HandleCreateMenu(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -665,8 +665,8 @@ func (h *TrainingHandler) HandleCreateMenu(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *TrainingHandler) HandleDeleteMenu(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -683,7 +683,7 @@ func (h *TrainingHandler) HandleDeleteMenu(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.repository.DeleteMenu(r.Context(), menuID, userID); err != nil {
+	if err := h.repository.DeleteMenu(r.Context(), menuID.String(), userID); err != nil {
 		log.Printf("メニューの削除に失敗 (user_id=%s, id=%s): %v", userID, menuID, err)
 		if errors.Is(err, repository.ErrTrainingNotFound) {
 			http.Error(w, "メニューが見つかりません（固定メニューは削除できません）", http.StatusNotFound)
@@ -699,8 +699,8 @@ func (h *TrainingHandler) HandleDeleteMenu(w http.ResponseWriter, r *http.Reques
 // Record ハンドラー
 
 func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -759,8 +759,8 @@ func (h *TrainingHandler) HandleListRecords(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -799,8 +799,8 @@ func (h *TrainingHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -811,7 +811,7 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	existing, err := h.repository.GetRecordByID(r.Context(), recordID, userID)
+	existing, err := h.repository.GetRecordByID(r.Context(), recordID.String(), userID)
 	if err != nil {
 		log.Printf("練習記録の取得に失敗 (id=%s, user_id=%s): %v", recordID, userID, err)
 		http.Error(w, "練習記録の取得に失敗しました", http.StatusInternalServerError)
@@ -861,8 +861,8 @@ func (h *TrainingHandler) HandleUpdateRecord(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *TrainingHandler) HandleDeleteRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -879,7 +879,7 @@ func (h *TrainingHandler) HandleDeleteRecord(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := h.repository.DeleteRecord(r.Context(), recordID, userID); err != nil {
+	if err := h.repository.DeleteRecord(r.Context(), recordID.String(), userID); err != nil {
 		log.Printf("練習記録の削除に失敗 (id=%s, user_id=%s): %v", recordID, userID, err)
 		if errors.Is(err, repository.ErrTrainingNotFound) {
 			http.Error(w, "練習記録が見つかりません", http.StatusNotFound)
@@ -894,8 +894,8 @@ func (h *TrainingHandler) HandleDeleteRecord(w http.ResponseWriter, r *http.Requ
 
 // 後方互換性のためのハンドラー
 func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -930,7 +930,7 @@ func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		// 場所の所有権確認
-		location, err := h.repository.GetLocationByID(r.Context(), locationID, userID)
+		location, err := h.repository.GetLocationByID(r.Context(), locationID.String(), userID)
 		if err != nil {
 			log.Printf("場所の取得に失敗 (location_id=%s, user_id=%s): %v", locationID, userID, err)
 			http.Error(w, "場所の取得に失敗しました", http.StatusInternalServerError)
@@ -969,7 +969,7 @@ func (h *TrainingHandler) HandleUpsertRecord(w http.ResponseWriter, r *http.Requ
 // enrichParamsWithCondition は体調記録からパラメータを補完する
 // NOTE: 体調記録はオプショナルな付加情報のため、取得に失敗しても
 // メニュー提案処理はブロックせず、基本パラメータのみで続行する（意図的なサイレントフォールバック）
-func (h *TrainingHandler) enrichParamsWithCondition(ctx context.Context, userID uuid.UUID, params *gemini.SuggestMenuParams) {
+func (h *TrainingHandler) enrichParamsWithCondition(ctx context.Context, userID string, params *gemini.SuggestMenuParams) {
 	if h.conditionRepo == nil {
 		return
 	}
@@ -988,7 +988,7 @@ func (h *TrainingHandler) enrichParamsWithCondition(ctx context.Context, userID 
 // enrichParamsWithProfile はプロフィールからパラメータを補完する
 // NOTE: プロフィールはオプショナルな付加情報のため、取得に失敗しても
 // メニュー提案処理はブロックせず、基本パラメータのみで続行する（意図的なサイレントフォールバック）
-func (h *TrainingHandler) enrichParamsWithProfile(ctx context.Context, userID uuid.UUID, params *gemini.SuggestMenuParams) {
+func (h *TrainingHandler) enrichParamsWithProfile(ctx context.Context, userID string, params *gemini.SuggestMenuParams) {
 	if h.profileRepo == nil {
 		return
 	}
@@ -1006,8 +1006,8 @@ func (h *TrainingHandler) enrichParamsWithProfile(ctx context.Context, userID uu
 }
 
 func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -1068,8 +1068,8 @@ func (h *TrainingHandler) HandleSuggestMenu(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *TrainingHandler) HandleNormalizeEquipment(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID == uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}

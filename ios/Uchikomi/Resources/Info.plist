@@ -27,5 +27,18 @@
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.425786510917-6dnncq24a9msick2earsmld85tnll9pt</string>
+			</array>
+		</dict>
+	</array>
+	<key>GIDClientID</key>
+	<string>425786510917-6dnncq24a9msick2earsmld85tnll9pt.apps.googleusercontent.com</string>
 </dict>
 </plist>

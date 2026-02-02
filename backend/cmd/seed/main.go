@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/seeder"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/database"
 )
 
@@ -47,13 +45,6 @@ func run() error {
 		log.Println("データベースに接続しました")
 	}
 
-	// 認証サービスの初期化（パスワードハッシュ化に使用）
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "seed-dummy-secret"
-	}
-	authService := service.NewAuthService(jwtSecret, 24*time.Hour)
-
 	// Seederの設定
 	config := seeder.Config{
 		UserCount:        *users,
@@ -64,7 +55,7 @@ func run() error {
 	}
 
 	// Seeder実行
-	s := seeder.NewSeeder(db, authService, config)
+	s := seeder.NewSeeder(db, config)
 
 	ctx := context.Background()
 	if err := s.Run(ctx); err != nil {
