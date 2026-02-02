@@ -18,7 +18,7 @@
 
 - iOS: Swift / SwiftUI
 - バックエンド: Golang
-- AI: Gemini CLI（Gemini 3 API）via シェルコマンド
+- AI: Gemini API（将来的にLangChain等でAIエージェント自作予定）
 
 ### 対象ユーザー
 
@@ -43,6 +43,7 @@
 | `06-patterns.md` | 共通パターン（Result型、APIレスポンス形式） |
 | `07-dependencies.md` | 依存関係管理（dependabot設定） |
 | `08-development-commands.md` | 開発コマンド（Taskfile） |
+| `09-documentation.md` | ドキュメント更新ルール |
 
 ### 技術別ルール
 
@@ -75,17 +76,3 @@
 | [docs/CODEMAPS/](./docs/CODEMAPS/) | コードマップ |
 | [docs/adr/](./docs/adr/) | アーキテクチャ決定記録 |
 
----
-
-## ドキュメント更新ルール
-
-機能の追加・更新時には、以下のドキュメント更新を検討してください：
-
-| 変更種別 | 更新対象 |
-|:---|:---|
-| 新機能追加 | README.md（主要機能）、CLAUDE.md（機能一覧）、docs/CODEMAPS/ |
-| API変更 | README.md（API仕様）、docs/RUNBOOK.md |
-| 開発コマンド追加 | docs/CONTRIB.md（コマンド一覧）、.claude/rules/08-development-commands.md |
-| アーキテクチャ変更 | docs/adr/に新規ADRを作成 |
-
-スキル `/update-docs` を使用してドキュメントを更新できます。
