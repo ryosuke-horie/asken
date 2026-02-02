@@ -35,6 +35,8 @@ npm-debug.log*
 # Testing
 coverage/
 .nyc_output/
+coverage.html
+*.xcresult/
 
 # Temporary files
 *.tmp

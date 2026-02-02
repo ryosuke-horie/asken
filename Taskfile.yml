@@ -39,6 +39,17 @@ tasks:
       - echo "=== Goテスト実行 ==="
       - go test ./...
 
+  test:coverage:
+    desc: Goテストをカバレッジ計測付きで実行
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Goカバレッジ計測 ==="
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+      - echo ""
+      - echo "HTMLレポートを生成: coverage.html"
+      - go tool cover -html=coverage.out -o coverage.html
+
   lint:
     desc: Goリント（golangci-lint）を実行
     dir: "{{.BACKEND_DIR}}"
@@ -116,6 +127,16 @@ tasks:
     cmds:
       - echo "=== iOSテスト実行 ==="
       - xcodebuild test -project Uchikomi.xcodeproj -scheme Uchikomi -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -quiet
+
+  ios:test:coverage:
+    desc: iOSテストをカバレッジ計測付きで実行
+    dir: ios
+    cmds:
+      - echo "=== iOSカバレッジ計測 ==="
+      - xcodebuild test -project Uchikomi.xcodeproj -scheme Uchikomi -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -enableCodeCoverage YES -resultBundlePath TestResults.xcresult
+      - echo ""
+      - echo "=== カバレッジレポート ==="
+      - xcrun xccov view --report TestResults.xcresult
 
   ios:lint:
     desc: SwiftLintを実行
