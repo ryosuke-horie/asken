@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-01-31
+最終更新: 2026-02-03
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 
@@ -13,7 +13,7 @@ backend/
 │   └── seed/main.go        # データシードエントリーポイント
 ├── internal/
 │   ├── handler/            # HTTPハンドラ
-│   ├── middleware/         # ミドルウェア
+│   ├── middleware/         # ミドルウェア（認証）
 │   ├── repository/         # データアクセス
 │   ├── service/            # ビジネスロジック
 │   ├── seeder/             # シードデータ
@@ -31,16 +31,33 @@ backend/
 Handler → Service → Repository → PostgreSQL
            ↓
         Gemini CLI
+
+Middleware (Authenticator)
+├── AuthMiddleware      # Firebase Auth (本番)
+└── DevAuthMiddleware   # モック認証 (開発)
 ```
 
+## 認証アーキテクチャ
+
+Firebase Authenticationを使用。iOSアプリから送信されたIDトークンをバックエンドで検証。
+
+```
+iOSアプリ → Firebase Auth → IDトークン取得
+                              ↓
+Go Backend ← Authorization: Bearer {token}
+    ↓
+Firebase Admin SDK → トークン検証 → UID取得
+    ↓
+Context に firebase_uid を設定
+```
+
+### 開発環境
+
+`APP_ENV=development`の場合、DevAuthMiddlewareが有効:
+- トークン`dev-mock-token`で固定UID`dev-mock-user`として認証
+- Firebase Admin SDKを初期化しない
+
 ## APIエンドポイント
-
-### 認証 (認証不要)
-
-| メソッド | パス | ハンドラ | 用途 |
-|:---|:---|:---|:---|
-| POST | /api/auth/register | AuthHandler | ユーザー登録 |
-| POST | /api/auth/login | AuthHandler | ログイン |
 
 ### 食事分析 (認証必要)
 
@@ -131,7 +148,6 @@ Handler → Service → Repository → PostgreSQL
 
 | ファイル | 責務 |
 |:---|:---|
-| auth_handler.go | 認証（登録、ログイン） |
 | analyze_handler.go | 食事分析リクエスト |
 | status_handler.go | 分析ステータス確認 |
 | daily_meals_handler.go | 日次食事データ |
@@ -157,11 +173,18 @@ Handler → Service → Repository → PostgreSQL
 | training_repository.go | トレーニング |
 | profile_repository.go | プロフィール |
 
+### Middleware (internal/middleware/)
+
+| ファイル | 責務 |
+|:---|:---|
+| auth.go | Firebase Auth認証ミドルウェア、Authenticatorインターフェース |
+| dev_auth.go | 開発用モック認証ミドルウェア |
+
 ### Services (internal/service/)
 
 | ファイル | 責務 |
 |:---|:---|
-| auth_service.go | JWT生成・検証、パスワードハッシュ |
+| firebase_auth_service.go | Firebase Admin SDKラッパー |
 | food_service.go | 食品分析ロジック |
 
 ### Gemini連携 (pkg/gemini/)
@@ -185,13 +208,17 @@ Handler → Service → Repository → PostgreSQL
 
 ```
 cmd/server/main.go
+├── internal/middleware/
+│   ├── auth.go (Authenticator interface)
+│   │   └── AuthMiddleware (Firebase本番)
+│   │       └── internal/service/firebase_auth_service.go
+│   └── dev_auth.go
+│       └── DevAuthMiddleware (開発モック)
 ├── internal/handler/*
 │   ├── internal/service/*
 │   │   └── pkg/gemini/*
 │   └── internal/repository/*
 │       └── pkg/database/postgres.go
-├── internal/middleware/auth.go
-│   └── internal/service/auth_service.go
 └── internal/worker/analysis_worker.go
     ├── internal/service/food_service.go
     └── internal/repository/analysis_repository.go

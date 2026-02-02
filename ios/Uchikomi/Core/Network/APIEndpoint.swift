@@ -25,20 +25,6 @@ struct APIEndpoint {
         return url
     }
 
-    // MARK: - Auth Endpoints
-
-    static let login = APIEndpoint(
-        path: "auth/login",
-        method: .post,
-        requiresAuth: false
-    )
-
-    static let register = APIEndpoint(
-        path: "auth/register",
-        method: .post,
-        requiresAuth: false
-    )
-
     // MARK: - Meals Endpoints
 
     static func dailyMeals(date: String) -> APIEndpoint {

@@ -16,11 +16,11 @@ import (
 )
 
 type MockProfileRepository struct {
-	GetByUserIDFunc    func(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error)
+	GetByUserIDFunc    func(ctx context.Context, userID string) (*repository.UserProfile, error)
 	CreateOrUpdateFunc func(ctx context.Context, profile *repository.UserProfile) (*repository.UserProfile, error)
 }
 
-func (m *MockProfileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error) {
+func (m *MockProfileRepository) GetByUserID(ctx context.Context, userID string) (*repository.UserProfile, error) {
 	if m.GetByUserIDFunc != nil {
 		return m.GetByUserIDFunc(ctx, userID)
 	}
@@ -34,22 +34,22 @@ func (m *MockProfileRepository) CreateOrUpdate(ctx context.Context, profile *rep
 	return nil, nil
 }
 
-func createProfileRequestWithUserID(method, url string, body []byte, userID uuid.UUID) *http.Request {
+func createProfileRequestWithUserID(method, url string, body []byte, userID string) *http.Request {
 	req := httptest.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	return req.WithContext(ctx)
 }
 
 func TestProfileHandler_HandleGetProfile(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 	sportType := "柔術"
 	weightClass := 65
 
 	tests := []struct {
 		name           string
-		userID         uuid.UUID
+		userID         string
 		mockProfile    *repository.UserProfile
 		mockErr        error
 		expectedStatus int
@@ -76,7 +76,7 @@ func TestProfileHandler_HandleGetProfile(t *testing.T) {
 		},
 		{
 			name:           "未認証の場合は401を返すべき",
-			userID:         uuid.Nil,
+			userID:         "",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -90,7 +90,7 @@ func TestProfileHandler_HandleGetProfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &MockProfileRepository{
-				GetByUserIDFunc: func(ctx context.Context, uid uuid.UUID) (*repository.UserProfile, error) {
+				GetByUserIDFunc: func(ctx context.Context, uid string) (*repository.UserProfile, error) {
 					if tt.mockErr != nil {
 						return nil, tt.mockErr
 					}
@@ -112,7 +112,7 @@ func TestProfileHandler_HandleGetProfile(t *testing.T) {
 }
 
 func TestProfileHandler_HandleUpdateProfile(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 	sportType := "柔術"
 	weightClass := 65
@@ -120,7 +120,7 @@ func TestProfileHandler_HandleUpdateProfile(t *testing.T) {
 	tests := []struct {
 		name           string
 		requestBody    UpdateProfileRequest
-		userID         uuid.UUID
+		userID         string
 		mockFunc       func(ctx context.Context, profile *repository.UserProfile) (*repository.UserProfile, error)
 		expectedStatus int
 	}{
@@ -150,7 +150,7 @@ func TestProfileHandler_HandleUpdateProfile(t *testing.T) {
 			requestBody: UpdateProfileRequest{
 				SportType: &sportType,
 			},
-			userID:         uuid.Nil,
+			userID:         "",
 			mockFunc:       nil,
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -263,12 +263,12 @@ func TestProfileHandler_HandleUpdateProfile(t *testing.T) {
 }
 
 func TestProfileHandler_HandleUpdateProfile_InvalidJSON(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
 		body           []byte
-		userID         uuid.UUID
+		userID         string
 		expectedStatus int
 	}{
 		{
@@ -303,7 +303,7 @@ func TestProfileHandler_HandleUpdateProfile_InvalidJSON(t *testing.T) {
 }
 
 func TestProfileHandler_HandleUpdateProfile_WithNilValues(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	profileID := uuid.New()
 
 	mockRepo := &MockProfileRepository{

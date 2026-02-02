@@ -16,10 +16,10 @@ import (
 
 func TestSkipMealHandler_Handle_Success(t *testing.T) {
 	expectedID := uuid.New()
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mockRepo := &MockAnalysisRepository{
-		CreateSkippedMealFunc: func(ctx context.Context, mealType string, mealDate string, uid *uuid.UUID) (uuid.UUID, error) {
+		CreateSkippedMealFunc: func(ctx context.Context, mealType string, mealDate string, uid *string) (uuid.UUID, error) {
 			assert.Equal(t, "lunch", mealType)
 			assert.Equal(t, "2026-01-24", mealDate)
 			assert.Equal(t, userID, *uid)
@@ -37,7 +37,7 @@ func TestSkipMealHandler_Handle_Success(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -62,8 +62,8 @@ func TestSkipMealHandler_Handle_MissingMealType(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	userID := uuid.New()
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	userID := "test-firebase-uid"
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -84,8 +84,8 @@ func TestSkipMealHandler_Handle_InvalidMealType(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	userID := uuid.New()
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	userID := "test-firebase-uid"
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -105,8 +105,8 @@ func TestSkipMealHandler_Handle_MissingMealDate(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	userID := uuid.New()
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	userID := "test-firebase-uid"
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -134,10 +134,10 @@ func TestSkipMealHandler_Handle_Unauthorized(t *testing.T) {
 }
 
 func TestSkipMealHandler_Handle_RepositoryError(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mockRepo := &MockAnalysisRepository{
-		CreateSkippedMealFunc: func(ctx context.Context, mealType string, mealDate string, uid *uuid.UUID) (uuid.UUID, error) {
+		CreateSkippedMealFunc: func(ctx context.Context, mealType string, mealDate string, uid *string) (uuid.UUID, error) {
 			return uuid.Nil, assert.AnError
 		},
 	}
@@ -152,7 +152,7 @@ func TestSkipMealHandler_Handle_RepositoryError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	req = req.WithContext(ctx)
 
 	w := httptest.NewRecorder()
@@ -163,14 +163,14 @@ func TestSkipMealHandler_Handle_RepositoryError(t *testing.T) {
 
 func TestSkipMealHandler_Handle_AllMealTypes(t *testing.T) {
 	mealTypes := []string{"breakfast", "lunch", "dinner", "snack"}
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	for _, mealType := range mealTypes {
 		t.Run(mealType, func(t *testing.T) {
 			expectedID := uuid.New()
 
 			mockRepo := &MockAnalysisRepository{
-				CreateSkippedMealFunc: func(ctx context.Context, mt string, mealDate string, uid *uuid.UUID) (uuid.UUID, error) {
+				CreateSkippedMealFunc: func(ctx context.Context, mt string, mealDate string, uid *string) (uuid.UUID, error) {
 					assert.Equal(t, mealType, mt)
 					return expectedID, nil
 				},
@@ -186,7 +186,7 @@ func TestSkipMealHandler_Handle_AllMealTypes(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
-			ctx := middleware.SetUserIDToContext(req.Context(), userID)
+			ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 			req = req.WithContext(ctx)
 
 			w := httptest.NewRecorder()

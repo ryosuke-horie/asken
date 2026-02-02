@@ -91,3 +91,8 @@ infrastructure/**/*_override.tf.json
 # GCP credentials
 **/sa-key.json
 **/service-account*.json
+
+# iOS
+ios/Uchikomi/Resources/GoogleService-Info.plist
+*.xcuserstate
+xcuserdata/

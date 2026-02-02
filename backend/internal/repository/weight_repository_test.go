@@ -26,7 +26,7 @@ func TestCreateOrUpdateRecord_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 	weight := 65.5
 	recordedAt := "2024-01-15"
@@ -58,7 +58,7 @@ func TestCreateOrUpdateRecord_DBError(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	weight := 65.5
 	recordedAt := "2024-01-15"
 
@@ -81,7 +81,7 @@ func TestGetRecordsByPeriod_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	startDate := "2024-01-01"
 	endDate := "2024-01-15"
 	record1Time, _ := time.Parse("2006-01-02", "2024-01-10")
@@ -111,7 +111,7 @@ func TestGetRecordsByPeriod_Empty(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	startDate := "2024-01-01"
 	endDate := "2024-01-15"
 
@@ -135,7 +135,7 @@ func TestGetRecordsByPeriod_DBError(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	startDate := "2024-01-01"
 	endDate := "2024-01-15"
 
@@ -158,7 +158,7 @@ func TestGetLatestRecord_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 	recordedAtTime, _ := time.Parse("2006-01-02", "2024-01-15")
 
@@ -185,7 +185,7 @@ func TestGetLatestRecord_NotFound(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mock.ExpectQuery(`SELECT id, user_id, weight, recorded_at, created_at FROM weight_records`).
 		WithArgs(userID).
@@ -205,7 +205,7 @@ func TestGetLatestRecord_DBError(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mock.ExpectQuery(`SELECT id, user_id, weight, recorded_at, created_at FROM weight_records`).
 		WithArgs(userID).
@@ -226,7 +226,7 @@ func TestGetStatsByPeriod_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	startDate := "2024-01-01"
 	endDate := "2024-01-15"
 
@@ -254,7 +254,7 @@ func TestGetStatsByPeriod_DBError(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	startDate := "2024-01-01"
 	endDate := "2024-01-15"
 
@@ -277,7 +277,7 @@ func TestGetGoal_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	goalID := uuid.New()
 	targetDate, _ := time.Parse("2006-01-02", "2024-06-01")
 	createdAt := time.Now()
@@ -306,7 +306,7 @@ func TestGetGoal_NotFound(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	mock.ExpectQuery(`SELECT id, user_id, target_weight, target_date, created_at, updated_at FROM weight_goals`).
 		WithArgs(userID).
@@ -326,7 +326,7 @@ func TestCreateOrUpdateGoal_Success(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	goalID := uuid.New()
 	targetWeight := 60.0
 	targetDate := "2024-06-01"
@@ -357,7 +357,7 @@ func TestCreateOrUpdateGoal_DBError(t *testing.T) {
 	repo := NewWeightRepository(db)
 	ctx := context.Background()
 
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	targetWeight := 60.0
 	targetDate := "2024-06-01"
 

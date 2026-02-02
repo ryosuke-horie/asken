@@ -34,4 +34,13 @@ enum AppEnvironment {
     var apiBaseURL: URL {
         baseURL.appendingPathComponent("api")
     }
+
+    /// シミュレータ + DEBUG ビルドでモック認証を使用するかどうか
+    var useMockAuth: Bool {
+        #if DEBUG && targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
 }

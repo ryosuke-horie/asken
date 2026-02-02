@@ -43,8 +43,8 @@ type UpdateWeightGoalRequest struct {
 }
 
 func (h *WeightHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -85,8 +85,8 @@ func (h *WeightHandler) HandleCreateRecord(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *WeightHandler) HandleGetRecords(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -152,8 +152,8 @@ func (h *WeightHandler) HandleGetRecords(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *WeightHandler) HandleGetGoal(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -211,8 +211,8 @@ func (h *WeightHandler) HandleGetGoal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *WeightHandler) HandleUpdateGoal(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserIDFromContext(r.Context())
-	if userID.String() == "00000000-0000-0000-0000-000000000000" {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}

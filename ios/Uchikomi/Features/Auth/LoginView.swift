@@ -1,4 +1,7 @@
+import AuthenticationServices
+import GoogleSignInSwift
 import SwiftUI
+import UchikomiCore
 
 // MARK: - LoginView
 
@@ -8,7 +11,7 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 Spacer()
 
                 // Logo & Title
@@ -28,9 +31,9 @@ struct LoginView: View {
 
                 Spacer()
 
-                // Form
+                // Sign-In Buttons
                 if let viewModel {
-                    LoginForm(viewModel: viewModel)
+                    SignInButtons(viewModel: viewModel)
                 }
 
                 Spacer()
@@ -46,59 +49,97 @@ struct LoginView: View {
     }
 }
 
-// MARK: - LoginForm
+// MARK: - SignInButtons
 
-private struct LoginForm: View {
+private struct SignInButtons: View {
     @Bindable var viewModel: LoginViewModel
 
     var body: some View {
         VStack(spacing: 16) {
-            // Email Field
-            TextField("メールアドレス", text: $viewModel.email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .textFieldStyle(.roundedBorder)
-
-            // Password Field
-            SecureField("パスワード", text: $viewModel.password)
-                .textContentType(.password)
-                .textFieldStyle(.roundedBorder)
-
             // Error Message
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
-            // Login Button
-            Button {
-                Task {
-                    await viewModel.login()
+            if viewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding()
+            } else {
+                #if DEBUG && targetEnvironment(simulator)
+                // シミュレータ専用: 開発用ログインボタン
+                Button {
+                    Task {
+                        await viewModel.signInWithMock()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "hammer.fill")
+                        Text("開発用ログイン")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
                 }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(.white)
-                } else {
-                    Text("ログイン")
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .padding(.horizontal)
+                #else
+                // Google Sign-In Button
+                GoogleSignInButton(
+                    viewModel: GoogleSignInButtonViewModel(
+                        scheme: .dark,
+                        style: .wide,
+                        state: .normal
+                    )
+                ) {
+                    Task {
+                        await viewModel.signInWithGoogle()
+                    }
                 }
+                .frame(height: 50)
+                .padding(.horizontal)
+
+                // Apple Sign-In Button
+                SignInWithAppleButton(
+                    .signIn,
+                    onRequest: { request in
+                        request.requestedScopes = [.fullName, .email]
+                    },
+                    onCompletion: { result in
+                        switch result {
+                        case .success:
+                            Task {
+                                await viewModel.signInWithApple()
+                            }
+                        case let .failure(error):
+                            if let authError = error as? ASAuthorizationError,
+                               authError.code == .canceled {
+                                // ユーザーキャンセルは無視
+                                return
+                            }
+                            viewModel.errorMessage = error.localizedDescription
+                        }
+                    }
+                )
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 50)
+                .padding(.horizontal)
+                #endif
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(viewModel.isValid ? Theme.primary : Color.gray)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .disabled(!viewModel.isValid || viewModel.isLoading)
         }
-        .padding(.horizontal)
     }
 }
 
 #Preview {
     LoginView()
-        .environment(AuthManager())
+        .environment(
+            AuthManager(
+                firebaseAuthService: FirebaseAuthService.shared,
+                appleSignInManager: AppleSignInManager()
+            )
+        )
 }

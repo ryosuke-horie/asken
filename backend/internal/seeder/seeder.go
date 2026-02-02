@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Config はSeederの設定
@@ -25,20 +25,29 @@ type Config struct {
 	Verbose          bool
 }
 
+const bcryptCost = 10
+
 // Seeder はデータベースにテストデータを投入する構造体
 type Seeder struct {
-	db          *sql.DB
-	authService *service.AuthService
-	config      Config
+	db     *sql.DB
+	config Config
 }
 
 // NewSeeder は新しいSeederを作成する
-func NewSeeder(db *sql.DB, authService *service.AuthService, config Config) *Seeder {
+func NewSeeder(db *sql.DB, config Config) *Seeder {
 	return &Seeder{
-		db:          db,
-		authService: authService,
-		config:      config,
+		db:     db,
+		config: config,
 	}
+}
+
+// hashPassword はパスワードをハッシュ化する
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	if err != nil {
+		return "", fmt.Errorf("パスワードのハッシュ化に失敗: %w", err)
+	}
+	return string(bytes), nil
 }
 
 // Run はシードを実行する
@@ -174,7 +183,7 @@ func (s *Seeder) seedUsers(ctx context.Context) ([]*repository.User, error) {
 		}
 
 		// パスワードをハッシュ化
-		hashedPassword, err := s.authService.HashPassword(testUser.Password)
+		hashedPassword, err := hashPassword(testUser.Password)
 		if err != nil {
 			return nil, fmt.Errorf("パスワードハッシュ化に失敗: %w", err)
 		}

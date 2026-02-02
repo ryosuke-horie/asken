@@ -21,7 +21,7 @@ var ErrDuplicateEntry = errors.New("duplicate entry")
 // TrainingLocation はトレーニング場所を表す構造体
 type TrainingLocation struct {
 	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
+	UserID    string    `json:"user_id"`
 	Name      string    `json:"name"`
 	SortOrder int       `json:"sort_order"`
 	CreatedAt time.Time `json:"created_at"`
@@ -41,19 +41,19 @@ type TrainingEquipment struct {
 
 // TrainingMenu は練習メニューを表す構造体
 type TrainingMenu struct {
-	ID        uuid.UUID  `json:"id"`
-	UserID    *uuid.UUID `json:"user_id,omitempty"`
-	Name      string     `json:"name"`
-	IsDefault bool       `json:"is_default"`
-	SortOrder int        `json:"sort_order"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID        uuid.UUID `json:"id"`
+	UserID    *string   `json:"user_id,omitempty"`
+	Name      string    `json:"name"`
+	IsDefault bool      `json:"is_default"`
+	SortOrder int       `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // TrainingRecord は練習記録を表す構造体
 type TrainingRecord struct {
 	ID           uuid.UUID       `json:"id"`
-	UserID       uuid.UUID       `json:"user_id"`
+	UserID       string          `json:"user_id"`
 	LocationID   *uuid.UUID      `json:"location_id,omitempty"`
 	LocationName *string         `json:"location_name,omitempty"`
 	RecordedAt   time.Time       `json:"recorded_at"`
@@ -70,11 +70,11 @@ type TrainingRecord struct {
 // TrainingRepository はトレーニング関連のデータアクセスインターフェース
 type TrainingRepository interface {
 	// Location関連
-	GetAllLocations(ctx context.Context, userID uuid.UUID) ([]*TrainingLocation, error)
-	GetLocationByID(ctx context.Context, id, userID uuid.UUID) (*TrainingLocation, error)
+	GetAllLocations(ctx context.Context, userID string) ([]*TrainingLocation, error)
+	GetLocationByID(ctx context.Context, id, userID string) (*TrainingLocation, error)
 	CreateLocation(ctx context.Context, location *TrainingLocation) (*TrainingLocation, error)
 	UpdateLocation(ctx context.Context, location *TrainingLocation) (*TrainingLocation, error)
-	DeleteLocation(ctx context.Context, id, userID uuid.UUID) error
+	DeleteLocation(ctx context.Context, id, userID string) error
 
 	// Equipment関連
 	GetEquipmentByLocation(ctx context.Context, locationID uuid.UUID) ([]*TrainingEquipment, error)
@@ -84,17 +84,17 @@ type TrainingRepository interface {
 	DeleteEquipment(ctx context.Context, id uuid.UUID) error
 
 	// Menu関連
-	GetMenus(ctx context.Context, userID uuid.UUID) ([]*TrainingMenu, error)
+	GetMenus(ctx context.Context, userID string) ([]*TrainingMenu, error)
 	CreateMenu(ctx context.Context, menu *TrainingMenu) (*TrainingMenu, error)
-	DeleteMenu(ctx context.Context, id, userID uuid.UUID) error
+	DeleteMenu(ctx context.Context, id, userID string) error
 
 	// Record関連
-	GetRecords(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]*TrainingRecord, error)
-	GetRecordByDate(ctx context.Context, userID uuid.UUID, date time.Time) (*TrainingRecord, error)
-	GetRecordByID(ctx context.Context, id, userID uuid.UUID) (*TrainingRecord, error)
+	GetRecords(ctx context.Context, userID string, startDate, endDate time.Time) ([]*TrainingRecord, error)
+	GetRecordByDate(ctx context.Context, userID string, date time.Time) (*TrainingRecord, error)
+	GetRecordByID(ctx context.Context, id, userID string) (*TrainingRecord, error)
 	CreateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error)
 	UpdateRecord(ctx context.Context, record *TrainingRecord, menuIDs []uuid.UUID) (*TrainingRecord, error)
-	DeleteRecord(ctx context.Context, id, userID uuid.UUID) error
+	DeleteRecord(ctx context.Context, id, userID string) error
 	// 後方互換性のため残す
 	UpsertRecord(ctx context.Context, record *TrainingRecord) (*TrainingRecord, error)
 }
@@ -110,7 +110,7 @@ func NewTrainingRepository(db *sql.DB) TrainingRepository {
 
 // Location関連の実装
 
-func (r *postgresTrainingRepository) GetAllLocations(ctx context.Context, userID uuid.UUID) ([]*TrainingLocation, error) {
+func (r *postgresTrainingRepository) GetAllLocations(ctx context.Context, userID string) ([]*TrainingLocation, error) {
 	query := `
 		SELECT id, user_id, name, sort_order, created_at, updated_at
 		FROM training_locations
@@ -147,7 +147,7 @@ func (r *postgresTrainingRepository) GetAllLocations(ctx context.Context, userID
 	return locations, nil
 }
 
-func (r *postgresTrainingRepository) GetLocationByID(ctx context.Context, id, userID uuid.UUID) (*TrainingLocation, error) {
+func (r *postgresTrainingRepository) GetLocationByID(ctx context.Context, id, userID string) (*TrainingLocation, error) {
 	query := `
 		SELECT id, user_id, name, sort_order, created_at, updated_at
 		FROM training_locations
@@ -243,7 +243,7 @@ func (r *postgresTrainingRepository) UpdateLocation(ctx context.Context, locatio
 	return &updated, nil
 }
 
-func (r *postgresTrainingRepository) DeleteLocation(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresTrainingRepository) DeleteLocation(ctx context.Context, id, userID string) error {
 	query := `DELETE FROM training_locations WHERE id = $1 AND user_id = $2`
 
 	result, err := r.db.ExecContext(ctx, query, id, userID)
@@ -460,7 +460,7 @@ func (r *postgresTrainingRepository) DeleteEquipment(ctx context.Context, id uui
 
 // Menu関連の実装
 
-func (r *postgresTrainingRepository) GetMenus(ctx context.Context, userID uuid.UUID) ([]*TrainingMenu, error) {
+func (r *postgresTrainingRepository) GetMenus(ctx context.Context, userID string) ([]*TrainingMenu, error) {
 	query := `
 		SELECT id, user_id, name, is_default, sort_order, created_at, updated_at
 		FROM training_menus
@@ -490,12 +490,7 @@ func (r *postgresTrainingRepository) GetMenus(ctx context.Context, userID uuid.U
 			return nil, fmt.Errorf("メニューのスキャンに失敗: %w", err)
 		}
 		if userIDNull.Valid {
-			id, err := uuid.Parse(userIDNull.String)
-			if err != nil {
-				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
-			} else {
-				menu.UserID = &id
-			}
+			menu.UserID = &userIDNull.String
 		}
 		menus = append(menus, &menu)
 	}
@@ -543,18 +538,13 @@ func (r *postgresTrainingRepository) CreateMenu(ctx context.Context, menu *Train
 	}
 
 	if userIDNull.Valid {
-		id, err := uuid.Parse(userIDNull.String)
-		if err != nil {
-			log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
-		} else {
-			created.UserID = &id
-		}
+		created.UserID = &userIDNull.String
 	}
 
 	return &created, nil
 }
 
-func (r *postgresTrainingRepository) DeleteMenu(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresTrainingRepository) DeleteMenu(ctx context.Context, id, userID string) error {
 	// 固定メニュー（user_id IS NULL）は削除不可
 	query := `DELETE FROM training_menus WHERE id = $1 AND user_id = $2`
 
@@ -577,7 +567,7 @@ func (r *postgresTrainingRepository) DeleteMenu(ctx context.Context, id, userID 
 
 // Record関連の実装
 
-func (r *postgresTrainingRepository) GetRecords(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]*TrainingRecord, error) {
+func (r *postgresTrainingRepository) GetRecords(ctx context.Context, userID string, startDate, endDate time.Time) ([]*TrainingRecord, error) {
 	query := `
 		SELECT tr.id, tr.user_id, tr.location_id, tl.name, tr.recorded_at, tr.completed,
 		       tr.duration, tr.intensity, tr.satisfaction, tr.notes,
@@ -696,12 +686,7 @@ func (r *postgresTrainingRepository) getMenusByRecordID(ctx context.Context, rec
 			return nil, fmt.Errorf("メニューのスキャンに失敗: %w", err)
 		}
 		if userIDNull.Valid {
-			id, err := uuid.Parse(userIDNull.String)
-			if err != nil {
-				log.Printf("警告: UserIDのパースに失敗 (value=%s): %v", userIDNull.String, err)
-			} else {
-				menu.UserID = &id
-			}
+			menu.UserID = &userIDNull.String
 		}
 		menus = append(menus, &menu)
 	}
@@ -709,7 +694,7 @@ func (r *postgresTrainingRepository) getMenusByRecordID(ctx context.Context, rec
 	return menus, nil
 }
 
-func (r *postgresTrainingRepository) GetRecordByDate(ctx context.Context, userID uuid.UUID, date time.Time) (*TrainingRecord, error) {
+func (r *postgresTrainingRepository) GetRecordByDate(ctx context.Context, userID string, date time.Time) (*TrainingRecord, error) {
 	query := `
 		SELECT tr.id, tr.user_id, tr.location_id, tl.name, tr.recorded_at, tr.completed,
 		       tr.duration, tr.intensity, tr.satisfaction, tr.notes,
@@ -788,7 +773,7 @@ func (r *postgresTrainingRepository) GetRecordByDate(ctx context.Context, userID
 	return &rec, nil
 }
 
-func (r *postgresTrainingRepository) GetRecordByID(ctx context.Context, id, userID uuid.UUID) (*TrainingRecord, error) {
+func (r *postgresTrainingRepository) GetRecordByID(ctx context.Context, id, userID string) (*TrainingRecord, error) {
 	query := `
 		SELECT tr.id, tr.user_id, tr.location_id, tl.name, tr.recorded_at, tr.completed,
 		       tr.duration, tr.intensity, tr.satisfaction, tr.notes,
@@ -1106,7 +1091,7 @@ func (r *postgresTrainingRepository) updateRecordRow(ctx context.Context, tx *sq
 	return &updated, nil
 }
 
-func (r *postgresTrainingRepository) DeleteRecord(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresTrainingRepository) DeleteRecord(ctx context.Context, id, userID string) error {
 	query := `DELETE FROM training_records WHERE id = $1 AND user_id = $2`
 
 	result, err := r.db.ExecContext(ctx, query, id, userID)

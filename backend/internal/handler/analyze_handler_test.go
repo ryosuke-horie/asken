@@ -41,8 +41,8 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc           func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
-	CreateRequestWithTextFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequestFunc           func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
+	CreateRequestWithTextFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 	GetRequestFunc              func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
 	UpdateStatusFunc            func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
 	SaveResultFunc              func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
@@ -52,18 +52,18 @@ type MockAnalysisRepository struct {
 	GetHistoryDetailFunc        func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
 	DeleteHistoryFunc           func(ctx context.Context, id uuid.UUID) error
 	GetDailyMealsFunc           func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
-	CreateRequestFromMylistFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error)
-	CreateSkippedMealFunc       func(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequestFromMylistFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)
+	CreateSkippedMealFunc       func(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 }
 
-func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 	if m.CreateRequestFunc != nil {
 		return m.CreateRequestFunc(ctx, imagePath, mealType, mealDate, userID)
 	}
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 	if m.CreateRequestWithTextFunc != nil {
 		return m.CreateRequestWithTextFunc(ctx, inputText, mealType, mealDate, userID)
 	}
@@ -133,14 +133,14 @@ func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string)
 	return nil, repository.DailyTotal{}, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error) {
 	if m.CreateRequestFromMylistFunc != nil {
 		return m.CreateRequestFromMylistFunc(ctx, inputText, mealType, mealDate, userID, result)
 	}
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 	if m.CreateSkippedMealFunc != nil {
 		return m.CreateSkippedMealFunc(ctx, mealType, mealDate, userID)
 	}
@@ -157,7 +157,7 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 			// ファイルが永続化されていることを確認
 			assert.FileExists(t, imagePath)
 			return expectedID, nil
@@ -241,7 +241,7 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 			return uuid.Nil, assert.AnError
 		},
 	}
@@ -349,7 +349,7 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
-		CreateRequestWithTextFunc: func(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+		CreateRequestWithTextFunc: func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 			assert.Equal(t, "ご飯二杯, 焼肉", inputText)
 			assert.Equal(t, "lunch", mealType)
 			assert.Equal(t, "2024-01-15", mealDate)
