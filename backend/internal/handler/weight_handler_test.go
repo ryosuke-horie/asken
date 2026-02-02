@@ -17,72 +17,72 @@ import (
 
 // MockWeightRepository はテスト用のモックリポジトリ
 type MockWeightRepository struct {
-	CreateOrUpdateRecordFunc func(ctx context.Context, userID uuid.UUID, weight float64, recordedAt string) (*repository.WeightRecord, error)
-	GetRecordsByPeriodFunc   func(ctx context.Context, userID uuid.UUID, startDate, endDate string) ([]*repository.WeightRecord, error)
-	GetLatestRecordFunc      func(ctx context.Context, userID uuid.UUID) (*repository.WeightRecord, error)
-	GetStatsByPeriodFunc     func(ctx context.Context, userID uuid.UUID, startDate, endDate string) (*repository.WeightStats, error)
-	GetGoalFunc              func(ctx context.Context, userID uuid.UUID) (*repository.WeightGoal, error)
-	CreateOrUpdateGoalFunc   func(ctx context.Context, userID uuid.UUID, targetWeight float64, targetDate string) (*repository.WeightGoal, error)
+	CreateOrUpdateRecordFunc func(ctx context.Context, userID string, weight float64, recordedAt string) (*repository.WeightRecord, error)
+	GetRecordsByPeriodFunc   func(ctx context.Context, userID string, startDate, endDate string) ([]*repository.WeightRecord, error)
+	GetLatestRecordFunc      func(ctx context.Context, userID string) (*repository.WeightRecord, error)
+	GetStatsByPeriodFunc     func(ctx context.Context, userID string, startDate, endDate string) (*repository.WeightStats, error)
+	GetGoalFunc              func(ctx context.Context, userID string) (*repository.WeightGoal, error)
+	CreateOrUpdateGoalFunc   func(ctx context.Context, userID string, targetWeight float64, targetDate string) (*repository.WeightGoal, error)
 }
 
-func (m *MockWeightRepository) CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, weight float64, recordedAt string) (*repository.WeightRecord, error) {
+func (m *MockWeightRepository) CreateOrUpdateRecord(ctx context.Context, userID string, weight float64, recordedAt string) (*repository.WeightRecord, error) {
 	if m.CreateOrUpdateRecordFunc != nil {
 		return m.CreateOrUpdateRecordFunc(ctx, userID, weight, recordedAt)
 	}
 	return nil, nil
 }
 
-func (m *MockWeightRepository) GetRecordsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) ([]*repository.WeightRecord, error) {
+func (m *MockWeightRepository) GetRecordsByPeriod(ctx context.Context, userID string, startDate, endDate string) ([]*repository.WeightRecord, error) {
 	if m.GetRecordsByPeriodFunc != nil {
 		return m.GetRecordsByPeriodFunc(ctx, userID, startDate, endDate)
 	}
 	return nil, nil
 }
 
-func (m *MockWeightRepository) GetLatestRecord(ctx context.Context, userID uuid.UUID) (*repository.WeightRecord, error) {
+func (m *MockWeightRepository) GetLatestRecord(ctx context.Context, userID string) (*repository.WeightRecord, error) {
 	if m.GetLatestRecordFunc != nil {
 		return m.GetLatestRecordFunc(ctx, userID)
 	}
 	return nil, nil
 }
 
-func (m *MockWeightRepository) GetStatsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate string) (*repository.WeightStats, error) {
+func (m *MockWeightRepository) GetStatsByPeriod(ctx context.Context, userID string, startDate, endDate string) (*repository.WeightStats, error) {
 	if m.GetStatsByPeriodFunc != nil {
 		return m.GetStatsByPeriodFunc(ctx, userID, startDate, endDate)
 	}
 	return nil, nil
 }
 
-func (m *MockWeightRepository) GetGoal(ctx context.Context, userID uuid.UUID) (*repository.WeightGoal, error) {
+func (m *MockWeightRepository) GetGoal(ctx context.Context, userID string) (*repository.WeightGoal, error) {
 	if m.GetGoalFunc != nil {
 		return m.GetGoalFunc(ctx, userID)
 	}
 	return nil, nil
 }
 
-func (m *MockWeightRepository) CreateOrUpdateGoal(ctx context.Context, userID uuid.UUID, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
+func (m *MockWeightRepository) CreateOrUpdateGoal(ctx context.Context, userID string, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
 	if m.CreateOrUpdateGoalFunc != nil {
 		return m.CreateOrUpdateGoalFunc(ctx, userID, targetWeight, targetDate)
 	}
 	return nil, nil
 }
 
-func createRequestWithUserID(method, url string, body []byte, userID uuid.UUID) *http.Request {
+func createRequestWithUserID(method, url string, body []byte, userID string) *http.Request {
 	req := httptest.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	return req.WithContext(ctx)
 }
 
 func TestHandleCreateRecord(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 
 	tests := []struct {
 		name           string
 		requestBody    CreateWeightRecordRequest
-		userID         uuid.UUID
-		mockFunc       func(ctx context.Context, userID uuid.UUID, weight float64, recordedAt string) (*repository.WeightRecord, error)
+		userID         string
+		mockFunc       func(ctx context.Context, userID string, weight float64, recordedAt string) (*repository.WeightRecord, error)
 		expectedStatus int
 	}{
 		{
@@ -92,7 +92,7 @@ func TestHandleCreateRecord(t *testing.T) {
 				RecordedAt: "2024-01-15",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, weight float64, recordedAt string) (*repository.WeightRecord, error) {
+			mockFunc: func(ctx context.Context, uid string, weight float64, recordedAt string) (*repository.WeightRecord, error) {
 				return &repository.WeightRecord{
 					ID:         recordID,
 					UserID:     uid,
@@ -109,7 +109,7 @@ func TestHandleCreateRecord(t *testing.T) {
 				Weight:     65.5,
 				RecordedAt: "2024-01-15",
 			},
-			userID:         uuid.Nil,
+			userID:         "",
 			mockFunc:       nil,
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -150,7 +150,7 @@ func TestHandleCreateRecord(t *testing.T) {
 				RecordedAt: "2024-01-15",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, weight float64, recordedAt string) (*repository.WeightRecord, error) {
+			mockFunc: func(ctx context.Context, uid string, weight float64, recordedAt string) (*repository.WeightRecord, error) {
 				return nil, errors.New("database error")
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -178,12 +178,12 @@ func TestHandleCreateRecord(t *testing.T) {
 }
 
 func TestHandleCreateRecord_InvalidJSON(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
 		body           []byte
-		userID         uuid.UUID
+		userID         string
 		expectedStatus int
 	}{
 		{
@@ -218,12 +218,12 @@ func TestHandleCreateRecord_InvalidJSON(t *testing.T) {
 }
 
 func TestHandleUpdateGoal_InvalidJSON(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
 		body           []byte
-		userID         uuid.UUID
+		userID         string
 		expectedStatus int
 	}{
 		{
@@ -258,12 +258,12 @@ func TestHandleUpdateGoal_InvalidJSON(t *testing.T) {
 }
 
 func TestHandleGetRecords(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name                 string
 		period               string
-		userID               uuid.UUID
+		userID               string
 		mockRecords          []*repository.WeightRecord
 		mockLatest           *repository.WeightRecord
 		mockStats            *repository.WeightStats
@@ -289,7 +289,7 @@ func TestHandleGetRecords(t *testing.T) {
 		{
 			name:           "未認証の場合は401を返すべき",
 			period:         "week",
-			userID:         uuid.Nil,
+			userID:         "",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -361,19 +361,19 @@ func TestHandleGetRecords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &MockWeightRepository{
-				GetRecordsByPeriodFunc: func(ctx context.Context, uid uuid.UUID, startDate, endDate string) ([]*repository.WeightRecord, error) {
+				GetRecordsByPeriodFunc: func(ctx context.Context, uid string, startDate, endDate string) ([]*repository.WeightRecord, error) {
 					if tt.mockRecordsErr != nil {
 						return nil, tt.mockRecordsErr
 					}
 					return tt.mockRecords, nil
 				},
-				GetLatestRecordFunc: func(ctx context.Context, uid uuid.UUID) (*repository.WeightRecord, error) {
+				GetLatestRecordFunc: func(ctx context.Context, uid string) (*repository.WeightRecord, error) {
 					if tt.mockLatestErr != nil {
 						return nil, tt.mockLatestErr
 					}
 					return tt.mockLatest, nil
 				},
-				GetStatsByPeriodFunc: func(ctx context.Context, uid uuid.UUID, startDate, endDate string) (*repository.WeightStats, error) {
+				GetStatsByPeriodFunc: func(ctx context.Context, uid string, startDate, endDate string) (*repository.WeightStats, error) {
 					if tt.mockStatsErr != nil {
 						return nil, tt.mockStatsErr
 					}
@@ -406,12 +406,12 @@ func TestHandleGetRecords(t *testing.T) {
 }
 
 func TestHandleGetGoal(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	goalID := uuid.New()
 
 	tests := []struct {
 		name           string
-		userID         uuid.UUID
+		userID         string
 		mockGoal       *repository.WeightGoal
 		mockLatest     *repository.WeightRecord
 		mockGoalErr    error
@@ -438,7 +438,7 @@ func TestHandleGetGoal(t *testing.T) {
 		},
 		{
 			name:           "未認証の場合は401を返すべき",
-			userID:         uuid.Nil,
+			userID:         "",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -476,13 +476,13 @@ func TestHandleGetGoal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &MockWeightRepository{
-				GetGoalFunc: func(ctx context.Context, uid uuid.UUID) (*repository.WeightGoal, error) {
+				GetGoalFunc: func(ctx context.Context, uid string) (*repository.WeightGoal, error) {
 					if tt.mockGoalErr != nil {
 						return nil, tt.mockGoalErr
 					}
 					return tt.mockGoal, nil
 				},
-				GetLatestRecordFunc: func(ctx context.Context, uid uuid.UUID) (*repository.WeightRecord, error) {
+				GetLatestRecordFunc: func(ctx context.Context, uid string) (*repository.WeightRecord, error) {
 					if tt.mockLatestErr != nil {
 						return nil, tt.mockLatestErr
 					}
@@ -504,14 +504,14 @@ func TestHandleGetGoal(t *testing.T) {
 }
 
 func TestHandleUpdateGoal(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	goalID := uuid.New()
 
 	tests := []struct {
 		name           string
 		requestBody    UpdateWeightGoalRequest
-		userID         uuid.UUID
-		mockFunc       func(ctx context.Context, userID uuid.UUID, targetWeight float64, targetDate string) (*repository.WeightGoal, error)
+		userID         string
+		mockFunc       func(ctx context.Context, userID string, targetWeight float64, targetDate string) (*repository.WeightGoal, error)
 		expectedStatus int
 	}{
 		{
@@ -521,7 +521,7 @@ func TestHandleUpdateGoal(t *testing.T) {
 				TargetDate:   "2024-06-01",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
+			mockFunc: func(ctx context.Context, uid string, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
 				return &repository.WeightGoal{
 					ID:           goalID,
 					UserID:       uid,
@@ -537,7 +537,7 @@ func TestHandleUpdateGoal(t *testing.T) {
 				TargetWeight: 60.0,
 				TargetDate:   "2024-06-01",
 			},
-			userID:         uuid.Nil,
+			userID:         "",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -574,7 +574,7 @@ func TestHandleUpdateGoal(t *testing.T) {
 				TargetDate:   "2024-06-01",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
+			mockFunc: func(ctx context.Context, uid string, targetWeight float64, targetDate string) (*repository.WeightGoal, error) {
 				return nil, errors.New("database error")
 			},
 			expectedStatus: http.StatusInternalServerError,

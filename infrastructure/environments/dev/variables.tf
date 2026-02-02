@@ -68,6 +68,23 @@ variable "storage_force_destroy" {
 }
 
 # -----------------------------------------------------------------------------
+# Firebase Auth設定（Google Sign-In）
+# -----------------------------------------------------------------------------
+
+variable "google_oauth_client_id" {
+  description = "Google OAuth Client ID（手動作成が必要）"
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Google OAuth Client Secret（手動作成が必要）"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+# -----------------------------------------------------------------------------
 # GitHub設定
 # -----------------------------------------------------------------------------
 

@@ -78,10 +78,10 @@ type DailyTotal struct {
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
 	// CreateRequest は新しい画像分析リクエストを作成します
-	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 
 	// CreateRequestWithText は新しいテキスト分析リクエストを作成します
-	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 
 	// GetRequest は指定されたIDの分析リクエストを取得します
 	GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error)
@@ -111,10 +111,10 @@ type AnalysisRepository interface {
 	GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error)
 
 	// CreateRequestFromMylist はマイリストからの食事記録を作成します
-	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error)
+	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)
 
 	// CreateSkippedMeal は「食べなかった」記録を作成します
-	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *uuid.UUID) (uuid.UUID, error)
+	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 
 	// UpdateResult は分析結果を更新します（foods配列と合計値を再計算）
 	UpdateResult(ctx context.Context, historyID uuid.UUID, foods []gemini.NutritionInfo) error
@@ -132,7 +132,7 @@ func NewAnalysisRepository(db *sql.DB) AnalysisRepository {
 
 // CreateRequest は新しい画像分析リクエストを作成します
 // 既存のskipped記録がある場合は削除して置き換えます
-func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePath, mealType, mealDate string, userID *string) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -167,7 +167,7 @@ func (r *postgresAnalysisRepository) CreateRequest(ctx context.Context, imagePat
 
 // CreateRequestWithText は新しいテキスト分析リクエストを作成します
 // 既存のskipped記録がある場合は削除して置き換えます
-func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequestWithText(ctx context.Context, inputText, mealType, mealDate string, userID *string) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -753,7 +753,7 @@ func (r *postgresAnalysisRepository) GetDailyMeals(ctx context.Context, date str
 
 // CreateRequestFromMylist はマイリストからの食事記録を作成します
 // 既存のskipped記録がある場合は削除して置き換えます
-func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *uuid.UUID, result *service.AnalysisResult) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -826,7 +826,7 @@ type existingMealRecord struct {
 
 // deleteExistingMealRecordsInTx はトランザクション内で既存の食事記録を削除します
 // 削除対象の画像パスを返します（トランザクション成功後にファイルを削除するため）
-func (r *postgresAnalysisRepository) deleteExistingMealRecordsInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *uuid.UUID) ([]string, error) {
+func (r *postgresAnalysisRepository) deleteExistingMealRecordsInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *string) ([]string, error) {
 	// 既存記録を取得
 	checkQuery := `
 		SELECT id, input_type, image_path
@@ -875,7 +875,7 @@ func (r *postgresAnalysisRepository) deleteExistingMealRecordsInTx(ctx context.C
 }
 
 // deleteSkippedRecordInTx はトランザクション内で既存のskipped記録のみを削除します
-func (r *postgresAnalysisRepository) deleteSkippedRecordInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *uuid.UUID) error {
+func (r *postgresAnalysisRepository) deleteSkippedRecordInTx(ctx context.Context, tx *sql.Tx, mealType, mealDate string, userID *string) error {
 	// 既存のskipped記録を取得
 	checkQuery := `
 		SELECT id
@@ -927,7 +927,7 @@ func removeImageFiles(imagePaths []string) {
 
 // CreateSkippedMeal は「食べなかった」記録を作成します
 // 既存の記録（通常記録含む）がある場合は削除して置き換えます
-func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType, mealDate string, userID *uuid.UUID) (uuid.UUID, error) {
+func (r *postgresAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType, mealDate string, userID *string) (uuid.UUID, error) {
 	// トランザクション開始
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {

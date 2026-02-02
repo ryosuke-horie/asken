@@ -20,7 +20,7 @@ func TestRecordScanResult_ApplyToRecord_AllFieldsValid(t *testing.T) {
 
 	record := &TrainingRecord{
 		ID:     uuid.New(),
-		UserID: uuid.New(),
+		UserID: "test-firebase-uid",
 	}
 
 	scanResult.applyToRecord(record)
@@ -53,7 +53,7 @@ func TestRecordScanResult_ApplyToRecord_AllFieldsNull(t *testing.T) {
 
 	record := &TrainingRecord{
 		ID:     uuid.New(),
-		UserID: uuid.New(),
+		UserID: "test-firebase-uid",
 	}
 
 	scanResult.applyToRecord(record)
@@ -87,7 +87,7 @@ func TestRecordScanResult_ApplyToRecord_InvalidUUID(t *testing.T) {
 
 	record := &TrainingRecord{
 		ID:     uuid.New(),
-		UserID: uuid.New(),
+		UserID: "test-firebase-uid",
 	}
 
 	// パニックしないことを確認
@@ -114,7 +114,7 @@ func TestRecordScanResult_ApplyToRecord_PartialFields(t *testing.T) {
 
 	record := &TrainingRecord{
 		ID:     uuid.New(),
-		UserID: uuid.New(),
+		UserID: "test-firebase-uid",
 	}
 
 	scanResult.applyToRecord(record)

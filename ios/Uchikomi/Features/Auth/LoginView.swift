@@ -70,6 +70,24 @@ private struct SignInButtons: View {
                     .progressViewStyle(.circular)
                     .padding()
             } else {
+                #if DEBUG && targetEnvironment(simulator)
+                // シミュレータ専用: 開発用ログインボタン
+                Button {
+                    Task {
+                        await viewModel.signInWithMock()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "hammer.fill")
+                        Text("開発用ログイン")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+                .padding(.horizontal)
+                #else
                 // Google Sign-In Button
                 GoogleSignInButton(
                     viewModel: GoogleSignInButtonViewModel(
@@ -100,6 +118,7 @@ private struct SignInButtons: View {
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 50)
                 .padding(.horizontal)
+                #endif
             }
         }
     }

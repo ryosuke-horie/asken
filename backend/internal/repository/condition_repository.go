@@ -11,7 +11,7 @@ import (
 
 type ConditionRecord struct {
 	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"user_id"`
+	UserID     string    `json:"user_id"`
 	Condition  int       `json:"condition"`
 	Fatigue    int       `json:"fatigue"`
 	RecordedAt string    `json:"recorded_at"`
@@ -19,8 +19,8 @@ type ConditionRecord struct {
 }
 
 type ConditionRepository interface {
-	CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*ConditionRecord, error)
-	GetRecordByDate(ctx context.Context, userID uuid.UUID, date string) (*ConditionRecord, error)
+	CreateOrUpdateRecord(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*ConditionRecord, error)
+	GetRecordByDate(ctx context.Context, userID string, date string) (*ConditionRecord, error)
 }
 
 type postgresConditionRepository struct {
@@ -31,7 +31,7 @@ func NewConditionRepository(db *sql.DB) ConditionRepository {
 	return &postgresConditionRepository{db: db}
 }
 
-func (r *postgresConditionRepository) CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*ConditionRecord, error) {
+func (r *postgresConditionRepository) CreateOrUpdateRecord(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*ConditionRecord, error) {
 	query := `
 		INSERT INTO condition_records (user_id, condition, fatigue, recorded_at)
 		VALUES ($1, $2, $3, $4)
@@ -60,7 +60,7 @@ func (r *postgresConditionRepository) CreateOrUpdateRecord(ctx context.Context, 
 	return &record, nil
 }
 
-func (r *postgresConditionRepository) GetRecordByDate(ctx context.Context, userID uuid.UUID, date string) (*ConditionRecord, error) {
+func (r *postgresConditionRepository) GetRecordByDate(ctx context.Context, userID string, date string) (*ConditionRecord, error) {
 	query := `
 		SELECT id, user_id, condition, fatigue, recorded_at, created_at
 		FROM condition_records
