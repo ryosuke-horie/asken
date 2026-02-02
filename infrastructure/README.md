@@ -113,7 +113,7 @@ gcloud auth application-default login
 gcloud config configurations activate utikomi-dev
 ```
 
-> **Note**: このプロジェクトでは mise により `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev` が自動設定されます。
+> Note: このプロジェクトでは mise により `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev` が自動設定されます。
 > プロジェクトディレクトリに入ると自動的に `utikomi-dev` 構成が使われます。
 
 ### 7. API有効化
@@ -163,7 +163,7 @@ gcp_sa_key        = <<EOF
 EOF
 ```
 
-> **Note**: 方法1を使用する場合、`.mise.toml`の`TF_VAR_*`変数が優先されます。
+> Note: 方法1を使用する場合、`.mise.toml`の`TF_VAR_*`変数が優先されます。
 
 ### 9. Terraformの実行
 
@@ -214,7 +214,7 @@ infrastructure/
 | Storage自動削除 | 90日 | 無効 |
 | CORS | 全許可 | 特定ドメイン |
 
-> **Note**: prod環境は将来実装予定です。現在は`environments/prod/.gitkeep`のみ存在します。
+> Note: prod環境は将来実装予定です。現在は`environments/prod/.gitkeep`のみ存在します。
 
 ## トラブルシューティング
 
