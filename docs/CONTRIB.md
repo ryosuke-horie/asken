@@ -25,18 +25,7 @@ git clone https://github.com/ryosuke-horie/uchikomi.git
 cd uchikomi
 ```
 
-### 2. miseのインストールとツールセットアップ
-
-```bash
-# miseをインストール（未インストールの場合）
-curl https://mise.run | sh
-
-# プロジェクトのツールをインストール
-mise trust
-mise install
-```
-
-### 3. 依存関係のインストール
+### 2. 依存関係のインストール
 
 ```bash
 # Go依存関係
