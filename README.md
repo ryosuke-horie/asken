@@ -16,36 +16,33 @@
 
 ## 技術スタック
 
-### バックエンド
-
-- **言語**: Go 1.23
-- **AI**: Gemini CLI（Gemini 3 API）
-- **テスト**: testify
-- **依存関係**:
-  - github.com/google/uuid
-  - github.com/stretchr/testify
-
-### フロントエンド
-
-- **フレームワーク**: Next.js 14
-- **言語**: TypeScript
-- **UIライブラリ**: React 18
+| レイヤー | 技術 |
+|:---|:---|
+| iOSアプリ | Swift / SwiftUI |
+| バックエンド | Go 1.23 |
+| AI | Gemini CLI（Gemini 3 API） |
+| ホスティング | exe.dev（Ubuntu） |
 
 ## ディレクトリ構成
 
 ```
-uchikomi/
+utikomi/
 ├── backend/                    # Goバックエンド
 │   ├── cmd/server/            # HTTPサーバー
 │   ├── internal/              # 内部パッケージ
 │   │   ├── handler/           # HTTPハンドラー
-│   │   └── service/           # ビジネスロジック
-│   └── pkg/gemini/            # Gemini CLI クライアント
-├── frontend/                  # Next.jsフロントエンド
-│   ├── app/                   # App Router
-│   ├── components/            # Reactコンポーネント
-│   └── types/                 # TypeScript型定義
-└── experiments/               # 実験コード
+│   │   ├── service/           # ビジネスロジック
+│   │   └── repository/        # データアクセス
+│   ├── pkg/gemini/            # Gemini CLI クライアント
+│   └── database/              # マイグレーション
+├── ios/                        # iOSアプリ
+│   ├── Uchikomi/              # メインアプリ（SwiftUI）
+│   ├── UchikomiTests/         # ユニットテスト
+│   └── UchikomiUITests/       # UIテスト
+├── docs/                       # ドキュメント
+│   ├── CODEMAPS/              # コードマップ
+│   └── adr/                   # アーキテクチャ決定記録
+└── experiments/                # 実験コード
     └── gemini-cli/            # Gemini CLI検証実験
 ```
 
@@ -53,187 +50,37 @@ uchikomi/
 
 ### 前提条件
 
-- Go 1.23以上
-- Node.js 18以上
-- Gemini CLI（インストール手順は[公式ドキュメント](https://ai.google.dev/gemini-api/docs)参照）
+| ツール | バージョン | 用途 |
+|:---|:---|:---|
+| Go | 1.23以上 | バックエンド開発 |
+| Xcode | 16以上 | iOS開発 |
+| Task | 3.x | タスクランナー |
+| Gemini CLI | 最新 | AI機能 |
 
 ### バックエンドのセットアップ
 
 ```bash
-cd backend
-go mod download
+task setup
 ```
 
-### フロントエンドのセットアップ
+### iOSアプリのセットアップ
 
-```bash
-cd frontend
-npm install
-```
+Xcodeで`ios/Uchikomi.xcodeproj`を開く。
 
 ## 起動方法
 
-### 本番環境（systemd + Docker 利用）
-
-今回、以下の構成で本番運用できるようにしました：
-
-- PostgreSQL: Docker Compose + systemd
-- バックエンド API: Go サーバー（systemd サービス）
-- フロントエンド: Next.js 本番ビルド + `next start`（systemd サービス）
-
-#### 1. PostgreSQL コンテナの常時起動
-
-Docker Compose 定義は `docker-compose.yml` にあり、Postgres サービスは `postgres` です。
-
-systemd ユニット `/etc/systemd/system/docker-postgres.service` を作成し、起動・自動起動設定を行いました。
-
-```ini
-[Unit]
-Description=Uchikomi Postgres via Docker Compose
-After=network-online.target docker.service
-Requires=docker.service
-
-[Service]
-Type=oneshot
-WorkingDirectory=/home/exedev/uchikomi
-ExecStart=/usr/bin/docker compose up -d postgres
-ExecStop=/usr/bin/docker compose stop postgres
-RemainAfterExit=yes
-User=exedev
-
-[Install]
-WantedBy=multi-user.target
-```
-
-有効化と起動:
+### ローカル開発
 
 ```bash
-sudo systemctl enable docker-postgres
-sudo systemctl start docker-postgres
-
-# 状態確認
-systemctl status docker-postgres
-```
-
-#### 2. バックエンド API サービス
-
-Go サーバーを systemd 管理にしました。ユニットは `/etc/systemd/system/uchikomi-backend.service` です。
-
-```ini
-[Unit]
-Description=Uchikomi Backend API Service
-After=network-online.target docker.service
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=/home/exedev/uchikomi/backend
-Environment=DATABASE_URL=postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable
-ExecStart=/usr/local/go/bin/go run ./cmd/server
-Restart=on-failure
-RestartSec=5
-User=exedev
-
-[Install]
-WantedBy=multi-user.target
-```
-
-有効化と起動:
-
-```bash
-sudo systemctl enable uchikomi-backend
-sudo systemctl start uchikomi-backend
-
-# 状態確認
-systemctl status uchikomi-backend
-```
-
-API は `http://localhost:8080` / `https://utikomi.exe.xyz:8080` で待ち受けます。
-
-#### 3. フロントエンド（本番モード）
-
-Next.js アプリを `npm run build` + `npm start` で本番実行するように systemd 化しました。
-
-`/etc/systemd/system/uchikomi-frontend.service`:
-
-```ini
-[Unit]
-Description=Uchikomi Frontend Next.js Service (Production)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=/home/exedev/uchikomi/frontend
-ExecStartPre=/usr/bin/npm install
-ExecStartPre=/usr/bin/npm run build
-ExecStart=/usr/bin/npm start
-Restart=on-failure
-RestartSec=5
-User=exedev
-Environment=PORT=3000
-
-[Install]
-WantedBy=multi-user.target
-```
-
-有効化と起動:
-
-```bash
-sudo systemctl enable uchikomi-frontend
-sudo systemctl restart uchikomi-frontend
-
-# 状態確認
-systemctl status uchikomi-frontend
-```
-
-フロントエンドは `http://localhost:3000` / `https://utikomi.exe.xyz:3000` からアクセス可能です。
-
-#### 4. 全体の起動・停止
-
-```bash
-# 起動
-sudo systemctl start docker-postgres
-sudo systemctl start uchikomi-backend
-sudo systemctl start uchikomi-frontend
-
-# 停止
-sudo systemctl stop uchikomi-frontend
-sudo systemctl stop uchikomi-backend
-sudo systemctl stop docker-postgres
-
-# 再起動
-sudo systemctl restart docker-postgres
-sudo systemctl restart uchikomi-backend
-sudo systemctl restart uchikomi-frontend
-```
-
-### ローカル開発モード
-
-従来通り、手動で起動して開発することもできます。
-
-#### 1. バックエンド起動
-
-```bash
-cd backend
-export DATABASE_URL="postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable"
-go run cmd/server/main.go
+# バックエンドサーバーを起動
+task run
 ```
 
 サーバーが `http://localhost:8080` で起動します。
 
-#### 2. フロントエンド起動
+### 本番環境
 
-```bash
-cd frontend
-npm run dev
-```
-
-フロントエンドが `http://localhost:3000` で起動します。
-
-#### 3. ブラウザでアクセス
-
-`http://localhost:3000` にアクセスして、画像をアップロードします。
+デプロイ手順は [DEPLOY.md](./DEPLOY.md) を参照してください。
 
 ## 使用方法
 
@@ -248,14 +95,19 @@ npm run dev
 ### バックエンドテスト
 
 ```bash
-cd backend
-go test ./... -v
+task test
+```
+
+### iOSテスト
+
+```bash
+task ios:test
 ```
 
 ### テストカバレッジ確認
 
 ```bash
-go test ./... -cover
+cd backend && go test ./... -cover
 ```
 
 ## API仕様
@@ -306,12 +158,10 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 
 ## 制限事項（MVP）
 
-以下の機能は意図的に未実装です：
+以下は意図的に簡略化しています：
 
-- ❌ 認証・認可（個人利用のみ）
-- ❌ データベース（PostgreSQL）
-- ❌ キャッシュ
-- ❌ マルチユーザー対応
+- 個人利用を前提とした設計
+- マルチユーザー対応は未実装
 
 ## トラブルシューティング
 
@@ -320,27 +170,15 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 - タイムアウト時間を延長: `backend/cmd/server/main.go` の `NewClassifier(120 * time.Second)` を調整
 - Gemini CLIのワークスペース設定を確認
 
-### CORS エラーが発生する
+### API接続エラー
 
-- バックエンドの `enableCORS` 関数でフロントエンドのURLが許可されているか確認
-
-### 「サーバーに接続できません」エラー
-
-本番環境でAPI接続エラーが発生する場合、以下を確認してください：
-
-1. `frontend/uchikomi-frontend.service`の`NEXT_PUBLIC_API_URL`が正しいドメインを指しているか確認
-2. バックエンドの`backend/cmd/server/main.go`でフロントエンドのオリジンがCORS許可リストに含まれているか確認
-3. 設定変更後は`sudo systemctl restart uchikomi-frontend`でサービスを再起動
-
-詳細は[DEPLOY.md](./DEPLOY.md#api接続エラーサーバーに接続できません)を参照してください。
+詳細は [DEPLOY.md](./DEPLOY.md) を参照してください。
 
 ## 今後の拡張
 
-- [ ] PostgreSQL食品マスタ連携
-- [ ] データベース検索 → 見つからない場合のみGemini推定
-- [ ] ユーザー認証
 - [ ] 食事履歴保存
 - [ ] 栄養バランス分析
+- [ ] 体重推移グラフ
 
 ## 開発者
 
@@ -350,4 +188,5 @@ Ryosuke Horie
 
 - [CLAUDE.md](./CLAUDE.md): プロジェクトガイドライン
 - [IMPLEMENTATION.md](./IMPLEMENTATION.md): 実装サマリー
-- [.claude/rules/](./claude/rules/): 詳細規約
+- [docs/CONTRIB.md](./docs/CONTRIB.md): 開発者ガイド
+- [.claude/rules/](./.claude/rules/): 詳細規約
