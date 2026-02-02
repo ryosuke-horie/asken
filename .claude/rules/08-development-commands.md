@@ -60,6 +60,9 @@ task db-down
 | `task ios:generate-mocks` | Mockoloでモックを生成 |
 | `task ios:test` | iOSのテストを実行 |
 | `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
+| `task ios:lint` | SwiftLintを実行 |
+| `task ios:format` | SwiftFormatを実行（コード整形） |
+| `task ios:format-check` | SwiftFormatチェック（CI用） |
 
 ## 注意
 
