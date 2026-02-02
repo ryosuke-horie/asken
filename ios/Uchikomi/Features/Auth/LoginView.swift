@@ -1,4 +1,7 @@
+import AuthenticationServices
+import GoogleSignInSwift
 import SwiftUI
+import UchikomiCore
 
 // MARK: - LoginView
 
@@ -8,7 +11,7 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 Spacer()
 
                 // Logo & Title
@@ -28,9 +31,9 @@ struct LoginView: View {
 
                 Spacer()
 
-                // Form
+                // Sign-In Buttons
                 if let viewModel {
-                    LoginForm(viewModel: viewModel)
+                    SignInButtons(viewModel: viewModel)
                 }
 
                 Spacer()
@@ -46,59 +49,68 @@ struct LoginView: View {
     }
 }
 
-// MARK: - LoginForm
+// MARK: - SignInButtons
 
-private struct LoginForm: View {
+private struct SignInButtons: View {
     @Bindable var viewModel: LoginViewModel
 
     var body: some View {
         VStack(spacing: 16) {
-            // Email Field
-            TextField("メールアドレス", text: $viewModel.email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-                .textFieldStyle(.roundedBorder)
-
-            // Password Field
-            SecureField("パスワード", text: $viewModel.password)
-                .textContentType(.password)
-                .textFieldStyle(.roundedBorder)
-
             // Error Message
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
-            // Login Button
-            Button {
-                Task {
-                    await viewModel.login()
+            if viewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding()
+            } else {
+                // Google Sign-In Button
+                GoogleSignInButton(
+                    viewModel: GoogleSignInButtonViewModel(
+                        scheme: .dark,
+                        style: .wide,
+                        state: .normal
+                    )
+                ) {
+                    Task {
+                        await viewModel.signInWithGoogle()
+                    }
                 }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(.white)
-                } else {
-                    Text("ログイン")
-                }
+                .frame(height: 50)
+                .padding(.horizontal)
+
+                // Apple Sign-In Button
+                SignInWithAppleButton(
+                    .signIn,
+                    onRequest: { request in
+                        request.requestedScopes = [.fullName, .email]
+                    },
+                    onCompletion: { _ in
+                        Task {
+                            await viewModel.signInWithApple()
+                        }
+                    }
+                )
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 50)
+                .padding(.horizontal)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(viewModel.isValid ? Theme.primary : Color.gray)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .disabled(!viewModel.isValid || viewModel.isLoading)
         }
-        .padding(.horizontal)
     }
 }
 
 #Preview {
     LoginView()
-        .environment(AuthManager())
+        .environment(
+            AuthManager(
+                firebaseAuthService: FirebaseAuthService.shared,
+                appleSignInManager: AppleSignInManager()
+            )
+        )
 }
