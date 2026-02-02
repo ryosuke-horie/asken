@@ -266,10 +266,10 @@ func TestParseMenuIDs(t *testing.T) {
 // ConfigurableMockTrainingRepo はテスト用の設定可能なモック
 type ConfigurableMockTrainingRepo struct {
 	MockTrainingRepo
-	GetLocationByIDFunc func(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error)
+	GetLocationByIDFunc func(ctx context.Context, id, userID string) (*repository.TrainingLocation, error)
 }
 
-func (m *ConfigurableMockTrainingRepo) GetLocationByID(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error) {
+func (m *ConfigurableMockTrainingRepo) GetLocationByID(ctx context.Context, id, userID string) (*repository.TrainingLocation, error) {
 	if m.GetLocationByIDFunc != nil {
 		return m.GetLocationByIDFunc(ctx, id, userID)
 	}
@@ -279,7 +279,7 @@ func (m *ConfigurableMockTrainingRepo) GetLocationByID(ctx context.Context, id, 
 func TestValidateAndParseLocationID(t *testing.T) {
 	strPtr := func(s string) *string { return &s }
 	validUUID := uuid.New()
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name        string
@@ -303,9 +303,10 @@ func TestValidateAndParseLocationID(t *testing.T) {
 			locationID: strPtr(validUUID.String()),
 			mockSetup: func() *ConfigurableMockTrainingRepo {
 				return &ConfigurableMockTrainingRepo{
-					GetLocationByIDFunc: func(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error) {
+					GetLocationByIDFunc: func(ctx context.Context, id, userID string) (*repository.TrainingLocation, error) {
+						parsedID, _ := uuid.Parse(id)
 						return &repository.TrainingLocation{
-							ID:     id,
+							ID:     parsedID,
 							UserID: userID,
 							Name:   "テスト場所",
 						}, nil
@@ -320,7 +321,7 @@ func TestValidateAndParseLocationID(t *testing.T) {
 			locationID: strPtr(validUUID.String()),
 			mockSetup: func() *ConfigurableMockTrainingRepo {
 				return &ConfigurableMockTrainingRepo{
-					GetLocationByIDFunc: func(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error) {
+					GetLocationByIDFunc: func(ctx context.Context, id, userID string) (*repository.TrainingLocation, error) {
 						return nil, nil
 					},
 				}
@@ -334,7 +335,7 @@ func TestValidateAndParseLocationID(t *testing.T) {
 			locationID: strPtr(validUUID.String()),
 			mockSetup: func() *ConfigurableMockTrainingRepo {
 				return &ConfigurableMockTrainingRepo{
-					GetLocationByIDFunc: func(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error) {
+					GetLocationByIDFunc: func(ctx context.Context, id, userID string) (*repository.TrainingLocation, error) {
 						return nil, errors.New("database connection error")
 					},
 				}

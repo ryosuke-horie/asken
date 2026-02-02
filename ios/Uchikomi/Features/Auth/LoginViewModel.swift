@@ -66,6 +66,25 @@ final class LoginViewModel {
 
         isLoading = false
     }
+
+    #if DEBUG && targetEnvironment(simulator)
+    /// シミュレータ専用: モック認証でサインイン
+    @MainActor
+    func signInWithMock() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // ダミーの GoogleCredential を渡す（MockFirebaseAuthService は無視する）
+            let dummyCredential = GoogleCredential(idToken: "", accessToken: "")
+            try await authManager.signInWithGoogle(credential: dummyCredential)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+    #endif
 }
 
 // MARK: - LoginError

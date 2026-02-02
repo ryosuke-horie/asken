@@ -68,13 +68,8 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
-    info:
-      path: Uchikomi/Resources/Info.plist
-      properties:
-        UILaunchScreen:
-          UIColorName: ""
-        NSCameraUsageDescription: "食事の写真を撮影するためにカメラを使用します"
-        NSPhotoLibraryUsageDescription: "食事の画像を選択するためにフォトライブラリにアクセスします"
+    # Info.plist is managed directly at Uchikomi/Resources/Info.plist
+    # URL Schemes and GIDClientID are configured there for Google Sign-In
 
   UchikomiTests:
     type: bundle.unit-test

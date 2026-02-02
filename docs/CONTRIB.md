@@ -67,6 +67,29 @@ Terraform用の環境変数は`.mise.toml`で管理されています。
 
 詳細は[infrastructure/README.md](../infrastructure/README.md)を参照してください。
 
+### 5. 開発用モック認証の設定
+
+iOSシミュレータではGoogle Sign-Inのパスキー認証が動作しないため、開発用のモック認証が自動的に有効になります。
+
+#### iOS側（自動）
+
+シミュレータでDEBUGビルドを実行すると、自動的にモック認証が使用されます:
+- 「開発用ログイン」ボタンが表示される
+- Google/Apple Sign-Inボタンは非表示
+
+#### バックエンド側
+
+`backend/.env`に以下を追加:
+
+```bash
+APP_ENV=development
+```
+
+これにより:
+- Firebase認証の代わりにモック認証が使用される
+- トークン`dev-mock-token`で固定UID`dev-mock-user`として認証される
+- **本番環境では`APP_ENV`を設定しないこと**
+
 ## 開発ワークフロー
 
 ### 日常の開発サイクル

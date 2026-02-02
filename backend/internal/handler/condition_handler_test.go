@@ -16,40 +16,40 @@ import (
 )
 
 type MockConditionRepository struct {
-	CreateOrUpdateRecordFunc func(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error)
-	GetRecordByDateFunc      func(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error)
+	CreateOrUpdateRecordFunc func(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error)
+	GetRecordByDateFunc      func(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error)
 }
 
-func (m *MockConditionRepository) CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
+func (m *MockConditionRepository) CreateOrUpdateRecord(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
 	if m.CreateOrUpdateRecordFunc != nil {
 		return m.CreateOrUpdateRecordFunc(ctx, userID, condition, fatigue, recordedAt)
 	}
 	return nil, nil
 }
 
-func (m *MockConditionRepository) GetRecordByDate(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error) {
+func (m *MockConditionRepository) GetRecordByDate(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error) {
 	if m.GetRecordByDateFunc != nil {
 		return m.GetRecordByDateFunc(ctx, userID, date)
 	}
 	return nil, nil
 }
 
-func createConditionRequestWithUserID(method, url string, body []byte, userID uuid.UUID) *http.Request {
+func createConditionRequestWithUserID(method, url string, body []byte, userID string) *http.Request {
 	req := httptest.NewRequest(method, url, bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	return req.WithContext(ctx)
 }
 
 func TestConditionHandler_HandleCreateRecord(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 
 	tests := []struct {
 		name           string
 		requestBody    CreateConditionRecordRequest
-		userID         uuid.UUID
-		mockFunc       func(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error)
+		userID         string
+		mockFunc       func(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error)
 		expectedStatus int
 	}{
 		{
@@ -60,7 +60,7 @@ func TestConditionHandler_HandleCreateRecord(t *testing.T) {
 				RecordedAt: "2024-01-15",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
+			mockFunc: func(ctx context.Context, uid string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
 				return &repository.ConditionRecord{
 					ID:         recordID,
 					UserID:     uid,
@@ -79,7 +79,7 @@ func TestConditionHandler_HandleCreateRecord(t *testing.T) {
 				Fatigue:    2,
 				RecordedAt: "2024-01-15",
 			},
-			userID:         uuid.Nil,
+			userID:         "",
 			mockFunc:       nil,
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -146,7 +146,7 @@ func TestConditionHandler_HandleCreateRecord(t *testing.T) {
 				RecordedAt: "2024-01-15",
 			},
 			userID: userID,
-			mockFunc: func(ctx context.Context, uid uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
+			mockFunc: func(ctx context.Context, uid string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
 				return nil, errors.New("database error")
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -174,14 +174,14 @@ func TestConditionHandler_HandleCreateRecord(t *testing.T) {
 }
 
 func TestConditionHandler_HandleCreateRecord_EmptyRecordedAt(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 	today := time.Now().Format("2006-01-02")
 
 	var capturedRecordedAt string
 
 	mockRepo := &MockConditionRepository{
-		CreateOrUpdateRecordFunc: func(ctx context.Context, uid uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
+		CreateOrUpdateRecordFunc: func(ctx context.Context, uid string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
 			capturedRecordedAt = recordedAt
 			return &repository.ConditionRecord{
 				ID:         recordID,
@@ -216,12 +216,12 @@ func TestConditionHandler_HandleCreateRecord_EmptyRecordedAt(t *testing.T) {
 }
 
 func TestConditionHandler_HandleCreateRecord_InvalidJSON(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
 		body           []byte
-		userID         uuid.UUID
+		userID         string
 		expectedStatus int
 	}{
 		{
@@ -256,13 +256,13 @@ func TestConditionHandler_HandleCreateRecord_InvalidJSON(t *testing.T) {
 }
 
 func TestConditionHandler_HandleGetRecord(t *testing.T) {
-	userID := uuid.New()
+	userID := "test-firebase-uid"
 	recordID := uuid.New()
 
 	tests := []struct {
 		name           string
 		date           string
-		userID         uuid.UUID
+		userID         string
 		mockRecord     *repository.ConditionRecord
 		mockErr        error
 		expectedStatus int
@@ -291,7 +291,7 @@ func TestConditionHandler_HandleGetRecord(t *testing.T) {
 		{
 			name:           "未認証の場合は401を返すべき",
 			date:           "2024-01-15",
-			userID:         uuid.Nil,
+			userID:         "",
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
@@ -318,7 +318,7 @@ func TestConditionHandler_HandleGetRecord(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &MockConditionRepository{
-				GetRecordByDateFunc: func(ctx context.Context, uid uuid.UUID, date string) (*repository.ConditionRecord, error) {
+				GetRecordByDateFunc: func(ctx context.Context, uid string, date string) (*repository.ConditionRecord, error) {
 					if tt.mockErr != nil {
 						return nil, tt.mockErr
 					}

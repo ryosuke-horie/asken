@@ -7,10 +7,15 @@ import UchikomiCore
 @main
 struct UchikomiApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var authManager = AuthManager(
-        firebaseAuthService: FirebaseAuthService.shared,
-        appleSignInManager: AppleSignInManager()
-    )
+    @State private var authManager: AuthManager
+
+    init() {
+        // AuthServiceProvider.shared を使用して、APIClient と同じサービスを共有
+        _authManager = State(initialValue: AuthManager(
+            firebaseAuthService: AuthServiceProvider.shared,
+            appleSignInManager: AppleSignInManager()
+        ))
+    }
 
     var body: some Scene {
         WindowGroup {

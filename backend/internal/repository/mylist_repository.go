@@ -13,7 +13,7 @@ import (
 
 type MylistItem struct {
 	ID            uuid.UUID              `json:"id"`
-	UserID        uuid.UUID              `json:"user_id"`
+	UserID        string                 `json:"user_id"`
 	Name          string                 `json:"name"`
 	BaseAmount    string                 `json:"base_amount"`
 	Unit          string                 `json:"unit"`
@@ -29,12 +29,12 @@ type MylistItem struct {
 }
 
 type MylistRepository interface {
-	GetAll(ctx context.Context, userID uuid.UUID) ([]*MylistItem, error)
-	GetByID(ctx context.Context, id, userID uuid.UUID) (*MylistItem, error)
+	GetAll(ctx context.Context, userID string) ([]*MylistItem, error)
+	GetByID(ctx context.Context, id, userID string) (*MylistItem, error)
 	Create(ctx context.Context, item *MylistItem) (*MylistItem, error)
 	Update(ctx context.Context, item *MylistItem) (*MylistItem, error)
-	Delete(ctx context.Context, id, userID uuid.UUID) error
-	Reorder(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) error
+	Delete(ctx context.Context, id, userID string) error
+	Reorder(ctx context.Context, userID string, itemIDs []uuid.UUID) error
 }
 
 type postgresMylistRepository struct {
@@ -45,7 +45,7 @@ func NewMylistRepository(db *sql.DB) MylistRepository {
 	return &postgresMylistRepository{db: db}
 }
 
-func (r *postgresMylistRepository) GetAll(ctx context.Context, userID uuid.UUID) ([]*MylistItem, error) {
+func (r *postgresMylistRepository) GetAll(ctx context.Context, userID string) ([]*MylistItem, error) {
 	query := `
 		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 		FROM mylist_items
@@ -75,7 +75,7 @@ func (r *postgresMylistRepository) GetAll(ctx context.Context, userID uuid.UUID)
 	return items, nil
 }
 
-func (r *postgresMylistRepository) GetByID(ctx context.Context, id, userID uuid.UUID) (*MylistItem, error) {
+func (r *postgresMylistRepository) GetByID(ctx context.Context, id, userID string) (*MylistItem, error) {
 	query := `
 		SELECT id, user_id, name, base_amount, unit, calories, protein, fat, carbohydrates, foods, image_path, sort_order, created_at, updated_at
 		FROM mylist_items
@@ -267,7 +267,7 @@ func (r *postgresMylistRepository) Update(ctx context.Context, item *MylistItem)
 	return &updated, nil
 }
 
-func (r *postgresMylistRepository) Delete(ctx context.Context, id, userID uuid.UUID) error {
+func (r *postgresMylistRepository) Delete(ctx context.Context, id, userID string) error {
 	query := `DELETE FROM mylist_items WHERE id = $1 AND user_id = $2`
 
 	result, err := r.db.ExecContext(ctx, query, id, userID)
@@ -287,7 +287,7 @@ func (r *postgresMylistRepository) Delete(ctx context.Context, id, userID uuid.U
 	return nil
 }
 
-func (r *postgresMylistRepository) Reorder(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) error {
+func (r *postgresMylistRepository) Reorder(ctx context.Context, userID string, itemIDs []uuid.UUID) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("トランザクションの開始に失敗: %w", err)

@@ -40,8 +40,10 @@ module "storage" {
 module "firebase_auth" {
   source = "../../modules/firebase-auth"
 
-  project_id         = var.gcp_project_id
-  authorized_domains = ["${var.gcp_project_id}.firebaseapp.com", "localhost"]
+  project_id                 = var.gcp_project_id
+  authorized_domains         = ["${var.gcp_project_id}.firebaseapp.com", "localhost"]
+  google_oauth_client_id     = var.google_oauth_client_id
+  google_oauth_client_secret = var.google_oauth_client_secret
 }
 
 # -----------------------------------------------------------------------------

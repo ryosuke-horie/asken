@@ -30,6 +30,15 @@ storage_cors_origins          = ["*"]
 storage_force_destroy         = true
 
 # -----------------------------------------------------------------------------
+# Firebase Auth設定（Google Sign-In）
+# NOTE: OAuth Client ID/Secretは手動でGoogle Cloud Consoleで作成する必要があります
+# https://console.cloud.google.com/apis/credentials?project=utikomi-dev
+# -----------------------------------------------------------------------------
+
+# google_oauth_client_id     = "xxx.apps.googleusercontent.com"
+# google_oauth_client_secret = "GOCSPX-xxx"
+
+# -----------------------------------------------------------------------------
 # GitHub設定
 # -----------------------------------------------------------------------------
 

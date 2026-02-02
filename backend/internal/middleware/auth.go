@@ -6,21 +6,26 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 type contextKey string
 
-const userIDContextKey contextKey = "userID"
+const firebaseUIDContextKey contextKey = "firebaseUID"
 
-type AuthMiddleware struct {
-	authService *service.AuthService
+// Authenticator は認証ミドルウェアの共通インターフェース
+type Authenticator interface {
+	Authenticate(next http.Handler) http.Handler
 }
 
-func NewAuthMiddleware(authService *service.AuthService) *AuthMiddleware {
+// AuthMiddleware は Firebase 認証を行うミドルウェア
+type AuthMiddleware struct {
+	firebaseAuthService *service.FirebaseAuthService
+}
+
+func NewAuthMiddleware(firebaseAuthService *service.FirebaseAuthService) *AuthMiddleware {
 	return &AuthMiddleware{
-		authService: authService,
+		firebaseAuthService: firebaseAuthService,
 	}
 }
 
@@ -38,28 +43,29 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		token := parts[1]
-		claims, err := m.authService.ValidateToken(token)
+		idToken := parts[1]
+		token, err := m.firebaseAuthService.VerifyIDToken(r.Context(), idToken)
 		if err != nil {
-			log.Printf("Token validation failed: %v", err)
+			log.Printf("Firebase ID token validation failed: %v", err)
 			http.Error(w, "無効なトークンです", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDContextKey, claims.UserID)
+		ctx := context.WithValue(r.Context(), firebaseUIDContextKey, token.UID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func GetUserIDFromContext(ctx context.Context) uuid.UUID {
-	userID, ok := ctx.Value(userIDContextKey).(uuid.UUID)
+// GetFirebaseUIDFromContext はコンテキストから Firebase UID を取得する
+func GetFirebaseUIDFromContext(ctx context.Context) string {
+	uid, ok := ctx.Value(firebaseUIDContextKey).(string)
 	if !ok {
-		return uuid.Nil
+		return ""
 	}
-	return userID
+	return uid
 }
 
-// SetUserIDToContext はテスト用にユーザーIDをコンテキストに設定する
-func SetUserIDToContext(ctx context.Context, userID uuid.UUID) context.Context {
-	return context.WithValue(ctx, userIDContextKey, userID)
+// SetFirebaseUIDToContext はテスト用に Firebase UID をコンテキストに設定する
+func SetFirebaseUIDToContext(ctx context.Context, uid string) context.Context {
+	return context.WithValue(ctx, firebaseUIDContextKey, uid)
 }

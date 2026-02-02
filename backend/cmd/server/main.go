@@ -45,7 +45,6 @@ func main() {
 }
 
 type handlers struct {
-	auth          *handler.AuthHandler
 	analyze       *handler.AnalyzeHandler
 	status        *handler.StatusHandler
 	history       *handler.HistoryHandler
@@ -60,11 +59,7 @@ type handlers struct {
 	profile       *handler.ProfileHandler
 }
 
-func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
-	// 認証エンドポイント（認証不要）
-	mux.HandleFunc("/api/auth/register", h.auth.HandleRegister)
-	mux.HandleFunc("/api/auth/login", h.auth.HandleLogin)
-
+func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
 	mux.HandleFunc("/api/images/", h.image.Handle)
 
@@ -79,7 +74,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.Auth
 	setupProfileRoutes(mux, h, authMiddleware)
 }
 
-func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -104,7 +99,7 @@ func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewa
 	mux.Handle("/api/upload-image", authMiddleware.Authenticate(http.HandlerFunc(uploadImageRouteHandler)))
 }
 
-func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(h.history.HandleList)))
 
 	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +117,7 @@ func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewa
 	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
 }
 
-func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(h.dailyMeals.Handle)))
 
 	mealsFromMylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +141,7 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware
 	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
 }
 
-func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -172,7 +167,7 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewar
 	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
 }
 
-func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	mylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -220,7 +215,7 @@ func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlewar
 	mux.Handle("/api/mylist/", authMiddleware.Authenticate(http.HandlerFunc(mylistDetailRouteHandler)))
 }
 
-func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	conditionRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -234,7 +229,7 @@ func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware *middle
 	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
 }
 
-func setupProfileRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupProfileRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	profileRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -265,7 +260,7 @@ func createMethodRouter(handlers map[string]http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	routes := []routeDefinition{
 		{
 			pattern: "/api/training/locations",
@@ -331,7 +326,7 @@ func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware *middlew
 	setupLocationDetailRoutes(mux, h, authMiddleware)
 }
 
-func setupLocationDetailRoutes(mux *http.ServeMux, h handlers, authMiddleware *middleware.AuthMiddleware) {
+func setupLocationDetailRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/equipment") {
 			handleEquipmentRoutes(w, r, h)
@@ -383,7 +378,6 @@ func run() error {
 
 	// リポジトリの初期化
 	analysisRepo := repository.NewAnalysisRepository(db)
-	userRepo := repository.NewUserRepository(db)
 	weightRepo := repository.NewWeightRepository(db)
 	mylistRepo := repository.NewMylistRepository(db)
 	conditionRepo := repository.NewConditionRepository(db)
@@ -404,18 +398,23 @@ func run() error {
 
 	foodService := service.NewFoodService(geminiClient)
 
-	// 認証サービスの初期化
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		jwtSecret = "default-secret-change-in-production"
-		log.Println("WARNING: JWT_SECRET not set, using default secret. Set JWT_SECRET in production!")
+	// 認証ミドルウェアの初期化
+	var authMiddleware middleware.Authenticator
+	if middleware.IsDevMode() {
+		log.Println("WARNING: Running in development mode with mock authentication")
+		authMiddleware = middleware.NewDevAuthMiddleware()
+	} else {
+		firebaseCredentials := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+		firebaseAuthService, err := service.NewFirebaseAuthService(context.Background(), firebaseCredentials)
+		if err != nil {
+			log.Fatalf("Failed to initialize Firebase Auth Service: %v", err)
+		}
+		log.Println("Firebase Auth Service initialized")
+		authMiddleware = middleware.NewAuthMiddleware(firebaseAuthService)
 	}
-	authService := service.NewAuthService(jwtSecret, 24*time.Hour)
-	authMiddleware := middleware.NewAuthMiddleware(authService)
 
 	// ハンドラーの初期化
 	h := handlers{
-		auth:          handler.NewAuthHandler(authService, userRepo),
 		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
 		history:       handler.NewHistoryHandler(analysisRepo, foodService),

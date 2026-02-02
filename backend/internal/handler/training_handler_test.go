@@ -18,10 +18,10 @@ import (
 // MockTrainingRepo はテスト用のTrainingRepositoryモック
 type MockTrainingRepo struct{}
 
-func (m *MockTrainingRepo) GetAllLocations(ctx context.Context, userID uuid.UUID) ([]*repository.TrainingLocation, error) {
+func (m *MockTrainingRepo) GetAllLocations(ctx context.Context, userID string) ([]*repository.TrainingLocation, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) GetLocationByID(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingLocation, error) {
+func (m *MockTrainingRepo) GetLocationByID(ctx context.Context, id, userID string) (*repository.TrainingLocation, error) {
 	return nil, nil
 }
 func (m *MockTrainingRepo) CreateLocation(ctx context.Context, location *repository.TrainingLocation) (*repository.TrainingLocation, error) {
@@ -30,7 +30,7 @@ func (m *MockTrainingRepo) CreateLocation(ctx context.Context, location *reposit
 func (m *MockTrainingRepo) UpdateLocation(ctx context.Context, location *repository.TrainingLocation) (*repository.TrainingLocation, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) DeleteLocation(ctx context.Context, id, userID uuid.UUID) error {
+func (m *MockTrainingRepo) DeleteLocation(ctx context.Context, id, userID string) error {
 	return nil
 }
 func (m *MockTrainingRepo) GetEquipmentByLocation(ctx context.Context, locationID uuid.UUID) ([]*repository.TrainingEquipment, error) {
@@ -48,22 +48,22 @@ func (m *MockTrainingRepo) UpdateEquipment(ctx context.Context, equipment *repos
 func (m *MockTrainingRepo) DeleteEquipment(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
-func (m *MockTrainingRepo) GetMenus(ctx context.Context, userID uuid.UUID) ([]*repository.TrainingMenu, error) {
+func (m *MockTrainingRepo) GetMenus(ctx context.Context, userID string) ([]*repository.TrainingMenu, error) {
 	return nil, nil
 }
 func (m *MockTrainingRepo) CreateMenu(ctx context.Context, menu *repository.TrainingMenu) (*repository.TrainingMenu, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) DeleteMenu(ctx context.Context, id, userID uuid.UUID) error {
+func (m *MockTrainingRepo) DeleteMenu(ctx context.Context, id, userID string) error {
 	return nil
 }
-func (m *MockTrainingRepo) GetRecords(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]*repository.TrainingRecord, error) {
+func (m *MockTrainingRepo) GetRecords(ctx context.Context, userID string, startDate, endDate time.Time) ([]*repository.TrainingRecord, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) GetRecordByDate(ctx context.Context, userID uuid.UUID, date time.Time) (*repository.TrainingRecord, error) {
+func (m *MockTrainingRepo) GetRecordByDate(ctx context.Context, userID string, date time.Time) (*repository.TrainingRecord, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) GetRecordByID(ctx context.Context, id, userID uuid.UUID) (*repository.TrainingRecord, error) {
+func (m *MockTrainingRepo) GetRecordByID(ctx context.Context, id, userID string) (*repository.TrainingRecord, error) {
 	return nil, nil
 }
 func (m *MockTrainingRepo) CreateRecord(ctx context.Context, record *repository.TrainingRecord, menuIDs []uuid.UUID) (*repository.TrainingRecord, error) {
@@ -72,7 +72,7 @@ func (m *MockTrainingRepo) CreateRecord(ctx context.Context, record *repository.
 func (m *MockTrainingRepo) UpdateRecord(ctx context.Context, record *repository.TrainingRecord, menuIDs []uuid.UUID) (*repository.TrainingRecord, error) {
 	return nil, nil
 }
-func (m *MockTrainingRepo) DeleteRecord(ctx context.Context, id, userID uuid.UUID) error {
+func (m *MockTrainingRepo) DeleteRecord(ctx context.Context, id, userID string) error {
 	return nil
 }
 func (m *MockTrainingRepo) UpsertRecord(ctx context.Context, record *repository.TrainingRecord) (*repository.TrainingRecord, error) {
@@ -81,21 +81,37 @@ func (m *MockTrainingRepo) UpsertRecord(ctx context.Context, record *repository.
 
 // MockConditionRepo はテスト用のConditionRepositoryモック（training用）
 type MockConditionRepo struct {
-	GetRecordByDateFunc func(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error)
+	GetRecordByDateFunc func(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error)
 }
 
-func (m *MockConditionRepo) CreateOrUpdateRecord(ctx context.Context, userID uuid.UUID, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
+func (m *MockConditionRepo) CreateOrUpdateRecord(ctx context.Context, userID string, condition, fatigue int, recordedAt string) (*repository.ConditionRecord, error) {
 	return nil, nil
 }
 
-func (m *MockConditionRepo) GetRecordByDate(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error) {
+func (m *MockConditionRepo) GetRecordByDate(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error) {
 	if m.GetRecordByDateFunc != nil {
 		return m.GetRecordByDateFunc(ctx, userID, date)
 	}
 	return nil, nil
 }
 
-func createTestRequest(method, url string, body interface{}, userID uuid.UUID) *http.Request {
+// MockProfileRepo はテスト用のProfileRepositoryモック（training用）
+type MockProfileRepo struct {
+	GetByUserIDFunc func(ctx context.Context, userID string) (*repository.UserProfile, error)
+}
+
+func (m *MockProfileRepo) GetByUserID(ctx context.Context, userID string) (*repository.UserProfile, error) {
+	if m.GetByUserIDFunc != nil {
+		return m.GetByUserIDFunc(ctx, userID)
+	}
+	return nil, nil
+}
+
+func (m *MockProfileRepo) CreateOrUpdate(ctx context.Context, profile *repository.UserProfile) (*repository.UserProfile, error) {
+	return nil, nil
+}
+
+func createTestRequest(method, url string, body interface{}, userID string) *http.Request {
 	var bodyReader *bytes.Buffer
 	if body != nil {
 		bodyBytes, _ := json.Marshal(body)
@@ -106,18 +122,18 @@ func createTestRequest(method, url string, body interface{}, userID uuid.UUID) *
 
 	req := httptest.NewRequest(method, url, bodyReader)
 	req.Header.Set("Content-Type", "application/json")
-	ctx := middleware.SetUserIDToContext(req.Context(), userID)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
 	return req.WithContext(ctx)
 }
 
 func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
-	testUserID := uuid.New()
+	testUserID := "test-firebase-uid"
 	sportType := "柔術"
 
 	tests := []struct {
 		name           string
 		requestBody    SuggestMenuRequest
-		profileSetup   func() *MockProfileRepository
+		profileSetup   func() *MockProfileRepo
 		conditionSetup func() *MockConditionRepo
 		expectedStatus int
 	}{
@@ -127,9 +143,9 @@ func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
 				Equipment: []string{"ダンベル"},
 				Duration:  60,
 			},
-			profileSetup: func() *MockProfileRepository {
-				return &MockProfileRepository{
-					GetByUserIDFunc: func(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error) {
+			profileSetup: func() *MockProfileRepo {
+				return &MockProfileRepo{
+					GetByUserIDFunc: func(ctx context.Context, userID string) (*repository.UserProfile, error) {
 						return &repository.UserProfile{
 							ID:            uuid.New(),
 							UserID:        userID,
@@ -151,9 +167,9 @@ func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
 				Duration:  60,
 				Goals:     []string{"減量"},
 			},
-			profileSetup: func() *MockProfileRepository {
-				return &MockProfileRepository{
-					GetByUserIDFunc: func(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error) {
+			profileSetup: func() *MockProfileRepo {
+				return &MockProfileRepo{
+					GetByUserIDFunc: func(ctx context.Context, userID string) (*repository.UserProfile, error) {
 						return &repository.UserProfile{
 							ID:            uuid.New(),
 							UserID:        userID,
@@ -174,9 +190,9 @@ func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
 				Equipment: []string{"ダンベル"},
 				Duration:  60,
 			},
-			profileSetup: func() *MockProfileRepository {
-				return &MockProfileRepository{
-					GetByUserIDFunc: func(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error) {
+			profileSetup: func() *MockProfileRepo {
+				return &MockProfileRepo{
+					GetByUserIDFunc: func(ctx context.Context, userID string) (*repository.UserProfile, error) {
 						return nil, nil
 					},
 				}
@@ -192,9 +208,9 @@ func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
 				Equipment: []string{"ダンベル"},
 				Duration:  60,
 			},
-			profileSetup: func() *MockProfileRepository {
-				return &MockProfileRepository{
-					GetByUserIDFunc: func(ctx context.Context, userID uuid.UUID) (*repository.UserProfile, error) {
+			profileSetup: func() *MockProfileRepo {
+				return &MockProfileRepo{
+					GetByUserIDFunc: func(ctx context.Context, userID string) (*repository.UserProfile, error) {
 						return nil, errors.New("database error")
 					},
 				}
@@ -231,7 +247,7 @@ func TestHandleSuggestMenu_WithProfileIntegration(t *testing.T) {
 }
 
 func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
-	testUserID := uuid.New()
+	testUserID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
@@ -247,7 +263,7 @@ func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
 			},
 			conditionSetup: func() *MockConditionRepo {
 				return &MockConditionRepo{
-					GetRecordByDateFunc: func(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error) {
+					GetRecordByDateFunc: func(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error) {
 						return &repository.ConditionRecord{
 							ID:        uuid.New(),
 							UserID:    userID,
@@ -267,7 +283,7 @@ func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
 			},
 			conditionSetup: func() *MockConditionRepo {
 				return &MockConditionRepo{
-					GetRecordByDateFunc: func(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error) {
+					GetRecordByDateFunc: func(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error) {
 						return nil, nil
 					},
 				}
@@ -282,7 +298,7 @@ func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
 			},
 			conditionSetup: func() *MockConditionRepo {
 				return &MockConditionRepo{
-					GetRecordByDateFunc: func(ctx context.Context, userID uuid.UUID, date string) (*repository.ConditionRecord, error) {
+					GetRecordByDateFunc: func(ctx context.Context, userID string, date string) (*repository.ConditionRecord, error) {
 						return nil, errors.New("database error")
 					},
 				}
@@ -298,7 +314,7 @@ func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
 			handler := &TrainingHandler{
 				repository:    &MockTrainingRepo{},
 				conditionRepo: mockConditionRepo,
-				profileRepo:   &MockProfileRepository{},
+				profileRepo:   &MockProfileRepo{},
 			}
 
 			req := createTestRequest(http.MethodPost, "/api/training/suggest-menu", tt.requestBody, testUserID)
@@ -314,13 +330,13 @@ func TestHandleSuggestMenu_WithConditionIntegration(t *testing.T) {
 }
 
 func TestHandleSuggestMenu_WithNilRepositories(t *testing.T) {
-	testUserID := uuid.New()
+	testUserID := "test-firebase-uid"
 
 	t.Run("conditionRepoがnilの場合でもパニックしないべき", func(t *testing.T) {
 		handler := &TrainingHandler{
 			repository:    &MockTrainingRepo{},
 			conditionRepo: nil,
-			profileRepo:   &MockProfileRepository{},
+			profileRepo:   &MockProfileRepo{},
 		}
 
 		req := createTestRequest(http.MethodPost, "/api/training/suggest-menu", SuggestMenuRequest{
@@ -360,7 +376,7 @@ func TestHandleSuggestMenu_WithNilRepositories(t *testing.T) {
 }
 
 func TestHandleSuggestMenu_Validation(t *testing.T) {
-	testUserID := uuid.New()
+	testUserID := "test-firebase-uid"
 
 	tests := []struct {
 		name           string
@@ -394,14 +410,14 @@ func TestHandleSuggestMenu_Validation(t *testing.T) {
 			handler := &TrainingHandler{
 				repository:    &MockTrainingRepo{},
 				conditionRepo: &MockConditionRepo{},
-				profileRepo:   &MockProfileRepository{},
+				profileRepo:   &MockProfileRepo{},
 			}
 
 			var req *http.Request
 			if str, ok := tt.requestBody.(string); ok {
 				req = httptest.NewRequest(http.MethodPost, "/api/training/suggest-menu", bytes.NewBuffer([]byte(str)))
 				req.Header.Set("Content-Type", "application/json")
-				ctx := middleware.SetUserIDToContext(req.Context(), testUserID)
+				ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 				req = req.WithContext(ctx)
 			} else {
 				req = createTestRequest(http.MethodPost, "/api/training/suggest-menu", tt.requestBody, testUserID)
@@ -423,7 +439,7 @@ func TestHandleSuggestMenu_Unauthorized(t *testing.T) {
 		handler := &TrainingHandler{
 			repository:    &MockTrainingRepo{},
 			conditionRepo: &MockConditionRepo{},
-			profileRepo:   &MockProfileRepository{},
+			profileRepo:   &MockProfileRepo{},
 		}
 
 		body, _ := json.Marshal(SuggestMenuRequest{

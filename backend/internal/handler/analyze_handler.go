@@ -97,9 +97,9 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 	}
 
 	// contextからユーザーIDを取得
-	userID := middleware.GetUserIDFromContext(r.Context())
-	var userIDPtr *uuid.UUID
-	if userID != uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	var userIDPtr *string
+	if userID != "" {
 		userIDPtr = &userID
 	}
 
@@ -176,9 +176,9 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	}
 
 	// contextからユーザーIDを取得
-	userID := middleware.GetUserIDFromContext(r.Context())
-	var userIDPtr *uuid.UUID
-	if userID != uuid.Nil {
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	var userIDPtr *string
+	if userID != "" {
 		userIDPtr = &userID
 	}
 
