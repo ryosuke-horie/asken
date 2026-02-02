@@ -4,9 +4,27 @@ Terraformによるインフラ管理
 
 ## 前提条件
 
-- [Terraform](https://www.terraform.io/downloads) >= 1.6.0
+- [mise](https://mise.jdx.dev/) - ツールバージョン管理（Terraform自動インストール）
 - [Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
 - [GitHub CLI](https://cli.github.com/) (オプション)
+
+## 環境変数
+
+このプロジェクトでは mise を使用してツールと環境変数を管理しています。
+プロジェクトルートの `.mise.toml` に以下が定義されています：
+
+- `GCP_PROJECT_ID` - GCPプロジェクトID
+- `GCP_REGION` - GCPリージョン
+- `GCLOUD_CONFIG_NAME` - gcloud構成名
+- `TF_VAR_*` - Terraform変数
+
+初回のみ信頼設定が必要です：
+
+```bash
+cd /path/to/utikomi
+mise trust
+mise install
+```
 
 ## 初回セットアップ
 
@@ -23,13 +41,30 @@ GCPコンソール > 請求 > プロジェクトの請求先アカウントを�
 
 ### 3. サービスアカウント作成
 
-GCPコンソール > IAMと管理 > サービスアカウント:
+CLIで作成（推奨）:
 
-1. 「サービスアカウントを作成」をクリック
-2. 名前: `terraform-admin`
-3. ロール: `編集者 (Editor)`
-4. キーを作成 > JSON形式でダウンロード
-5. `sa-key.json`としてローカルに保存
+```bash
+# サービスアカウント作成
+gcloud iam service-accounts create terraform-admin \
+  --display-name="Terraform Admin"
+
+# 必要なロールを付与
+gcloud projects add-iam-policy-binding utikomi-dev \
+  --member="serviceAccount:terraform-admin@utikomi-dev.iam.gserviceaccount.com" \
+  --role="roles/editor"
+
+gcloud projects add-iam-policy-binding utikomi-dev \
+  --member="serviceAccount:terraform-admin@utikomi-dev.iam.gserviceaccount.com" \
+  --role="roles/firebase.admin"
+
+# キーをJSON形式で取得
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account=terraform-admin@utikomi-dev.iam.gserviceaccount.com
+```
+
+必要なロール:
+- `roles/editor` - 基本的なリソース管理
+- `roles/firebase.admin` - Firebase/Firestore管理
 
 ### 4. tfstate用バケット作成
 
@@ -51,12 +86,34 @@ GitHub Settings > Developer settings > Personal access tokens > Tokens (classic)
    - `admin:repo_hook` (webhook管理)
 4. トークンをコピーして安全に保存
 
-### 6. gcloud認証
+### 6. gcloud構成セットアップ
+
+プロジェクト専用のgcloud構成を作成します（他のGCPプロジェクトとの混同を防ぐため）：
 
 ```bash
-gcloud auth login
+# 構成を作成
+gcloud config configurations create utikomi-dev
+
+# プロジェクトを設定
 gcloud config set project utikomi-dev
+
+# リージョン・ゾーンを設定
+gcloud config set compute/region asia-northeast1
+gcloud config set compute/zone asia-northeast1-a
+
+# 認証
+gcloud auth login
+gcloud auth application-default login
 ```
+
+構成の切り替え：
+
+```bash
+gcloud config configurations activate utikomi-dev
+```
+
+> **Note**: このプロジェクトでは mise により `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev` が自動設定されます。
+> プロジェクトディレクトリに入ると自動的に `utikomi-dev` 構成が使われます。
 
 ### 7. API有効化
 
