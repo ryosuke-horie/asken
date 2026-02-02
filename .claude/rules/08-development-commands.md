@@ -49,6 +49,7 @@ task db-down
 | `task setup` | Go依存関係をダウンロード |
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
+| `task test:coverage` | Goカバレッジ計測付きテスト |
 | `task lint` | Goリントを実行 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
@@ -58,6 +59,7 @@ task db-down
 | `task db-clean` | DBをリセット |
 | `task ios:generate-mocks` | Mockoloでモックを生成 |
 | `task ios:test` | iOSのテストを実行 |
+| `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
 
 ## 注意
 
