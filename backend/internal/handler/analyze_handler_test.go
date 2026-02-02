@@ -175,7 +175,8 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 	jpegData[0] = 0xFF
 	jpegData[1] = 0xD8
 	jpegData[2] = 0xFF
-	part.Write(jpegData)
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
 	// meal_typeフィールドを追加
 	require.NoError(t, writer.WriteField("meal_type", "lunch"))
 	writer.Close()
@@ -224,7 +225,8 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("image", "test.txt")
 	require.NoError(t, err)
-	part.Write([]byte("not an image"))
+	_, err = part.Write([]byte("not an image"))
+	require.NoError(t, err)
 	writer.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
@@ -254,7 +256,8 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	jpegData[0] = 0xFF
 	jpegData[1] = 0xD8
 	jpegData[2] = 0xFF
-	part.Write(jpegData)
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
 	// meal_typeフィールドを追加
 	require.NoError(t, writer.WriteField("meal_type", "lunch"))
 	writer.Close()
