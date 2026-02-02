@@ -1,21 +1,28 @@
 #!/bin/sh
 set -e
 
-# Frontend: lint-staged (ESLint, Prettier, TypeScript)
-cd frontend
+# iOS: SwiftLint & SwiftFormat
+STAGED_IOS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^ios/.*\.swift$' || true)
 
-# ステージされたフロントエンドファイルがあるか確認
-STAGED_FRONTEND=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^frontend/' || true)
+if [ -n "$STAGED_IOS" ]; then
+  echo "[iOS] Running SwiftLint..."
+  if command -v swiftlint >/dev/null 2>&1; then
+    cd ios
+    swiftlint lint --strict
+    cd ..
+  else
+    echo "[iOS] SwiftLint not found, skipping..."
+  fi
 
-if [ -n "$STAGED_FRONTEND" ]; then
-  echo "[Frontend] Running lint-staged..."
-  npx lint-staged
-
-  echo "[Frontend] Running TypeScript type check..."
-  npm run typecheck
+  echo "[iOS] Running SwiftFormat..."
+  if command -v swiftformat >/dev/null 2>&1; then
+    cd ios
+    swiftformat . --lint
+    cd ..
+  else
+    echo "[iOS] SwiftFormat not found, skipping..."
+  fi
 fi
-
-cd ..
 
 # Backend: golangci-lint
 STAGED_BACKEND=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^backend/.*\.go$' || true)
@@ -27,6 +34,6 @@ if [ -n "$STAGED_BACKEND" ]; then
   cd ..
 fi
 
-if [ -n "$STAGED_FRONTEND" ] || [ -n "$STAGED_BACKEND" ]; then
+if [ -n "$STAGED_IOS" ] || [ -n "$STAGED_BACKEND" ]; then
   echo "[OK] Pre-commit checks passed!"
 fi
