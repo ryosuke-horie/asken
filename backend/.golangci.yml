@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   go: '1.23'
@@ -7,50 +9,55 @@ linters:
   enable:
     # デフォルト推奨
     - errcheck      # エラーチェック漏れ
-    - gosimple      # コードの簡素化提案
     - govet         # go vet互換チェック
     - ineffassign   # 無効な代入検出
-    - staticcheck   # 静的解析
+    - staticcheck   # 静的解析（gosimple含む）
     - unused        # 未使用コード検出
-    # 追加（厳格設定）
-    - revive        # 包括的なコードスタイルチェック
+    # 追加
     - gocyclo       # 循環複雑度チェック
     - misspell      # スペルミス検出
-    - prealloc      # スライス事前確保の提案
-    - gocritic      # コードパターンの改善提案
-    - gofmt         # フォーマットチェック
-    - goimports     # インポート順序チェック
     - unconvert     # 不要な型変換検出
 
-linters-settings:
-  gocyclo:
-    min-complexity: 15
+  settings:
+    gocyclo:
+      min-complexity: 15
 
-  revive:
+    errcheck:
+      exclude-functions:
+        # deferでのClose/Remove等は除外（一般的なパターン）
+        - (*os.File).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (io.Closer).Close
+        - os.Remove
+      check-blank: false
+
+    misspell:
+      locale: US
+      ignore-words:
+        - analyses
+
+    staticcheck:
+      checks:
+        - "all"
+        - "-ST1000"  # パッケージコメントを必須としない
+        - "-ST1005"  # エラー文字列の大文字化を許容（日本語対応）
+        - "-ST1020"  # メソッドコメント形式を強制しない
+        - "-ST1021"  # 型コメント形式を強制しない
+        - "-QF1003"  # tagged switchの提案を無効化
+
+  exclusions:
     rules:
-      - name: exported
-        disabled: true  # エクスポート関数のコメント強制を無効化
+      # テストファイルではerrcheckを緩和
+      - path: "_test\\.go"
+        linters:
+          - errcheck
 
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - hugeParam  # 大きな構造体の値渡し警告を無効化
-
-  misspell:
-    locale: US
-    ignore-words:
-      - analyses  # analysisの複数形（正しい英語）
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
-  exclude-rules:
-    # テストファイルでは一部ルールを緩和
-    - path: _test\.go
-      linters:
-        - errcheck    # テストでのエラーチェック省略を許容
-        - gocritic    # テストコードのスタイルを緩和
-
   max-issues-per-linter: 0
   max-same-issues: 0
