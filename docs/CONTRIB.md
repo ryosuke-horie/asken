@@ -1,6 +1,6 @@
 # 開発者ガイド（CONTRIB）
 
-最終更新: 2026-01-31
+最終更新: 2026-02-02
 
 このドキュメントは、ウチコミプロジェクトの開発ワークフロー、利用可能なコマンド、環境セットアップ、テスト手順を説明します。
 
@@ -90,6 +90,7 @@ task db-down
 | `task setup` | Go依存関係をダウンロード |
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
+| `task test:coverage` | Goカバレッジ計測付きテスト |
 | `task lint` | golangci-lintを実行 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
@@ -109,6 +110,10 @@ task db-down
 |:---|:---|
 | `task ios:generate-mocks` | Mockoloでモックを生成 |
 | `task ios:test` | iOSのテストを実行 |
+| `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
+| `task ios:lint` | SwiftLintを実行 |
+| `task ios:format` | SwiftFormatを実行（コード整形） |
+| `task ios:format-check` | SwiftFormatチェック（CI用） |
 
 ### デプロイ
 
