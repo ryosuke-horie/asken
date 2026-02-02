@@ -38,10 +38,10 @@ mise install
 ```
 
 miseが自動的に以下を管理します:
-- **ツールバージョン**: Go 1.25.6, Terraform 1.10
-- **GCP環境変数**: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ZONE`
-- **gcloud構成の自動切り替え**: `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev`
-- **Terraform変数**: `TF_VAR_*` プレフィックスで自動設定
+- ツールバージョン: Go 1.25.6, Terraform 1.10
+- GCP環境変数: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ZONE`
+- gcloud構成の自動切り替え: `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev`
+- Terraform変数: `TF_VAR_*` プレフィックスで自動設定
 
 ### 3. 依存関係のインストール
 
