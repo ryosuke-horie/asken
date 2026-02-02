@@ -96,12 +96,6 @@ tasks:
       - sleep 3
       - echo "DBリセット完了"
 
-  deploy:
-    desc: 本番環境にデプロイ（deploy.sh実行）
-    cmds:
-      - echo "=== デプロイ実行 ==="
-      - ./deploy.sh
-
   ios:generate-mocks:
     desc: Mockoloでモックを生成
     dir: ios
