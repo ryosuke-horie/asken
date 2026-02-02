@@ -4,23 +4,21 @@
 
 ## プロジェクト概要
 
-ウチコミは、柔術/キックボクシングなど格闘技の減量・体重コントロールを支援する個人用アプリケーションです。日々の記録（体重、食事、体調、疲労度）とAI相談で合意形成しながら進めるツールを目指します。Gemini API（Gemini 3）を活用してMVP（Minimum Viable Product）を構築します。
+ウチコミは、柔術/キックボクシングなど格闘技の減量・体重コントロールを支援する個人用アプリケーションです。日々の記録（体重、食事、体調、疲労度）とAI相談で合意形成しながら進めるツールを目指します。Gemini API（Gemini 3）を活用して構築します。
 
 ### 主要機能
 
-- 🔐 ユーザー認証: メールアドレス/パスワードによるログイン認証
-- 📸 画像認識: 食事の画像をアップロードして食材を自動判定
-- 🔍 カロリー検索: 食品名からカロリーと栄養素を検索
-- 📊 栄養素計算: タンパク質、脂質、炭水化物などの栄養素を計算
-- 💾 データ管理: Gemini APIを活用した食事分析
+- ユーザー認証: メールアドレス/パスワードによるログイン認証
+- 画像認識: 食事の画像をアップロードして食材を自動判定
+- カロリー検索: 食品名からカロリーと栄養素を検索
+- 栄養素計算: タンパク質、脂質、炭水化物などの栄養素を計算
+- AIエージェント: 減量サポートを提供
 
 ### 技術スタック
 
 - iOS: Swift / SwiftUI
 - バックエンド: Golang
 - AI: Gemini CLI（Gemini 3 API）via シェルコマンド
-- ホスティング: exe.dev（Ubuntu環境）
-- バージョン管理: Git
 
 ### 対象ユーザー
 
@@ -51,17 +49,43 @@
 | ファイル | 内容 |
 |:---|:---|
 | `10-ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
-| `backend-golang.md` | バックエンド開発規約（Go） |
-| `database.md` | データベース規約 |
-| `gemini-api.md` | Gemini API連携のベストプラクティス |
-| `testing.md` | テスト駆動開発（TDD） |
-| `security.md` | セキュリティガイドライン |
-| `git-workflow.md` | Git運用とコードレビュー |
-| `claude-instructions.md` | Claude Codeへの指示 |
+| `11-backend-golang.md` | バックエンド開発規約（Go） |
+| `12-gemini-api.md` | Gemini API連携のベストプラクティス |
+| `13-database.md` | データベース規約 |
+| `14-testing-tdd.md` | テスト駆動開発（TDD） |
+| `15-security-practices.md` | セキュリティガイドライン |
+| `16-git-workflow-general.md` | Git運用とコードレビュー |
 
 ### Claude Code拡張
 
 | ファイル | 内容 |
 |:---|:---|
-| `40-hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
-| `41-agents.md` | エージェントオーケストレーション |
+| `30-claude-instructions.md` | Claude Codeへの指示 |
+| `31-hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
+| `32-agents.md` | エージェントオーケストレーション |
+
+---
+
+## 関連ドキュメント
+
+| ドキュメント | 内容 |
+|:---|:---|
+| [docs/CONTRIB.md](./docs/CONTRIB.md) | 開発者ガイド（環境セットアップ、コマンド一覧） |
+| [docs/RUNBOOK.md](./docs/RUNBOOK.md) | 運用手順書 |
+| [docs/CODEMAPS/](./docs/CODEMAPS/) | コードマップ |
+| [docs/adr/](./docs/adr/) | アーキテクチャ決定記録 |
+
+---
+
+## ドキュメント更新ルール
+
+機能の追加・更新時には、以下のドキュメント更新を検討してください：
+
+| 変更種別 | 更新対象 |
+|:---|:---|
+| 新機能追加 | README.md（主要機能）、CLAUDE.md（機能一覧）、docs/CODEMAPS/ |
+| API変更 | README.md（API仕様）、docs/RUNBOOK.md |
+| 開発コマンド追加 | docs/CONTRIB.md（コマンド一覧）、.claude/rules/08-development-commands.md |
+| アーキテクチャ変更 | docs/adr/に新規ADRを作成 |
+
+スキル `/update-docs` を使用してドキュメントを更新できます。
