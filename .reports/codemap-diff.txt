@@ -1,42 +1,53 @@
-# コードマップ差分レポート
+# コードマップ更新レポート
+生成日時: 2026-02-03
 
-生成日時: 2026-02-02
+## 更新ファイル
 
-## 変更サマリー
+### docs/CODEMAPS/backend.md
+- 最終更新: 2026-01-31 → 2026-02-03
+- 変更箇所:
+  - auth_handler.go を削除（Firebase Auth移行により不要）
+  - middleware セクション追加（Authenticatorインターフェース、DevAuthMiddleware）
+  - services に firebase_auth_service.go 追加
+  - 認証アーキテクチャセクション追加
+  - 依存関係図を更新
 
-| ファイル | 追加行 | 削除行 | 変更率 |
-|:---|:---|:---|:---|
-| docs/CODEMAPS/architecture.md | +58 | -2 | 47.2% |
-| docs/CODEMAPS/backend.md | 0 | 0 | 0% |
-| docs/CODEMAPS/ios.md | 0 | 0 | 0% |
-| docs/CODEMAPS/data.md | 0 | 0 | 0% |
+### docs/CODEMAPS/ios.md
+- 最終更新: 2026-01-31 → 2026-02-03
+- 変更箇所:
+  - UchikomiCore フレームワーク追加（Firebase非依存）
+  - 認証関連ファイル構成を大幅更新
+    - FirebaseAuthService, MockFirebaseAuthService, AppleSignInManager
+    - FirebaseAuthServiceProtocol, AuthManager
+  - TokenManager, AuthRepository を削除
+  - AuthServiceProvider パターン追加
+  - フレームワーク構成図追加
+  - 認証アーキテクチャセクション追加
+  - テスト構成を更新（Disabled フォルダ対応）
 
-## 変更内容
+### docs/CODEMAPS/data.md
+- 最終更新: 2026-01-31 → 2026-02-03
+- 変更箇所:
+  - users テーブルの id を UUID → VARCHAR(128) (Firebase UID)
+  - password_hash カラムを削除
+  - Firebase Authentication連携の注記追加
 
-### architecture.md (変更率: 47.2%)
+### docs/CODEMAPS/architecture.md
+- 最終更新: 2026-02-02 → 2026-02-03
+- 変更箇所:
+  - 認証フローを詳細化（Firebase Auth連携）
+  - 開発環境の認証フローセクション追加
 
-#### 追加内容:
-1. 新アーキテクチャ（GCPサーバレス）セクション
-   - Firestore, Cloud Storage, Firebase Auth, Gemini API
-2. ディレクトリ構造にinfrastructure/を追加
-3. インフラ構成（Terraform）セクション
-   - environments/dev/の構成
-   - modules/の構成
-4. 外部依存関係に新アーキテクチャ（GCP）を追加
-5. Terraformで管理するリソース一覧
+## 差分率
 
-#### 変更なし:
-- backend.md - バックエンドAPI構造は変更なし
-- ios.md - iOSアプリ構造は変更なし
-- data.md - PostgreSQLスキーマは変更なし（新Firestoreスキーマは別途追加予定）
+| ファイル | 推定変更率 |
+|:---|:---|
+| backend.md | ~25% |
+| ios.md | ~40% |
+| data.md | ~10% |
+| architecture.md | ~15% |
 
-## 注意事項
+## 備考
 
-- architecture.mdの変更率が30%を超えています（47.2%）
-- 変更は主にTerraformインフラ管理の追加によるものです
-- データモデル（data.md）にはFirestoreスキーマがまだ追加されていません
-
-## 推奨アクション
-
-1. Firestoreスキーマが確定次第、data.mdを更新
-2. Cloud Functions追加時にbackend.mdを更新
+Firebase Authentication導入に伴う大規模な認証アーキテクチャ変更を反映。
+iOS側はUchikomiCoreフレームワーク分離により、テスト構成も大幅に変更。
