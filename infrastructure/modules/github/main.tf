@@ -27,7 +27,10 @@ resource "github_actions_variable" "gcp_region" {
 # Repository Secrets（全環境共通）
 # =============================================================================
 
+# GCP_SA_KEY は WIF 使用時は不要（後方互換のため条件付きで残す）
 resource "github_actions_secret" "gcp_sa_key" {
+  count = var.gcp_sa_key != "" ? 1 : 0
+
   repository      = data.github_repository.main.name
   secret_name     = "GCP_SA_KEY"
   plaintext_value = var.gcp_sa_key
@@ -76,4 +79,22 @@ resource "github_actions_environment_variable" "cloud_run_service_name" {
   environment   = github_repository_environment.env.environment
   variable_name = "CLOUD_RUN_SERVICE_NAME"
   value         = var.cloud_run_service_name
+}
+
+resource "github_actions_environment_variable" "workload_identity_provider" {
+  count = var.workload_identity_provider != "" ? 1 : 0
+
+  repository    = data.github_repository.main.name
+  environment   = github_repository_environment.env.environment
+  variable_name = "WORKLOAD_IDENTITY_PROVIDER"
+  value         = var.workload_identity_provider
+}
+
+resource "github_actions_environment_variable" "service_account_email" {
+  count = var.service_account_email != "" ? 1 : 0
+
+  repository    = data.github_repository.main.name
+  environment   = github_repository_environment.env.environment
+  variable_name = "SERVICE_ACCOUNT_EMAIL"
+  value         = var.service_account_email
 }

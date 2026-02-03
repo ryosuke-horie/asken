@@ -20,10 +20,10 @@ resource "google_project_iam_member" "firestore_user" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
-# Cloud Storageアクセス権限
-resource "google_project_iam_member" "storage_object_admin" {
+# Cloud Storageアクセス権限（読み書きのみ、IAMポリシー管理は不要）
+resource "google_project_iam_member" "storage_object_user" {
   project = var.project_id
-  role    = "roles/storage.objectAdmin"
+  role    = "roles/storage.objectUser"
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 

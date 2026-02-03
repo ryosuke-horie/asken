@@ -23,9 +23,10 @@ variable "gcp_region" {
 }
 
 variable "gcp_sa_key" {
-  description = "GCPサービスアカウントキー（JSON）"
+  description = "GCPサービスアカウントキー（JSON）- WIF使用時は不要"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "firestore_database" {
@@ -46,6 +47,18 @@ variable "artifact_registry_url" {
 
 variable "cloud_run_service_name" {
   description = "Cloud Runサービス名"
+  type        = string
+  default     = ""
+}
+
+variable "workload_identity_provider" {
+  description = "Workload Identity Provider フルパス"
+  type        = string
+  default     = ""
+}
+
+variable "service_account_email" {
+  description = "GitHub ActionsがimpersonateするサービスアカウントのEmail"
   type        = string
   default     = ""
 }

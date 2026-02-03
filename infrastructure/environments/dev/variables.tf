@@ -101,6 +101,22 @@ variable "cloud_run_allowed_origins" {
 }
 
 # -----------------------------------------------------------------------------
+# Workload Identity Federation設定
+# -----------------------------------------------------------------------------
+
+variable "github_owner" {
+  description = "GitHubリポジトリオーナー"
+  type        = string
+  default     = "ryosuke-horie"
+}
+
+variable "github_repo" {
+  description = "GitHubリポジトリ名"
+  type        = string
+  default     = "utikomi"
+}
+
+# -----------------------------------------------------------------------------
 # GitHub設定
 # -----------------------------------------------------------------------------
 
