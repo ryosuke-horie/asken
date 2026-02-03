@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -101,6 +102,7 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
 		if errors.Is(err, storage.ErrObjectNotExist) {
+			log.Printf("Debug: Cloud Storage object already deleted or not found: %s", objectName)
 			return nil
 		}
 		return fmt.Errorf("Cloud Storageからの削除に失敗: %w", err)

@@ -295,7 +295,7 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 	// ファイルポインタを先頭に戻す
 	if seeker, ok := file.(io.Seeker); ok {
 		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
-			log.Printf("Warning: Failed to seek file to start: %v", err)
+			return fmt.Errorf("ファイルポインタのリセットに失敗しました: %w", err)
 		}
 	}
 
