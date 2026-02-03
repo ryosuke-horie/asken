@@ -239,7 +239,9 @@ GitHub ActionsからGCPへの認証にはWorkload Identity Federationを使用�
 WIF構成:
 - **Workload Identity Pool**: `github-pool`
 - **OIDC Provider**: `github-provider`
-- **認証条件**: `assertion.repository_owner == 'ryosuke-horie'`
+- **認証条件**: 特定リポジトリのみ許可
+
+> Note: Pool名、Provider名、認証条件の詳細は `infrastructure/modules/wif/` を参照してください。
 
 GitHub Actions環境変数（Terraformで自動設定）:
 - `WORKLOAD_IDENTITY_PROVIDER`: WIFプロバイダーのフルパス
