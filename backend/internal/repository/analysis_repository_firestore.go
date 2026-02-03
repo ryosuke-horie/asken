@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -150,7 +149,7 @@ func (r *firestoreAnalysisRepository) GetRequest(ctx context.Context, id uuid.UU
 		return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 	}
 
-	return r.toAnalysisRequest(&fsDoc), nil
+	return r.toAnalysisRequest(&fsDoc)
 }
 
 // UpdateStatus はリクエストのステータスを更新します
@@ -274,7 +273,11 @@ func (r *firestoreAnalysisRepository) GetPendingRequests(ctx context.Context, li
 			return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 		}
 
-		requests = append(requests, *r.toAnalysisRequest(&fsDoc))
+		req, err := r.toAnalysisRequest(&fsDoc)
+		if err != nil {
+			return nil, fmt.Errorf("AnalysisRequestへの変換に失敗: %w", err)
+		}
+		requests = append(requests, *req)
 	}
 
 	return requests, nil
@@ -289,7 +292,8 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, 
 		limit = 20
 	}
 
-	// 総件数を取得（コレクショングループから）
+	// 総件数を取得（CollectionGroupではAggregationQueryが使用できないため全件走査）
+	// TODO: パフォーマンス改善が必要な場合は、カウント専用のドキュメントを別途管理することを検討
 	countIter := r.client.CollectionGroup("analysisRequests").
 		Where("status", "==", string(StatusCompleted)).
 		Documents(ctx)
@@ -335,7 +339,10 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, 
 			return nil, 0, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 		}
 
-		item := r.toHistoryItem(&fsDoc)
+		item, err := r.toHistoryItem(&fsDoc)
+		if err != nil {
+			return nil, 0, fmt.Errorf("HistoryItemへの変換に失敗: %w", err)
+		}
 		items = append(items, *item)
 	}
 
@@ -364,7 +371,7 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, id u
 		return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 	}
 
-	return r.toHistoryDetail(&fsDoc), nil
+	return r.toHistoryDetail(&fsDoc)
 }
 
 // DeleteHistory は履歴を削除します（関連する画像も含む）
@@ -395,9 +402,10 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, id uuid
 	// 画像ファイルを削除（画像入力の場合のみ）
 	if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
 		if err := os.Remove(fsDoc.ImagePath); err != nil {
-			log.Printf("Warning: Failed to remove image file %s: %v", fsDoc.ImagePath, err)
-		} else {
-			log.Printf("Image file removed: %s", fsDoc.ImagePath)
+			// ファイルが存在しない場合は無視（既に削除済み）
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", fsDoc.ImagePath, err)
+			}
 		}
 	}
 
@@ -447,7 +455,10 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, date st
 			return nil, DailyTotal{}, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 		}
 
-		detail := r.toHistoryDetail(&fsDoc)
+		detail, err := r.toHistoryDetail(&fsDoc)
+		if err != nil {
+			return nil, DailyTotal{}, fmt.Errorf("HistoryDetailへの変換に失敗: %w", err)
+		}
 
 		if fsDoc.MealType != "" {
 			meals[fsDoc.MealType] = append(meals[fsDoc.MealType], *detail)
@@ -627,6 +638,7 @@ func (r *firestoreAnalysisRepository) deleteSkippedRecords(ctx context.Context, 
 		}
 	}
 
+	bw.Flush()
 	bw.End()
 
 	return nil
@@ -672,14 +684,16 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 		}
 	}
 
+	bw.Flush()
 	bw.End()
 
 	// 画像ファイルを削除
 	for _, path := range imagePaths {
 		if err := os.Remove(path); err != nil {
-			log.Printf("Warning: Failed to remove image file %s: %v", path, err)
-		} else {
-			log.Printf("Image file removed: %s", path)
+			// ファイルが存在しない場合は無視（既に削除済み）
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", path, err)
+			}
 		}
 	}
 
@@ -687,8 +701,11 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 }
 
 // toAnalysisRequest はFirestoreドキュメントをAnalysisRequestに変換
-func (r *firestoreAnalysisRepository) toAnalysisRequest(doc *firestoreAnalysisDocument) *AnalysisRequest {
-	id, _ := uuid.Parse(doc.ID)
+func (r *firestoreAnalysisRepository) toAnalysisRequest(doc *firestoreAnalysisDocument) (*AnalysisRequest, error) {
+	id, err := uuid.Parse(doc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("不正なドキュメントID: %s: %w", doc.ID, err)
+	}
 	return &AnalysisRequest{
 		ID:           id,
 		Status:       doc.Status,
@@ -698,12 +715,15 @@ func (r *firestoreAnalysisRepository) toAnalysisRequest(doc *firestoreAnalysisDo
 		ErrorMessage: doc.ErrorMessage,
 		CreatedAt:    doc.CreatedAt,
 		UpdatedAt:    doc.UpdatedAt,
-	}
+	}, nil
 }
 
 // toHistoryItem はFirestoreドキュメントをHistoryItemに変換
-func (r *firestoreAnalysisRepository) toHistoryItem(doc *firestoreAnalysisDocument) *HistoryItem {
-	id, _ := uuid.Parse(doc.ID)
+func (r *firestoreAnalysisRepository) toHistoryItem(doc *firestoreAnalysisDocument) (*HistoryItem, error) {
+	id, err := uuid.Parse(doc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("不正なドキュメントID: %s: %w", doc.ID, err)
+	}
 	item := &HistoryItem{
 		ID:        id,
 		InputType: doc.InputType,
@@ -721,12 +741,15 @@ func (r *firestoreAnalysisRepository) toHistoryItem(doc *firestoreAnalysisDocume
 		item.TotalCarbohydrates = doc.Result.TotalCarbohydrates
 	}
 
-	return item
+	return item, nil
 }
 
 // toHistoryDetail はFirestoreドキュメントをHistoryDetailに変換
-func (r *firestoreAnalysisRepository) toHistoryDetail(doc *firestoreAnalysisDocument) *HistoryDetail {
-	item := r.toHistoryItem(doc)
+func (r *firestoreAnalysisRepository) toHistoryDetail(doc *firestoreAnalysisDocument) (*HistoryDetail, error) {
+	item, err := r.toHistoryItem(doc)
+	if err != nil {
+		return nil, err
+	}
 	detail := &HistoryDetail{
 		HistoryItem: *item,
 	}
@@ -735,6 +758,6 @@ func (r *firestoreAnalysisRepository) toHistoryDetail(doc *firestoreAnalysisDocu
 		detail.Foods = doc.Result.Foods
 	}
 
-	return detail
+	return detail, nil
 }
 
