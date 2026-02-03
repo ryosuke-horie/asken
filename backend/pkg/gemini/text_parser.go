@@ -54,7 +54,7 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 
 	response, err := tp.client.Execute(ctx, prompt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Gemini APIコールエラー: %w", err)
 	}
 
 	foodListJSON := removeCodeBlock(response.Response)
