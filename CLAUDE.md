@@ -64,6 +64,7 @@
 | `30-claude-instructions.md` | Claude Codeへの指示 |
 | `31-hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
 | `32-agents.md` | エージェントオーケストレーション |
+| `33-plan-mode.md` | Plan Modeルール（プラン保存、Linear連携） |
 
 ---
 
