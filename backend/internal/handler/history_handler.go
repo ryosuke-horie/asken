@@ -43,6 +43,7 @@ func (h *HistoryHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -108,6 +109,7 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -184,6 +186,7 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
