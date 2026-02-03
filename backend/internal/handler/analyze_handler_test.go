@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -519,4 +520,116 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAnalyzeHandler_StorageUploadError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "", errors.New("Cloud Storage unavailable")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	// JPEG magic number + 512バイト以上のダミーデータ
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルの保存に失敗しました")
+}
+
+func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
+	mockService := &MockFoodService{}
+	deleteCalled := false
+	uploadedObjectName := ""
+
+	mockStorageRepo := &MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			uploadedObjectName = "uploads/test-uuid.jpg"
+			return uploadedObjectName, nil
+		},
+		DeleteFunc: func(ctx context.Context, objectName string) error {
+			deleteCalled = true
+			assert.Equal(t, uploadedObjectName, objectName)
+			return nil
+		},
+	}
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
+			return uuid.Nil, errors.New("database error")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.True(t, deleteCalled, "Cloud Storage delete should be called on repository failure")
+}
+
+func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "", errors.New("Cloud Storage unavailable")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/upload-image", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.HandleUploadImage(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルの保存に失敗しました")
 }

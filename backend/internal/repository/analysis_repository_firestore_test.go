@@ -73,7 +73,8 @@ func cleanupTestData(ctx context.Context, client *firestore.Client, userID strin
 func TestCreateRequest(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -114,7 +115,8 @@ func TestCreateRequest(t *testing.T) {
 func TestCreateRequestWithText(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -143,7 +145,8 @@ func TestCreateRequestWithText(t *testing.T) {
 func TestUpdateStatus(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -184,7 +187,8 @@ func TestUpdateStatus(t *testing.T) {
 func TestSaveResultAndGetResult(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -223,7 +227,8 @@ func TestSaveResultAndGetResult(t *testing.T) {
 func TestGetPendingRequests(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -254,7 +259,8 @@ func TestGetPendingRequests(t *testing.T) {
 func TestGetHistoryListAndDetail(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -298,7 +304,8 @@ func TestGetHistoryListAndDetail(t *testing.T) {
 func TestDeleteHistory(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -330,7 +337,8 @@ func TestDeleteHistory(t *testing.T) {
 func TestGetDailyMeals(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -369,7 +377,8 @@ func TestGetDailyMeals(t *testing.T) {
 func TestCreateSkippedMeal(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -420,7 +429,8 @@ func TestCreateSkippedMeal(t *testing.T) {
 func TestUpdateResult(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
