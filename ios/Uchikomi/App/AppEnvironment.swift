@@ -17,12 +17,12 @@ enum AppEnvironment {
     var baseURL: URL {
         switch self {
         case .development:
-            // ローカル開発時（シミュレータ: localhost、実機: Mac のIPアドレス）
+            // ローカル開発時（シミュレータ: localhost、実機: Cloud Run検証環境）
             #if targetEnvironment(simulator)
             return URL(string: "http://localhost:8080")!
             #else
-            // 実機テスト時は Mac の IP アドレスに変更
-            return URL(string: "http://192.168.1.100:8080")!
+            // 実機テスト時は Cloud Run の検証環境を使用
+            return URL(string: "https://uchikomi-api-dev-425786510917.asia-northeast1.run.app")!
             #endif
         case .production:
             return URL(string: "https://utikomi.exe.dev")!

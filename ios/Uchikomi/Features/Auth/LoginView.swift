@@ -103,31 +103,32 @@ private struct SignInButtons: View {
                 .frame(height: 50)
                 .padding(.horizontal)
 
-                // Apple Sign-In Button
-                SignInWithAppleButton(
-                    .signIn,
-                    onRequest: { request in
-                        request.requestedScopes = [.fullName, .email]
-                    },
-                    onCompletion: { result in
-                        switch result {
-                        case .success:
-                            Task {
-                                await viewModel.signInWithApple()
-                            }
-                        case let .failure(error):
-                            if let authError = error as? ASAuthorizationError,
-                               authError.code == .canceled {
-                                // ユーザーキャンセルは無視
-                                return
-                            }
-                            viewModel.errorMessage = error.localizedDescription
-                        }
-                    }
-                )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .padding(.horizontal)
+                // Apple Sign-In Button (Personal Teamでは使用不可のため一時的に無効化)
+                // TODO: Apple Developer Program登録後に有効化
+                // SignInWithAppleButton(
+                //     .signIn,
+                //     onRequest: { request in
+                //         request.requestedScopes = [.fullName, .email]
+                //     },
+                //     onCompletion: { result in
+                //         switch result {
+                //         case .success:
+                //             Task {
+                //                 await viewModel.signInWithApple()
+                //             }
+                //         case let .failure(error):
+                //             if let authError = error as? ASAuthorizationError,
+                //                authError.code == .canceled {
+                //                 // ユーザーキャンセルは無視
+                //                 return
+                //             }
+                //             viewModel.errorMessage = error.localizedDescription
+                //         }
+                //     }
+                // )
+                // .signInWithAppleButtonStyle(.black)
+                // .frame(height: 50)
+                // .padding(.horizontal)
                 #endif
             }
         }
