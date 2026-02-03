@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
@@ -39,6 +40,14 @@ func (h *HistoryHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// contextからユーザーIDを取得
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
 	// クエリパラメータからpage, limitを取得
 	page := 1
 	limit := 20
@@ -55,10 +64,10 @@ func (h *HistoryHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("Fetching history list: page=%d, limit=%d", page, limit)
+	log.Printf("Fetching history list: userID=%s, page=%d, limit=%d", userID, page, limit)
 
-	// リポジトリから履歴一覧を取得
-	items, total, err := h.repository.GetHistoryList(r.Context(), page, limit)
+	// リポジトリから履歴一覧を取得（userIDでスコープ）
+	items, total, err := h.repository.GetHistoryList(r.Context(), userID, page, limit)
 	if err != nil {
 		log.Printf("Error getting history list: %v", err)
 		http.Error(w, "Failed to get history list", http.StatusInternalServerError)
@@ -97,6 +106,14 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// contextからユーザーIDを取得
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
 	// URLからhistory_idを抽出
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 4 {
@@ -113,10 +130,10 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Getting history detail for ID: %s", historyID)
+	log.Printf("Getting history detail for ID: %s, userID: %s", historyID, userID)
 
-	// リポジトリから履歴詳細を取得
-	detail, err := h.repository.GetHistoryDetail(r.Context(), historyID)
+	// リポジトリから履歴詳細を取得（userIDでスコープ）
+	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error getting history detail: %v", err)
 		if strings.Contains(err.Error(), "見つかりません") {
@@ -166,6 +183,14 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// contextからユーザーIDを取得
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
 	// URLからhistory_idを抽出
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 4 {
@@ -190,7 +215,7 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Updating history for ID: %s with %d foods", historyID, len(req.Foods))
+	log.Printf("Updating history for ID: %s, userID: %s, with %d foods", historyID, userID, len(req.Foods))
 
 	// リクエストをNutritionInfo形式に変換（現在の値をそのまま保存）
 	foods := make([]gemini.NutritionInfo, len(req.Foods))
@@ -205,8 +230,8 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// リポジトリで更新（まず現在の値で保存）
-	if err := h.repository.UpdateResult(r.Context(), historyID, foods); err != nil {
+	// リポジトリで更新（userIDでスコープ、まず現在の値で保存）
+	if err := h.repository.UpdateResult(r.Context(), userID, historyID, foods); err != nil {
 		log.Printf("Error updating history: %v", err)
 		if strings.Contains(err.Error(), "見つかりません") {
 			http.Error(w, "History not found", http.StatusNotFound)
@@ -218,13 +243,13 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("History updated successfully for ID: %s", historyID)
 
-	// 非同期で栄養素を再計算
+	// 非同期で栄養素を再計算（userIDを渡す）
 	if h.foodService != nil {
-		go h.recalculateNutritionAsync(historyID, req.Foods)
+		go h.recalculateNutritionAsync(userID, historyID, req.Foods)
 	}
 
-	// 更新後の詳細を取得して返却
-	detail, err := h.repository.GetHistoryDetail(r.Context(), historyID)
+	// 更新後の詳細を取得して返却（userIDでスコープ）
+	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error getting updated history detail: %v", err)
 		http.Error(w, "Failed to get updated history", http.StatusInternalServerError)
@@ -245,8 +270,8 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 // recalculateNutritionAsync は非同期で栄養素を再計算する
 // タイムアウト: 60秒（Gemini API呼び出し + DB更新）
-func (h *HistoryHandler) recalculateNutritionAsync(historyID uuid.UUID, foods []UpdateFoodItem) {
-	log.Printf("Starting async nutrition recalculation for history ID: %s", historyID)
+func (h *HistoryHandler) recalculateNutritionAsync(userID string, historyID uuid.UUID, foods []UpdateFoodItem) {
+	log.Printf("Starting async nutrition recalculation for history ID: %s, userID: %s", historyID, userID)
 
 	// タイムアウト付きのcontextを作成（60秒）
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -293,8 +318,8 @@ func (h *HistoryHandler) recalculateNutritionAsync(historyID uuid.UUID, foods []
 		}
 	}
 
-	// データベースを更新
-	if err := h.repository.UpdateResult(ctx, historyID, nutritionInfos); err != nil {
+	// データベースを更新（userIDでスコープ）
+	if err := h.repository.UpdateResult(ctx, userID, historyID, nutritionInfos); err != nil {
 		log.Printf("Error saving recalculated nutrition for history ID %s: %v", historyID, err)
 		return
 	}

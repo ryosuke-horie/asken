@@ -48,7 +48,7 @@ func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inpu
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+func (m *MockAnalysisRepository) GetRequest(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
 	return nil, nil
 }
 
@@ -66,7 +66,7 @@ func (m *MockAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetResult(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error) {
+func (m *MockAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
 	return nil, nil
 }
 
@@ -77,19 +77,19 @@ func (m *MockAnalysisRepository) GetPendingRequests(ctx context.Context, limit i
 	return nil, nil
 }
 
-func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error) {
+func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error) {
 	return nil, 0, nil
 }
 
-func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error) {
+func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
 	return nil, nil
 }
 
-func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
+func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, userID string, id uuid.UUID) error {
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	return nil, repository.DailyTotal{}, nil
 }
 
@@ -101,7 +101,7 @@ func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, id uuid.UUID, foods []gemini.NutritionInfo) error {
+func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
 	return nil
 }
 
