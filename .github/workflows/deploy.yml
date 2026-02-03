@@ -1,0 +1,115 @@
+# =============================================================================
+# Cloud Run Deploy Workflow
+# =============================================================================
+# mainブランチへのpush時にバックエンドをCloud Runにデプロイ
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 変更検出
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/deploy.yml'
+
+  # ---------------------------------------------------------------------------
+  # ビルド＆デプロイ
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    environment: dev
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      ARTIFACT_REGISTRY_URL: ${{ vars.ARTIFACT_REGISTRY_URL }}
+      CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Set image tag
+        id: image
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          IMAGE_TAG="${ARTIFACT_REGISTRY_URL}/backend:${SHORT_SHA}"
+          echo "tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${IMAGE_TAG}"
+
+      - name: Build Docker image
+        working-directory: backend
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t "${IMAGE_TAG}" \
+            -t "${ARTIFACT_REGISTRY_URL}/backend:latest" \
+            .
+
+      - name: Push Docker image
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          docker push "${IMAGE_TAG}"
+          docker push "${ARTIFACT_REGISTRY_URL}/backend:latest"
+
+      - name: Deploy to Cloud Run
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          gcloud run deploy "${CLOUD_RUN_SERVICE_NAME}" \
+            --image "${IMAGE_TAG}" \
+            --region "${GCP_REGION}" \
+            --platform managed \
+            --quiet
+
+      - name: Show deployment URL
+        run: |
+          URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
+            --region "${GCP_REGION}" \
+            --format 'value(status.url)')
+          echo "Deployed to: ${URL}"
+          echo "### Deployment successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"

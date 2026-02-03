@@ -59,3 +59,21 @@ resource "github_actions_environment_variable" "storage_bucket" {
   variable_name = "STORAGE_BUCKET"
   value         = var.storage_bucket
 }
+
+resource "github_actions_environment_variable" "artifact_registry_url" {
+  count = var.artifact_registry_url != "" ? 1 : 0
+
+  repository    = data.github_repository.main.name
+  environment   = github_repository_environment.env.environment
+  variable_name = "ARTIFACT_REGISTRY_URL"
+  value         = var.artifact_registry_url
+}
+
+resource "github_actions_environment_variable" "cloud_run_service_name" {
+  count = var.cloud_run_service_name != "" ? 1 : 0
+
+  repository    = data.github_repository.main.name
+  environment   = github_repository_environment.env.environment
+  variable_name = "CLOUD_RUN_SERVICE_NAME"
+  value         = var.cloud_run_service_name
+}

@@ -198,6 +198,8 @@ infrastructure/
 │   │   └── outputs.tf
 │   └── prod/                     # prod環境（将来用）
 └── modules/
+    ├── artifact-registry/        # Artifact Registry（Dockerイメージ）
+    ├── cloud-run/                # Cloud Run（バックエンドAPI）
     ├── firestore/                # Firestoreデータベース
     ├── storage/                  # Cloud Storage
     ├── firebase-auth/            # Firebase Authentication
@@ -209,12 +211,24 @@ infrastructure/
 | 項目 | dev | prod（予定） |
 |:---|:---|:---|
 | プロジェクトID | utikomi-dev | utikomi-prod |
+| Cloud Run最小インスタンス | 0 | 1 |
+| Cloud Run最大インスタンス | 2 | 10 |
 | Firestore削除保護 | 無効 | 有効 |
 | Storageバージョニング | 無効 | 有効 |
 | Storage自動削除 | 90日 | 無効 |
 | CORS | 全許可 | 特定ドメイン |
 
 > Note: prod環境は将来実装予定です。現在は`environments/prod/.gitkeep`のみ存在します。
+
+## デプロイフロー
+
+mainブランチにpushすると、GitHub Actionsが自動的にバックエンドをCloud Runにデプロイします。
+
+```
+Push to main → Build Docker image → Push to Artifact Registry → Deploy to Cloud Run
+```
+
+デプロイワークフロー: `.github/workflows/deploy.yml`
 
 ## トラブルシューティング
 
