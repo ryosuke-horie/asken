@@ -163,6 +163,14 @@ func run() error {
 		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
 	}
 
+	// Gemini API Keyの確認
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	if geminiAPIKey == "" {
+		log.Println("WARNING: GEMINI_API_KEY not set. Gemini API calls will fail.")
+	} else {
+		log.Println("Gemini API Key configured")
+	}
+
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
 	textParser := gemini.NewTextParser(120 * time.Second)

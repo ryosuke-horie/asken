@@ -3,7 +3,6 @@ package gemini
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,16 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// skipIfNoGeminiCLI skips the test if Gemini CLI is not available
-func skipIfNoGeminiCLI(t *testing.T) {
-	t.Helper()
-	if _, err := exec.LookPath("gemini"); err != nil {
-		t.Skip("Gemini CLI not available, skipping integration test")
-	}
-}
-
 func TestClassifyFoods_Success(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	// テスト画像のパスを取得（pkg/gemini/testdata内）
 	imagePath := filepath.Join("testdata", "images", "IMG_0374.JPG")
@@ -61,13 +52,13 @@ func TestClassifyFoods_InvalidImagePath(t *testing.T) {
 }
 
 func TestClassifyFoods_EmptyResponse(t *testing.T) {
-	// このテストは実際のGemini CLIの挙動に依存するためスキップ
-	// 実際には、Gemini CLIが空のレスポンスを返すことは稀
-	t.Skip("Gemini CLIの挙動に依存するためスキップ")
+	// このテストは実際のGemini APIの挙動に依存するためスキップ
+	// 実際には、Gemini APIが空のレスポンスを返すことは稀
+	t.Skip("Gemini APIの挙動に依存するためスキップ")
 }
 
 func TestClassifyFoods_Timeout(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトでテスト
 	imagePath := filepath.Join("testdata", "images", "IMG_0374.JPG")
@@ -87,7 +78,7 @@ func TestClassifyFoods_Timeout(t *testing.T) {
 }
 
 func TestClassifyFoods_RelativePath(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	// 相対パスが絶対パスに変換されることを確認
 	imagePath := filepath.Join("testdata", "images", "IMG_0374.JPG")

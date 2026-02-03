@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExecuteGeminiCLI_Success(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+func TestExecuteGeminiAPI_Success(t *testing.T) {
+	skipIfNoGeminiAPIKey(t)
 
 	client := NewClient(60 * time.Second)
 	ctx := context.Background()
@@ -22,12 +22,11 @@ func TestExecuteGeminiCLI_Success(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, response)
-	assert.NotEmpty(t, response.SessionID)
 	assert.NotEmpty(t, response.Response)
 }
 
-func TestExecuteGeminiCLI_Timeout(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+func TestExecuteGeminiAPI_Timeout(t *testing.T) {
+	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトを設定
 	client := NewClient(1 * time.Millisecond)
@@ -43,8 +42,8 @@ func TestExecuteGeminiCLI_Timeout(t *testing.T) {
 	assert.Contains(t, err.Error(), "タイムアウト")
 }
 
-func TestExecuteGeminiCLI_JSONParse(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+func TestExecuteGeminiAPI_JSONParse(t *testing.T) {
+	skipIfNoGeminiAPIKey(t)
 
 	client := NewClient(60 * time.Second)
 	ctx := context.Background()
@@ -57,53 +56,25 @@ func TestExecuteGeminiCLI_JSONParse(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, response)
 
-	// JSONフィールドが正しくパースされていることを確認
-	assert.NotEmpty(t, response.SessionID)
+	// レスポンスが正しくパースされていることを確認
 	assert.NotEmpty(t, response.Response)
 }
 
-func TestExecuteGeminiCLI_InvalidCommand(t *testing.T) {
-	// Gemini CLIが存在しない場合のテスト
-	// このテストは実際の環境では実行されない可能性がある
-	t.Skip("Gemini CLIのインストール状況に依存するためスキップ")
+func TestNewClient(t *testing.T) {
+	timeout := 30 * time.Second
+	client := NewClient(timeout)
+
+	assert.NotNil(t, client)
+	assert.NotNil(t, client.httpClient)
 }
 
-func TestExtractJSON_Success(t *testing.T) {
-	// JSONノイズ除去のテスト
-	testCases := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "余分な出力あり",
-			input:    `Loaded cached credentials.{"session_id":"123","response":"test","stats":{}}`,
-			expected: `{"session_id":"123","response":"test","stats":{}}`,
-		},
-		{
-			name:     "クリーンなJSON",
-			input:    `{"session_id":"123","response":"test","stats":{}}`,
-			expected: `{"session_id":"123","response":"test","stats":{}}`,
-		},
-		{
-			name:     "複数行の余分な出力",
-			input:    "Line1\nLine2\n{\"session_id\":\"123\",\"response\":\"test\",\"stats\":{}}",
-			expected: `{"session_id":"123","response":"test","stats":{}}`,
-		},
-	}
+func TestNewClientWithAPIKey(t *testing.T) {
+	timeout := 30 * time.Second
+	apiKey := "test-api-key"
+	client := NewClientWithAPIKey(apiKey, timeout)
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := extractJSON([]byte(tc.input))
-			assert.Equal(t, tc.expected, string(result))
-		})
-	}
-}
-
-func TestExtractJSON_NoJSON(t *testing.T) {
-	input := "No JSON here"
-	result := extractJSON([]byte(input))
-	assert.Empty(t, result)
+	assert.NotNil(t, client)
+	assert.NotNil(t, client.httpClient)
 }
 
 func TestRemoveCodeBlock_Success(t *testing.T) {
