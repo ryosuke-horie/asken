@@ -68,6 +68,29 @@ module "artifact_registry" {
 }
 
 # -----------------------------------------------------------------------------
+# Secret Manager（Gemini API Key）
+# -----------------------------------------------------------------------------
+
+resource "google_secret_manager_secret" "gemini_api_key" {
+  project   = var.gcp_project_id
+  secret_id = "gemini-api-key"
+
+  replication {
+    auto {}
+  }
+
+  labels = {
+    environment = local.environment
+    managed_by  = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_version" "gemini_api_key" {
+  secret      = google_secret_manager_secret.gemini_api_key.id
+  secret_data = var.gemini_api_key
+}
+
+# -----------------------------------------------------------------------------
 # Cloud Run
 # -----------------------------------------------------------------------------
 
@@ -94,6 +117,14 @@ module "cloud_run" {
     APP_ENV         = "production"
   }
 
+  # Secret Managerからの環境変数
+  secrets = {
+    GEMINI_API_KEY = {
+      secret_name = google_secret_manager_secret.gemini_api_key.secret_id
+      version     = "latest"
+    }
+  }
+
   # 未認証リクエストを許可
   # - Cloud RunレベルではIAM認証を無効化（allUsersにinvoker権限を付与）
   # - アプリケーションレベルで独自のFirebase Auth検証を実施
@@ -104,6 +135,8 @@ module "cloud_run" {
     environment = local.environment
     managed_by  = "terraform"
   }
+
+  depends_on = [google_secret_manager_secret_version.gemini_api_key]
 }
 
 # -----------------------------------------------------------------------------

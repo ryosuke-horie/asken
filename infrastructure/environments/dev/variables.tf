@@ -136,3 +136,13 @@ variable "gcp_sa_key" {
   type        = string
   sensitive   = true
 }
+
+# -----------------------------------------------------------------------------
+# Gemini API設定
+# -----------------------------------------------------------------------------
+
+variable "gemini_api_key" {
+  description = "Gemini API Key（Google AI Studio発行）"
+  type        = string
+  sensitive   = true
+}
