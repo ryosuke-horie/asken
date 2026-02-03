@@ -9,6 +9,7 @@ import (
 // MockStorageRepository はStorageRepositoryのモック実装
 type MockStorageRepository struct {
 	UploadFunc       func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error)
+	DownloadFunc     func(ctx context.Context, objectName string) ([]byte, error)
 	GetSignedURLFunc func(ctx context.Context, objectName string, expiration time.Duration) (string, error)
 	DeleteFunc       func(ctx context.Context, objectName string) error
 }
@@ -19,6 +20,14 @@ func (m *MockStorageRepository) Upload(ctx context.Context, file io.Reader, file
 		return m.UploadFunc(ctx, file, filename, contentType)
 	}
 	return "uploads/test.jpg", nil
+}
+
+// Download はダウンロード操作のモック
+func (m *MockStorageRepository) Download(ctx context.Context, objectName string) ([]byte, error) {
+	if m.DownloadFunc != nil {
+		return m.DownloadFunc(ctx, objectName)
+	}
+	return []byte("test image data"), nil
 }
 
 // GetSignedURL は署名付きURL取得のモック

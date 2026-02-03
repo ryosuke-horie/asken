@@ -27,6 +27,10 @@ func (m *mockStorageRepositoryForAnalysis) Upload(ctx context.Context, file io.R
 	return "uploads/test-uuid.jpg", nil
 }
 
+func (m *mockStorageRepositoryForAnalysis) Download(ctx context.Context, objectName string) ([]byte, error) {
+	return []byte("test image data"), nil
+}
+
 func (m *mockStorageRepositoryForAnalysis) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
 	return "https://storage.googleapis.com/bucket/" + objectName + "?signature=xxx", nil
 }
