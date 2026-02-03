@@ -284,7 +284,6 @@ terraform apply
 ## 関連ドキュメント
 
 - [README.md](../README.md) - プロジェクト概要
-- [DEPLOY.md](../DEPLOY.md) - デプロイ手順
 - [RUNBOOK.md](./RUNBOOK.md) - 運用手順書
 - [infrastructure/README.md](../infrastructure/README.md) - Terraformインフラ管理
 - [ios/README.md](../ios/README.md) - iOSアプリ開発ガイド

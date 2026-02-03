@@ -174,7 +174,7 @@ Stage 1: builder (golang:1.25-alpine)
   - LDFlags: -w -s (デバッグ情報除去)
 
 Stage 2: runtime (distroless/static-debian12:nonroot)
-  - 最小イメージ (~47.5MB)
+  - 最小イメージ（約50MB以下）
   - 非rootユーザーで実行
   - ポート8080公開
 ```
@@ -183,8 +183,8 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 
 | タイプ | パス | 設定 |
 |:---|:---|:---|
-| startup | /api/health | 10秒後開始、10秒間隔、3回失敗で再起動 |
-| liveness | /api/health | 30秒間隔、3回失敗で再起動 |
+| startup | /api/health | 10秒後開始、10秒間隔、5秒タイムアウト、3回失敗で再起動 |
+| liveness | /api/health | 30秒間隔、5秒タイムアウト、3回失敗で再起動 |
 
 ### 環境変数
 

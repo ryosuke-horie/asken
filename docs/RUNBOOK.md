@@ -34,13 +34,13 @@ Push to main → Build Docker → Push to Artifact Registry → Deploy to Cloud 
 
 ```bash
 # Cloud Runサービスの状態を確認
-gcloud run services describe utikomi-api --region asia-northeast1
+gcloud run services describe uchikomi-api-dev --region asia-northeast1
 
 # デプロイ済みリビジョンを確認
-gcloud run revisions list --service utikomi-api --region asia-northeast1
+gcloud run revisions list --service uchikomi-api-dev --region asia-northeast1
 
 # ログを確認
-gcloud run services logs read utikomi-api --region asia-northeast1 --limit 50
+gcloud run services logs read uchikomi-api-dev --region asia-northeast1 --limit 50
 ```
 
 ### ロールバック
@@ -49,19 +49,19 @@ gcloud run services logs read utikomi-api --region asia-northeast1 --limit 50
 
 ```bash
 # 利用可能なリビジョンを確認
-gcloud run revisions list --service utikomi-api --region asia-northeast1
+gcloud run revisions list --service uchikomi-api-dev --region asia-northeast1
 
 # 特定のリビジョンにトラフィックを切り替え
-gcloud run services update-traffic utikomi-api \
+gcloud run services update-traffic uchikomi-api-dev \
   --region asia-northeast1 \
-  --to-revisions=utikomi-api-00001-abc=100
+  --to-revisions=uchikomi-api-dev-00001-abc=100
 ```
 
 ## 監視
 
 ### Cloud Runメトリクス
 
-GCPコンソール > Cloud Run > utikomi-api > メトリクス で以下を確認:
+GCPコンソール > Cloud Run > uchikomi-api-dev > メトリクス で以下を確認:
 
 - リクエスト数
 - レイテンシ
@@ -72,7 +72,7 @@ GCPコンソール > Cloud Run > utikomi-api > メトリクス で以下を確�
 
 ```bash
 # リアルタイムログ
-gcloud run services logs tail utikomi-api --region asia-northeast1
+gcloud run services logs tail uchikomi-api-dev --region asia-northeast1
 
 # エラーログのみ
 gcloud logging read "resource.type=cloud_run_revision AND severity>=ERROR" \
@@ -174,7 +174,7 @@ gcloud iam workload-identity-pools providers list \
 Container failed to start
 ```
 
-1. ログを確認: `gcloud run services logs read utikomi-api --region asia-northeast1`
+1. ログを確認: `gcloud run services logs read uchikomi-api-dev --region asia-northeast1`
 2. ヘルスチェックパス(`/api/health`)が正しく応答するか確認
 3. 環境変数が正しく設定されているか確認
 

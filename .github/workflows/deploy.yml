@@ -142,8 +142,16 @@ jobs:
         if: failure()
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
         run: |
           echo "### Deployment failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Failed step:**" >> "$GITHUB_STEP_SUMMARY"
+          [ "$BUILD_OUTCOME" = "failure" ] && echo "- Docker Build" >> "$GITHUB_STEP_SUMMARY"
+          [ "$PUSH_OUTCOME" = "failure" ] && echo "- Docker Push" >> "$GITHUB_STEP_SUMMARY"
+          [ "$DEPLOY_OUTCOME" = "failure" ] && echo "- Cloud Run Deploy" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "**Image:** ${IMAGE_TAG:-'(not set)'}" >> "$GITHUB_STEP_SUMMARY"
           echo "**Service:** ${CLOUD_RUN_SERVICE_NAME}" >> "$GITHUB_STEP_SUMMARY"

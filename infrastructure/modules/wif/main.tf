@@ -34,8 +34,8 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository" = "assertion.repository"
   }
 
-  # リポジトリオーナーを制限（セキュリティ強化）
-  attribute_condition = "assertion.repository_owner == '${var.github_owner}'"
+  # 特定リポジトリのみに制限（セキュリティ強化）
+  attribute_condition = "assertion.repository == '${var.github_owner}/${var.github_repo}'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"

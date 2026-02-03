@@ -43,6 +43,14 @@ resource "google_project_iam_member" "secret_accessor" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# Artifact Registry書き込み権限（GitHub ActionsからのDockerイメージプッシュ用）
+# WIF経由でこのサービスアカウントを使用してイメージをプッシュするため必要
+resource "google_project_iam_member" "artifact_registry_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Runサービス
 # -----------------------------------------------------------------------------
