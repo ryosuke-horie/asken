@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
@@ -434,19 +435,17 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 }
 
 // GetDailyMeals は指定された日付の食事データを取得します（userIDでスコープ）
-func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]HistoryDetail, DailyTotal, error) {
+// tz: IANAタイムゾーン名（例: "Asia/Tokyo"）。空文字の場合はUTCとして処理
+func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string, tz string) (map[string][]HistoryDetail, DailyTotal, error) {
 	if userID == "" {
 		return nil, DailyTotal{}, fmt.Errorf("userIDが必要です")
 	}
 
-	mealDateTime, err := time.Parse("2006-01-02", date)
+	// タイムゾーンを考慮した日付範囲を計算
+	startOfDay, endOfDay, err := util.GetDayRangeInTimezone(date, tz)
 	if err != nil {
-		return nil, DailyTotal{}, fmt.Errorf("日付のパースに失敗: %w", err)
+		return nil, DailyTotal{}, err
 	}
-
-	// 日付の開始と終了を計算
-	startOfDay := time.Date(mealDateTime.Year(), mealDateTime.Month(), mealDateTime.Day(), 0, 0, 0, 0, time.UTC)
-	endOfDay := startOfDay.Add(24 * time.Hour)
 
 	// ユーザーのコレクションから対象日の食事を取得
 	iter := r.getUserAnalysisCollection(userID).

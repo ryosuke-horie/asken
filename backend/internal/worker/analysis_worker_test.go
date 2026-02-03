@@ -89,7 +89,7 @@ func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, userID strin
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	return nil, repository.DailyTotal{}, nil
 }
 

@@ -107,7 +107,8 @@ type AnalysisRepository interface {
 	DeleteHistory(ctx context.Context, userID string, id uuid.UUID) error
 
 	// GetDailyMeals は指定された日付の食事データを取得します（userIDでスコープ）
-	GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]HistoryDetail, DailyTotal, error)
+	// tz: IANAタイムゾーン名（例: "Asia/Tokyo"）。空文字の場合はUTCとして処理
+	GetDailyMeals(ctx context.Context, userID string, date string, tz string) (map[string][]HistoryDetail, DailyTotal, error)
 
 	// CreateRequestFromMylist はマイリストからの食事記録を作成します
 	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)

@@ -22,9 +22,10 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			assert.Equal(t, testUserID, userID)
 			assert.Equal(t, "2026-01-21", date)
+			assert.Equal(t, "UTC", tz) // デフォルトはUTC
 			meals := map[string][]repository.HistoryDetail{
 				"breakfast": {},
 				"lunch": {
@@ -90,11 +91,12 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			assert.Equal(t, testUserID, userID)
-			// 今日の日付が渡されるべき
-			expectedDate := time.Now().Format("2006-01-02")
+			// 今日の日付が渡されるべき（UTCタイムゾーン）
+			expectedDate := time.Now().UTC().Format("2006-01-02")
 			assert.Equal(t, expectedDate, date)
+			assert.Equal(t, "UTC", tz)
 			return map[string][]repository.HistoryDetail{
 				"breakfast": {},
 				"lunch":     {},
@@ -121,7 +123,7 @@ func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			return nil, repository.DailyTotal{}, assert.AnError
 		},
 	}
@@ -142,7 +144,7 @@ func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
 func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			return map[string][]repository.HistoryDetail{
 				"breakfast": {},
 				"lunch":     {},

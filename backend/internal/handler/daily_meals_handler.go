@@ -37,16 +37,28 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// date パラメータ取得
+	// date, tz パラメータ取得
 	date := r.URL.Query().Get("date")
-	if date == "" {
-		date = time.Now().Format("2006-01-02")
+	tz := r.URL.Query().Get("tz")
+
+	// tzが未指定の場合はUTCとして処理（後方互換性）
+	if tz == "" {
+		tz = "UTC"
 	}
 
-	log.Printf("Getting daily meals for userID: %s, date: %s", userID, date)
+	// 日付が未指定の場合、指定タイムゾーンでの現在日付を使用
+	if date == "" {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			loc = time.UTC
+		}
+		date = time.Now().In(loc).Format("2006-01-02")
+	}
+
+	log.Printf("Getting daily meals for userID: %s, date: %s, tz: %s", userID, date, tz)
 
 	// リポジトリから取得（userIDでスコープ）
-	meals, total, err := h.repository.GetDailyMeals(r.Context(), userID, date)
+	meals, total, err := h.repository.GetDailyMeals(r.Context(), userID, date, tz)
 	if err != nil {
 		log.Printf("Error getting daily meals: %v", err)
 		http.Error(w, "Failed to get daily meals", http.StatusInternalServerError)
