@@ -89,8 +89,9 @@ module "cloud_run" {
 
   # 環境変数
   env_vars = {
-    GCP_PROJECT_ID = var.gcp_project_id
+    GCP_PROJECT_ID  = var.gcp_project_id
     ALLOWED_ORIGINS = join(",", var.cloud_run_allowed_origins)
+    APP_ENV         = "production"
   }
 
   # 未認証リクエストを許可
