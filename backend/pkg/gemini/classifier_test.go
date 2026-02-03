@@ -96,3 +96,68 @@ func TestClassifyFoods_RelativePath(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, foods)
 }
+
+func TestDetectMimeType(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		data     []byte
+		expected string
+	}{
+		{
+			name:     "JPEGマジックバイト",
+			filePath: "test.jpg",
+			data:     []byte{0xFF, 0xD8, 0xFF, 0xE0},
+			expected: "image/jpeg",
+		},
+		{
+			name:     "PNGマジックバイト",
+			filePath: "test.png",
+			data:     []byte{0x89, 0x50, 0x4E, 0x47},
+			expected: "image/png",
+		},
+		{
+			name:     "GIFマジックバイト",
+			filePath: "test.gif",
+			data:     []byte{0x47, 0x49, 0x46, 0x38},
+			expected: "image/gif",
+		},
+		{
+			name:     "WebPマジックバイト",
+			filePath: "test.webp",
+			data:     []byte{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50},
+			expected: "image/webp",
+		},
+		{
+			name:     "拡張子フォールバック_JPG",
+			filePath: "photo.JPG",
+			data:     []byte{0x00, 0x00, 0x00, 0x00}, // 不正なマジックバイト
+			expected: "image/jpeg",
+		},
+		{
+			name:     "拡張子フォールバック_PNG",
+			filePath: "image.PNG",
+			data:     []byte{0x00, 0x00, 0x00, 0x00},
+			expected: "image/png",
+		},
+		{
+			name:     "未知の拡張子はJPEGにフォールバック",
+			filePath: "file.unknown",
+			data:     []byte{0x00, 0x00, 0x00, 0x00},
+			expected: "image/jpeg",
+		},
+		{
+			name:     "空のデータは拡張子で判定",
+			filePath: "test.gif",
+			data:     []byte{},
+			expected: "image/gif",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := detectMimeType(tt.filePath, tt.data)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

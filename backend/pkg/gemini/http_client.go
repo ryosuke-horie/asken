@@ -31,9 +31,7 @@ func NewHTTPClient(apiKey string, timeout time.Duration) *HTTPClient {
 		apiKey:  apiKey,
 		timeout: timeout,
 		baseURL: defaultBaseURL,
-		httpClient: &http.Client{
-			Timeout: timeout,
-		},
+		httpClient: &http.Client{}, // タイムアウトはcontextで制御
 	}
 }
 
@@ -180,7 +178,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, reqBody GenerateContentReque
 
 	// ステータスコードをチェック
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("APIエラー (status %d): %s", resp.StatusCode, string(body))
+		return nil, c.handleAPIError(resp.StatusCode, body)
 	}
 
 	// レスポンスをパース
@@ -194,14 +192,46 @@ func (c *HTTPClient) doRequest(ctx context.Context, reqBody GenerateContentReque
 		return nil, fmt.Errorf("レスポンスが空です")
 	}
 
+	// Partsが空かチェック
+	if len(apiResp.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("レスポンスのコンテンツが空です")
+	}
+
 	// レスポンステキストを抽出
-	var responseText string
-	if len(apiResp.Candidates) > 0 && len(apiResp.Candidates[0].Content.Parts) > 0 {
-		responseText = apiResp.Candidates[0].Content.Parts[0].Text
+	responseText := apiResp.Candidates[0].Content.Parts[0].Text
+	if responseText == "" {
+		return nil, fmt.Errorf("レスポンステキストが空です")
 	}
 
 	// 既存のResponse型に変換（互換性のため）
 	return &Response{
 		Response: responseText,
 	}, nil
+}
+
+// handleAPIError はAPIエラーレスポンスを安全に処理する
+func (c *HTTPClient) handleAPIError(statusCode int, body []byte) error {
+	// エラーレスポンスをパース試行（APIキー等の機密情報を含む可能性のある生データは出力しない）
+	var apiErr struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	_ = json.Unmarshal(body, &apiErr)
+
+	switch statusCode {
+	case http.StatusUnauthorized:
+		return fmt.Errorf("認証エラー: APIキーが無効です")
+	case http.StatusForbidden:
+		return fmt.Errorf("アクセス拒否: APIへのアクセス権限がありません")
+	case http.StatusTooManyRequests:
+		return fmt.Errorf("レート制限: しばらく待ってから再試行してください")
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable:
+		return fmt.Errorf("Geminiサービスエラー: サービスが一時的に利用できません")
+	default:
+		if apiErr.Error.Message != "" {
+			return fmt.Errorf("APIエラー (status %d): %s", statusCode, apiErr.Error.Message)
+		}
+		return fmt.Errorf("APIエラー (status %d)", statusCode)
+	}
 }
