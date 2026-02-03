@@ -16,7 +16,7 @@ App Store審査リスクを公式ガイドラインと実装証拠で評価し�
 5. 出力: CRITICAL は Linear Issue 作成、REVIEW はコメントで提示する。
 
 ## Signal Collection
-- 実行コマンド: `python3 skills/ios-app-review/scripts/scan_review_signals.py --out reports/ios-review-signals.json`
+- 実行コマンド: `python3 .agents/skills/ios-app-review/scripts/scan_review_signals.py --out reports/ios-review-signals.json`
 - 追加で確認するファイル: `ios/**/Info.plist`, `ios/**/PrivacyInfo.xcprivacy`, `ios/**/*.entitlements`, StoreKit利用箇所, 認証SDK, 広告/計測SDK, WebView実装, バックエンドの課金・削除・データ収集フロー
 
 ## Triage Criteria
