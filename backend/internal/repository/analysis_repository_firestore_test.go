@@ -74,8 +74,8 @@ func TestCreateRequest(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, uuid.Nil, id)
 
-		// 作成されたリクエストを確認
-		request, err := repo.GetRequest(ctx, id)
+		// 作成されたリクエストを確認（userIDでスコープ）
+		request, err := repo.GetRequest(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, StatusPending, request.Status)
 		assert.Equal(t, InputTypeImage, request.InputType)
@@ -115,8 +115,8 @@ func TestCreateRequestWithText(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, uuid.Nil, id)
 
-		// 作成されたリクエストを確認
-		request, err := repo.GetRequest(ctx, id)
+		// 作成されたリクエストを確認（userIDでスコープ）
+		request, err := repo.GetRequest(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, StatusPending, request.Status)
 		assert.Equal(t, InputTypeText, request.InputType)
@@ -143,8 +143,8 @@ func TestUpdateStatus(t *testing.T) {
 		err = repo.UpdateStatus(ctx, id, StatusProcessing, "")
 		require.NoError(t, err)
 
-		// 更新されたことを確認
-		request, err := repo.GetRequest(ctx, id)
+		// 更新されたことを確認（userIDでスコープ）
+		request, err := repo.GetRequest(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, StatusProcessing, request.Status)
 	})
@@ -157,7 +157,8 @@ func TestUpdateStatus(t *testing.T) {
 		err = repo.UpdateStatus(ctx, id, StatusFailed, errorMsg)
 		require.NoError(t, err)
 
-		request, err := repo.GetRequest(ctx, id)
+		// 更新されたことを確認（userIDでスコープ）
+		request, err := repo.GetRequest(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, StatusFailed, request.Status)
 		assert.Equal(t, errorMsg, request.ErrorMessage)
@@ -194,8 +195,8 @@ func TestSaveResultAndGetResult(t *testing.T) {
 		err = repo.SaveResult(ctx, id, result)
 		require.NoError(t, err)
 
-		// 結果を取得
-		savedResult, err := repo.GetResult(ctx, id)
+		// 結果を取得（userIDでスコープ）
+		savedResult, err := repo.GetResult(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, result.TotalCalories, savedResult.TotalCalories)
 		assert.Equal(t, result.TotalProtein, savedResult.TotalProtein)
@@ -264,14 +265,14 @@ func TestGetHistoryListAndDetail(t *testing.T) {
 		// 少し待機
 		time.Sleep(100 * time.Millisecond)
 
-		// 履歴一覧を取得
-		items, total, err := repo.GetHistoryList(ctx, 1, 10)
+		// 履歴一覧を取得（userIDでスコープ）
+		items, total, err := repo.GetHistoryList(ctx, userID, 1, 10)
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, total, 1)
 		assert.GreaterOrEqual(t, len(items), 1)
 
-		// 履歴詳細を取得
-		detail, err := repo.GetHistoryDetail(ctx, id)
+		// 履歴詳細を取得（userIDでスコープ）
+		detail, err := repo.GetHistoryDetail(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Equal(t, id, detail.ID)
 		assert.Len(t, detail.Foods, 1)
@@ -300,12 +301,12 @@ func TestDeleteHistory(t *testing.T) {
 		err = repo.SaveResult(ctx, id, result)
 		require.NoError(t, err)
 
-		// 削除
-		err = repo.DeleteHistory(ctx, id)
+		// 削除（userIDでスコープ）
+		err = repo.DeleteHistory(ctx, userID, id)
 		require.NoError(t, err)
 
-		// 削除されたことを確認（GetRequestでエラー）
-		_, err = repo.GetRequest(ctx, id)
+		// 削除されたことを確認（GetRequestでエラー、userIDでスコープ）
+		_, err = repo.GetRequest(ctx, userID, id)
 		assert.Error(t, err)
 	})
 }
@@ -340,8 +341,8 @@ func TestGetDailyMeals(t *testing.T) {
 		// 少し待機
 		time.Sleep(100 * time.Millisecond)
 
-		// 日次データを取得
-		meals, total, err := repo.GetDailyMeals(ctx, "2024-01-15")
+		// 日次データを取得（userIDでスコープ）
+		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15")
 		require.NoError(t, err)
 
 		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
@@ -367,8 +368,8 @@ func TestCreateSkippedMeal(t *testing.T) {
 		// 少し待機
 		time.Sleep(100 * time.Millisecond)
 
-		// 日次データで確認
-		meals, total, err := repo.GetDailyMeals(ctx, "2024-01-15")
+		// 日次データで確認（userIDでスコープ）
+		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15")
 		require.NoError(t, err)
 		assert.Equal(t, 0.0, total.TotalCalories)
 		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
@@ -394,8 +395,8 @@ func TestCreateSkippedMeal(t *testing.T) {
 		// 少し待機
 		time.Sleep(100 * time.Millisecond)
 
-		// 元の記録は削除されている
-		_, err = repo.GetRequest(ctx, id1)
+		// 元の記録は削除されている（userIDでスコープ）
+		_, err = repo.GetRequest(ctx, userID, id1)
 		assert.Error(t, err)
 	})
 }
@@ -427,16 +428,16 @@ func TestUpdateResult(t *testing.T) {
 		err = repo.SaveResult(ctx, id, initialResult)
 		require.NoError(t, err)
 
-		// 結果を更新
+		// 結果を更新（userIDでスコープ）
 		newFoods := []gemini.NutritionInfo{
 			{Name: "食品1", Calories: 150, Protein: 15, Fat: 7, Carbohydrates: 15},
 			{Name: "食品2", Calories: 200, Protein: 20, Fat: 10, Carbohydrates: 20},
 		}
-		err = repo.UpdateResult(ctx, id, newFoods)
+		err = repo.UpdateResult(ctx, userID, id, newFoods)
 		require.NoError(t, err)
 
-		// 更新された結果を確認
-		updatedResult, err := repo.GetResult(ctx, id)
+		// 更新された結果を確認（userIDでスコープ）
+		updatedResult, err := repo.GetResult(ctx, userID, id)
 		require.NoError(t, err)
 		assert.Len(t, updatedResult.Foods, 2)
 		assert.Equal(t, 350.0, updatedResult.TotalCalories) // 150 + 200
