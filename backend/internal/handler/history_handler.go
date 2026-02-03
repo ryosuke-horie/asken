@@ -1,13 +1,11 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
@@ -243,11 +241,6 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("History updated successfully for ID: %s", historyID)
 
-	// 非同期で栄養素を再計算（userIDを渡す）
-	if h.foodService != nil {
-		go h.recalculateNutritionAsync(userID, historyID, req.Foods)
-	}
-
 	// 更新後の詳細を取得して返却（userIDでスコープ）
 	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
@@ -265,65 +258,5 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("History update response sent successfully for ID: %s (nutrition recalculation started in background)", historyID)
-}
-
-// recalculateNutritionAsync は非同期で栄養素を再計算する
-// タイムアウト: 60秒（Gemini API呼び出し + DB更新）
-func (h *HistoryHandler) recalculateNutritionAsync(userID string, historyID uuid.UUID, foods []UpdateFoodItem) {
-	log.Printf("Starting async nutrition recalculation for history ID: %s, userID: %s", historyID, userID)
-
-	// タイムアウト付きのcontextを作成（60秒）
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	// 食材リストをテキスト形式に変換
-	var foodDescriptions []string
-	for _, f := range foods {
-		if f.Name != "" {
-			desc := f.Name
-			if f.EstimatedAmount != "" {
-				desc += " " + f.EstimatedAmount
-			}
-			foodDescriptions = append(foodDescriptions, desc)
-		}
-	}
-
-	if len(foodDescriptions) == 0 {
-		log.Printf("No valid foods to recalculate for history ID: %s", historyID)
-		return
-	}
-
-	// 食材リストを1つのテキストに結合
-	inputText := strings.Join(foodDescriptions, ", ")
-	log.Printf("Recalculating nutrition for: %s", inputText)
-
-	// Geminiで栄養素を計算
-	result, err := h.foodService.AnalyzeFoodText(ctx, inputText)
-	if err != nil {
-		log.Printf("Error recalculating nutrition for history ID %s: %v", historyID, err)
-		return
-	}
-
-	// 計算結果をNutritionInfo形式に変換
-	nutritionInfos := make([]gemini.NutritionInfo, len(result.Foods))
-	for i, f := range result.Foods {
-		nutritionInfos[i] = gemini.NutritionInfo{
-			Name:            f.Name,
-			EstimatedAmount: f.EstimatedAmount,
-			Calories:        f.Calories,
-			Protein:         f.Protein,
-			Fat:             f.Fat,
-			Carbohydrates:   f.Carbohydrates,
-		}
-	}
-
-	// データベースを更新（userIDでスコープ）
-	if err := h.repository.UpdateResult(ctx, userID, historyID, nutritionInfos); err != nil {
-		log.Printf("Error saving recalculated nutrition for history ID %s: %v", historyID, err)
-		return
-	}
-
-	log.Printf("Nutrition recalculation completed for history ID: %s (%d foods, total %.0f kcal)",
-		historyID, len(nutritionInfos), result.TotalCalories)
+	log.Printf("History update response sent successfully for ID: %s", historyID)
 }
