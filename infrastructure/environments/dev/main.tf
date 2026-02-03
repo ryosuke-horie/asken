@@ -58,7 +58,8 @@ module "artifact_registry" {
   repository_id             = "uchikomi"
   description               = "ウチコミ バックエンドDockerイメージ（${local.environment}）"
   cleanup_policy_keep_count = 10
-  cloud_run_sa_email        = module.cloud_run.service_account_email
+  # Note: Cloud Runはサービスエージェントを使用してArtifact Registryからイメージを取得するため
+  #       cloud_run_sa_emailは不要
 
   labels = {
     environment = local.environment

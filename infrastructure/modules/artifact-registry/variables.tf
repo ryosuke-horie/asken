@@ -37,12 +37,6 @@ variable "github_actions_sa_email" {
   default     = ""
 }
 
-variable "cloud_run_sa_email" {
-  description = "Cloud RunサービスアカウントのEmail（空で無効）"
-  type        = string
-  default     = ""
-}
-
 variable "labels" {
   description = "リソースラベル"
   type        = map(string)
