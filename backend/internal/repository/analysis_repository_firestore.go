@@ -623,6 +623,7 @@ func (r *firestoreAnalysisRepository) deleteSkippedRecords(ctx context.Context, 
 
 	// BulkWriterを使用（Batchは非推奨）
 	bw := r.client.BulkWriter(ctx)
+	var deleteJobs []*firestore.BulkWriterJob
 
 	for {
 		doc, err := iter.Next()
@@ -632,14 +633,22 @@ func (r *firestoreAnalysisRepository) deleteSkippedRecords(ctx context.Context, 
 		if err != nil {
 			return fmt.Errorf("既存skipped記録の確認に失敗: %w", err)
 		}
-		_, err = bw.Delete(doc.Ref)
+		job, err := bw.Delete(doc.Ref)
 		if err != nil {
 			return fmt.Errorf("skipped記録の削除ジョブ追加に失敗: %w", err)
 		}
+		deleteJobs = append(deleteJobs, job)
 	}
 
 	bw.Flush()
 	bw.End()
+
+	// 各削除ジョブの結果を確認
+	for _, job := range deleteJobs {
+		if _, err := job.Results(); err != nil {
+			return fmt.Errorf("skipped記録の削除に失敗: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -658,6 +667,7 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 
 	// BulkWriterを使用（Batchは非推奨）
 	bw := r.client.BulkWriter(ctx)
+	var deleteJobs []*firestore.BulkWriterJob
 	var imagePaths []string
 
 	for {
@@ -678,14 +688,22 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 			imagePaths = append(imagePaths, fsDoc.ImagePath)
 		}
 
-		_, err = bw.Delete(doc.Ref)
+		job, err := bw.Delete(doc.Ref)
 		if err != nil {
 			return fmt.Errorf("既存記録の削除ジョブ追加に失敗: %w", err)
 		}
+		deleteJobs = append(deleteJobs, job)
 	}
 
 	bw.Flush()
 	bw.End()
+
+	// 各削除ジョブの結果を確認
+	for _, job := range deleteJobs {
+		if _, err := job.Results(); err != nil {
+			return fmt.Errorf("既存記録の削除に失敗: %w", err)
+		}
+	}
 
 	// 画像ファイルを削除
 	for _, path := range imagePaths {
