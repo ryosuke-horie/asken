@@ -1,6 +1,6 @@
 # 開発者ガイド（CONTRIB）
 
-最終更新: 2026-02-02
+最終更新: 2026-02-03
 
 このドキュメントは、ウチコミプロジェクトの開発ワークフロー、利用可能なコマンド、環境セットアップ、テスト手順を説明します。
 
@@ -11,7 +11,7 @@
 | mise | 最新 | ツール・環境変数管理 |
 | Go | 1.25以上 | バックエンド開発（miseで自動インストール） |
 | Terraform | 1.10以上 | インフラ管理（miseで自動インストール） |
-| Docker / Docker Compose | 最新 | PostgreSQL起動 |
+| Docker / Docker Compose | 最新 | ローカル開発用 |
 | Task | 3.x | タスクランナー |
 | golangci-lint | 最新 | Goリント |
 | Xcode | 16以上 | iOS開発 |
@@ -54,11 +54,12 @@ task setup
 
 #### バックエンド
 
-`backend/.env`を作成（`backend/.env.example`を参考）:
+`backend/.env`を作成:
 
 | 環境変数 | 説明 | 例 |
 |:---|:---|:---|
-| DATABASE_URL | PostgreSQL接続文字列 | `postgres://uchikomi:uchikomi@localhost:5432/uchikomi?sslmode=disable` |
+| GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestoreサービスアカウント鍵のパス | `/path/to/sa-key.json` |
+| APP_ENV | 環境（開発用モック認証を有効化） | `development` |
 
 #### インフラ管理（Terraform）
 
@@ -95,14 +96,18 @@ APP_ENV=development
 ### 日常の開発サイクル
 
 ```bash
-# 1. DBを起動
-task db-up
-
-# 2. テストデータを投入（必要に応じて）
-task db-seed
-
-# 3. バックエンドサーバーを起動
+# バックエンドサーバーを起動
 task run
+```
+
+**注意**: データベースはFirestoreを使用しています。ローカル開発時にFirestoreエミュレータを使用する場合:
+
+```bash
+# Firestoreエミュレータを起動
+firebase emulators:start --only firestore
+
+# 別ターミナルでバックエンドを起動（エミュレータ接続）
+FIRESTORE_EMULATOR_HOST=localhost:8080 task run
 ```
 
 ### コード変更後の確認
@@ -118,9 +123,7 @@ task ios:test
 
 ### 開発終了時
 
-```bash
-task db-down
-```
+Firestoreエミュレータを使用している場合は、エミュレータを停止します。
 
 ## 利用可能なコマンド（Taskfile）
 
@@ -143,14 +146,13 @@ task db-down
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
 
-### データベース
+### データベース（Firestoreエミュレータ）
 
 | コマンド | 説明 |
 |:---|:---|
-| `task db-up` | PostgreSQLを起動 |
-| `task db-down` | PostgreSQLを停止 |
-| `task db-seed` | テストデータを投入 |
-| `task db-clean` | DBをリセット（ボリューム削除+再起動） |
+| `firebase emulators:start --only firestore` | Firestoreエミュレータを起動 |
+
+**注意**: PostgreSQL関連のコマンド（`task db-*`）はTaskfile.ymlに残っていますが、Firestore移行後は使用しません。
 
 ### iOS
 
@@ -177,12 +179,18 @@ task db-down
 # 全テストを実行
 task test
 
+# Firestoreエミュレータを使用したテスト
+firebase emulators:start --only firestore &
+FIRESTORE_EMULATOR_HOST=localhost:8080 task test
+
 # 詳細出力
 cd backend && go test ./... -v
 
 # カバレッジ
 cd backend && go test ./... -cover
 ```
+
+**注意**: Firestore Repositoryのテストは`FIRESTORE_EMULATOR_HOST`が設定されていない場合、スキップされます。
 
 ### iOSテスト
 

@@ -1,53 +1,58 @@
-# コードマップ更新レポート
+# コードマップ差分レポート
 生成日時: 2026-02-03
 
-## 更新ファイル
+## 変更サマリー
 
-### docs/CODEMAPS/backend.md
-- 最終更新: 2026-01-31 → 2026-02-03
-- 変更箇所:
-  - auth_handler.go を削除（Firebase Auth移行により不要）
-  - middleware セクション追加（Authenticatorインターフェース、DevAuthMiddleware）
-  - services に firebase_auth_service.go 追加
-  - 認証アーキテクチャセクション追加
-  - 依存関係図を更新
+| ファイル | 追加行 | 削除行 | 変更率 |
+|:---|:---|:---|:---|
+| docs/CODEMAPS/architecture.md | 4 | 4 | 5% |
+| docs/CODEMAPS/backend.md | 52 | 162 | 68% |
+| docs/CODEMAPS/data.md | 62 | 216 | 78% |
+| docs/CODEMAPS/ios.md | 0 | 0 | 0% |
 
-### docs/CODEMAPS/ios.md
-- 最終更新: 2026-01-31 → 2026-02-03
-- 変更箇所:
-  - UchikomiCore フレームワーク追加（Firebase非依存）
-  - 認証関連ファイル構成を大幅更新
-    - FirebaseAuthService, MockFirebaseAuthService, AppleSignInManager
-    - FirebaseAuthServiceProtocol, AuthManager
-  - TokenManager, AuthRepository を削除
-  - AuthServiceProvider パターン追加
-  - フレームワーク構成図追加
-  - 認証アーキテクチャセクション追加
-  - テスト構成を更新（Disabled フォルダ対応）
+合計: 118追加, 336削除
 
-### docs/CODEMAPS/data.md
-- 最終更新: 2026-01-31 → 2026-02-03
-- 変更箇所:
-  - users テーブルの id を UUID → VARCHAR(128) (Firebase UID)
-  - password_hash カラムを削除
-  - Firebase Authentication連携の注記追加
+## 主な変更内容
 
-### docs/CODEMAPS/architecture.md
-- 最終更新: 2026-02-02 → 2026-02-03
-- 変更箇所:
-  - 認証フローを詳細化（Firebase Auth連携）
-  - 開発環境の認証フローセクション追加
+### architecture.md (5%変更)
+- Cloud Functions → Cloud Runに修正
 
-## 差分率
+### backend.md (68%変更)
+- PostgreSQL関連の参照を削除
+- 削除されたRepository/Handlerを削除:
+  - weight_repository.go
+  - training_repository.go
+  - condition_repository.go
+  - mylist_repository.go
+  - profile_repository.go
+  - user_repository.go
+  - weight_handler.go
+  - training_handler.go
+  - condition_handler.go
+  - mylist_handler.go
+  - profile_handler.go
+- Firestore実装を追加:
+  - analysis_repository_firestore.go
+  - analysis_models.go
+  - firestore.go
 
-| ファイル | 推定変更率 |
-|:---|:---|
-| backend.md | ~25% |
-| ios.md | ~40% |
-| data.md | ~10% |
-| architecture.md | ~15% |
+### data.md (78%変更)
+- PostgreSQLテーブル定義を削除
+- Firestoreドキュメント構造に完全移行
+- SQLトリガー、インデックス情報を削除
+- ADR-002の将来設計への参照を追加
 
-## 備考
+### ios.md (0%変更)
+- 変更なし（最新状態）
 
-Firebase Authentication導入に伴う大規模な認証アーキテクチャ変更を反映。
-iOS側はUchikomiCoreフレームワーク分離により、テスト構成も大幅に変更。
+## 変更30%以上のファイル
+
+以下のファイルは30%以上の変更があります:
+- docs/CODEMAPS/backend.md (68%)
+- docs/CODEMAPS/data.md (78%)
+
+これらの変更はFirestore移行に伴う正当な更新です。
+
+## フレッシュネス
+
+すべてのコードマップは2026-02-03時点で最新です。
