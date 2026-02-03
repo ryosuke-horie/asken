@@ -51,12 +51,7 @@ type handlers struct {
 	historyDelete *handler.HistoryDeleteHandler
 	image         *handler.ImageHandler
 	dailyMeals    *handler.DailyMealsHandler
-	weight        *handler.WeightHandler
-	mylist        *handler.MylistHandler
 	skipMeal      *handler.SkipMealHandler
-	condition     *handler.ConditionHandler
-	training      *handler.TrainingHandler
-	profile       *handler.ProfileHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -67,11 +62,6 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupAnalyzeRoutes(mux, h, authMiddleware)
 	setupHistoryRoutes(mux, h, authMiddleware)
 	setupMealsRoutes(mux, h, authMiddleware)
-	setupWeightRoutes(mux, h, authMiddleware)
-	setupMylistRoutes(mux, h, authMiddleware)
-	setupConditionRoutes(mux, h, authMiddleware)
-	setupTrainingRoutes(mux, h, authMiddleware)
-	setupProfileRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -120,16 +110,6 @@ func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware middlewar
 func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
 	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(h.dailyMeals.Handle)))
 
-	mealsFromMylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.mylist.HandleRecordFromMylist(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/meals/from-mylist", authMiddleware.Authenticate(http.HandlerFunc(mealsFromMylistRouteHandler)))
-
 	mealsSkipRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -141,255 +121,26 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.
 	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
 }
 
-func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.weight.HandleCreateRecord(w, r)
-		case http.MethodGet:
-			h.weight.HandleGetRecords(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/weight-records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
-
-	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.weight.HandleGetGoal(w, r)
-		case http.MethodPut:
-			h.weight.HandleUpdateGoal(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/weight-goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
-}
-
-func setupMylistRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	mylistRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.mylist.HandleList(w, r)
-		case http.MethodPost:
-			h.mylist.HandleCreate(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/mylist", authMiddleware.Authenticate(http.HandlerFunc(mylistRouteHandler)))
-
-	mylistReorderRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPut:
-			h.mylist.HandleReorder(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/mylist/reorder", authMiddleware.Authenticate(http.HandlerFunc(mylistReorderRouteHandler)))
-
-	mylistAnalyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.mylist.HandleAnalyze(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/mylist/analyze", authMiddleware.Authenticate(http.HandlerFunc(mylistAnalyzeRouteHandler)))
-
-	mylistDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.mylist.HandleGetByID(w, r)
-		case http.MethodPut:
-			h.mylist.HandleUpdate(w, r)
-		case http.MethodDelete:
-			h.mylist.HandleDelete(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/mylist/", authMiddleware.Authenticate(http.HandlerFunc(mylistDetailRouteHandler)))
-}
-
-func setupConditionRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	conditionRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			h.condition.HandleCreateRecord(w, r)
-		case http.MethodGet:
-			h.condition.HandleGetRecord(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/condition-records", authMiddleware.Authenticate(http.HandlerFunc(conditionRecordsRouteHandler)))
-}
-
-func setupProfileRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	profileRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h.profile.HandleGetProfile(w, r)
-		case http.MethodPut:
-			h.profile.HandleUpdateProfile(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}
-	mux.Handle("/api/profile", authMiddleware.Authenticate(http.HandlerFunc(profileRouteHandler)))
-}
-
-// routeDefinition はルート定義を表す
-type routeDefinition struct {
-	pattern  string
-	handlers map[string]http.HandlerFunc
-}
-
-// createMethodRouter はメソッドごとのハンドラーを振り分けるルーターを作成
-func createMethodRouter(handlers map[string]http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if handler, ok := handlers[r.Method]; ok {
-			handler(w, r)
-			return
-		}
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func setupTrainingRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	routes := []routeDefinition{
-		{
-			pattern: "/api/training/locations",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodGet:  h.training.HandleListLocations,
-				http.MethodPost: h.training.HandleCreateLocation,
-			},
-		},
-		{
-			pattern: "/api/training/menus",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodGet:  h.training.HandleListMenus,
-				http.MethodPost: h.training.HandleCreateMenu,
-			},
-		},
-		{
-			pattern: "/api/training/menus/",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodDelete: h.training.HandleDeleteMenu,
-			},
-		},
-		{
-			pattern: "/api/training/records",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodGet:  h.training.HandleListRecords,
-				http.MethodPost: h.training.HandleCreateRecord,
-			},
-		},
-		{
-			pattern: "/api/training/records/",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodPut:    h.training.HandleUpdateRecord,
-				http.MethodDelete: h.training.HandleDeleteRecord,
-			},
-		},
-		{
-			pattern: "/api/training/suggest-menu",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodPost: h.training.HandleSuggestMenu,
-			},
-		},
-		{
-			pattern: "/api/training/normalize-equipment",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodPost: h.training.HandleNormalizeEquipment,
-			},
-		},
-		{
-			pattern: "/api/training/equipment/",
-			handlers: map[string]http.HandlerFunc{
-				http.MethodPut:    h.training.HandleUpdateEquipment,
-				http.MethodDelete: h.training.HandleDeleteEquipment,
-			},
-		},
-	}
-
-	for _, route := range routes {
-		handler := createMethodRouter(route.handlers)
-		mux.Handle(route.pattern, authMiddleware.Authenticate(handler))
-	}
-
-	// 場所詳細と器具は特殊なルーティングが必要
-	setupLocationDetailRoutes(mux, h, authMiddleware)
-}
-
-func setupLocationDetailRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/equipment") {
-			handleEquipmentRoutes(w, r, h)
-			return
-		}
-		handleLocationRoutes(w, r, h)
-	}
-	mux.Handle("/api/training/locations/", authMiddleware.Authenticate(http.HandlerFunc(handler)))
-}
-
-func handleEquipmentRoutes(w http.ResponseWriter, r *http.Request, h handlers) {
-	switch r.Method {
-	case http.MethodGet:
-		h.training.HandleListEquipment(w, r)
-	case http.MethodPost:
-		h.training.HandleCreateEquipment(w, r)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func handleLocationRoutes(w http.ResponseWriter, r *http.Request, h handlers) {
-	switch r.Method {
-	case http.MethodPut:
-		h.training.HandleUpdateLocation(w, r)
-	case http.MethodDelete:
-		h.training.HandleDeleteLocation(w, r)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
 
 func run() error {
-	// 環境変数から設定を読み込み
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		log.Fatal("DATABASE_URL environment variable is required")
-	}
+	ctx := context.Background()
 
-	// データベース接続
-	db, err := database.NewPostgresDB(database.Config{
-		DatabaseURL: databaseURL,
-	})
+	// Firestoreクライアントの初期化
+	firebaseCredentials := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	firestoreClient, err := database.NewFirestoreClient(ctx, firebaseCredentials)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to connect to Firestore: %v", err)
 	}
-	defer db.Close()
-	log.Println("Database connection established")
+	defer firestoreClient.Close()
+	log.Println("Firestore connection established")
 
 	// リポジトリの初期化
-	analysisRepo := repository.NewAnalysisRepository(db)
-	weightRepo := repository.NewWeightRepository(db)
-	mylistRepo := repository.NewMylistRepository(db)
-	conditionRepo := repository.NewConditionRepository(db)
-	trainingRepo := repository.NewTrainingRepository(db)
-	profileRepo := repository.NewProfileRepository(db)
+	analysisRepo := repository.NewAnalysisRepositoryFirestore(firestoreClient)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
 	textParser := gemini.NewTextParser(120 * time.Second)
 	calculator := gemini.NewNutritionCalculator(120 * time.Second)
-	menuSuggester := gemini.NewMenuSuggester(120 * time.Second)
-	equipmentNormalizer := gemini.NewEquipmentNormalizer(120 * time.Second)
 	geminiClient := &RealGeminiClient{
 		classifier: classifier,
 		textParser: textParser,
@@ -404,8 +155,7 @@ func run() error {
 		log.Println("WARNING: Running in development mode with mock authentication")
 		authMiddleware = middleware.NewDevAuthMiddleware()
 	} else {
-		firebaseCredentials := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-		firebaseAuthService, err := service.NewFirebaseAuthService(context.Background(), firebaseCredentials)
+		firebaseAuthService, err := service.NewFirebaseAuthService(ctx, firebaseCredentials)
 		if err != nil {
 			log.Fatalf("Failed to initialize Firebase Auth Service: %v", err)
 		}
@@ -421,12 +171,7 @@ func run() error {
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler("uploads"),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
-		weight:        handler.NewWeightHandler(weightRepo),
-		mylist:        handler.NewMylistHandler(mylistRepo, analysisRepo, foodService),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
-		condition:     handler.NewConditionHandler(conditionRepo),
-		training:      handler.NewTrainingHandler(trainingRepo, conditionRepo, profileRepo, menuSuggester, equipmentNormalizer),
-		profile:       handler.NewProfileHandler(profileRepo),
 	}
 
 	// ワーカーの初期化
