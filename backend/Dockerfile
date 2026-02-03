@@ -30,9 +30,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # -----------------------------------------------------------------------------
 FROM gcr.io/distroless/static-debian12:nonroot
 
-# ビルドステージからバイナリとCA証明書をコピー
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /app/server /server
+# ビルドステージからバイナリとCA証明書をコピー（非rootユーザーに所有権を設定）
+COPY --from=builder --chown=nonroot:nonroot /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder --chown=nonroot:nonroot /app/server /server
 
 # 非rootユーザーで実行（distroless/nonrootはUID 65532）
 USER nonroot:nonroot
