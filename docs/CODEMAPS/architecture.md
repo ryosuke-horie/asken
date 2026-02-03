@@ -15,6 +15,7 @@
 | コンテナレジストリ | Artifact Registry |
 | データベース | Firestore |
 | ストレージ | Cloud Storage |
+| シークレット | Secret Manager |
 | 認証 | Firebase Auth |
 | AI | Gemini API |
 | CI/CD | GitHub Actions |
@@ -110,6 +111,7 @@ utikomi/
 | Artifact Registry | Dockerイメージ保存 |
 | Firestore | NoSQLデータベース |
 | Cloud Storage | 画像保存 |
+| Secret Manager | APIキー等のシークレット管理 |
 | Firebase Auth | ユーザー認証 |
 | Gemini API | AI画像分析・栄養素計算 |
 | Workload Identity Federation | GitHub Actions→GCP認証（キーレス） |
@@ -143,6 +145,7 @@ infrastructure/
 | Artifact Registry | Dockerイメージ保存 |
 | Firestore Database | データ永続化 |
 | Cloud Storage Bucket | 画像保存 |
+| Secret Manager | APIキー等のシークレット保存 |
 | Firebase Auth | ユーザー認証 |
 | Workload Identity Pool/Provider | GitHub Actions認証 |
 | GitHub Secrets | CI/CD用シークレット |
