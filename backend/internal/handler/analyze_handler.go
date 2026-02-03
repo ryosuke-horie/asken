@@ -8,7 +8,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,13 +28,15 @@ type FoodService interface {
 type AnalyzeHandler struct {
 	foodService FoodService
 	repository  repository.AnalysisRepository
+	storageRepo repository.StorageRepository
 }
 
 // NewAnalyzeHandler は新しいAnalyzeHandlerを作成
-func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRepository) *AnalyzeHandler {
+func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRepository, storageRepo repository.StorageRepository) *AnalyzeHandler {
 	return &AnalyzeHandler{
 		foodService: foodService,
 		repository:  repository,
+		storageRepo: storageRepo,
 	}
 }
 
@@ -144,24 +145,13 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 3. 永続保存: uploads/{uuid}.{ext}（ワーカーが処理後に削除）
-	permanentPath, err := savePermanentFile(file, header)
-	if err != nil {
-		log.Printf("Error saving file: %v", err)
-		http.Error(w, "ファイルの保存に失敗しました", http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("File saved permanently to: %s", permanentPath)
-
-	// 4. meal_type, meal_date を取得・バリデーション
+	// 3. meal_type, meal_date を取得・バリデーション（アップロード前に検証）
 	mealType := r.FormValue("meal_type")
 	mealDate := r.FormValue("meal_date")
 
 	// meal_type のバリデーション
 	if !isValidMealType(mealType) {
 		log.Printf("Invalid meal_type: %s", mealType)
-		os.Remove(permanentPath)
 		http.Error(w, "無効な食事タイプです（breakfast, lunch, dinner, snackのいずれか）", http.StatusBadRequest)
 		return
 	}
@@ -170,6 +160,17 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	if mealDate == "" {
 		mealDate = time.Now().Format("2006-01-02")
 	}
+
+	// 4. Cloud Storageにアップロード
+	contentType := getContentType(header)
+	objectName, err := h.storageRepo.Upload(r.Context(), file, header.Filename, contentType)
+	if err != nil {
+		log.Printf("Error uploading file to Cloud Storage: %v", err)
+		http.Error(w, "ファイルの保存に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("File uploaded to Cloud Storage: %s", objectName)
 
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
@@ -180,20 +181,22 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("Meal type: %s, Meal date: %s, UserID: %v", mealType, mealDate, userID)
 
-	// 5. リポジトリに分析リクエストを登録
-	analysisID, err := h.repository.CreateRequest(r.Context(), permanentPath, mealType, mealDate, userIDPtr)
+	// 5. リポジトリに分析リクエストを登録（imagePath = Cloud Storageのオブジェクト名）
+	analysisID, err := h.repository.CreateRequest(r.Context(), objectName, mealType, mealDate, userIDPtr)
 	if err != nil {
 		log.Printf("Error creating analysis request: %v", err)
-		// ファイル削除
-		os.Remove(permanentPath)
+		// Cloud Storageからファイルを削除
+		if delErr := h.storageRepo.Delete(r.Context(), objectName); delErr != nil {
+			log.Printf("Error deleting file from Cloud Storage: %v", delErr)
+		}
 		http.Error(w, "分析リクエストの作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
 	log.Printf("Analysis request created with ID: %s", analysisID)
 
-	// 5. 202 Accepted レスポンスを返却
-	if err := writeAnalysisResponse(w, analysisID, permanentPath); err != nil {
+	// 6. 202 Accepted レスポンスを返却
+	if err := writeAnalysisResponse(w, analysisID, objectName); err != nil {
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
 	}
 }
@@ -225,19 +228,20 @@ func (h *AnalyzeHandler) HandleUploadImage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 3. ファイルを保存
-	permanentPath, err := savePermanentFile(file, header)
+	// 3. Cloud Storageにアップロード
+	contentType := getContentType(header)
+	objectName, err := h.storageRepo.Upload(r.Context(), file, header.Filename, contentType)
 	if err != nil {
-		log.Printf("Error saving file: %v", err)
+		log.Printf("Error uploading file to Cloud Storage: %v", err)
 		http.Error(w, "ファイルの保存に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("File uploaded to: %s", permanentPath)
+	log.Printf("File uploaded to Cloud Storage: %s", objectName)
 
 	// 4. レスポンスを返す
 	response := map[string]string{
-		"image_path": permanentPath,
+		"image_path": objectName,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -296,39 +300,19 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 	return nil
 }
 
-// savePermanentFile はファイルを永続的に保存（ワーカーが処理後に削除）
-func savePermanentFile(file multipart.File, header *multipart.FileHeader) (string, error) {
-	// UUIDを生成してファイル名を作成（ディレクトリトラバーサル対策）
-	fileID := uuid.New().String()
-	ext := filepath.Ext(header.Filename)
-	filename := fileID + ext
-
-	// 保存先ディレクトリを作成（バックエンドディレクトリ内のuploads/）
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
-		return "", fmt.Errorf("ディレクトリの作成に失敗しました: %w", err)
+// getContentType はファイルヘッダーからContent-Typeを取得
+func getContentType(header *multipart.FileHeader) string {
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	switch ext {
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	case ".heic":
+		return "image/heic"
+	default:
+		return "application/octet-stream"
 	}
-
-	// ファイルパスを作成（保存先を /tmp/uchikomi/uploads/ に制限）
-	destPath := filepath.Join(uploadDir, filename)
-
-	// ディレクトリトラバーサル対策: destPathがuploadDir配下であることを確認
-	if !strings.HasPrefix(filepath.Clean(destPath), filepath.Clean(uploadDir)) {
-		return "", fmt.Errorf("不正なファイルパスです")
-	}
-
-	// ファイルを保存
-	destFile, err := os.Create(destPath)
-	if err != nil {
-		return "", fmt.Errorf("ファイルの作成に失敗しました: %w", err)
-	}
-	defer destFile.Close()
-
-	if _, err := io.Copy(destFile, file); err != nil {
-		return "", fmt.Errorf("ファイルのコピーに失敗しました: %w", err)
-	}
-
-	return destPath, nil
 }
 
 // validMealTypes は有効な食事タイプの集合（パッケージ初期化時に一度だけ作成）

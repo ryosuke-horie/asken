@@ -17,6 +17,7 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/worker"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/database"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/storage"
 )
 
 // RealGeminiClient はGeminiClientインターフェースを実装する
@@ -138,8 +139,23 @@ func run() error {
 	defer firestoreClient.Close()
 	log.Println("Firestore connection established")
 
+	// Cloud Storageクライアントの初期化
+	storageClient, err := storage.NewStorageClient(ctx, firebaseCredentials)
+	if err != nil {
+		log.Fatalf("Failed to connect to Cloud Storage: %v", err)
+	}
+	defer storageClient.Close()
+	log.Println("Cloud Storage connection established")
+
+	// StorageRepositoryの初期化
+	gcsBucketName := os.Getenv("GCS_BUCKET_NAME")
+	if gcsBucketName == "" {
+		log.Fatalf("GCS_BUCKET_NAME environment variable is required")
+	}
+	storageRepo := repository.NewStorageRepositoryCloudStorage(storageClient, gcsBucketName)
+
 	// リポジトリの初期化
-	analysisRepo := repository.NewAnalysisRepositoryFirestore(firestoreClient)
+	analysisRepo := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
@@ -170,11 +186,11 @@ func run() error {
 	// ハンドラーの初期化
 	h := handlers{
 		health:        handler.NewHealthHandler(),
-		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
+		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
 		history:       handler.NewHistoryHandler(analysisRepo, foodService),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
-		image:         handler.NewImageHandler("uploads"),
+		image:         handler.NewImageHandler(storageRepo),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 	}

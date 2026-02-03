@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
-	"os"
+	"log"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -40,12 +40,16 @@ type firestoreAnalysisResult struct {
 
 // firestoreAnalysisRepository はFirestoreを使用したAnalysisRepositoryの実装
 type firestoreAnalysisRepository struct {
-	client *firestore.Client
+	client      *firestore.Client
+	storageRepo StorageRepository
 }
 
 // NewAnalysisRepositoryFirestore は新しいFirestoreベースのAnalysisRepositoryを作成します
-func NewAnalysisRepositoryFirestore(client *firestore.Client) AnalysisRepository {
-	return &firestoreAnalysisRepository{client: client}
+func NewAnalysisRepositoryFirestore(client *firestore.Client, storageRepo StorageRepository) AnalysisRepository {
+	return &firestoreAnalysisRepository{
+		client:      client,
+		storageRepo: storageRepo,
+	}
 }
 
 // getUserAnalysisCollection はユーザーのanalysisRequestsコレクション参照を取得
@@ -396,13 +400,11 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 		return fmt.Errorf("履歴の削除に失敗: %w", err)
 	}
 
-	// 画像ファイルを削除（画像入力の場合のみ）
+	// Cloud Storageから画像を削除（画像入力の場合のみ）
 	if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
-		if err := os.Remove(fsDoc.ImagePath); err != nil {
-			// ファイルが存在しない場合は無視（既に削除済み）
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", fsDoc.ImagePath, err)
-			}
+		if err := r.storageRepo.Delete(ctx, fsDoc.ImagePath); err != nil {
+			log.Printf("Warning: Cloud Storage画像の削除に失敗: %s: %v", fsDoc.ImagePath, err)
+			// 削除失敗はエラーとしない（既に削除済みの可能性）
 		}
 	}
 
@@ -712,13 +714,11 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 		}
 	}
 
-	// 画像ファイルを削除
+	// Cloud Storageから画像を削除
 	for _, path := range imagePaths {
-		if err := os.Remove(path); err != nil {
-			// ファイルが存在しない場合は無視（既に削除済み）
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", path, err)
-			}
+		if err := r.storageRepo.Delete(ctx, path); err != nil {
+			log.Printf("Warning: Cloud Storage画像の削除に失敗: %s: %v", path, err)
+			// 削除失敗はエラーとしない（既に削除済みの可能性）
 		}
 	}
 
