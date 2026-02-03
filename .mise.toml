@@ -27,3 +27,5 @@ TF_VAR_github_repository = "ryosuke-horie/utikomi"
 TF_VAR_github_token = "{{ exec(command='op read op://Personal/hq5okatv6au3etd7f7zc2nhqcq/token') }}"
 # 1Password から GCP サービスアカウントキーを取得
 TF_VAR_gcp_sa_key = "{{ exec(command='op read op://Personal/hktuxvsk6lsnfsntjvqnwbr7u4/credential') }}"
+# 1Password から Gemini API Key を取得
+TF_VAR_gemini_api_key = "{{ exec(command='op read op://Personal/obor4lhoi4tuuffbs67prldqli/password') }}"
