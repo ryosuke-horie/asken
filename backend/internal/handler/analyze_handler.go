@@ -244,11 +244,24 @@ func (h *AnalyzeHandler) HandleUploadImage(w http.ResponseWriter, r *http.Reques
 		"image_path": objectName,
 	}
 
+	// バッファに先にエンコードしてエラーを検出（ヘッダー書き込み前）
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding response: %v", err)
+		// レスポンス生成失敗時はCloud Storageからファイルを削除
+		if delErr := h.storageRepo.Delete(r.Context(), objectName); delErr != nil {
+			log.Printf("Error deleting file from Cloud Storage: %v", delErr)
+		}
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: %v", err)
+		// 既にヘッダーを書き込んでいるのでエラーレスポンスは返せないが、
+		// ファイルは削除しない（クライアントがレスポンスを受信した可能性がある）
 	}
 }
 

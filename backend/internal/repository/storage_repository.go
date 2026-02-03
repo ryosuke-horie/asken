@@ -30,11 +30,17 @@ type cloudStorageRepository struct {
 }
 
 // NewStorageRepositoryCloudStorage は新しいCloud StorageベースのStorageRepositoryを作成します
-func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string) StorageRepository {
+func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string) (StorageRepository, error) {
+	if client == nil {
+		return nil, fmt.Errorf("storage client is required")
+	}
+	if bucketName == "" {
+		return nil, fmt.Errorf("bucket name is required")
+	}
 	return &cloudStorageRepository{
 		client:     client,
 		bucketName: bucketName,
-	}
+	}, nil
 }
 
 // Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
@@ -61,6 +67,16 @@ func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, fil
 
 // GetSignedURL は指定されたオブジェクトの署名付きURLを生成
 func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
+	// オブジェクトの存在確認
+	obj := r.client.Bucket(r.bucketName).Object(objectName)
+	_, err := obj.Attrs(ctx)
+	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			return "", fmt.Errorf("オブジェクトが見つかりません: %s", objectName)
+		}
+		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
+	}
+
 	opts := &storage.SignedURLOptions{
 		Method:  "GET",
 		Expires: time.Now().Add(expiration),

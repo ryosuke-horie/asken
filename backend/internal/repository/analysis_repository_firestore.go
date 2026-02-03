@@ -403,8 +403,8 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 	// Cloud Storageから画像を削除（画像入力の場合のみ）
 	if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
 		if err := r.storageRepo.Delete(ctx, fsDoc.ImagePath); err != nil {
-			log.Printf("Warning: Cloud Storage画像の削除に失敗: %s: %v", fsDoc.ImagePath, err)
-			// 削除失敗はエラーとしない（既に削除済みの可能性）
+			log.Printf("Error: Cloud Storage画像の削除に失敗: %s: %v", fsDoc.ImagePath, err)
+			return fmt.Errorf("画像の削除に失敗: %w", err)
 		}
 	}
 
@@ -717,8 +717,8 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 	// Cloud Storageから画像を削除
 	for _, path := range imagePaths {
 		if err := r.storageRepo.Delete(ctx, path); err != nil {
-			log.Printf("Warning: Cloud Storage画像の削除に失敗: %s: %v", path, err)
-			// 削除失敗はエラーとしない（既に削除済みの可能性）
+			log.Printf("Error: Cloud Storage画像の削除に失敗: %s: %v", path, err)
+			return fmt.Errorf("画像の削除に失敗: %w", err)
 		}
 	}
 
