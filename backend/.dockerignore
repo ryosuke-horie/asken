@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# ローカルビルド成果物
+bin/
+*.exe
+server
+
+# テスト
+*_test.go
+testdata/
+coverage.out
+coverage.html
+
+# 環境変数（シークレット）
+.env
+.env.*
+!.env.example
+
+# アップロードされたファイル（ローカル開発用）
+uploads/
+
+# その他
+*.md
+*.txt
+Makefile
+Taskfile.yml

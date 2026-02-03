@@ -3,11 +3,14 @@
 最終更新: 2026-02-03
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
+デプロイ先: Cloud Run (asia-northeast1)
 
 ## ディレクトリ構造
 
 ```
 backend/
+├── Dockerfile              # マルチステージビルド (distroless/nonroot)
+├── .dockerignore           # Docker除外設定
 ├── cmd/
 │   └── server/main.go      # HTTPサーバーエントリーポイント
 ├── internal/
@@ -55,6 +58,12 @@ Context に firebase_uid を設定
 
 ## APIエンドポイント
 
+### ヘルスチェック (認証不要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| GET | /api/health | HealthHandler | ヘルスチェック |
+
 ### 食事分析 (認証必要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -86,6 +95,7 @@ Context に firebase_uid を設定
 
 | ファイル | 責務 |
 |:---|:---|
+| health_handler.go | ヘルスチェック |
 | analyze_handler.go | 食事分析リクエスト |
 | status_handler.go | 分析ステータス確認 |
 | daily_meals_handler.go | 日次食事データ |
@@ -159,6 +169,37 @@ cmd/server/main.go
     ├── internal/service/food_service.go
     └── internal/repository/analysis_repository_firestore.go
 ```
+
+## コンテナ化
+
+### Dockerfile (マルチステージビルド)
+
+```
+Stage 1: builder (golang:1.25-alpine)
+  - 依存関係のダウンロード
+  - 静的バイナリのビルド (CGO_ENABLED=0)
+  - LDFlags: -w -s (デバッグ情報除去)
+
+Stage 2: runtime (distroless/static-debian12:nonroot)
+  - 最小イメージ（約50MB以下）
+  - 非rootユーザーで実行
+  - ポート8080公開
+```
+
+### ヘルスチェック
+
+| タイプ | パス | 設定 |
+|:---|:---|:---|
+| startup | /api/health | 10秒後開始、10秒間隔、5秒タイムアウト、3回失敗で再起動 |
+| liveness | /api/health | 30秒間隔、5秒タイムアウト、3回失敗で再起動 |
+
+### 環境変数
+
+| 変数 | 説明 | 設定元 |
+|:---|:---|:---|
+| GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | ローカル: 手動設定 / Cloud Run: サービスアカウント |
+| APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
+| ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
 
 ## 関連コードマップ
 

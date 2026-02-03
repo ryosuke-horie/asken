@@ -167,9 +167,9 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 
 ### デプロイ
 
-| コマンド | 説明 |
-|:---|:---|
-| `task deploy` | 本番デプロイ（本番サーバーでのみ実行） |
+デプロイは**GitHub Actions**により自動化されています。mainブランチにpushすると自動的にCloud Runにデプロイされます。
+
+詳細は[RUNBOOK.md](./RUNBOOK.md#デプロイ)を参照してください。
 
 ## テスト手順
 
@@ -256,9 +256,12 @@ GCPリソースはTerraformで管理しています。
 
 | リソース | 用途 |
 |:---|:---|
+| Cloud Run | バックエンドAPI |
+| Artifact Registry | Dockerイメージ |
 | Firestore | データベース |
 | Cloud Storage | 画像保存 |
 | Firebase Auth | ユーザー認証 |
+| Workload Identity Federation | GitHub ActionsからのGCP認証（キーレス） |
 | GitHub Secrets/Variables | CI/CD用シークレット |
 
 ### セットアップ
@@ -281,7 +284,6 @@ terraform apply
 ## 関連ドキュメント
 
 - [README.md](../README.md) - プロジェクト概要
-- [DEPLOY.md](../DEPLOY.md) - デプロイ手順
 - [RUNBOOK.md](./RUNBOOK.md) - 運用手順書
 - [infrastructure/README.md](../infrastructure/README.md) - Terraformインフラ管理
 - [ios/README.md](../ios/README.md) - iOSアプリ開発ガイド
