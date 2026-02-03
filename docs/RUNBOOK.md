@@ -21,6 +21,7 @@ GCPサーバレス環境の運用手順、監視、トラブルシューティ�
 | データベース | Firestore | NoSQLデータベース |
 | ストレージ | Cloud Storage | 画像保存 |
 | 認証 | Firebase Auth | ユーザー認証 |
+| シークレット | Secret Manager | APIキー等の安全な保存 |
 | AI | Gemini API | 画像認識・栄養素分析 |
 | CI/CD認証 | Workload Identity Federation | キーレス認証 |
 
@@ -185,6 +186,26 @@ Container failed to start
 1. ログを確認: `gcloud run services logs read uchikomi-api-dev --region asia-northeast1`
 2. ヘルスチェックパス(`/api/health`)が正しく応答するか確認
 3. 環境変数が正しく設定されているか確認
+
+#### Secret Managerアクセスエラー
+
+```
+Permission denied on secret: projects/.../secrets/gemini-api-key
+```
+
+Cloud Runサービスアカウントに`secretmanager.secretAccessor`権限があるか確認:
+
+```bash
+gcloud projects get-iam-policy utikomi-dev \
+  --flatten="bindings[].members" \
+  --filter="bindings.role:secretmanager.secretAccessor"
+```
+
+シークレットの状態を確認:
+
+```bash
+gcloud secrets versions list gemini-api-key --project=utikomi-dev
+```
 
 ## 関連ドキュメント
 
