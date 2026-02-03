@@ -27,9 +27,12 @@ struct APIEndpoint {
 
     // MARK: - Meals Endpoints
 
-    static func dailyMeals(date: String) -> APIEndpoint {
-        APIEndpoint(
-            path: "meals/daily?date=\(date)",
+    static func dailyMeals(date: String, timezone: String) -> APIEndpoint {
+        var allowedCharacters = CharacterSet.urlQueryAllowed
+        allowedCharacters.remove(charactersIn: "/")
+        let encodedTimezone = timezone.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? timezone
+        return APIEndpoint(
+            path: "meals/daily?date=\(date)&tz=\(encodedTimezone)",
             method: .get,
             requiresAuth: true
         )
