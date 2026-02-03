@@ -68,6 +68,29 @@ module "artifact_registry" {
 }
 
 # -----------------------------------------------------------------------------
+# Secret Manager（Gemini API Key）
+# -----------------------------------------------------------------------------
+
+resource "google_secret_manager_secret" "gemini_api_key" {
+  project   = var.gcp_project_id
+  secret_id = "gemini-api-key"
+
+  replication {
+    auto {}
+  }
+
+  labels = {
+    environment = local.environment
+    managed_by  = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_version" "gemini_api_key" {
+  secret      = google_secret_manager_secret.gemini_api_key.id
+  secret_data = var.gemini_api_key
+}
+
+# -----------------------------------------------------------------------------
 # Cloud Run
 # -----------------------------------------------------------------------------
 
@@ -89,8 +112,16 @@ module "cloud_run" {
 
   # 環境変数
   env_vars = {
-    GCP_PROJECT_ID = var.gcp_project_id
+    GCP_PROJECT_ID  = var.gcp_project_id
     ALLOWED_ORIGINS = join(",", var.cloud_run_allowed_origins)
+  }
+
+  # Secret Managerからの環境変数
+  secrets = {
+    GEMINI_API_KEY = {
+      secret_name = google_secret_manager_secret.gemini_api_key.secret_id
+      version     = "latest"
+    }
   }
 
   # 未認証リクエストを許可
@@ -103,6 +134,8 @@ module "cloud_run" {
     environment = local.environment
     managed_by  = "terraform"
   }
+
+  depends_on = [google_secret_manager_secret_version.gemini_api_key]
 }
 
 # -----------------------------------------------------------------------------
