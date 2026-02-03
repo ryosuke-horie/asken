@@ -59,6 +59,7 @@ task setup
 | 環境変数 | 説明 | 例 |
 |:---|:---|:---|
 | GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestoreサービスアカウント鍵のパス | `/path/to/sa-key.json` |
+| GEMINI_API_KEY | Gemini API キー | `AIzaSy...` |
 | APP_ENV | 環境（開発用モック認証を有効化） | `development` |
 
 #### インフラ管理（Terraform）

@@ -10,7 +10,7 @@ import (
 )
 
 func TestCalculateNutrition_Success(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	calculator := NewNutritionCalculator(60 * time.Second)
 	ctx := context.Background()
@@ -52,12 +52,12 @@ func TestCalculateNutrition_EmptyFoods(t *testing.T) {
 }
 
 func TestCalculateNutrition_InvalidResponse(t *testing.T) {
-	// このテストは実際のGemini CLIの挙動に依存するためスキップ
-	t.Skip("Gemini CLIの挙動に依存するためスキップ")
+	// このテストは実際のGemini APIの挙動に依存するためスキップ
+	t.Skip("Gemini APIの挙動に依存するためスキップ")
 }
 
 func TestCalculateNutrition_Timeout(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトでテスト
 	calculator := NewNutritionCalculator(1 * time.Millisecond)

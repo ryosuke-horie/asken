@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,35 +17,43 @@ type FoodItem struct {
 
 // Classifier は料理分類を行うクライアント
 type Classifier struct {
-	timeout time.Duration
+	httpClient *HTTPClient
 }
 
 // NewClassifier は新しいClassifierを作成
+// 環境変数GEMINI_API_KEYからAPIキーを読み取る
 func NewClassifier(timeout time.Duration) *Classifier {
+	apiKey := os.Getenv("GEMINI_API_KEY")
 	return &Classifier{
-		timeout: timeout,
+		httpClient: NewHTTPClient(apiKey, timeout),
+	}
+}
+
+// NewClassifierWithAPIKey はAPIキーを指定してClassifierを作成
+func NewClassifierWithAPIKey(apiKey string, timeout time.Duration) *Classifier {
+	return &Classifier{
+		httpClient: NewHTTPClient(apiKey, timeout),
 	}
 }
 
 // ClassifyFoods は画像から料理を分類する（カロリー・栄養素情報は含まない）
 func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]FoodItem, error) {
-	// タイムアウト付きコンテキストを作成
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
 	// 画像パスの存在確認
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("画像ファイルが見つかりません: %s", imagePath)
 	}
 
-	// 絶対パスに変換
-	absPath, err := filepath.Abs(imagePath)
+	// 画像ファイルを読み込む
+	imageData, err := os.ReadFile(imagePath)
 	if err != nil {
-		return nil, fmt.Errorf("絶対パス変換エラー: %w", err)
+		return nil, fmt.Errorf("画像ファイル読み込みエラー: %w", err)
 	}
 
+	// MIMEタイプを判定
+	mimeType := detectMimeType(imagePath, imageData)
+
 	// プロンプトを構築（料理名の分類に集中）
-	prompt := fmt.Sprintf(`この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
+	prompt := `この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
 
 料理名は可能な限り具体的に出力してください。
 例:
@@ -62,33 +69,12 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
   }
 ]
 
-カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。
+カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。`
 
-@%s`, absPath)
-
-	// Gemini CLIコマンドを構築
-	cmd := exec.CommandContext(ctx, "gemini", "-m", "gemini-3-flash-preview", "-o", "json", prompt)
-
-	// 標準出力と標準エラー出力をキャプチャ
-	output, err := cmd.CombinedOutput()
+	// Gemini APIを呼び出す（画像付き）
+	response, err := c.httpClient.ExecuteWithImage(ctx, prompt, imageData, mimeType)
 	if err != nil {
-		// コンテキストタイムアウトのチェック
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, fmt.Errorf("タイムアウト: Gemini CLIの実行が%v以内に完了しませんでした", c.timeout)
-		}
-		return nil, fmt.Errorf("Gemini CLI実行エラー: %w\n出力: %s", err, string(output))
-	}
-
-	// JSON部分を抽出（"Loaded cached credentials."などの余分な出力を除去）
-	jsonData := extractJSON(output)
-	if len(jsonData) == 0 {
-		return nil, fmt.Errorf("JSON開始位置が見つかりません\n生データ: %s", string(output))
-	}
-
-	// JSONレスポンスをパース
-	var response Response
-	if err := json.Unmarshal(jsonData, &response); err != nil {
-		return nil, fmt.Errorf("JSONパースエラー: %w\n生データ: %s", err, string(jsonData))
+		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
 	}
 
 	// レスポンス内のJSONコードブロックを抽出（Geminiが```json```で囲んでいる場合）
@@ -101,4 +87,54 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 	}
 
 	return foods, nil
+}
+
+// detectMimeType は画像ファイルのMIMEタイプを判定する
+func detectMimeType(filePath string, data []byte) string {
+	// マジックバイトで判定
+	if len(data) >= 4 {
+		// JPEG
+		if data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+			return "image/jpeg"
+		}
+		// PNG
+		if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
+			return "image/png"
+		}
+		// GIF
+		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
+			return "image/gif"
+		}
+		// WebP
+		if len(data) >= 12 && data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46 {
+			if data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 {
+				return "image/webp"
+			}
+		}
+	}
+
+	// 拡張子で判定（フォールバック）
+	switch {
+	case hasExtension(filePath, ".jpg", ".jpeg"):
+		return "image/jpeg"
+	case hasExtension(filePath, ".png"):
+		return "image/png"
+	case hasExtension(filePath, ".gif"):
+		return "image/gif"
+	case hasExtension(filePath, ".webp"):
+		return "image/webp"
+	default:
+		return "image/jpeg" // デフォルト
+	}
+}
+
+// hasExtension はファイルパスが指定の拡張子を持つかチェックする
+func hasExtension(filePath string, extensions ...string) bool {
+	lowerPath := strings.ToLower(filePath)
+	for _, ext := range extensions {
+		if strings.HasSuffix(lowerPath, ext) {
+			return true
+		}
+	}
+	return false
 }

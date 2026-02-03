@@ -13,9 +13,17 @@ type TextParser struct {
 }
 
 // NewTextParser は新しいTextParserを作成
+// 環境変数GEMINI_API_KEYからAPIキーを読み取る
 func NewTextParser(timeout time.Duration) *TextParser {
 	return &TextParser{
 		client: NewClient(timeout),
+	}
+}
+
+// NewTextParserWithAPIKey はAPIキーを指定してTextParserを作成
+func NewTextParserWithAPIKey(apiKey string, timeout time.Duration) *TextParser {
+	return &TextParser{
+		client: NewClientWithAPIKey(apiKey, timeout),
 	}
 }
 
@@ -46,7 +54,7 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 
 	response, err := tp.client.Execute(ctx, prompt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Gemini APIコールエラー: %w", err)
 	}
 
 	foodListJSON := removeCodeBlock(response.Response)
