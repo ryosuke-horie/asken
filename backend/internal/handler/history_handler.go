@@ -10,21 +10,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 // HistoryHandler は履歴取得エンドポイントのハンドラー
 type HistoryHandler struct {
-	repository  repository.AnalysisRepository
-	foodService service.FoodServiceInterface
+	repository repository.AnalysisRepository
 }
 
 // NewHistoryHandler は新しいHistoryHandlerを作成
-func NewHistoryHandler(repository repository.AnalysisRepository, foodService service.FoodServiceInterface) *HistoryHandler {
+func NewHistoryHandler(repository repository.AnalysisRepository) *HistoryHandler {
 	return &HistoryHandler{
-		repository:  repository,
-		foodService: foodService,
+		repository: repository,
 	}
 }
 

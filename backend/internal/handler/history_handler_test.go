@@ -57,7 +57,7 @@ func TestHistoryHandler_HandleList_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -91,7 +91,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history?page=2&limit=10", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -113,7 +113,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 
 func TestHistoryHandler_HandleList_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history", nil)
 	w := httptest.NewRecorder()
@@ -131,7 +131,7 @@ func TestHistoryHandler_HandleList_RepositoryError(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -145,7 +145,7 @@ func TestHistoryHandler_HandleList_RepositoryError(t *testing.T) {
 
 func TestHistoryHandler_HandleList_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	// コンテキストにユーザーIDを設定しない
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
@@ -192,7 +192,7 @@ func TestHistoryHandler_HandleDetail_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -222,7 +222,7 @@ func TestHistoryHandler_HandleDetail_NotFound(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -237,7 +237,7 @@ func TestHistoryHandler_HandleDetail_NotFound(t *testing.T) {
 func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/invalid-uuid", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -251,7 +251,7 @@ func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history/"+uuid.New().String(), nil)
 	w := httptest.NewRecorder()
@@ -263,7 +263,7 @@ func TestHistoryHandler_HandleDetail_MethodNotAllowed(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	// コンテキストにユーザーIDを設定しない
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+uuid.New().String(), nil)
@@ -316,7 +316,7 @@ func TestHistoryHandler_HandleUpdate_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	body := `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7}]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -339,7 +339,7 @@ func TestHistoryHandler_HandleUpdate_Success(t *testing.T) {
 
 func TestHistoryHandler_HandleUpdate_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	// コンテキストにユーザーIDを設定しない
 	body := `{"foods":[]}`
@@ -355,7 +355,7 @@ func TestHistoryHandler_HandleUpdate_Unauthorized(t *testing.T) {
 func TestHistoryHandler_HandleUpdate_InvalidUUID(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	body := `{"foods":[]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/invalid-uuid", strings.NewReader(body))
@@ -379,7 +379,7 @@ func TestHistoryHandler_HandleUpdate_NotFound(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	body := `{"foods":[]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -398,7 +398,7 @@ func TestHistoryHandler_HandleUpdate_InvalidBody(t *testing.T) {
 	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	body := `{invalid json}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -414,7 +414,7 @@ func TestHistoryHandler_HandleUpdate_InvalidBody(t *testing.T) {
 
 func TestHistoryHandler_HandleUpdate_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo, nil)
+	handler := NewHistoryHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history/"+uuid.New().String(), nil)
 	w := httptest.NewRecorder()
