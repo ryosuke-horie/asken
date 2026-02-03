@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
@@ -31,6 +32,14 @@ func (h *HistoryDeleteHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// contextからユーザーIDを取得
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
 	// URLからhistory_idを抽出
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 4 {
@@ -47,10 +56,10 @@ func (h *HistoryDeleteHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Deleting history ID: %s", historyID)
+	log.Printf("Deleting history ID: %s, userID: %s", historyID, userID)
 
-	// リポジトリから履歴を削除
-	err = h.repository.DeleteHistory(r.Context(), historyID)
+	// リポジトリから履歴を削除（userIDでスコープ）
+	err = h.repository.DeleteHistory(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error deleting history: %v", err)
 		if strings.Contains(err.Error(), "見つかりません") {

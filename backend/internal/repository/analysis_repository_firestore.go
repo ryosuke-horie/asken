@@ -129,19 +129,16 @@ func (r *firestoreAnalysisRepository) CreateRequestWithText(ctx context.Context,
 	return id, nil
 }
 
-// GetRequest は指定されたIDの分析リクエストを取得します
-// 注意: Firestoreではユーザー横断検索が必要なため、全ユーザーを検索
-func (r *firestoreAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error) {
-	// コレクショングループクエリを使用して全ユーザーから検索
-	iter := r.client.CollectionGroup("analysisRequests").Where("id", "==", id.String()).Documents(ctx)
-	defer iter.Stop()
-
-	doc, err := iter.Next()
-	if err == iterator.Done {
-		return nil, fmt.Errorf("リクエストが見つかりません: %s", id)
+// GetRequest は指定されたIDの分析リクエストを取得します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) GetRequest(ctx context.Context, userID string, id uuid.UUID) (*AnalysisRequest, error) {
+	if userID == "" {
+		return nil, fmt.Errorf("userIDが必要です")
 	}
+
+	// ユーザーのコレクションから直接取得
+	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("リクエストの取得に失敗: %w", err)
+		return nil, fmt.Errorf("リクエストが見つかりません: %s", id)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -216,18 +213,16 @@ func (r *firestoreAnalysisRepository) SaveResult(ctx context.Context, requestID 
 	return nil
 }
 
-// GetResult は指定されたリクエストIDの分析結果を取得します
-func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error) {
-	// コレクショングループクエリで対象ドキュメントを検索
-	iter := r.client.CollectionGroup("analysisRequests").Where("id", "==", requestID.String()).Documents(ctx)
-	defer iter.Stop()
-
-	doc, err := iter.Next()
-	if err == iterator.Done {
-		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
+// GetResult は指定されたリクエストIDの分析結果を取得します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+	if userID == "" {
+		return nil, fmt.Errorf("userIDが必要です")
 	}
+
+	// ユーザーのコレクションから直接取得
+	doc, err := r.getUserAnalysisCollection(userID).Doc(requestID.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("リクエストの取得に失敗: %w", err)
+		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -283,8 +278,12 @@ func (r *firestoreAnalysisRepository) GetPendingRequests(ctx context.Context, li
 	return requests, nil
 }
 
-// GetHistoryList は履歴一覧を取得します（ページネーション対応）
-func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]HistoryItem, int, error) {
+// GetHistoryList は履歴一覧を取得します（userIDでスコープ、ページネーション対応）
+func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, userID string, page, limit int) ([]HistoryItem, int, error) {
+	if userID == "" {
+		return nil, 0, fmt.Errorf("userIDが必要です")
+	}
+
 	if page < 1 {
 		page = 1
 	}
@@ -292,9 +291,8 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, 
 		limit = 20
 	}
 
-	// 総件数を取得（CollectionGroupではAggregationQueryが使用できないため全件走査）
-	// TODO: パフォーマンス改善が必要な場合は、カウント専用のドキュメントを別途管理することを検討
-	countIter := r.client.CollectionGroup("analysisRequests").
+	// 総件数を取得（ユーザーのコレクションから）
+	countIter := r.getUserAnalysisCollection(userID).
 		Where("status", "==", string(StatusCompleted)).
 		Documents(ctx)
 
@@ -315,8 +313,8 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, 
 	// ページネーション用のオフセットを計算
 	offset := (page - 1) * limit
 
-	// 履歴一覧を取得
-	iter := r.client.CollectionGroup("analysisRequests").
+	// 履歴一覧を取得（ユーザーのコレクションから）
+	iter := r.getUserAnalysisCollection(userID).
 		Where("status", "==", string(StatusCompleted)).
 		OrderBy("createdAt", firestore.Desc).
 		Offset(offset).
@@ -349,21 +347,16 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, page, 
 	return items, total, nil
 }
 
-// GetHistoryDetail は履歴詳細を取得します
-func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*HistoryDetail, error) {
-	// コレクショングループクエリで対象ドキュメントを検索
-	iter := r.client.CollectionGroup("analysisRequests").
-		Where("id", "==", id.String()).
-		Where("status", "==", string(StatusCompleted)).
-		Documents(ctx)
-	defer iter.Stop()
-
-	doc, err := iter.Next()
-	if err == iterator.Done {
-		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+// GetHistoryDetail は履歴詳細を取得します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, userID string, id uuid.UUID) (*HistoryDetail, error) {
+	if userID == "" {
+		return nil, fmt.Errorf("userIDが必要です")
 	}
+
+	// ユーザーのコレクションから直接取得
+	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("履歴詳細の取得に失敗: %w", err)
+		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -371,21 +364,25 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, id u
 		return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 	}
 
+	// completed状態のみ返す
+	if fsDoc.Status != StatusCompleted {
+		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+	}
+
 	return r.toHistoryDetail(&fsDoc)
 }
 
-// DeleteHistory は履歴を削除します（関連する画像も含む）
-func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
-	// コレクショングループクエリで対象ドキュメントを検索
-	iter := r.client.CollectionGroup("analysisRequests").Where("id", "==", id.String()).Documents(ctx)
-	defer iter.Stop()
-
-	doc, err := iter.Next()
-	if err == iterator.Done {
-		return fmt.Errorf("履歴が見つかりません: %s", id)
+// DeleteHistory は履歴を削除します（userIDでスコープ、関連する画像も含む）
+func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID string, id uuid.UUID) error {
+	if userID == "" {
+		return fmt.Errorf("userIDが必要です")
 	}
+
+	// ユーザーのコレクションから直接取得
+	docRef := r.getUserAnalysisCollection(userID).Doc(id.String())
+	doc, err := docRef.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("履歴の取得に失敗: %w", err)
+		return fmt.Errorf("履歴が見つかりません: %s", id)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -394,7 +391,7 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, id uuid
 	}
 
 	// ドキュメントを削除
-	_, err = doc.Ref.Delete(ctx)
+	_, err = docRef.Delete(ctx)
 	if err != nil {
 		return fmt.Errorf("履歴の削除に失敗: %w", err)
 	}
@@ -412,8 +409,12 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, id uuid
 	return nil
 }
 
-// GetDailyMeals は指定された日付の食事データを取得します
-func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error) {
+// GetDailyMeals は指定された日付の食事データを取得します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]HistoryDetail, DailyTotal, error) {
+	if userID == "" {
+		return nil, DailyTotal{}, fmt.Errorf("userIDが必要です")
+	}
+
 	mealDateTime, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		return nil, DailyTotal{}, fmt.Errorf("日付のパースに失敗: %w", err)
@@ -423,8 +424,8 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, date st
 	startOfDay := time.Date(mealDateTime.Year(), mealDateTime.Month(), mealDateTime.Day(), 0, 0, 0, 0, time.UTC)
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	// コレクショングループクエリで対象日の食事を取得
-	iter := r.client.CollectionGroup("analysisRequests").
+	// ユーザーのコレクションから対象日の食事を取得
+	iter := r.getUserAnalysisCollection(userID).
 		Where("mealDate", ">=", startOfDay).
 		Where("mealDate", "<", endOfDay).
 		Where("status", "==", string(StatusCompleted)).
@@ -563,21 +564,27 @@ func (r *firestoreAnalysisRepository) CreateSkippedMeal(ctx context.Context, mea
 	return id, nil
 }
 
-// UpdateResult は分析結果を更新します
-func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, historyID uuid.UUID, foods []gemini.NutritionInfo) error {
-	// コレクショングループクエリで対象ドキュメントを検索
-	iter := r.client.CollectionGroup("analysisRequests").
-		Where("id", "==", historyID.String()).
-		Where("status", "==", string(StatusCompleted)).
-		Documents(ctx)
-	defer iter.Stop()
+// UpdateResult は分析結果を更新します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error {
+	if userID == "" {
+		return fmt.Errorf("userIDが必要です")
+	}
 
-	doc, err := iter.Next()
-	if err == iterator.Done {
+	// ユーザーのコレクションから直接取得
+	docRef := r.getUserAnalysisCollection(userID).Doc(historyID.String())
+	doc, err := docRef.Get(ctx)
+	if err != nil {
 		return fmt.Errorf("履歴が見つかりません: %s", historyID)
 	}
-	if err != nil {
-		return fmt.Errorf("履歴の取得に失敗: %w", err)
+
+	var fsDoc firestoreAnalysisDocument
+	if err := doc.DataTo(&fsDoc); err != nil {
+		return fmt.Errorf("ドキュメントのパースに失敗: %w", err)
+	}
+
+	// completed状態のみ更新可能
+	if fsDoc.Status != StatusCompleted {
+		return fmt.Errorf("履歴が見つかりません: %s", historyID)
 	}
 
 	// 合計値を計算
@@ -597,7 +604,7 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, historyI
 		TotalCarbohydrates: totalCarbohydrates,
 	}
 
-	_, err = doc.Ref.Update(ctx, []firestore.Update{
+	_, err = docRef.Update(ctx, []firestore.Update{
 		{Path: "result", Value: fsResult},
 		{Path: "updatedAt", Value: time.Now()},
 	})

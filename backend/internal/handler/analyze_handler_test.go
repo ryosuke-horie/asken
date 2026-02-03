@@ -43,17 +43,18 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 type MockAnalysisRepository struct {
 	CreateRequestFunc           func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 	CreateRequestWithTextFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
-	GetRequestFunc              func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error)
+	GetRequestFunc              func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error)
 	UpdateStatusFunc            func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
 	SaveResultFunc              func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
-	GetResultFunc               func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	GetResultFunc               func(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error)
 	GetPendingRequestsFunc      func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
-	GetHistoryListFunc          func(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error)
-	GetHistoryDetailFunc        func(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error)
-	DeleteHistoryFunc           func(ctx context.Context, id uuid.UUID) error
-	GetDailyMealsFunc           func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
+	GetHistoryListFunc          func(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error)
+	GetHistoryDetailFunc        func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error)
+	DeleteHistoryFunc           func(ctx context.Context, userID string, id uuid.UUID) error
+	GetDailyMealsFunc           func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
 	CreateRequestFromMylistFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)
 	CreateSkippedMealFunc       func(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
+	UpdateResultFunc            func(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
@@ -70,9 +71,9 @@ func (m *MockAnalysisRepository) CreateRequestWithText(ctx context.Context, inpu
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) GetRequest(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+func (m *MockAnalysisRepository) GetRequest(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
 	if m.GetRequestFunc != nil {
-		return m.GetRequestFunc(ctx, id)
+		return m.GetRequestFunc(ctx, userID, id)
 	}
 	return nil, nil
 }
@@ -91,9 +92,9 @@ func (m *MockAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetResult(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error) {
+func (m *MockAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
 	if m.GetResultFunc != nil {
-		return m.GetResultFunc(ctx, requestID)
+		return m.GetResultFunc(ctx, userID, requestID)
 	}
 	return nil, nil
 }
@@ -105,30 +106,30 @@ func (m *MockAnalysisRepository) GetPendingRequests(ctx context.Context, limit i
 	return nil, nil
 }
 
-func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, page, limit int) ([]repository.HistoryItem, int, error) {
+func (m *MockAnalysisRepository) GetHistoryList(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error) {
 	if m.GetHistoryListFunc != nil {
-		return m.GetHistoryListFunc(ctx, page, limit)
+		return m.GetHistoryListFunc(ctx, userID, page, limit)
 	}
 	return nil, 0, nil
 }
 
-func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, id uuid.UUID) (*repository.HistoryDetail, error) {
+func (m *MockAnalysisRepository) GetHistoryDetail(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
 	if m.GetHistoryDetailFunc != nil {
-		return m.GetHistoryDetailFunc(ctx, id)
+		return m.GetHistoryDetailFunc(ctx, userID, id)
 	}
 	return nil, nil
 }
 
-func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, id uuid.UUID) error {
+func (m *MockAnalysisRepository) DeleteHistory(ctx context.Context, userID string, id uuid.UUID) error {
 	if m.DeleteHistoryFunc != nil {
-		return m.DeleteHistoryFunc(ctx, id)
+		return m.DeleteHistoryFunc(ctx, userID, id)
 	}
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	if m.GetDailyMealsFunc != nil {
-		return m.GetDailyMealsFunc(ctx, date)
+		return m.GetDailyMealsFunc(ctx, userID, date)
 	}
 	return nil, repository.DailyTotal{}, nil
 }
@@ -147,7 +148,10 @@ func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, id uuid.UUID, foods []gemini.NutritionInfo) error {
+func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
+	if m.UpdateResultFunc != nil {
+		return m.UpdateResultFunc(ctx, userID, id, foods)
+	}
 	return nil
 }
 
