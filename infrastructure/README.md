@@ -203,7 +203,8 @@ infrastructure/
     ├── firestore/                # Firestoreデータベース
     ├── storage/                  # Cloud Storage
     ├── firebase-auth/            # Firebase Authentication
-    └── github/                   # GitHub secrets/variables
+    ├── github/                   # GitHub secrets/variables
+    └── wif/                      # Workload Identity Federation（キーレス認証）
 ```
 
 ## 環境ごとの設定
@@ -229,6 +230,20 @@ Push to main → Build Docker image → Push to Artifact Registry → Deploy to 
 ```
 
 デプロイワークフロー: `.github/workflows/deploy.yml`
+
+### Workload Identity Federation（WIF）
+
+GitHub ActionsからGCPへの認証にはWorkload Identity Federationを使用しています。
+これによりサービスアカウントキーの管理が不要になり、セキュリティが向上します。
+
+WIF構成:
+- **Workload Identity Pool**: `github-pool`
+- **OIDC Provider**: `github-provider`
+- **認証条件**: `assertion.repository_owner == 'ryosuke-horie'`
+
+GitHub Actions環境変数（Terraformで自動設定）:
+- `WORKLOAD_IDENTITY_PROVIDER`: WIFプロバイダーのフルパス
+- `SERVICE_ACCOUNT_EMAIL`: Cloud RunサービスアカウントのEmail
 
 ## トラブルシューティング
 
