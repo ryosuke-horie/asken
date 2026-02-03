@@ -223,3 +223,156 @@ func TestRemoveCodeBlock_HTTPClient(t *testing.T) {
 		})
 	}
 }
+
+func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
+	t.Run("不正なJSONレスポンスでエラーを返す", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`{invalid json`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "パースエラー")
+	})
+
+	t.Run("空のPartsでエラーを返す", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := GenerateContentResponse{
+				Candidates: []Candidate{
+					{
+						Content: ContentResponse{
+							Parts: []PartResponse{}, // 空のParts
+						},
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "コンテンツが空です")
+	})
+
+	t.Run("空のレスポンステキストでエラーを返す", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := GenerateContentResponse{
+				Candidates: []Candidate{
+					{
+						Content: ContentResponse{
+							Parts: []PartResponse{
+								{Text: ""}, // 空のテキスト
+							},
+						},
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "レスポンステキストが空です")
+	})
+}
+
+func TestHTTPClient_HandleAPIError(t *testing.T) {
+	t.Run("認証エラー_401", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error": {"message": "API key not valid"}}`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("invalid-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "認証エラー")
+		assert.Contains(t, err.Error(), "APIキーが無効")
+	})
+
+	t.Run("レート制限_429", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte(`{"error": {"message": "Rate limit exceeded"}}`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "レート制限")
+	})
+
+	t.Run("サーバーエラー_500", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`{"error": {"message": "Internal error"}}`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Geminiサービスエラー")
+	})
+
+	t.Run("エラーメッセージ付きの一般エラー", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{"error": {"message": "Invalid request format"}}`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Invalid request format")
+	})
+
+	t.Run("エラーメッセージなしの一般エラー", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{}`)) // メッセージなし
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "APIエラー (status 400)")
+	})
+}
