@@ -126,6 +126,30 @@ func TestHTTPClient_Execute_Timeout(t *testing.T) {
 	})
 }
 
+func TestHTTPClient_Execute_Cancel(t *testing.T) {
+	t.Run("コンテキストキャンセルでエラーを返す", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			time.Sleep(100 * time.Millisecond)
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			cancel()
+		}()
+
+		_, err := client.Execute(ctx, "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "キャンセル")
+	})
+}
+
 func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 	t.Run("画像付きリクエストで正常なレスポンスを受け取る", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -374,5 +398,51 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "APIエラー (status 400)")
+	})
+
+	t.Run("アクセス拒否_403", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error": {"message": "Forbidden"}}`))
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "アクセス拒否")
+	})
+
+	t.Run("BadGateway_502", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Geminiサービスエラー")
+	})
+
+	t.Run("ServiceUnavailable_503", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Geminiサービスエラー")
 	})
 }
