@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/testutil"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,12 +165,17 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
 		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
-			// ファイルが永続化されていることを確認
-			assert.FileExists(t, imagePath)
+			// Cloud Storageのオブジェクト名が渡されることを確認
+			assert.Contains(t, imagePath, "uploads/")
 			return expectedID, nil
 		},
 	}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "uploads/test-uuid.jpg", nil
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
 	body := &bytes.Buffer{}
@@ -209,7 +217,8 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", nil)
 	w := httptest.NewRecorder()
@@ -222,7 +231,8 @@ func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// テキストファイルをアップロード
 	body := &bytes.Buffer{}
@@ -249,7 +259,12 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 			return uuid.Nil, assert.AnError
 		},
 	}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "uploads/test-uuid.jpg", nil
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -360,7 +375,8 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 			return expectedID, nil
 		},
 	}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// JSONリクエストボディを作成
 	reqBody := map[string]string{
@@ -390,7 +406,8 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	reqBody := map[string]string{
 		"input_text": "",
@@ -412,7 +429,8 @@ func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	reqBody := map[string]string{
 		"input_text": "ご飯二杯",
@@ -434,7 +452,8 @@ func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// 1001文字のテキストを作成
 	longText := make([]byte, 1001)
@@ -462,7 +481,8 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewAnalyzeHandler(mockService, mockRepo)
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// 不正なJSONを送信
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader([]byte("{invalid json")))
@@ -472,4 +492,116 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAnalyzeHandler_StorageUploadError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "", errors.New("Cloud Storage unavailable")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	// JPEG magic number + 512バイト以上のダミーデータ
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルの保存に失敗しました")
+}
+
+func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
+	mockService := &MockFoodService{}
+	deleteCalled := false
+	uploadedObjectName := ""
+
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			uploadedObjectName = "uploads/test-uuid.jpg"
+			return uploadedObjectName, nil
+		},
+		DeleteFunc: func(ctx context.Context, objectName string) error {
+			deleteCalled = true
+			assert.Equal(t, uploadedObjectName, objectName)
+			return nil
+		},
+	}
+	mockRepo := &MockAnalysisRepository{
+		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
+			return uuid.Nil, errors.New("database error")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("meal_type", "lunch"))
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.True(t, deleteCalled, "Cloud Storage delete should be called on repository failure")
+}
+
+func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			return "", errors.New("Cloud Storage unavailable")
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	jpegData := make([]byte, 512)
+	jpegData[0] = 0xFF
+	jpegData[1] = 0xD8
+	jpegData[2] = 0xFF
+	_, err = part.Write(jpegData)
+	require.NoError(t, err)
+	writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/upload-image", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+
+	handler.HandleUploadImage(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルの保存に失敗しました")
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -62,7 +63,7 @@ func (h *HistoryDeleteHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	err = h.repository.DeleteHistory(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error deleting history: %v", err)
-		if strings.Contains(err.Error(), "見つかりません") {
+		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, "History not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Failed to delete history", http.StatusInternalServerError)

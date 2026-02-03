@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
-	"os"
+	"log"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -11,6 +11,8 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // firestoreAnalysisDocument はFirestoreに保存するドキュメント構造
@@ -40,12 +42,22 @@ type firestoreAnalysisResult struct {
 
 // firestoreAnalysisRepository はFirestoreを使用したAnalysisRepositoryの実装
 type firestoreAnalysisRepository struct {
-	client *firestore.Client
+	client      *firestore.Client
+	storageRepo StorageRepository
 }
 
 // NewAnalysisRepositoryFirestore は新しいFirestoreベースのAnalysisRepositoryを作成します
-func NewAnalysisRepositoryFirestore(client *firestore.Client) AnalysisRepository {
-	return &firestoreAnalysisRepository{client: client}
+func NewAnalysisRepositoryFirestore(client *firestore.Client, storageRepo StorageRepository) (AnalysisRepository, error) {
+	if client == nil {
+		return nil, fmt.Errorf("firestore client is required")
+	}
+	if storageRepo == nil {
+		return nil, fmt.Errorf("storage repository is required")
+	}
+	return &firestoreAnalysisRepository{
+		client:      client,
+		storageRepo: storageRepo,
+	}, nil
 }
 
 // getUserAnalysisCollection はユーザーのanalysisRequestsコレクション参照を取得
@@ -138,7 +150,10 @@ func (r *firestoreAnalysisRepository) GetRequest(ctx context.Context, userID str
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("リクエストが見つかりません: %s", id)
+		if status.Code(err) == codes.NotFound {
+			return nil, fmt.Errorf("リクエストが見つかりません: %s: %w", id, ErrNotFound)
+		}
+		return nil, fmt.Errorf("リクエストの取得に失敗: %w", err)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -222,7 +237,10 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(requestID.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
+		if status.Code(err) == codes.NotFound {
+			return nil, fmt.Errorf("結果が見つかりません: %s: %w", requestID, ErrNotFound)
+		}
+		return nil, fmt.Errorf("結果の取得に失敗: %w", err)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -231,7 +249,7 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 	}
 
 	if fsDoc.Result == nil {
-		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
+		return nil, fmt.Errorf("結果が見つかりません: %s: %w", requestID, ErrNotFound)
 	}
 
 	return &service.AnalysisResult{
@@ -356,7 +374,10 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, user
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+		if status.Code(err) == codes.NotFound {
+			return nil, fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
+		}
+		return nil, fmt.Errorf("履歴の取得に失敗: %w", err)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -366,7 +387,7 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, user
 
 	// completed状態のみ返す
 	if fsDoc.Status != StatusCompleted {
-		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+		return nil, fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
 	}
 
 	return r.toHistoryDetail(&fsDoc)
@@ -382,7 +403,10 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 	docRef := r.getUserAnalysisCollection(userID).Doc(id.String())
 	doc, err := docRef.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("履歴が見つかりません: %s", id)
+		if status.Code(err) == codes.NotFound {
+			return fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
+		}
+		return fmt.Errorf("履歴の取得に失敗: %w", err)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -390,20 +414,20 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 		return fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 	}
 
+	// Cloud Storageから画像を削除（画像入力の場合のみ）
+	// 注: Cloud Storage削除を先に実行し、孤立したFirestoreドキュメントより
+	// 孤立した画像ファイルを防ぐ（UIの整合性を優先）
+	if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
+		if err := r.storageRepo.Delete(ctx, fsDoc.ImagePath); err != nil {
+			log.Printf("Error: Cloud Storage画像の削除に失敗: %s: %v", fsDoc.ImagePath, err)
+			return fmt.Errorf("画像の削除に失敗: %w", err)
+		}
+	}
+
 	// ドキュメントを削除
 	_, err = docRef.Delete(ctx)
 	if err != nil {
 		return fmt.Errorf("履歴の削除に失敗: %w", err)
-	}
-
-	// 画像ファイルを削除（画像入力の場合のみ）
-	if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
-		if err := os.Remove(fsDoc.ImagePath); err != nil {
-			// ファイルが存在しない場合は無視（既に削除済み）
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", fsDoc.ImagePath, err)
-			}
-		}
 	}
 
 	return nil
@@ -574,7 +598,10 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 	docRef := r.getUserAnalysisCollection(userID).Doc(historyID.String())
 	doc, err := docRef.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("履歴が見つかりません: %s", historyID)
+		if status.Code(err) == codes.NotFound {
+			return fmt.Errorf("履歴が見つかりません: %s: %w", historyID, ErrNotFound)
+		}
+		return fmt.Errorf("履歴の取得に失敗: %w", err)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -584,7 +611,7 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 
 	// completed状態のみ更新可能
 	if fsDoc.Status != StatusCompleted {
-		return fmt.Errorf("履歴が見つかりません: %s", historyID)
+		return fmt.Errorf("履歴が見つかりません: %s: %w", historyID, ErrNotFound)
 	}
 
 	// 合計値を計算
@@ -672,10 +699,8 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 		Documents(ctx)
 	defer iter.Stop()
 
-	// BulkWriterを使用（Batchは非推奨）
-	bw := r.client.BulkWriter(ctx)
-	var deleteJobs []*firestore.BulkWriterJob
 	var imagePaths []string
+	var docRefs []*firestore.DocumentRef
 
 	for {
 		doc, err := iter.Next()
@@ -695,7 +720,24 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 			imagePaths = append(imagePaths, fsDoc.ImagePath)
 		}
 
-		job, err := bw.Delete(doc.Ref)
+		docRefs = append(docRefs, doc.Ref)
+	}
+
+	// Cloud Storageから画像を先に削除
+	// 注: 画像削除を先に実行し、孤立した画像ファイルを防ぐ
+	for _, path := range imagePaths {
+		if err := r.storageRepo.Delete(ctx, path); err != nil {
+			log.Printf("Error: Cloud Storage画像の削除に失敗: %s: %v", path, err)
+			return fmt.Errorf("画像の削除に失敗: %w", err)
+		}
+	}
+
+	// BulkWriterでFirestoreドキュメントを削除
+	bw := r.client.BulkWriter(ctx)
+	var deleteJobs []*firestore.BulkWriterJob
+
+	for _, ref := range docRefs {
+		job, err := bw.Delete(ref)
 		if err != nil {
 			return fmt.Errorf("既存記録の削除ジョブ追加に失敗: %w", err)
 		}
@@ -709,16 +751,6 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 	for _, job := range deleteJobs {
 		if _, err := job.Results(); err != nil {
 			return fmt.Errorf("既存記録の削除に失敗: %w", err)
-		}
-	}
-
-	// 画像ファイルを削除
-	for _, path := range imagePaths {
-		if err := os.Remove(path); err != nil {
-			// ファイルが存在しない場合は無視（既に削除済み）
-			if !os.IsNotExist(err) {
-				return fmt.Errorf("画像ファイルの削除に失敗: %s: %w", path, err)
-			}
 		}
 	}
 

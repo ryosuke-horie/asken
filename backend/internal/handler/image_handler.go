@@ -1,26 +1,32 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
+
+// 署名付きURLの有効期限
+const signedURLExpiration = 15 * time.Minute
 
 // ImageHandler は画像配信エンドポイントのハンドラー
 type ImageHandler struct {
-	uploadsDir string
+	storageRepo repository.StorageRepository
 }
 
 // NewImageHandler は新しいImageHandlerを作成
-func NewImageHandler(uploadsDir string) *ImageHandler {
+func NewImageHandler(storageRepo repository.StorageRepository) *ImageHandler {
 	return &ImageHandler{
-		uploadsDir: uploadsDir,
+		storageRepo: storageRepo,
 	}
 }
 
 // Handle はGET /api/images/:filenameリクエストを処理
+// Cloud Storageの署名付きURLにリダイレクトする
 func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received image request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
@@ -31,10 +37,19 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// URLからファイル名を抽出
+	// パス形式: /api/images/{filename}
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 4 {
 		log.Printf("Invalid URL path: %s", r.URL.Path)
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	// セキュリティチェック: パスに追加のセグメントがある場合は拒否
+	// /api/images/subdir/file.jpg のようなパスを防止
+	if len(pathParts) > 4 {
+		log.Printf("Path traversal attempt detected: additional path segments in %s", r.URL.Path)
+		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 
@@ -45,44 +60,32 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ディレクトリトラバーサル対策
-	// 1. filepath.Clean でパスを正規化
-	cleanPath := filepath.Clean(filepath.Join(h.uploadsDir, filename))
-
-	// 2. uploadsDir配下であることを確認
-	absUploadsDir, err := filepath.Abs(h.uploadsDir)
-	if err != nil {
-		log.Printf("Error getting absolute path for uploads directory: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	absCleanPath, err := filepath.Abs(cleanPath)
-	if err != nil {
-		log.Printf("Error getting absolute path for file: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	// uploadsDir配下であることをチェック
-	if !strings.HasPrefix(absCleanPath, absUploadsDir) {
+	// セキュリティチェック: パストラバーサル防止
+	if strings.Contains(filename, "..") {
 		log.Printf("Path traversal attempt detected: %s", filename)
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 
-	log.Printf("Serving image file: %s", absCleanPath)
+	// Cloud Storageのオブジェクト名を構築
+	objectName := "uploads/" + filename
 
-	// ファイルの存在確認
-	if _, err := os.Stat(absCleanPath); os.IsNotExist(err) {
-		log.Printf("Image file not found: %s", absCleanPath)
-		http.Error(w, "Image not found", http.StatusNotFound)
+	log.Printf("Generating signed URL for: %s", objectName)
+
+	// 署名付きURLを生成
+	signedURL, err := h.storageRepo.GetSignedURL(r.Context(), objectName, signedURLExpiration)
+	if err != nil {
+		log.Printf("Error generating signed URL: %v", err)
+		if errors.Is(err, repository.ErrObjectNotFound) {
+			http.Error(w, "Image not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to generate image URL", http.StatusInternalServerError)
+		}
 		return
 	}
 
-	// 画像ファイルを配信
-	w.Header().Set("Content-Type", "image/jpeg")
-	http.ServeFile(w, r, absCleanPath)
+	log.Printf("Redirecting to signed URL for: %s", objectName)
 
-	log.Printf("Image served successfully: %s", absCleanPath)
+	// 署名付きURLにリダイレクト
+	http.Redirect(w, r, signedURL, http.StatusFound)
 }
