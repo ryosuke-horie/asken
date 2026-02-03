@@ -12,10 +12,13 @@
 |:---|:---|
 | iOSアプリ | Swift, SwiftUI |
 | バックエンド | Golang (Cloud Run) |
+| コンテナレジストリ | Artifact Registry |
 | データベース | Firestore |
 | ストレージ | Cloud Storage |
 | 認証 | Firebase Auth |
 | AI | Gemini API |
+| CI/CD | GitHub Actions |
+| CI/CD認証 | Workload Identity Federation |
 | インフラ管理 | Terraform |
 
 ## システム構成図
@@ -103,10 +106,13 @@ utikomi/
 
 | サービス | 用途 |
 |:---|:---|
+| Cloud Run | サーバーレスコンテナ実行 |
+| Artifact Registry | Dockerイメージ保存 |
 | Firestore | NoSQLデータベース |
 | Cloud Storage | 画像保存 |
 | Firebase Auth | ユーザー認証 |
 | Gemini API | AI画像分析・栄養素計算 |
+| Workload Identity Federation | GitHub Actions→GCP認証（キーレス） |
 
 ## インフラ構成（Terraform）
 
@@ -120,21 +126,43 @@ infrastructure/
 │       ├── variables.tf  # 変数定義
 │       └── outputs.tf    # 出力定義
 └── modules/
-    ├── firestore/        # Firestoreモジュール
-    ├── storage/          # Cloud Storageモジュール
-    ├── firebase-auth/    # Firebase Authモジュール
-    └── github/           # GitHub secrets/variablesモジュール
+    ├── artifact-registry/  # Artifact Registryモジュール
+    ├── cloud-run/          # Cloud Runモジュール
+    ├── firestore/          # Firestoreモジュール
+    ├── storage/            # Cloud Storageモジュール
+    ├── firebase-auth/      # Firebase Authモジュール
+    ├── github/             # GitHub secrets/variablesモジュール
+    └── wif/                # Workload Identity Federationモジュール
 ```
 
 ### Terraformで管理するリソース
 
 | リソース | 用途 |
 |:---|:---|
+| Cloud Run Service | バックエンドAPIホスティング |
+| Artifact Registry | Dockerイメージ保存 |
 | Firestore Database | データ永続化 |
 | Cloud Storage Bucket | 画像保存 |
 | Firebase Auth | ユーザー認証 |
+| Workload Identity Pool/Provider | GitHub Actions認証 |
 | GitHub Secrets | CI/CD用シークレット |
 | GitHub Variables | CI/CD用環境変数 |
+
+## CI/CDパイプライン
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     GitHub Actions                              │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Push to main (backend/**)                                   │
+│  2. WIF認証 (キーレス)                                           │
+│  3. Docker Build (multi-stage)                                  │
+│  4. Push to Artifact Registry                                   │
+│  5. Deploy to Cloud Run                                         │
+└─────────────────────────────────────────────────────────────────┘
+
+ワークフロー: .github/workflows/deploy.yml
+```
 
 ## 関連コードマップ
 
