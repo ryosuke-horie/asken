@@ -277,7 +277,9 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 
 	// ファイルポインタを先頭に戻す
 	if seeker, ok := file.(io.Seeker); ok {
-		_, _ = seeker.Seek(0, io.SeekStart)
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			log.Printf("Warning: Failed to seek file to start: %v", err)
+		}
 	}
 
 	contentType := http.DetectContentType(buffer)

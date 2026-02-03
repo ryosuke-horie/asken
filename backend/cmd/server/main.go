@@ -45,6 +45,7 @@ func main() {
 }
 
 type handlers struct {
+	health        *handler.HealthHandler
 	analyze       *handler.AnalyzeHandler
 	status        *handler.StatusHandler
 	history       *handler.HistoryHandler
@@ -55,6 +56,9 @@ type handlers struct {
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+	// ヘルスチェックエンドポイント（認証不要 - Cloud Runのヘルスチェック用）
+	mux.HandleFunc("/api/health", h.health.Handle)
+
 	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
 	mux.HandleFunc("/api/images/", h.image.Handle)
 
@@ -165,6 +169,7 @@ func run() error {
 
 	// ハンドラーの初期化
 	h := handlers{
+		health:        handler.NewHealthHandler(),
 		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
 		history:       handler.NewHistoryHandler(analysisRepo, foodService),

@@ -47,6 +47,8 @@ APIS=(
   "aiplatform.googleapis.com"
   "serviceusage.googleapis.com"
   "cloudbuild.googleapis.com"
+  "run.googleapis.com"
+  "artifactregistry.googleapis.com"
 )
 
 API_DESCRIPTIONS=(
@@ -57,6 +59,8 @@ API_DESCRIPTIONS=(
   "Gemini API"
   "Service Usage"
   "Cloud Build"
+  "Cloud Run"
+  "Artifact Registry"
 )
 
 echo "Enabling APIs for project: $PROJECT_ID"

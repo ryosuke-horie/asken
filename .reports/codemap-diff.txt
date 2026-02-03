@@ -1,58 +1,42 @@
-# コードマップ差分レポート
-生成日時: 2026-02-03
+# コードマップ更新レポート
+生成日時: $(date '+%Y-%m-%d %H:%M:%S')
 
-## 変更サマリー
+## 更新概要
+
+Cloud Runデプロイ設定の追加に伴い、コードマップを更新しました。
+
+## 変更ファイル
+
+### architecture.md
+- 技術スタックにCI/CD関連を追加（Artifact Registry, GitHub Actions, WIF）
+- 外部依存関係にCloud Run, WIFを追加
+- Terraformモジュール一覧を更新（artifact-registry, cloud-run, wif追加）
+- Terraform管理リソース一覧を更新
+- CI/CDパイプライン図を追加
+
+### backend.md
+- デプロイ先情報を追加（Cloud Run asia-northeast1）
+- ディレクトリ構造にDockerfile, .dockerignoreを追加
+- コンテナ化セクションを追加（Dockerfileマルチステージビルド）
+- ヘルスチェック設定を追加
+- 環境変数一覧を追加
+
+### data.md
+- 変更なし（データモデルに変更なし）
+
+## 差分率
 
 | ファイル | 追加行 | 削除行 | 変更率 |
 |:---|:---|:---|:---|
-| docs/CODEMAPS/architecture.md | 4 | 4 | 5% |
-| docs/CODEMAPS/backend.md | 52 | 162 | 68% |
-| docs/CODEMAPS/data.md | 62 | 216 | 78% |
-| docs/CODEMAPS/ios.md | 0 | 0 | 0% |
+| architecture.md | 36 | 4 | 約28% |
+| backend.md | 34 | 0 | 約20% |
+| data.md | 0 | 0 | 0% |
 
-合計: 118追加, 336削除
+**総合変更率: 約16%** (変更率30%未満のため自動承認)
 
-## 主な変更内容
+## 鮮度タイムスタンプ
 
-### architecture.md (5%変更)
-- Cloud Functions → Cloud Runに修正
-
-### backend.md (68%変更)
-- PostgreSQL関連の参照を削除
-- 削除されたRepository/Handlerを削除:
-  - weight_repository.go
-  - training_repository.go
-  - condition_repository.go
-  - mylist_repository.go
-  - profile_repository.go
-  - user_repository.go
-  - weight_handler.go
-  - training_handler.go
-  - condition_handler.go
-  - mylist_handler.go
-  - profile_handler.go
-- Firestore実装を追加:
-  - analysis_repository_firestore.go
-  - analysis_models.go
-  - firestore.go
-
-### data.md (78%変更)
-- PostgreSQLテーブル定義を削除
-- Firestoreドキュメント構造に完全移行
-- SQLトリガー、インデックス情報を削除
-- ADR-002の将来設計への参照を追加
-
-### ios.md (0%変更)
-- 変更なし（最新状態）
-
-## 変更30%以上のファイル
-
-以下のファイルは30%以上の変更があります:
-- docs/CODEMAPS/backend.md (68%)
-- docs/CODEMAPS/data.md (78%)
-
-これらの変更はFirestore移行に伴う正当な更新です。
-
-## フレッシュネス
-
-すべてのコードマップは2026-02-03時点で最新です。
+- architecture.md: 2026-02-03 (本日更新)
+- backend.md: 2026-02-03 (本日更新)
+- data.md: 2026-02-03 (更新不要)
+- ios.md: 2026-02-03 (更新不要)

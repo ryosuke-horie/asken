@@ -1,0 +1,169 @@
+# =============================================================================
+# Cloud Run Deploy Workflow
+# =============================================================================
+# mainブランチへのpush時にバックエンドをCloud Runにデプロイ
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 変更検出
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/deploy.yml'
+
+  # ---------------------------------------------------------------------------
+  # ビルド＆デプロイ
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    environment: dev
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      ARTIFACT_REGISTRY_URL: ${{ vars.ARTIFACT_REGISTRY_URL }}
+      CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+      SERVICE_ACCOUNT_EMAIL: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+
+    steps:
+      - name: Validate required variables
+        run: |
+          missing_vars=()
+          [ -z "$GCP_REGION" ] && missing_vars+=("GCP_REGION")
+          [ -z "$ARTIFACT_REGISTRY_URL" ] && missing_vars+=("ARTIFACT_REGISTRY_URL")
+          [ -z "$CLOUD_RUN_SERVICE_NAME" ] && missing_vars+=("CLOUD_RUN_SERVICE_NAME")
+          [ -z "$WORKLOAD_IDENTITY_PROVIDER" ] && missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          [ -z "$SERVICE_ACCOUNT_EMAIL" ] && missing_vars+=("SERVICE_ACCOUNT_EMAIL")
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required variables: ${missing_vars[*]}"
+            echo "### Configuration Error" >> "$GITHUB_STEP_SUMMARY"
+            echo "Missing variables: ${missing_vars[*]}" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "All required variables are set"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup Google Cloud CLI
+        id: gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        id: docker-config
+        run: |
+          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Set image tag
+        id: image
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          IMAGE_TAG="${ARTIFACT_REGISTRY_URL}/backend:${SHORT_SHA}"
+          echo "tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${IMAGE_TAG}"
+
+      - name: Build Docker image
+        id: build
+        working-directory: backend
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t "${IMAGE_TAG}" \
+            -t "${ARTIFACT_REGISTRY_URL}/backend:latest" \
+            .
+
+      - name: Push Docker image
+        id: push
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          docker push "${IMAGE_TAG}"
+          docker push "${ARTIFACT_REGISTRY_URL}/backend:latest"
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          gcloud run deploy "${CLOUD_RUN_SERVICE_NAME}" \
+            --image "${IMAGE_TAG}" \
+            --region "${GCP_REGION}" \
+            --platform managed \
+            --quiet
+
+      - name: Show deployment URL
+        if: success()
+        run: |
+          URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
+            --region "${GCP_REGION}" \
+            --format 'value(status.url)')
+          echo "Deployed to: ${URL}"
+          echo "### Deployment successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report failure
+        if: failure()
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+          AUTH_OUTCOME: ${{ steps.auth.outcome }}
+          GCLOUD_OUTCOME: ${{ steps.gcloud.outcome }}
+          DOCKER_CONFIG_OUTCOME: ${{ steps.docker-config.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          PUSH_OUTCOME: ${{ steps.push.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        run: |
+          echo "### Deployment failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Failed step:**" >> "$GITHUB_STEP_SUMMARY"
+          [ "$AUTH_OUTCOME" = "failure" ] && echo "- Google Cloud Authentication" >> "$GITHUB_STEP_SUMMARY"
+          [ "$GCLOUD_OUTCOME" = "failure" ] && echo "- Setup Google Cloud CLI" >> "$GITHUB_STEP_SUMMARY"
+          [ "$DOCKER_CONFIG_OUTCOME" = "failure" ] && echo "- Configure Docker" >> "$GITHUB_STEP_SUMMARY"
+          [ "$BUILD_OUTCOME" = "failure" ] && echo "- Docker Build" >> "$GITHUB_STEP_SUMMARY"
+          [ "$PUSH_OUTCOME" = "failure" ] && echo "- Docker Push" >> "$GITHUB_STEP_SUMMARY"
+          [ "$DEPLOY_OUTCOME" = "failure" ] && echo "- Cloud Run Deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Image:** ${IMAGE_TAG:-'(not set)'}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Service:** ${CLOUD_RUN_SERVICE_NAME}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Region:** ${GCP_REGION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the workflow logs for details." >> "$GITHUB_STEP_SUMMARY"

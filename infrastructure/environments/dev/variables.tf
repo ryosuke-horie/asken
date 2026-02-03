@@ -85,6 +85,38 @@ variable "google_oauth_client_secret" {
 }
 
 # -----------------------------------------------------------------------------
+# Cloud Run設定
+# -----------------------------------------------------------------------------
+
+variable "cloud_run_initial_image" {
+  description = "Cloud Run初期デプロイ用のDockerイメージ（GitHub Actionsで上書きされる）"
+  type        = string
+  default     = "gcr.io/cloudrun/hello"
+}
+
+variable "cloud_run_allowed_origins" {
+  description = "CORSで許可するオリジン"
+  type        = list(string)
+  default     = ["http://localhost:3000", "http://localhost:3001"]
+}
+
+# -----------------------------------------------------------------------------
+# Workload Identity Federation設定
+# -----------------------------------------------------------------------------
+
+variable "github_owner" {
+  description = "GitHubリポジトリオーナー"
+  type        = string
+  default     = "ryosuke-horie"
+}
+
+variable "github_repo" {
+  description = "GitHubリポジトリ名"
+  type        = string
+  default     = "utikomi"
+}
+
+# -----------------------------------------------------------------------------
 # GitHub設定
 # -----------------------------------------------------------------------------
 
