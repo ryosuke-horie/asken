@@ -59,6 +59,14 @@ resource "google_project_iam_member" "run_developer" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# サービスアカウント使用権限（GitHub Actionsからのデプロイ用）
+# Cloud Runデプロイ時にサービスアカウント自身を「act as」する権限が必要
+resource "google_service_account_iam_member" "service_account_user" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Runサービス
 # -----------------------------------------------------------------------------
