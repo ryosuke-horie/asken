@@ -77,9 +77,25 @@ task run
 
 サーバーが `http://localhost:8080` で起動します。
 
-### 本番環境
+### 開発環境（Cloud Run）
 
-デプロイ手順は [DEPLOY.md](./DEPLOY.md) を参照してください。
+| 環境 | エンドポイント |
+|:---|:---|
+| dev | https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app |
+
+ヘルスチェック:
+
+```bash
+curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
+# {"status":"ok"}
+```
+
+### デプロイ
+
+- **自動デプロイ**: `backend/**` への変更がmainブランチにマージされると自動デプロイ
+- **手動デプロイ**: GitHub Actions の「Deploy」ワークフローから手動実行可能
+
+詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
 ## 使用方法
 
@@ -171,7 +187,7 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 
 ### API接続エラー
 
-詳細は [DEPLOY.md](./DEPLOY.md) を参照してください。
+詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
 ## 今後の拡張
 
