@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-03
+最終更新: 2026-02-04
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
