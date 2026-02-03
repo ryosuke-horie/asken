@@ -96,3 +96,6 @@ infrastructure/**/*_override.tf.json
 ios/Uchikomi/Resources/GoogleService-Info.plist
 *.xcuserstate
 xcuserdata/
+
+# Claude Code reports (temporary files)
+.reports/
