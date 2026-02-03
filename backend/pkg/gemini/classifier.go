@@ -50,7 +50,10 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 	}
 
 	// MIMEタイプを判定
-	mimeType := detectMimeType(imagePath, imageData)
+	mimeType, err := detectMimeType(imagePath, imageData)
+	if err != nil {
+		return nil, err
+	}
 
 	// プロンプトを構築（料理名の分類に集中）
 	prompt := `この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
@@ -90,25 +93,27 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 }
 
 // detectMimeType は画像ファイルのMIMEタイプを判定する
-func detectMimeType(filePath string, data []byte) string {
+// サポートする形式: JPEG, PNG, GIF, WebP
+// サポート外の形式の場合はエラーを返す
+func detectMimeType(filePath string, data []byte) (string, error) {
 	// マジックバイトで判定
 	if len(data) >= 4 {
 		// JPEG
 		if data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
-			return "image/jpeg"
+			return "image/jpeg", nil
 		}
 		// PNG
 		if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
-			return "image/png"
+			return "image/png", nil
 		}
 		// GIF
 		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
-			return "image/gif"
+			return "image/gif", nil
 		}
 		// WebP
 		if len(data) >= 12 && data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46 {
 			if data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 {
-				return "image/webp"
+				return "image/webp", nil
 			}
 		}
 	}
@@ -116,15 +121,15 @@ func detectMimeType(filePath string, data []byte) string {
 	// 拡張子で判定（フォールバック）
 	switch {
 	case hasExtension(filePath, ".jpg", ".jpeg"):
-		return "image/jpeg"
+		return "image/jpeg", nil
 	case hasExtension(filePath, ".png"):
-		return "image/png"
+		return "image/png", nil
 	case hasExtension(filePath, ".gif"):
-		return "image/gif"
+		return "image/gif", nil
 	case hasExtension(filePath, ".webp"):
-		return "image/webp"
+		return "image/webp", nil
 	default:
-		return "image/jpeg" // デフォルト
+		return "", fmt.Errorf("サポートされていない画像形式です: %s (JPEG, PNG, GIF, WebPのみ対応)", filePath)
 	}
 }
 
