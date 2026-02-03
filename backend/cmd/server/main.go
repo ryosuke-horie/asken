@@ -55,6 +55,13 @@ type handlers struct {
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+	// ヘルスチェックエンドポイント（認証不要 - Cloud Runのヘルスチェック用）
+	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+
 	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
 	mux.HandleFunc("/api/images/", h.image.Handle)
 

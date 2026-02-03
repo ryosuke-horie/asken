@@ -37,3 +37,15 @@ variable "storage_bucket" {
   description = "Cloud Storageバケット名"
   type        = string
 }
+
+variable "artifact_registry_url" {
+  description = "Artifact RegistryのベースURL"
+  type        = string
+  default     = ""
+}
+
+variable "cloud_run_service_name" {
+  description = "Cloud Runサービス名"
+  type        = string
+  default     = ""
+}
