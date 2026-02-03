@@ -30,6 +30,7 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
@@ -63,9 +64,7 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request found with status: %s", request.Status)
 
 	// 3. ステータスに応じてレスポンスを生成
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
+	// 注意: WriteHeaderはレスポンス構築完了後に呼び出す（エラー時にhttp.Errorが効くようにするため）
 	var response map[string]interface{}
 
 	switch request.Status {
@@ -107,10 +106,12 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. JSONレスポンスを返却
+	// 4. JSONレスポンスを返却（ヘッダーはここで設定）
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		// 注意: WriteHeader後のhttp.Errorは効かないが、ログは出力される
 		return
 	}
 
