@@ -45,6 +45,14 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// セキュリティチェック: パスに追加のセグメントがある場合は拒否
+	// /api/images/subdir/file.jpg のようなパスを防止
+	if len(pathParts) > 4 {
+		log.Printf("Path traversal attempt detected: additional path segments in %s", r.URL.Path)
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
 	filename := pathParts[3]
 	if filename == "" {
 		log.Printf("Empty filename")
@@ -53,7 +61,7 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// セキュリティチェック: パストラバーサル防止
-	if strings.Contains(filename, "..") || strings.Contains(filename, "/") {
+	if strings.Contains(filename, "..") {
 		log.Printf("Path traversal attempt detected: %s", filename)
 		http.Error(w, "Access denied", http.StatusForbidden)
 		return
