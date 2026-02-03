@@ -3,12 +3,14 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +44,7 @@ func TestHistoryDeleteHandler_Handle_NotFound(t *testing.T) {
 
 	mockRepo := &MockAnalysisRepository{
 		DeleteHistoryFunc: func(ctx context.Context, userID string, id uuid.UUID) error {
-			return errors.New("履歴が見つかりません")
+			return fmt.Errorf("履歴が見つかりません: %s: %w", id, repository.ErrNotFound)
 		},
 	}
 

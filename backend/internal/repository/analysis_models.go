@@ -2,12 +2,16 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
+
+// ErrNotFound はリソースが見つからない場合のエラー
+var ErrNotFound = errors.New("resource not found")
 
 // AnalysisStatus は分析リクエストのステータスを表す型
 type AnalysisStatus string

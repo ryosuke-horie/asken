@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -9,10 +11,35 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/testutil"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// mockStorageRepositoryForAnalysis はテスト用のモックStorageRepository
+// DeleteFuncを設定可能にして、削除失敗テストに対応
+type mockStorageRepositoryForAnalysis struct {
+	DeleteFunc func(ctx context.Context, objectName string) error
+}
+
+func (m *mockStorageRepositoryForAnalysis) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+	return "uploads/test-uuid.jpg", nil
+}
+
+func (m *mockStorageRepositoryForAnalysis) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
+	return "https://storage.googleapis.com/bucket/" + objectName + "?signature=xxx", nil
+}
+
+func (m *mockStorageRepositoryForAnalysis) Delete(ctx context.Context, objectName string) error {
+	if m.DeleteFunc != nil {
+		return m.DeleteFunc(ctx, objectName)
+	}
+	return nil
+}
+
+// testutilMock はtestutilのモックインターフェースを確認するための型チェック
+var _ = testutil.MockStorageRepository{}
 
 // getTestFirestoreClient はテスト用のFirestoreクライアントを取得します。
 // Firestoreエミュレータが起動していない場合はテストをスキップします。
@@ -57,7 +84,8 @@ func cleanupTestData(ctx context.Context, client *firestore.Client, userID strin
 func TestCreateRequest(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -98,7 +126,8 @@ func TestCreateRequest(t *testing.T) {
 func TestCreateRequestWithText(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -127,7 +156,8 @@ func TestCreateRequestWithText(t *testing.T) {
 func TestUpdateStatus(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -168,7 +198,8 @@ func TestUpdateStatus(t *testing.T) {
 func TestSaveResultAndGetResult(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -207,7 +238,8 @@ func TestSaveResultAndGetResult(t *testing.T) {
 func TestGetPendingRequests(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -238,7 +270,8 @@ func TestGetPendingRequests(t *testing.T) {
 func TestGetHistoryListAndDetail(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -282,7 +315,8 @@ func TestGetHistoryListAndDetail(t *testing.T) {
 func TestDeleteHistory(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -311,10 +345,54 @@ func TestDeleteHistory(t *testing.T) {
 	})
 }
 
+func TestDeleteHistory_StorageDeleteFailure(t *testing.T) {
+	client := getTestFirestoreClient(t)
+	ctx := context.Background()
+
+	storageErr := errors.New("storage delete failed")
+	mockStorage := &mockStorageRepositoryForAnalysis{
+		DeleteFunc: func(ctx context.Context, objectName string) error {
+			return storageErr
+		},
+	}
+
+	repo, err := NewAnalysisRepositoryFirestore(client, mockStorage)
+	require.NoError(t, err)
+	userID := "test-user-" + uuid.New().String()
+
+	t.Cleanup(func() {
+		cleanupTestData(ctx, client, userID)
+	})
+
+	t.Run("異常系: Storage削除失敗でエラーを返す", func(t *testing.T) {
+		// 画像付きリクエストを作成して結果を保存
+		id, err := repo.CreateRequest(ctx, "uploads/test-image.jpg", "breakfast", "2024-01-15", &userID)
+		require.NoError(t, err)
+
+		result := &service.AnalysisResult{
+			Foods:         []gemini.NutritionInfo{},
+			TotalCalories: 0,
+		}
+		err = repo.SaveResult(ctx, id, result)
+		require.NoError(t, err)
+
+		// 削除実行（Storage削除失敗でエラーになるべき）
+		err = repo.DeleteHistory(ctx, userID, id)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "画像の削除に失敗")
+
+		// Firestoreドキュメントはまだ存在する（Storage削除を先に実行するため）
+		req, err := repo.GetRequest(ctx, userID, id)
+		assert.NoError(t, err)
+		assert.NotNil(t, req)
+	})
+}
+
 func TestGetDailyMeals(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -353,7 +431,8 @@ func TestGetDailyMeals(t *testing.T) {
 func TestCreateSkippedMeal(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
@@ -404,7 +483,8 @@ func TestCreateSkippedMeal(t *testing.T) {
 func TestUpdateResult(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
-	repo := NewAnalysisRepositoryFirestore(client)
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
 	userID := "test-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
