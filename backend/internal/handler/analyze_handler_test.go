@@ -12,11 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/testutil"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -158,34 +158,6 @@ func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string
 	return nil
 }
 
-// MockStorageRepository はテスト用のモックStorageRepository
-type MockStorageRepository struct {
-	UploadFunc       func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error)
-	GetSignedURLFunc func(ctx context.Context, objectName string, expiration time.Duration) (string, error)
-	DeleteFunc       func(ctx context.Context, objectName string) error
-}
-
-func (m *MockStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
-	if m.UploadFunc != nil {
-		return m.UploadFunc(ctx, file, filename, contentType)
-	}
-	return "uploads/test-uuid.jpg", nil
-}
-
-func (m *MockStorageRepository) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
-	if m.GetSignedURLFunc != nil {
-		return m.GetSignedURLFunc(ctx, objectName, expiration)
-	}
-	return "https://storage.googleapis.com/bucket/uploads/test-uuid.jpg?signature=xxx", nil
-}
-
-func (m *MockStorageRepository) Delete(ctx context.Context, objectName string) error {
-	if m.DeleteFunc != nil {
-		return m.DeleteFunc(ctx, objectName)
-	}
-	return nil
-}
-
 func TestAnalyzeHandler_Success(t *testing.T) {
 	// 非同期処理のため、FoodServiceは呼ばれない
 	mockService := &MockFoodService{}
@@ -198,7 +170,7 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 			return expectedID, nil
 		},
 	}
-	mockStorageRepo := &MockStorageRepository{
+	mockStorageRepo := &testutil.MockStorageRepository{
 		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 			return "uploads/test-uuid.jpg", nil
 		},
@@ -245,7 +217,7 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", nil)
@@ -259,7 +231,7 @@ func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// テキストファイルをアップロード
@@ -287,7 +259,7 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 			return uuid.Nil, assert.AnError
 		},
 	}
-	mockStorageRepo := &MockStorageRepository{
+	mockStorageRepo := &testutil.MockStorageRepository{
 		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 			return "uploads/test-uuid.jpg", nil
 		},
@@ -403,7 +375,7 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 			return expectedID, nil
 		},
 	}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// JSONリクエストボディを作成
@@ -434,7 +406,7 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	reqBody := map[string]string{
@@ -457,7 +429,7 @@ func TestAnalyzeHandler_TextInput_EmptyText(t *testing.T) {
 func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	reqBody := map[string]string{
@@ -480,7 +452,7 @@ func TestAnalyzeHandler_TextInput_InvalidMealType(t *testing.T) {
 func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// 1001文字のテキストを作成
@@ -509,7 +481,7 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
 	// 不正なJSONを送信
@@ -525,7 +497,7 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 func TestAnalyzeHandler_StorageUploadError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{
+	mockStorageRepo := &testutil.MockStorageRepository{
 		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 			return "", errors.New("Cloud Storage unavailable")
 		},
@@ -561,7 +533,7 @@ func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
 	deleteCalled := false
 	uploadedObjectName := ""
 
-	mockStorageRepo := &MockStorageRepository{
+	mockStorageRepo := &testutil.MockStorageRepository{
 		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 			uploadedObjectName = "uploads/test-uuid.jpg"
 			return uploadedObjectName, nil
@@ -605,7 +577,7 @@ func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
-	mockStorageRepo := &MockStorageRepository{
+	mockStorageRepo := &testutil.MockStorageRepository{
 		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 			return "", errors.New("Cloud Storage unavailable")
 		},
