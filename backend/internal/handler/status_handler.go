@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 )
 
@@ -26,6 +27,13 @@ func NewStatusHandler(repository repository.AnalysisRepository) *StatusHandler {
 func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received status request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
+	// contextからユーザーIDを取得
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
 	// 1. URLからanalysis_idを抽出
 	pathParts := strings.Split(r.URL.Path, "/")
 	if len(pathParts) < 4 {
@@ -42,10 +50,10 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Getting status for analysis ID: %s", analysisID)
+	log.Printf("Getting status for analysis ID: %s, userID: %s", analysisID, userID)
 
-	// 2. リポジトリからリクエストを取得
-	request, err := h.repository.GetRequest(r.Context(), analysisID)
+	// 2. リポジトリからリクエストを取得（userIDでスコープ）
+	request, err := h.repository.GetRequest(r.Context(), userID, analysisID)
 	if err != nil {
 		log.Printf("Error getting request: %v", err)
 		http.Error(w, "Analysis request not found", http.StatusNotFound)
@@ -74,8 +82,8 @@ func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case repository.StatusCompleted:
-		// 結果を取得
-		result, err := h.repository.GetResult(r.Context(), analysisID)
+		// 結果を取得（userIDでスコープ）
+		result, err := h.repository.GetResult(r.Context(), userID, analysisID)
 		if err != nil {
 			log.Printf("Error getting result: %v", err)
 			http.Error(w, "Failed to get analysis result", http.StatusInternalServerError)

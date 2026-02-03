@@ -78,32 +78,32 @@ type AnalysisRepository interface {
 	// CreateRequestWithText は新しいテキスト分析リクエストを作成します
 	CreateRequestWithText(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 
-	// GetRequest は指定されたIDの分析リクエストを取得します
-	GetRequest(ctx context.Context, id uuid.UUID) (*AnalysisRequest, error)
+	// GetRequest は指定されたIDの分析リクエストを取得します（userIDでスコープ）
+	GetRequest(ctx context.Context, userID string, id uuid.UUID) (*AnalysisRequest, error)
 
-	// UpdateStatus はリクエストのステータスを更新します
+	// UpdateStatus はリクエストのステータスを更新します（ワーカー用: 全ユーザー横断）
 	UpdateStatus(ctx context.Context, id uuid.UUID, status AnalysisStatus, errorMessage string) error
 
-	// SaveResult は分析結果を保存し、ステータスをcompletedに更新します（トランザクション）
+	// SaveResult は分析結果を保存し、ステータスをcompletedに更新します（ワーカー用: 全ユーザー横断）
 	SaveResult(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
 
-	// GetResult は指定されたリクエストIDの分析結果を取得します
-	GetResult(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error)
+	// GetResult は指定されたリクエストIDの分析結果を取得します（userIDでスコープ）
+	GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error)
 
-	// GetPendingRequests はpending状態のリクエストを取得します（limit: 取得件数上限）
+	// GetPendingRequests はpending状態のリクエストを取得します（ワーカー用: 全ユーザー横断）
 	GetPendingRequests(ctx context.Context, limit int) ([]AnalysisRequest, error)
 
-	// GetHistoryList は履歴一覧を取得します（ページネーション対応）
-	GetHistoryList(ctx context.Context, page, limit int) ([]HistoryItem, int, error)
+	// GetHistoryList は履歴一覧を取得します（userIDでスコープ、ページネーション対応）
+	GetHistoryList(ctx context.Context, userID string, page, limit int) ([]HistoryItem, int, error)
 
-	// GetHistoryDetail は履歴詳細を取得します
-	GetHistoryDetail(ctx context.Context, id uuid.UUID) (*HistoryDetail, error)
+	// GetHistoryDetail は履歴詳細を取得します（userIDでスコープ）
+	GetHistoryDetail(ctx context.Context, userID string, id uuid.UUID) (*HistoryDetail, error)
 
-	// DeleteHistory は履歴を削除します（関連する画像も含む）
-	DeleteHistory(ctx context.Context, id uuid.UUID) error
+	// DeleteHistory は履歴を削除します（userIDでスコープ、関連する画像も含む）
+	DeleteHistory(ctx context.Context, userID string, id uuid.UUID) error
 
-	// GetDailyMeals は指定された日付の食事データを取得します
-	GetDailyMeals(ctx context.Context, date string) (map[string][]HistoryDetail, DailyTotal, error)
+	// GetDailyMeals は指定された日付の食事データを取得します（userIDでスコープ）
+	GetDailyMeals(ctx context.Context, userID string, date string) (map[string][]HistoryDetail, DailyTotal, error)
 
 	// CreateRequestFromMylist はマイリストからの食事記録を作成します
 	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)
@@ -111,6 +111,6 @@ type AnalysisRepository interface {
 	// CreateSkippedMeal は「食べなかった」記録を作成します
 	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
 
-	// UpdateResult は分析結果を更新します（foods配列と合計値を再計算）
-	UpdateResult(ctx context.Context, historyID uuid.UUID, foods []gemini.NutritionInfo) error
+	// UpdateResult は分析結果を更新します（userIDでスコープ、foods配列と合計値を再計算）
+	UpdateResult(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error
 }

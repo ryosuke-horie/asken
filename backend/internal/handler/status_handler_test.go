@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
@@ -18,9 +19,12 @@ import (
 
 func TestStatusHandler_Pending(t *testing.T) {
 	requestID := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetRequestFunc: func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, requestID, id)
 			return &repository.AnalysisRequest{
 				ID:        requestID,
 				Status:    repository.StatusPending,
@@ -34,6 +38,8 @@ func TestStatusHandler_Pending(t *testing.T) {
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -50,9 +56,11 @@ func TestStatusHandler_Pending(t *testing.T) {
 
 func TestStatusHandler_Processing(t *testing.T) {
 	requestID := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetRequestFunc: func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			assert.Equal(t, testUserID, userID)
 			return &repository.AnalysisRequest{
 				ID:        requestID,
 				Status:    repository.StatusProcessing,
@@ -66,6 +74,8 @@ func TestStatusHandler_Processing(t *testing.T) {
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -82,9 +92,11 @@ func TestStatusHandler_Processing(t *testing.T) {
 
 func TestStatusHandler_Completed(t *testing.T) {
 	requestID := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetRequestFunc: func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			assert.Equal(t, testUserID, userID)
 			return &repository.AnalysisRequest{
 				ID:        requestID,
 				Status:    repository.StatusCompleted,
@@ -93,7 +105,8 @@ func TestStatusHandler_Completed(t *testing.T) {
 				UpdatedAt: time.Now(),
 			}, nil
 		},
-		GetResultFunc: func(ctx context.Context, requestID uuid.UUID) (*service.AnalysisResult, error) {
+		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+			assert.Equal(t, testUserID, userID)
 			return &service.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
@@ -116,6 +129,8 @@ func TestStatusHandler_Completed(t *testing.T) {
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -135,9 +150,11 @@ func TestStatusHandler_Completed(t *testing.T) {
 
 func TestStatusHandler_Failed(t *testing.T) {
 	requestID := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetRequestFunc: func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			assert.Equal(t, testUserID, userID)
 			return &repository.AnalysisRequest{
 				ID:           requestID,
 				Status:       repository.StatusFailed,
@@ -152,6 +169,8 @@ func TestStatusHandler_Failed(t *testing.T) {
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -168,9 +187,10 @@ func TestStatusHandler_Failed(t *testing.T) {
 
 func TestStatusHandler_NotFound(t *testing.T) {
 	requestID := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetRequestFunc: func(ctx context.Context, id uuid.UUID) (*repository.AnalysisRequest, error) {
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -178,6 +198,8 @@ func TestStatusHandler_NotFound(t *testing.T) {
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -186,13 +208,29 @@ func TestStatusHandler_NotFound(t *testing.T) {
 }
 
 func TestStatusHandler_InvalidUUID(t *testing.T) {
+	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewStatusHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/analyze/invalid-uuid", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestStatusHandler_Unauthorized(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewStatusHandler(mockRepo)
+
+	// コンテキストにユーザーIDを設定しない
+	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+uuid.New().String(), nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }

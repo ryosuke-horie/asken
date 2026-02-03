@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +19,11 @@ import (
 func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 	mealDate := time.Date(2026, 1, 21, 0, 0, 0, 0, time.UTC)
 	id := uuid.New()
+	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, testUserID, userID)
 			assert.Equal(t, "2026-01-21", date)
 			meals := map[string][]repository.HistoryDetail{
 				"breakfast": {},
@@ -65,6 +68,9 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 	handler := NewDailyMealsHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	// コンテキストにユーザーIDを設定
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -82,8 +88,10 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 }
 
 func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
+	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, testUserID, userID)
 			// 今日の日付が渡されるべき
 			expectedDate := time.Now().Format("2006-01-02")
 			assert.Equal(t, expectedDate, date)
@@ -100,6 +108,9 @@ func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 
 	// dateパラメータなしでリクエスト
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily", nil)
+	// コンテキストにユーザーIDを設定
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -108,8 +119,9 @@ func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 }
 
 func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			return nil, repository.DailyTotal{}, assert.AnError
 		},
 	}
@@ -117,6 +129,9 @@ func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
 	handler := NewDailyMealsHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	// コンテキストにユーザーIDを設定
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -125,8 +140,9 @@ func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
 }
 
 func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
+	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{
-		GetDailyMealsFunc: func(ctx context.Context, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 			return map[string][]repository.HistoryDetail{
 				"breakfast": {},
 				"lunch":     {},
@@ -139,6 +155,9 @@ func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
 	handler := NewDailyMealsHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	// コンテキストにユーザーIDを設定
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -155,4 +174,17 @@ func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
 	assert.Len(t, response.Meals["lunch"], 0)
 	assert.Len(t, response.Meals["dinner"], 0)
 	assert.Len(t, response.Meals["snack"], 0)
+}
+
+func TestDailyMealsHandler_Handle_Unauthorized(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewDailyMealsHandler(mockRepo)
+
+	// コンテキストにユーザーIDを設定しない
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
