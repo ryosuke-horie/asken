@@ -1,6 +1,6 @@
 # 開発者ガイド（CONTRIB）
 
-最終更新: 2026-02-03
+最終更新: 2026-02-04
 
 このドキュメントは、ウチコミプロジェクトの開発ワークフロー、利用可能なコマンド、環境セットアップ、テスト手順を説明します。
 
@@ -54,13 +54,15 @@ task setup
 
 #### バックエンド
 
-`backend/.env`を作成:
+`backend/.env`を作成（`backend/.env.example`を参照）:
 
-| 環境変数 | 説明 | 例 |
-|:---|:---|:---|
-| GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestoreサービスアカウント鍵のパス | `/path/to/sa-key.json` |
-| GEMINI_API_KEY | Gemini API キー | `AIzaSy...` |
-| APP_ENV | 環境（開発用モック認証を有効化） | `development` |
+| 環境変数 | 必須 | 説明 | 例 |
+|:---|:---|:---|:---|
+| GOOGLE_APPLICATION_CREDENTIALS | 必須 | Firebase/Firestoreサービスアカウント鍵のパス | `/path/to/sa-key.json` |
+| GEMINI_API_KEY | 必須 | Gemini API キー | `AIzaSy...` |
+| GCS_BUCKET_NAME | 必須 | Cloud Storage バケット名（画像保存用） | `utikomi-dev-images` |
+| ALLOWED_ORIGINS | オプション | CORS許可オリジン（カンマ区切り） | `http://localhost:3000` |
+| APP_ENV | オプション | 環境（`development`でモック認証有効） | `development` |
 
 #### インフラ管理（Terraform）
 

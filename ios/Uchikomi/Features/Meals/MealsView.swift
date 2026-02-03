@@ -33,18 +33,6 @@ struct MealsView: View {
                 } else if let dailyMeals = viewModel.dailyMeals {
                     ScrollView {
                         VStack(spacing: 16) {
-                            // Recalculating indicator
-                            if viewModel.isRecalculating {
-                                HStack(spacing: 8) {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                    Text("栄養素を計算中...")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.vertical, 4)
-                            }
-
                             // Daily Total
                             NutritionSummaryCard(
                                 calories: dailyMeals.dailyTotal.totalCalories,
@@ -82,7 +70,6 @@ struct MealsView: View {
                 ) {
                     Task {
                         await viewModel.loadMeals()
-                        viewModel.scheduleAutoReload()
                     }
                 }
             }
