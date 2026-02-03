@@ -420,7 +420,7 @@ func TestGetDailyMeals(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		// 日次データを取得（userIDでスコープ）
-		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15")
+		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
 		require.NoError(t, err)
 
 		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
@@ -448,7 +448,7 @@ func TestCreateSkippedMeal(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		// 日次データで確認（userIDでスコープ）
-		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15")
+		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
 		require.NoError(t, err)
 		assert.Equal(t, 0.0, total.TotalCalories)
 		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
