@@ -58,6 +58,12 @@ Context に firebase_uid を設定
 
 ## APIエンドポイント
 
+### ヘルスチェック (認証不要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| GET | /api/health | HealthHandler | ヘルスチェック |
+
 ### 食事分析 (認証必要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -89,6 +95,7 @@ Context に firebase_uid を設定
 
 | ファイル | 責務 |
 |:---|:---|
+| health_handler.go | ヘルスチェック |
 | analyze_handler.go | 食事分析リクエスト |
 | status_handler.go | 分析ステータス確認 |
 | daily_meals_handler.go | 日次食事データ |
@@ -190,7 +197,7 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 
 | 変数 | 説明 | 設定元 |
 |:---|:---|:---|
-| GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | Secret Manager |
+| GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | ローカル: 手動設定 / Cloud Run: サービスアカウント |
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
 | ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
 
