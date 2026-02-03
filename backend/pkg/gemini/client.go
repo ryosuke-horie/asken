@@ -1,76 +1,45 @@
 package gemini
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"os/exec"
+	"os"
 	"strings"
 	"time"
 )
 
-// Response はGemini CLIのレスポンスを表す構造体
+// Response はGemini APIのレスポンスを表す構造体
+// SessionIDとStatsはCLI時代の名残で、HTTP APIでは使用されないが後方互換性のため保持
 type Response struct {
 	SessionID string          `json:"session_id"`
 	Response  string          `json:"response"`
 	Stats     json.RawMessage `json:"stats"`
 }
 
-// Client はGemini CLIクライアント
+// Client はGemini APIクライアント
 type Client struct {
-	timeout time.Duration
+	httpClient *HTTPClient
 }
 
-// NewClient は新しいGemini CLIクライアントを作成
+// NewClient は新しいGemini APIクライアントを作成
+// 環境変数GEMINI_API_KEYからAPIキーを読み取る
 func NewClient(timeout time.Duration) *Client {
+	apiKey := os.Getenv("GEMINI_API_KEY")
 	return &Client{
-		timeout: timeout,
+		httpClient: NewHTTPClient(apiKey, timeout),
 	}
 }
 
-// Execute はGemini CLIコマンドを実行し、レスポンスを返す
+// NewClientWithAPIKey はAPIキーを指定してGemini APIクライアントを作成
+func NewClientWithAPIKey(apiKey string, timeout time.Duration) *Client {
+	return &Client{
+		httpClient: NewHTTPClient(apiKey, timeout),
+	}
+}
+
+// Execute はGemini APIを呼び出し、レスポンスを返す
 func (c *Client) Execute(ctx context.Context, prompt string) (*Response, error) {
-	// タイムアウト付きコンテキストを作成
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	// Gemini CLIコマンドを構築
-	cmd := exec.CommandContext(ctx, "gemini", "-m", "gemini-3-flash-preview", "-o", "json", prompt)
-
-	// 標準出力と標準エラー出力をキャプチャ
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// コンテキストタイムアウトのチェック
-		if ctx.Err() == context.DeadlineExceeded {
-			return nil, fmt.Errorf("タイムアウト: Gemini CLIの実行が%v以内に完了しませんでした", c.timeout)
-		}
-		return nil, fmt.Errorf("Gemini CLI実行エラー: %w\n出力: %s", err, string(output))
-	}
-
-	// JSON部分を抽出（"Loaded cached credentials."などの余分な出力を除去）
-	jsonData := extractJSON(output)
-	if len(jsonData) == 0 {
-		return nil, fmt.Errorf("JSON開始位置が見つかりません\n生データ: %s", string(output))
-	}
-
-	// JSONレスポンスをパース
-	var response Response
-	if err := json.Unmarshal(jsonData, &response); err != nil {
-		return nil, fmt.Errorf("JSONパースエラー: %w\n生データ: %s", err, string(jsonData))
-	}
-
-	return &response, nil
-}
-
-// extractJSON はバイト列からJSON部分を抽出する
-// "Loaded cached credentials."などのノイズを除去
-func extractJSON(data []byte) []byte {
-	jsonStart := bytes.IndexByte(data, '{')
-	if jsonStart == -1 {
-		return []byte{}
-	}
-	return data[jsonStart:]
+	return c.httpClient.Execute(ctx, prompt)
 }
 
 // removeCodeBlock はMarkdownコードブロック（```json```）を除去する

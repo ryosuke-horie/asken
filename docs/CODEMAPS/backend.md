@@ -21,7 +21,7 @@ backend/
 │   └── worker/             # バックグラウンドワーカー
 └── pkg/
     ├── database/           # Firestore接続
-    └── gemini/             # Gemini CLI連携
+    └── gemini/             # Gemini HTTP API連携
 ```
 
 ## レイヤードアーキテクチャ
@@ -29,7 +29,7 @@ backend/
 ```
 Handler → Service → Repository → Firestore
            ↓
-        Gemini CLI
+        Gemini HTTP API
 
 Middleware (Authenticator)
 ├── AuthMiddleware      # Firebase Auth (本番)
@@ -131,7 +131,8 @@ Context に firebase_uid を設定
 
 | ファイル | 責務 |
 |:---|:---|
-| client.go | Gemini CLI実行基盤 |
+| http_client.go | Gemini HTTP API クライアント |
+| client.go | HTTPClient ラッパー（後方互換性） |
 | classifier.go | 画像から食品分類 |
 | text_parser.go | テキストから食品抽出 |
 | nutrition.go | 栄養素計算 |
@@ -198,6 +199,7 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 | 変数 | 説明 | 設定元 |
 |:---|:---|:---|
 | GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | ローカル: 手動設定 / Cloud Run: サービスアカウント |
+| GEMINI_API_KEY | Gemini API キー | ローカル: 手動設定 / Cloud Run: シークレット |
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
 | ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
 
