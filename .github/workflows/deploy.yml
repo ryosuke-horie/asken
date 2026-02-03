@@ -11,6 +11,8 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    # 手動デプロイ用（GitHub Actions UIから実行可能）
 
 jobs:
   # ---------------------------------------------------------------------------
