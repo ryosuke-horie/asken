@@ -4,6 +4,14 @@
 
 GCPサーバレス環境の運用手順、監視、トラブルシューティングを説明します。
 
+## エンドポイント
+
+| 環境 | URL |
+|:---|:---|
+| dev | https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app |
+
+ヘルスチェック: `curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health`
+
 ## アーキテクチャ
 
 | サービス | GCPサービス | 説明 |
