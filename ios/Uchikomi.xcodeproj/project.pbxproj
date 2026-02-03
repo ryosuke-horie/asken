@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -88,7 +88,7 @@
 		3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
 		42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGenerated.swift; sourceTree = "<group>"; };
-		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UchikomiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModel.swift; sourceTree = "<group>"; };
@@ -450,7 +450,6 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B600300EE7A5CB7D431959E3 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C53720A77BB7F46352985FE6 = {
@@ -478,7 +477,6 @@
 				210E3921DA83E5D403E3D7B7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -582,6 +580,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -619,6 +618,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
