@@ -64,7 +64,7 @@ func TestImageHandler_Handle_Success(t *testing.T) {
 func TestImageHandler_Handle_NotFound(t *testing.T) {
 	mockStorageRepo := &MockStorageRepositoryForImage{
 		GetSignedURLFunc: func(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
-			return "", errors.New("object not found")
+			return "", errors.New("オブジェクトが見つかりません: " + objectName)
 		},
 	}
 

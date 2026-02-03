@@ -67,7 +67,12 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	signedURL, err := h.storageRepo.GetSignedURL(r.Context(), objectName, signedURLExpiration)
 	if err != nil {
 		log.Printf("Error generating signed URL: %v", err)
-		http.Error(w, "Image not found", http.StatusNotFound)
+		// エラーメッセージにオブジェクトが見つからない場合は404、それ以外は500
+		if strings.Contains(err.Error(), "オブジェクトが見つかりません") {
+			http.Error(w, "Image not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to generate image URL", http.StatusInternalServerError)
+		}
 		return
 	}
 

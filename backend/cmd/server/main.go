@@ -152,7 +152,10 @@ func run() error {
 	if gcsBucketName == "" {
 		log.Fatalf("GCS_BUCKET_NAME environment variable is required")
 	}
-	storageRepo := repository.NewStorageRepositoryCloudStorage(storageClient, gcsBucketName)
+	storageRepo, err := repository.NewStorageRepositoryCloudStorage(storageClient, gcsBucketName)
+	if err != nil {
+		log.Fatalf("Failed to initialize StorageRepository: %v", err)
+	}
 
 	// リポジトリの初期化
 	analysisRepo := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
