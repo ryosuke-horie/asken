@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS App Review"
+  short_description: "iOS App Review向けコードレビューと審査基準チェック支援"
+  default_prompt: "App Reviewガイドラインに沿ってiOS/バックエンドをレビューし、重大事項はLinearに起票してコメントでまとめる"
