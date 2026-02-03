@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-03
+最終更新: 2026-02-04
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -99,7 +99,7 @@ Context に firebase_uid を設定
 | analyze_handler.go | 食事分析リクエスト |
 | status_handler.go | 分析ステータス確認 |
 | daily_meals_handler.go | 日次食事データ |
-| history_handler.go | 履歴一覧・詳細・更新 |
+| history_handler.go | 履歴一覧・詳細・更新（foodService依存なし） |
 | history_delete_handler.go | 履歴削除 |
 | skip_meal_handler.go | 食事スキップ |
 | image_handler.go | 画像配信 |
