@@ -11,14 +11,22 @@ import (
 
 // MockGeminiClient はテスト用のモックGeminiクライアント
 type MockGeminiClient struct {
-	ClassifyFoodsFunc      func(ctx context.Context, imagePath string) ([]gemini.FoodItem, error)
-	ParseTextToFoodsFunc   func(ctx context.Context, inputText string) ([]gemini.FoodItem, error)
-	CalculateNutritionFunc func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
+	ClassifyFoodsFunc         func(ctx context.Context, imagePath string) ([]gemini.FoodItem, error)
+	ClassifyFoodsFromDataFunc func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.FoodItem, error)
+	ParseTextToFoodsFunc      func(ctx context.Context, inputText string) ([]gemini.FoodItem, error)
+	CalculateNutritionFunc    func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
 }
 
 func (m *MockGeminiClient) ClassifyFoods(ctx context.Context, imagePath string) ([]gemini.FoodItem, error) {
 	if m.ClassifyFoodsFunc != nil {
 		return m.ClassifyFoodsFunc(ctx, imagePath)
+	}
+	return nil, nil
+}
+
+func (m *MockGeminiClient) ClassifyFoodsFromData(ctx context.Context, imageData []byte, mimeType string) ([]gemini.FoodItem, error) {
+	if m.ClassifyFoodsFromDataFunc != nil {
+		return m.ClassifyFoodsFromDataFunc(ctx, imageData, mimeType)
 	}
 	return nil, nil
 }
@@ -67,7 +75,7 @@ func TestAnalyzeFoodImage_Success(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	result, err := service.AnalyzeFoodImage(ctx, "/path/to/image.jpg")
@@ -88,7 +96,7 @@ func TestAnalyzeFoodImage_Step1Error(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	_, err := service.AnalyzeFoodImage(ctx, "/path/to/image.jpg")
@@ -109,7 +117,7 @@ func TestAnalyzeFoodImage_Step2Error(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	_, err := service.AnalyzeFoodImage(ctx, "/path/to/image.jpg")
@@ -174,7 +182,7 @@ func TestAnalyzeFoodText_Success(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	result, err := service.AnalyzeFoodText(ctx, "ご飯二杯, 焼肉")
@@ -195,7 +203,7 @@ func TestAnalyzeFoodText_ParseError(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	_, err := service.AnalyzeFoodText(ctx, "ご飯二杯")
@@ -216,7 +224,7 @@ func TestAnalyzeFoodText_NutritionError(t *testing.T) {
 		},
 	}
 
-	service := NewFoodService(mockClient)
+	service := NewFoodService(mockClient, nil)
 	ctx := context.Background()
 
 	_, err := service.AnalyzeFoodText(ctx, "ご飯二杯")

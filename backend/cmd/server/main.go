@@ -31,6 +31,10 @@ func (r *RealGeminiClient) ClassifyFoods(ctx context.Context, imagePath string) 
 	return r.classifier.ClassifyFoods(ctx, imagePath)
 }
 
+func (r *RealGeminiClient) ClassifyFoodsFromData(ctx context.Context, imageData []byte, mimeType string) ([]gemini.FoodItem, error) {
+	return r.classifier.ClassifyFoodsFromData(ctx, imageData, mimeType)
+}
+
 func (r *RealGeminiClient) ParseTextToFoods(ctx context.Context, inputText string) ([]gemini.FoodItem, error) {
 	return r.textParser.ParseTextToFoods(ctx, inputText)
 }
@@ -181,7 +185,7 @@ func run() error {
 		calculator: calculator,
 	}
 
-	foodService := service.NewFoodService(geminiClient)
+	foodService := service.NewFoodService(geminiClient, storageRepo)
 
 	// 認証ミドルウェアの初期化
 	var authMiddleware middleware.Authenticator

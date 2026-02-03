@@ -55,6 +55,11 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 		return nil, err
 	}
 
+	return c.ClassifyFoodsFromData(ctx, imageData, mimeType)
+}
+
+// ClassifyFoodsFromData はバイトデータから料理を分類する（Cloud Storage等からダウンロードした画像用）
+func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte, mimeType string) ([]FoodItem, error) {
 	// プロンプトを構築（料理名の分類に集中）
 	prompt := `この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
 

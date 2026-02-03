@@ -21,6 +21,9 @@ type StorageRepository interface {
 	// Upload はファイルをストレージにアップロードし、オブジェクト名を返す
 	Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error)
 
+	// Download は指定されたオブジェクトをダウンロードしてバイトデータを返す
+	Download(ctx context.Context, objectName string) ([]byte, error)
+
 	// GetSignedURL は指定されたオブジェクトの署名付きURLを生成
 	GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error)
 
@@ -68,6 +71,27 @@ func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, fil
 	}
 
 	return objectName, nil
+}
+
+// Download は指定されたオブジェクトをCloud Storageからダウンロードしてバイトデータを返す
+func (r *cloudStorageRepository) Download(ctx context.Context, objectName string) ([]byte, error) {
+	obj := r.client.Bucket(r.bucketName).Object(objectName)
+
+	reader, err := obj.NewReader(ctx)
+	if err != nil {
+		if errors.Is(err, storage.ErrObjectNotExist) {
+			return nil, ErrObjectNotFound
+		}
+		return nil, fmt.Errorf("Cloud Storageからの読み取りに失敗: %w", err)
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("Cloud Storageからのデータ読み取りに失敗: %w", err)
+	}
+
+	return data, nil
 }
 
 // GetSignedURL は指定されたオブジェクトの署名付きURLを生成
