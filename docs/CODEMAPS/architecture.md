@@ -11,7 +11,7 @@
 | レイヤー | 技術 |
 |:---|:---|
 | iOSアプリ | Swift, SwiftUI |
-| バックエンド | Golang (Cloud Functions) |
+| バックエンド | Golang (Cloud Run) |
 | データベース | Firestore |
 | ストレージ | Cloud Storage |
 | 認証 | Firebase Auth |
@@ -31,10 +31,10 @@
                                │ HTTP/REST
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Go Backend (Cloud Functions)                  │
+│                     Go Backend (Cloud Run)                       │
 ├─────────────────────────────────────────────────────────────────┤
 │  認証検証 (Firebase Auth)                                        │
-│  ビジネスロジック                                                 │
+│  ビジネスロジック                                                  │
 │  データアクセス                                                   │
 └──────────┬─────────────────┬─────────────────┬──────────────────┘
            │                 │                 │
@@ -84,7 +84,7 @@
 
 ```
 utikomi/
-├── backend/           # Goバックエンド (Cloud Functions)
+├── backend/           # Goバックエンド (Cloud Run)
 │   ├── cmd/          # エントリーポイント
 │   ├── internal/     # 内部パッケージ
 │   └── pkg/          # 共有パッケージ
