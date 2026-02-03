@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -67,8 +68,7 @@ func (h *ImageHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	signedURL, err := h.storageRepo.GetSignedURL(r.Context(), objectName, signedURLExpiration)
 	if err != nil {
 		log.Printf("Error generating signed URL: %v", err)
-		// エラーメッセージにオブジェクトが見つからない場合は404、それ以外は500
-		if strings.Contains(err.Error(), "オブジェクトが見つかりません") {
+		if errors.Is(err, repository.ErrObjectNotFound) {
 			http.Error(w, "Image not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Failed to generate image URL", http.StatusInternalServerError)

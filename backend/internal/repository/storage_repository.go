@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -10,6 +11,9 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
 )
+
+// ErrObjectNotFound はオブジェクトが存在しない場合のエラー
+var ErrObjectNotFound = errors.New("object not found")
 
 // StorageRepository はファイルストレージ操作を担当するインターフェース
 type StorageRepository interface {
@@ -72,7 +76,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 	_, err := obj.Attrs(ctx)
 	if err != nil {
 		if err == storage.ErrObjectNotExist {
-			return "", fmt.Errorf("オブジェクトが見つかりません: %s", objectName)
+			return "", ErrObjectNotFound
 		}
 		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
 	}

@@ -45,11 +45,17 @@ type firestoreAnalysisRepository struct {
 }
 
 // NewAnalysisRepositoryFirestore は新しいFirestoreベースのAnalysisRepositoryを作成します
-func NewAnalysisRepositoryFirestore(client *firestore.Client, storageRepo StorageRepository) AnalysisRepository {
+func NewAnalysisRepositoryFirestore(client *firestore.Client, storageRepo StorageRepository) (AnalysisRepository, error) {
+	if client == nil {
+		return nil, fmt.Errorf("firestore client is required")
+	}
+	if storageRepo == nil {
+		return nil, fmt.Errorf("storage repository is required")
+	}
 	return &firestoreAnalysisRepository{
 		client:      client,
 		storageRepo: storageRepo,
-	}
+	}, nil
 }
 
 // getUserAnalysisCollection はユーザーのanalysisRequestsコレクション参照を取得
@@ -142,7 +148,7 @@ func (r *firestoreAnalysisRepository) GetRequest(ctx context.Context, userID str
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("リクエストが見つかりません: %s", id)
+		return nil, fmt.Errorf("リクエストが見つかりません: %s: %w", id, ErrNotFound)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -226,7 +232,7 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(requestID.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
+		return nil, fmt.Errorf("結果が見つかりません: %s: %w", requestID, ErrNotFound)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -235,7 +241,7 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 	}
 
 	if fsDoc.Result == nil {
-		return nil, fmt.Errorf("結果が見つかりません: %s", requestID)
+		return nil, fmt.Errorf("結果が見つかりません: %s: %w", requestID, ErrNotFound)
 	}
 
 	return &service.AnalysisResult{
@@ -360,7 +366,7 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, user
 	// ユーザーのコレクションから直接取得
 	doc, err := r.getUserAnalysisCollection(userID).Doc(id.String()).Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+		return nil, fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -370,7 +376,7 @@ func (r *firestoreAnalysisRepository) GetHistoryDetail(ctx context.Context, user
 
 	// completed状態のみ返す
 	if fsDoc.Status != StatusCompleted {
-		return nil, fmt.Errorf("履歴が見つかりません: %s", id)
+		return nil, fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
 	}
 
 	return r.toHistoryDetail(&fsDoc)
@@ -386,7 +392,7 @@ func (r *firestoreAnalysisRepository) DeleteHistory(ctx context.Context, userID 
 	docRef := r.getUserAnalysisCollection(userID).Doc(id.String())
 	doc, err := docRef.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("履歴が見つかりません: %s", id)
+		return fmt.Errorf("履歴が見つかりません: %s: %w", id, ErrNotFound)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -576,7 +582,7 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 	docRef := r.getUserAnalysisCollection(userID).Doc(historyID.String())
 	doc, err := docRef.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("履歴が見つかりません: %s", historyID)
+		return fmt.Errorf("履歴が見つかりません: %s: %w", historyID, ErrNotFound)
 	}
 
 	var fsDoc firestoreAnalysisDocument
@@ -586,7 +592,7 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 
 	// completed状態のみ更新可能
 	if fsDoc.Status != StatusCompleted {
-		return fmt.Errorf("履歴が見つかりません: %s", historyID)
+		return fmt.Errorf("履歴が見つかりません: %s: %w", historyID, ErrNotFound)
 	}
 
 	// 合計値を計算

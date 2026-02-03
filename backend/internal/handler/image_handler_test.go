@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +65,7 @@ func TestImageHandler_Handle_Success(t *testing.T) {
 func TestImageHandler_Handle_NotFound(t *testing.T) {
 	mockStorageRepo := &MockStorageRepositoryForImage{
 		GetSignedURLFunc: func(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
-			return "", errors.New("オブジェクトが見つかりません: " + objectName)
+			return "", repository.ErrObjectNotFound
 		},
 	}
 
@@ -76,6 +77,24 @@ func TestImageHandler_Handle_NotFound(t *testing.T) {
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestImageHandler_Handle_InternalError(t *testing.T) {
+	mockStorageRepo := &MockStorageRepositoryForImage{
+		GetSignedURLFunc: func(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
+			return "", errors.New("service temporarily unavailable")
+		},
+	}
+
+	handler := NewImageHandler(mockStorageRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/images/test-image.jpg", nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "Failed to generate image URL")
 }
 
 func TestImageHandler_Handle_MethodNotAllowed(t *testing.T) {

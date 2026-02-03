@@ -158,7 +158,10 @@ func run() error {
 	}
 
 	// リポジトリの初期化
-	analysisRepo := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
+	analysisRepo, err := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
+	if err != nil {
+		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
+	}
 
 	// 依存関係の初期化
 	classifier := gemini.NewClassifier(120 * time.Second)
