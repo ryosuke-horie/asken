@@ -148,6 +148,7 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 	// 3. meal_type, meal_date を取得・バリデーション（アップロード前に検証）
 	mealType := r.FormValue("meal_type")
 	mealDate := r.FormValue("meal_date")
+	tz := r.FormValue("tz")
 
 	// meal_type のバリデーション
 	if !isValidMealType(mealType) {
@@ -156,9 +157,15 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// meal_date が空の場合は今日の日付
+	// meal_date が空の場合は指定タイムゾーンでの今日の日付
 	if mealDate == "" {
-		mealDate = time.Now().Format("2006-01-02")
+		loc := time.UTC
+		if tz != "" {
+			if parsedLoc, err := time.LoadLocation(tz); err == nil {
+				loc = parsedLoc
+			}
+		}
+		mealDate = time.Now().In(loc).Format("2006-01-02")
 	}
 
 	// 4. Cloud Storageにアップロード

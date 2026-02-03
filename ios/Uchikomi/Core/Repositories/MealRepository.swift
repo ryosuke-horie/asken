@@ -37,12 +37,17 @@ final class MealRepository: MealRepositoryProtocol {
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
 
+    private var currentTimezoneIdentifier: String {
+        TimeZone.current.identifier
+    }
+
     func getDailyMeals(date: Date) async throws -> DailyMeals {
         let dateString = dateFormatter.string(from: date)
-        return try await apiClient.request(endpoint: .dailyMeals(date: dateString))
+        return try await apiClient.request(endpoint: .dailyMeals(date: dateString, timezone: currentTimezoneIdentifier))
     }
 
     func uploadImage(data: Data, filename: String, mealType: MealType, mealDate: Date) async throws -> String {
@@ -53,6 +58,7 @@ final class MealRepository: MealRepositoryProtocol {
             additionalFields: [
                 "meal_type": mealType.rawValue,
                 "meal_date": dateFormatter.string(from: mealDate),
+                "tz": currentTimezoneIdentifier,
             ]
         )
         return response.id
