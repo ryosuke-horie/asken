@@ -51,6 +51,26 @@ func TestClassifyFoods_InvalidImagePath(t *testing.T) {
 	assert.Contains(t, err.Error(), "画像ファイルが見つかりません")
 }
 
+func TestClassifyFoods_UnsupportedImageFormat(t *testing.T) {
+	// テスト用の一時ファイルを作成（サポート外の拡張子）
+	tmpFile, err := os.CreateTemp("", "test*.bmp")
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+
+	// BMPのマジックバイトを書き込む
+	_, err = tmpFile.Write([]byte{0x42, 0x4D, 0x00, 0x00})
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	classifier := NewClassifier(60 * time.Second)
+	ctx := context.Background()
+
+	_, err = classifier.ClassifyFoods(ctx, tmpFile.Name())
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "サポートされていない画像形式")
+}
+
 func TestClassifyFoods_EmptyResponse(t *testing.T) {
 	// このテストは実際のGemini APIの挙動に依存するためスキップ
 	// 実際には、Gemini APIが空のレスポンスを返すことは稀
@@ -99,65 +119,95 @@ func TestClassifyFoods_RelativePath(t *testing.T) {
 
 func TestDetectMimeType(t *testing.T) {
 	tests := []struct {
-		name     string
-		filePath string
-		data     []byte
-		expected string
+		name        string
+		filePath    string
+		data        []byte
+		expected    string
+		expectError bool
 	}{
 		{
-			name:     "JPEGマジックバイト",
-			filePath: "test.jpg",
-			data:     []byte{0xFF, 0xD8, 0xFF, 0xE0},
-			expected: "image/jpeg",
+			name:        "JPEGマジックバイト",
+			filePath:    "test.jpg",
+			data:        []byte{0xFF, 0xD8, 0xFF, 0xE0},
+			expected:    "image/jpeg",
+			expectError: false,
 		},
 		{
-			name:     "PNGマジックバイト",
-			filePath: "test.png",
-			data:     []byte{0x89, 0x50, 0x4E, 0x47},
-			expected: "image/png",
+			name:        "PNGマジックバイト",
+			filePath:    "test.png",
+			data:        []byte{0x89, 0x50, 0x4E, 0x47},
+			expected:    "image/png",
+			expectError: false,
 		},
 		{
-			name:     "GIFマジックバイト",
-			filePath: "test.gif",
-			data:     []byte{0x47, 0x49, 0x46, 0x38},
-			expected: "image/gif",
+			name:        "GIFマジックバイト",
+			filePath:    "test.gif",
+			data:        []byte{0x47, 0x49, 0x46, 0x38},
+			expected:    "image/gif",
+			expectError: false,
 		},
 		{
-			name:     "WebPマジックバイト",
-			filePath: "test.webp",
-			data:     []byte{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50},
-			expected: "image/webp",
+			name:        "WebPマジックバイト",
+			filePath:    "test.webp",
+			data:        []byte{0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50},
+			expected:    "image/webp",
+			expectError: false,
 		},
 		{
-			name:     "拡張子フォールバック_JPG",
-			filePath: "photo.JPG",
-			data:     []byte{0x00, 0x00, 0x00, 0x00}, // 不正なマジックバイト
-			expected: "image/jpeg",
+			name:        "拡張子フォールバック_JPG",
+			filePath:    "photo.JPG",
+			data:        []byte{0x00, 0x00, 0x00, 0x00}, // 不正なマジックバイト
+			expected:    "image/jpeg",
+			expectError: false,
 		},
 		{
-			name:     "拡張子フォールバック_PNG",
-			filePath: "image.PNG",
-			data:     []byte{0x00, 0x00, 0x00, 0x00},
-			expected: "image/png",
+			name:        "拡張子フォールバック_PNG",
+			filePath:    "image.PNG",
+			data:        []byte{0x00, 0x00, 0x00, 0x00},
+			expected:    "image/png",
+			expectError: false,
 		},
 		{
-			name:     "未知の拡張子はJPEGにフォールバック",
-			filePath: "file.unknown",
-			data:     []byte{0x00, 0x00, 0x00, 0x00},
-			expected: "image/jpeg",
+			name:        "未知の拡張子はエラーを返す",
+			filePath:    "file.unknown",
+			data:        []byte{0x00, 0x00, 0x00, 0x00},
+			expected:    "",
+			expectError: true,
 		},
 		{
-			name:     "空のデータは拡張子で判定",
-			filePath: "test.gif",
-			data:     []byte{},
-			expected: "image/gif",
+			name:        "空のデータは拡張子で判定",
+			filePath:    "test.gif",
+			data:        []byte{},
+			expected:    "image/gif",
+			expectError: false,
+		},
+		{
+			name:        "BMPはサポート外でエラー",
+			filePath:    "image.bmp",
+			data:        []byte{0x42, 0x4D, 0x00, 0x00}, // BMP マジックバイト
+			expected:    "",
+			expectError: true,
+		},
+		{
+			name:        "TIFFはサポート外でエラー",
+			filePath:    "image.tiff",
+			data:        []byte{0x49, 0x49, 0x2A, 0x00}, // TIFF (little-endian)
+			expected:    "",
+			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := detectMimeType(tt.filePath, tt.data)
-			assert.Equal(t, tt.expected, result)
+			result, err := detectMimeType(tt.filePath, tt.data)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, result)
+				assert.Contains(t, err.Error(), "サポートされていない画像形式")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
+			}
 		})
 	}
 }
