@@ -75,7 +75,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	_, err := obj.Attrs(ctx)
 	if err != nil {
-		if err == storage.ErrObjectNotExist {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			return "", ErrObjectNotFound
 		}
 		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
@@ -100,7 +100,7 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
-		if err == storage.ErrObjectNotExist {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil
 		}
 		return fmt.Errorf("Cloud Storageからの削除に失敗: %w", err)
