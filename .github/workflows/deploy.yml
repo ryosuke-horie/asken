@@ -40,7 +40,8 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy:
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    # workflow_dispatch（手動実行）の場合は常にデプロイ、pushの場合は変更検出結果に従う
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     environment: dev
 
