@@ -20,7 +20,7 @@ func TestParseTextToFoods_EmptyInput(t *testing.T) {
 }
 
 func TestParseTextToFoods_Success(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	parser := NewTextParser(60 * time.Second)
 	ctx := context.Background()
@@ -39,7 +39,7 @@ func TestParseTextToFoods_Success(t *testing.T) {
 }
 
 func TestParseTextToFoods_ComplexInput(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	parser := NewTextParser(60 * time.Second)
 	ctx := context.Background()
@@ -55,7 +55,7 @@ func TestParseTextToFoods_ComplexInput(t *testing.T) {
 }
 
 func TestParseTextToFoods_Timeout(t *testing.T) {
-	skipIfNoGeminiCLI(t)
+	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトでテスト
 	parser := NewTextParser(1 * time.Millisecond)
