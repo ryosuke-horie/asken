@@ -92,7 +92,10 @@ module "cloud_run" {
     ALLOWED_ORIGINS = join(",", var.cloud_run_allowed_origins)
   }
 
-  # 未認証リクエストを許可（APIは独自のFirebase Auth検証を使用）
+  # 未認証リクエストを許可
+  # - Cloud RunレベルではIAM認証を無効化（allUsersにinvoker権限を付与）
+  # - アプリケーションレベルで独自のFirebase Auth検証を実施
+  # - /api/health（ヘルスチェック）と/api/images/（画像配信）は認証不要
   allow_unauthenticated = true
 
   labels = {
@@ -102,19 +105,33 @@ module "cloud_run" {
 }
 
 # -----------------------------------------------------------------------------
+# Workload Identity Federation (WIF)
+# -----------------------------------------------------------------------------
+
+module "wif" {
+  source = "../../modules/wif"
+
+  project_id         = var.gcp_project_id
+  github_owner       = var.github_owner
+  github_repo        = var.github_repo
+  service_account_id = module.cloud_run.service_account_id
+}
+
+# -----------------------------------------------------------------------------
 # GitHub Secrets/Variables
 # -----------------------------------------------------------------------------
 
 module "github" {
   source = "../../modules/github"
 
-  github_repository      = var.github_repository
-  environment            = local.environment
-  gcp_project_id         = var.gcp_project_id
-  gcp_region             = var.gcp_region
-  gcp_sa_key             = var.gcp_sa_key
-  firestore_database     = module.firestore.database_name
-  storage_bucket         = module.storage.bucket_name
-  artifact_registry_url  = module.artifact_registry.repository_url
-  cloud_run_service_name = module.cloud_run.service_name
+  github_repository          = var.github_repository
+  environment                = local.environment
+  gcp_project_id             = var.gcp_project_id
+  gcp_region                 = var.gcp_region
+  firestore_database         = module.firestore.database_name
+  storage_bucket             = module.storage.bucket_name
+  artifact_registry_url      = module.artifact_registry.repository_url
+  cloud_run_service_name     = module.cloud_run.service_name
+  workload_identity_provider = module.wif.provider_name
+  service_account_email      = module.cloud_run.service_account_email
 }

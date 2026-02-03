@@ -50,18 +50,38 @@ jobs:
       GCP_REGION: ${{ vars.GCP_REGION }}
       ARTIFACT_REGISTRY_URL: ${{ vars.ARTIFACT_REGISTRY_URL }}
       CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+      SERVICE_ACCOUNT_EMAIL: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
 
     steps:
+      - name: Validate required variables
+        run: |
+          missing_vars=()
+          [ -z "$GCP_REGION" ] && missing_vars+=("GCP_REGION")
+          [ -z "$ARTIFACT_REGISTRY_URL" ] && missing_vars+=("ARTIFACT_REGISTRY_URL")
+          [ -z "$CLOUD_RUN_SERVICE_NAME" ] && missing_vars+=("CLOUD_RUN_SERVICE_NAME")
+          [ -z "$WORKLOAD_IDENTITY_PROVIDER" ] && missing_vars+=("WORKLOAD_IDENTITY_PROVIDER")
+          [ -z "$SERVICE_ACCOUNT_EMAIL" ] && missing_vars+=("SERVICE_ACCOUNT_EMAIL")
+
+          if [ ${#missing_vars[@]} -ne 0 ]; then
+            echo "::error::Missing required variables: ${missing_vars[*]}"
+            echo "### Configuration Error" >> "$GITHUB_STEP_SUMMARY"
+            echo "Missing variables: ${missing_vars[*]}" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "All required variables are set"
+
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Setup Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
         run: |
@@ -78,6 +98,7 @@ jobs:
           echo "Image tag: ${IMAGE_TAG}"
 
       - name: Build Docker image
+        id: build
         working-directory: backend
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
@@ -89,6 +110,7 @@ jobs:
             .
 
       - name: Push Docker image
+        id: push
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -96,6 +118,7 @@ jobs:
           docker push "${ARTIFACT_REGISTRY_URL}/backend:latest"
 
       - name: Deploy to Cloud Run
+        id: deploy
         env:
           IMAGE_TAG: ${{ steps.image.outputs.tag }}
         run: |
@@ -106,6 +129,7 @@ jobs:
             --quiet
 
       - name: Show deployment URL
+        if: success()
         run: |
           URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
             --region "${GCP_REGION}" \
@@ -113,3 +137,16 @@ jobs:
           echo "Deployed to: ${URL}"
           echo "### Deployment successful" >> "$GITHUB_STEP_SUMMARY"
           echo "URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report failure
+        if: failure()
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          echo "### Deployment failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Image:** ${IMAGE_TAG:-'(not set)'}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Service:** ${CLOUD_RUN_SERVICE_NAME}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Region:** ${GCP_REGION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the workflow logs for details." >> "$GITHUB_STEP_SUMMARY"
