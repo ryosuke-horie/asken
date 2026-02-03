@@ -51,6 +51,14 @@ resource "google_project_iam_member" "artifact_registry_writer" {
   member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# Cloud Runデプロイ権限（GitHub Actionsからのデプロイ用）
+# WIF経由でこのサービスアカウントを使用してCloud Runにデプロイするため必要
+resource "google_project_iam_member" "run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Runサービス
 # -----------------------------------------------------------------------------
