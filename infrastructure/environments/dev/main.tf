@@ -115,6 +115,7 @@ module "cloud_run" {
     GCP_PROJECT_ID  = var.gcp_project_id
     ALLOWED_ORIGINS = join(",", var.cloud_run_allowed_origins)
     APP_ENV         = "production"
+    GCS_BUCKET_NAME = module.storage.bucket_name
   }
 
   # Secret Managerからの環境変数
