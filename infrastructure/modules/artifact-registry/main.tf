@@ -35,13 +35,6 @@ resource "google_artifact_registry_repository_iam_member" "github_actions_writer
   member     = "serviceAccount:${var.github_actions_sa_email}"
 }
 
-# Cloud RunからのPull権限（サービスアカウント）
-resource "google_artifact_registry_repository_iam_member" "cloud_run_reader" {
-  count = var.cloud_run_sa_email != "" ? 1 : 0
-
-  project    = var.project_id
-  location   = var.location
-  repository = google_artifact_registry_repository.docker.name
-  role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${var.cloud_run_sa_email}"
-}
+# Note: Cloud Runはサービスエージェント（serverless-robot-prod）を使用して
+# Artifact Registryからイメージを取得するため、Cloud Runサービスアカウントへの
+# 明示的なreader権限は不要です。
