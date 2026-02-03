@@ -67,6 +67,15 @@ task setup
 Terraform用の環境変数は`.mise.toml`で管理されています。
 1Password CLIを使用している場合、シークレットは自動的に注入されます。
 
+| 環境変数 | 説明 | 管理方法 |
+|:---|:---|:---|
+| TF_VAR_gcp_project_id | GCPプロジェクトID | .mise.toml（固定値） |
+| TF_VAR_gcp_region | GCPリージョン | .mise.toml（固定値） |
+| TF_VAR_github_repository | GitHubリポジトリ | .mise.toml（固定値） |
+| TF_VAR_github_token | GitHub PAT | 1Password経由 |
+| TF_VAR_gcp_sa_key | GCPサービスアカウントキー | 1Password経由 |
+| TF_VAR_gemini_api_key | Gemini APIキー | 1Password経由 |
+
 詳細は[infrastructure/README.md](../infrastructure/README.md)を参照してください。
 
 ### 5. 開発用モック認証の設定
@@ -262,6 +271,7 @@ GCPリソースはTerraformで管理しています。
 | Firestore | データベース |
 | Cloud Storage | 画像保存 |
 | Firebase Auth | ユーザー認証 |
+| Secret Manager | APIキー等のシークレット管理 |
 | Workload Identity Federation | GitHub ActionsからのGCP認証（キーレス） |
 | GitHub Secrets/Variables | CI/CD用シークレット |
 
