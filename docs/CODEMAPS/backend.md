@@ -199,9 +199,16 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 | 変数 | 説明 | 設定元 |
 |:---|:---|:---|
 | GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | ローカル: 手動設定 / Cloud Run: サービスアカウント |
-| GEMINI_API_KEY | Gemini API キー | ローカル: 手動設定 / Cloud Run: シークレット |
+| GEMINI_API_KEY | Gemini API キー | ローカル: 手動設定 / Cloud Run: Secret Manager |
+| GCP_PROJECT_ID | GCPプロジェクトID | Cloud Run環境変数 |
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
 | ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
+
+**Secret Manager管理のシークレット:**
+
+| シークレット名 | 説明 |
+|:---|:---|
+| gemini-api-key | Gemini API キー（Google AI Studio発行） |
 
 ## 関連コードマップ
 
