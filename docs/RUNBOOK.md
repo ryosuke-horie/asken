@@ -121,6 +121,28 @@ terraform state show <resource_name>
 
 ## トラブルシューティング
 
+### Firestoreインデックスエラー
+
+```
+rpc error: code = FailedPrecondition desc = The query requires an index
+```
+
+複合インデックスが必要なクエリを実行した際に発生します。
+
+#### 対処法
+
+1. エラーメッセージに含まれるURLをブラウザで開く
+2. 「インデックスを作成」をクリック
+3. 構築完了まで数分待機（Firebase Console > Firestore > インデックスで確認可能）
+
+または、`firestore.indexes.json`を更新してデプロイ:
+
+```bash
+firebase deploy --only firestore:indexes --project utikomi-dev
+```
+
+**注意**: インデックス構築中は「That index is currently building」エラーが出ます。構築完了まで待機してください。
+
 ### Firebase権限エラー
 
 ```
