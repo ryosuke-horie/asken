@@ -127,7 +127,8 @@ Firestoreの複合インデックスは`firestore.indexes.json`で管理され�
 | analysisRequests | status, confirmed, createdAt DESC | 履歴一覧（confirmed=true のみ） |
 | analysisRequests | confirmed, status, mealDate | 日次食事取得（confirmed=true のみ） |
 | analysisRequests | mealType, confirmed, mealDate | 未確定レコード削除用 |
-| analysisRequests | inputType, mealType, mealDate | マイリスト/スキップ検索 |
+| analysisRequests | inputType, mealType, mealDate | 既存マイリスト/スキップ検索 |
+| analysisRequests | mealType, mealDate, inputType | スキップ記録削除用 |
 | analysisRequests | status, mealDate | ステータス別日次検索 |
 
 インデックス更新手順は[docs/CONTRIB.md](../CONTRIB.md#firestoreインデックス管理)を参照。
