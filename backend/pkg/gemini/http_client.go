@@ -14,7 +14,7 @@ import (
 
 const (
 	defaultBaseURL = "https://generativelanguage.googleapis.com"
-	modelName      = "gemini-2.5-flash"
+	modelName      = "gemini-3-flash-preview"
 )
 
 // HTTPClient はGemini HTTP APIクライアント
