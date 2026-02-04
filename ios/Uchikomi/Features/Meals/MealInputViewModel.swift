@@ -82,6 +82,7 @@ final class MealInputViewModel {
 
         isAnalyzing = true
         errorMessage = nil
+        defer { isAnalyzing = false }
 
         do {
             let id = try await repository.uploadImage(
@@ -110,8 +111,6 @@ final class MealInputViewModel {
             #endif
             errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
         }
-
-        isAnalyzing = false
     }
 
     func analyzeText() async {
@@ -129,6 +128,7 @@ final class MealInputViewModel {
 
         isAnalyzing = true
         errorMessage = nil
+        defer { isAnalyzing = false }
 
         do {
             let id = try await repository.analyzeText(
@@ -156,8 +156,6 @@ final class MealInputViewModel {
             #endif
             errorMessage = "テキスト分析に失敗しました: \(error.localizedDescription)"
         }
-
-        isAnalyzing = false
     }
 
     private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
