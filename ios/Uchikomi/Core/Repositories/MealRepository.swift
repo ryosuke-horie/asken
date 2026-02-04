@@ -6,6 +6,7 @@ import Foundation
 protocol MealRepositoryProtocol {
     func getDailyMeals(date: Date) async throws -> DailyMeals
     func uploadImage(data: Data, filename: String, mealType: MealType, mealDate: Date) async throws -> String
+    func analyzeText(inputText: String, mealType: MealType, mealDate: Date) async throws -> String
     func checkAnalysisStatus(id: String) async throws -> AnalysisStatusResponse
     func getAnalysisResult(id: String) async throws -> AnalysisResultResponse
     func getHistoryDetail(id: String) async throws -> HistoryDetail
@@ -28,6 +29,22 @@ struct UpdateFoodItem: Encodable {
 
 struct UpdateHistoryRequest: Encodable {
     let foods: [UpdateFoodItem]
+}
+
+// MARK: - TextAnalyzeRequest
+
+struct TextAnalyzeRequest: Encodable {
+    let inputText: String
+    let mealType: String
+    let mealDate: String
+    let tz: String
+
+    enum CodingKeys: String, CodingKey {
+        case inputText = "input_text"
+        case mealType = "meal_type"
+        case mealDate = "meal_date"
+        case tz
+    }
 }
 
 // MARK: - MealRepository
@@ -61,6 +78,17 @@ final class MealRepository: MealRepositoryProtocol {
                 "tz": currentTimezoneIdentifier,
             ]
         )
+        return response.id
+    }
+
+    func analyzeText(inputText: String, mealType: MealType, mealDate: Date) async throws -> String {
+        let request = TextAnalyzeRequest(
+            inputText: inputText,
+            mealType: mealType.rawValue,
+            mealDate: dateFormatter.string(from: mealDate),
+            tz: currentTimezoneIdentifier
+        )
+        let response: AnalyzeResponse = try await apiClient.request(endpoint: .analyze, body: request)
         return response.id
     }
 

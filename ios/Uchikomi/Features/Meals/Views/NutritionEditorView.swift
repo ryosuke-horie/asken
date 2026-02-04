@@ -52,7 +52,7 @@ struct NutritionEditorView: View {
                             Button {
                                 viewModel.addFood()
                             } label: {
-                                Label("食材を追加", systemImage: "plus.circle")
+                                Label("メニューを追加", systemImage: "plus.circle")
                                     .frame(maxWidth: .infinity)
                                     .padding()
                                     .background(Color(.secondarySystemBackground))

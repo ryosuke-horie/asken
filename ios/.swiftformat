@@ -4,7 +4,8 @@
 --swiftversion 5.9
 
 # 除外ディレクトリ
---exclude .build,DerivedData,Pods,Carthage,UchikomiTests/Generated
+# UchikomiTestsを除外: SwiftFormatがLinux環境で日本語関数名をパースできないため
+--exclude .build,DerivedData,Pods,Carthage,UchikomiTests
 
 # インデント設定
 --indent 4

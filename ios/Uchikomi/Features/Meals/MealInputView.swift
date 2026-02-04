@@ -25,6 +25,10 @@ struct MealInputView: View {
     let existingMeals: [HistoryDetail]
     let onSaved: () -> Void
 
+    private var canAnalyze: Bool {
+        viewModel.selectedImage != nil || viewModel.hasValidManualInput
+    }
+
     init(
         mealDate: Date = Date(),
         initialMealType: MealType = .lunch,
@@ -59,38 +63,49 @@ struct MealInputView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Image Selection
-                    ImageSelectionSection(
-                        selectedImage: viewModel.selectedImage,
-                        selectedItem: $selectedItem,
-                        showingCamera: $showingCamera
+                    // Manual Food Input Section
+                    ManualFoodInputSection(
+                        foods: viewModel.manualFoods,
+                        onAdd: { viewModel.addManualFood() },
+                        onRemove: { viewModel.removeManualFood($0) }
                     )
 
-                    // Analysis Button
-                    if viewModel.selectedImage != nil, viewModel.analysisResult == nil {
-                        Button {
-                            Task {
-                                await viewModel.analyzeImage()
-                            }
-                        } label: {
-                            if viewModel.isAnalyzing {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                    Text("分析中...")
-                                }
-                            } else {
-                                Label("画像を分析", systemImage: "sparkles")
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Theme.primary)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .disabled(viewModel.isAnalyzing)
+                    // Image Selection Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("または画像から入力")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        ImageSelectionSection(
+                            selectedImage: viewModel.selectedImage,
+                            selectedItem: $selectedItem,
+                            showingCamera: $showingCamera
+                        )
                     }
+
+                    // Unified Analyze Button
+                    Button {
+                        Task {
+                            await viewModel.analyze()
+                        }
+                    } label: {
+                        if viewModel.isAnalyzing {
+                            HStack {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                                Text("分析中...")
+                            }
+                        } else {
+                            Label("分析する", systemImage: "sparkles")
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(canAnalyze ? Theme.primary : Color.gray)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .disabled(!canAnalyze || viewModel.isAnalyzing)
 
                     // Analysis Result
                     if let result = viewModel.analysisResult {
@@ -118,9 +133,22 @@ struct MealInputView: View {
             }
             .onChange(of: selectedItem) { _, newValue in
                 Task {
-                    if let data = try? await newValue?.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
+                    guard let newValue else { return }
+                    do {
+                        guard let data = try await newValue.loadTransferable(type: Data.self) else {
+                            viewModel.errorMessage = "画像を読み込めませんでした"
+                            return
+                        }
+                        guard let image = UIImage(data: data) else {
+                            viewModel.errorMessage = "サポートされていない画像形式です"
+                            return
+                        }
                         viewModel.selectedImage = image
+                    } catch {
+                        #if DEBUG
+                        debugPrint("[MealInputView] Image load error: \(error)")
+                        #endif
+                        viewModel.errorMessage = "画像の読み込みに失敗しました"
                     }
                 }
             }
@@ -167,8 +195,10 @@ struct MealInputView: View {
                 Button("削除", role: .destructive) {
                     if let meal = deletingMeal {
                         Task {
-                            await viewModel.deleteHistory(id: meal.id)
-                            onSaved()
+                            let success = await viewModel.deleteHistory(id: meal.id)
+                            if success {
+                                onSaved()
+                            }
                         }
                     }
                     deletingMeal = nil
@@ -339,6 +369,37 @@ private struct ImagePreviewView: View {
     }
 }
 
+// MARK: - ManualFoodInputSection
+
+private struct ManualFoodInputSection: View {
+    let foods: [FoodEditItem]
+    let onAdd: () -> Void
+    let onRemove: (FoodEditItem) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("食事内容を入力")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            ForEach(foods) { food in
+                FoodItemEditRow(item: food) {
+                    onRemove(food)
+                }
+            }
+
+            Button(action: onAdd) {
+                Label("メニューを追加", systemImage: "plus.circle")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .foregroundStyle(Theme.primary)
+        }
+    }
+}
+
 // MARK: - ImageSelectionSection
 
 private struct ImageSelectionSection: View {
@@ -348,10 +409,6 @@ private struct ImageSelectionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("食事の画像")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
             if let image = selectedImage {
                 Image(uiImage: image)
                     .resizable()
@@ -405,7 +462,7 @@ private struct AnalysisResultSection: View {
             )
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("検出された食品")
+                Text("検出されたメニュー")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
