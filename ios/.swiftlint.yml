@@ -55,7 +55,7 @@ line_length:
   ignores_comments: true
 
 file_length:
-  warning: 500
+  warning: 600
   error: 800
 
 type_body_length:

@@ -9,14 +9,6 @@ extension URL: @retroactive Identifiable {
     }
 }
 
-// MARK: - InputMode
-
-private enum InputMode {
-    case selection
-    case text
-    case image
-}
-
 // MARK: - MealInputView
 
 struct MealInputView: View {
@@ -27,12 +19,15 @@ struct MealInputView: View {
     @State private var editingMeal: HistoryDetail?
     @State private var deletingMeal: HistoryDetail?
     @State private var showingImagePreview: URL?
-    @State private var inputMode: InputMode = .selection
 
     let mealDate: Date
     let initialMealType: MealType
     let existingMeals: [HistoryDetail]
     let onSaved: () -> Void
+
+    private var canAnalyze: Bool {
+        viewModel.selectedImage != nil || viewModel.hasValidManualInput
+    }
 
     init(
         mealDate: Date = Date(),
@@ -68,72 +63,49 @@ struct MealInputView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Input Mode Selection or Input Section
-                    switch inputMode {
-                    case .selection:
-                        InputModeSelectionSection(
-                            onTextSelected: { inputMode = .text },
-                            onImageSelected: { inputMode = .image }
-                        )
+                    // Manual Food Input Section
+                    ManualFoodInputSection(
+                        foods: viewModel.manualFoods,
+                        onAdd: { viewModel.addManualFood() },
+                        onRemove: { viewModel.removeManualFood($0) }
+                    )
 
-                    case .text:
-                        TextInputSection(
-                            inputText: $viewModel.inputText,
-                            isAnalyzing: viewModel.isAnalyzing,
-                            onAnalyze: {
-                                Task {
-                                    await viewModel.analyzeText()
-                                }
-                            },
-                            onCancel: { inputMode = .selection }
-                        )
+                    // Image Selection Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("または画像から入力")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                    case .image:
-                        VStack(spacing: 16) {
+                        ImageSelectionSection(
+                            selectedImage: viewModel.selectedImage,
+                            selectedItem: $selectedItem,
+                            showingCamera: $showingCamera
+                        )
+                    }
+
+                    // Unified Analyze Button
+                    Button {
+                        Task {
+                            await viewModel.analyze()
+                        }
+                    } label: {
+                        if viewModel.isAnalyzing {
                             HStack {
-                                Text("画像で入力")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Button("キャンセル") {
-                                    inputMode = .selection
-                                }
-                                .font(.caption)
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                                Text("分析中...")
                             }
-
-                            ImageSelectionSection(
-                                selectedImage: viewModel.selectedImage,
-                                selectedItem: $selectedItem,
-                                showingCamera: $showingCamera
-                            )
-
-                            // Analysis Button
-                            if viewModel.selectedImage != nil, viewModel.analysisResult == nil {
-                                Button {
-                                    Task {
-                                        await viewModel.analyzeImage()
-                                    }
-                                } label: {
-                                    if viewModel.isAnalyzing {
-                                        HStack {
-                                            ProgressView()
-                                                .progressViewStyle(.circular)
-                                                .tint(.white)
-                                            Text("分析中...")
-                                        }
-                                    } else {
-                                        Label("画像を分析", systemImage: "sparkles")
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Theme.primary)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .disabled(viewModel.isAnalyzing)
-                            }
+                        } else {
+                            Label("分析する", systemImage: "sparkles")
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(canAnalyze ? Theme.primary : Color.gray)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .disabled(!canAnalyze || viewModel.isAnalyzing)
 
                     // Analysis Result
                     if let result = viewModel.analysisResult {
@@ -397,99 +369,33 @@ private struct ImagePreviewView: View {
     }
 }
 
-// MARK: - InputModeSelectionSection
+// MARK: - ManualFoodInputSection
 
-private struct InputModeSelectionSection: View {
-    let onTextSelected: () -> Void
-    let onImageSelected: () -> Void
+private struct ManualFoodInputSection: View {
+    let foods: [FoodEditItem]
+    let onAdd: () -> Void
+    let onRemove: (FoodEditItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("入力方法を選択")
+            Text("食事内容を入力")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 12) {
-                Button(action: onTextSelected) {
-                    VStack(spacing: 8) {
-                        Image(systemName: "text.alignleft")
-                            .font(.title2)
-                        Text("テキストで入力")
-                            .font(.subheadline)
-                    }
+            ForEach(foods) { food in
+                FoodItemEditRow(item: food) {
+                    onRemove(food)
+                }
+            }
+
+            Button(action: onAdd) {
+                Label("食品を追加", systemImage: "plus.circle")
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .foregroundStyle(.primary)
-
-                Button(action: onImageSelected) {
-                    VStack(spacing: 8) {
-                        Image(systemName: "camera")
-                            .font(.title2)
-                        Text("画像で入力")
-                            .font(.subheadline)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .foregroundStyle(.primary)
             }
-        }
-    }
-}
-
-// MARK: - TextInputSection
-
-private struct TextInputSection: View {
-    @Binding var inputText: String
-    let isAnalyzing: Bool
-    let onAnalyze: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("食事内容")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("キャンセル", action: onCancel)
-                    .font(.caption)
-            }
-
-            TextEditor(text: $inputText)
-                .frame(minHeight: 100)
-                .padding(8)
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .scrollContentBackground(.hidden)
-
-            Text("例: 鶏むね肉100g、ご飯1杯、味噌汁")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Button(action: onAnalyze) {
-                if isAnalyzing {
-                    HStack {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .tint(.white)
-                        Text("分析中...")
-                    }
-                } else {
-                    Label("分析する", systemImage: "sparkles")
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Theme.primary)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnalyzing)
+            .foregroundStyle(Theme.primary)
         }
     }
 }
