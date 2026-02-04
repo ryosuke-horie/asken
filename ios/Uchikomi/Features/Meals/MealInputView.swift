@@ -9,6 +9,14 @@ extension URL: @retroactive Identifiable {
     }
 }
 
+// MARK: - InputMode
+
+private enum InputMode {
+    case selection
+    case text
+    case image
+}
+
 // MARK: - MealInputView
 
 struct MealInputView: View {
@@ -19,6 +27,7 @@ struct MealInputView: View {
     @State private var editingMeal: HistoryDetail?
     @State private var deletingMeal: HistoryDetail?
     @State private var showingImagePreview: URL?
+    @State private var inputMode: InputMode = .selection
 
     let mealDate: Date
     let initialMealType: MealType
@@ -59,37 +68,71 @@ struct MealInputView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // Image Selection
-                    ImageSelectionSection(
-                        selectedImage: viewModel.selectedImage,
-                        selectedItem: $selectedItem,
-                        showingCamera: $showingCamera
-                    )
+                    // Input Mode Selection or Input Section
+                    switch inputMode {
+                    case .selection:
+                        InputModeSelectionSection(
+                            onTextSelected: { inputMode = .text },
+                            onImageSelected: { inputMode = .image }
+                        )
 
-                    // Analysis Button
-                    if viewModel.selectedImage != nil, viewModel.analysisResult == nil {
-                        Button {
-                            Task {
-                                await viewModel.analyzeImage()
-                            }
-                        } label: {
-                            if viewModel.isAnalyzing {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .tint(.white)
-                                    Text("分析中...")
+                    case .text:
+                        TextInputSection(
+                            inputText: $viewModel.inputText,
+                            isAnalyzing: viewModel.isAnalyzing,
+                            onAnalyze: {
+                                Task {
+                                    await viewModel.analyzeText()
                                 }
-                            } else {
-                                Label("画像を分析", systemImage: "sparkles")
+                            },
+                            onCancel: { inputMode = .selection }
+                        )
+
+                    case .image:
+                        VStack(spacing: 16) {
+                            HStack {
+                                Text("画像で入力")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("キャンセル") {
+                                    inputMode = .selection
+                                }
+                                .font(.caption)
+                            }
+
+                            ImageSelectionSection(
+                                selectedImage: viewModel.selectedImage,
+                                selectedItem: $selectedItem,
+                                showingCamera: $showingCamera
+                            )
+
+                            // Analysis Button
+                            if viewModel.selectedImage != nil, viewModel.analysisResult == nil {
+                                Button {
+                                    Task {
+                                        await viewModel.analyzeImage()
+                                    }
+                                } label: {
+                                    if viewModel.isAnalyzing {
+                                        HStack {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .tint(.white)
+                                            Text("分析中...")
+                                        }
+                                    } else {
+                                        Label("画像を分析", systemImage: "sparkles")
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Theme.primary)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .disabled(viewModel.isAnalyzing)
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Theme.primary)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .disabled(viewModel.isAnalyzing)
                     }
 
                     // Analysis Result
@@ -118,9 +161,22 @@ struct MealInputView: View {
             }
             .onChange(of: selectedItem) { _, newValue in
                 Task {
-                    if let data = try? await newValue?.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
+                    guard let newValue else { return }
+                    do {
+                        guard let data = try await newValue.loadTransferable(type: Data.self) else {
+                            viewModel.errorMessage = "画像を読み込めませんでした"
+                            return
+                        }
+                        guard let image = UIImage(data: data) else {
+                            viewModel.errorMessage = "サポートされていない画像形式です"
+                            return
+                        }
                         viewModel.selectedImage = image
+                    } catch {
+                        #if DEBUG
+                        debugPrint("[MealInputView] Image load error: \(error)")
+                        #endif
+                        viewModel.errorMessage = "画像の読み込みに失敗しました"
                     }
                 }
             }
@@ -167,8 +223,10 @@ struct MealInputView: View {
                 Button("削除", role: .destructive) {
                     if let meal = deletingMeal {
                         Task {
-                            await viewModel.deleteHistory(id: meal.id)
-                            onSaved()
+                            let success = await viewModel.deleteHistory(id: meal.id)
+                            if success {
+                                onSaved()
+                            }
                         }
                     }
                     deletingMeal = nil
@@ -339,6 +397,103 @@ private struct ImagePreviewView: View {
     }
 }
 
+// MARK: - InputModeSelectionSection
+
+private struct InputModeSelectionSection: View {
+    let onTextSelected: () -> Void
+    let onImageSelected: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("入力方法を選択")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button(action: onTextSelected) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "text.alignleft")
+                            .font(.title2)
+                        Text("テキストで入力")
+                            .font(.subheadline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .foregroundStyle(.primary)
+
+                Button(action: onImageSelected) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "camera")
+                            .font(.title2)
+                        Text("画像で入力")
+                            .font(.subheadline)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .foregroundStyle(.primary)
+            }
+        }
+    }
+}
+
+// MARK: - TextInputSection
+
+private struct TextInputSection: View {
+    @Binding var inputText: String
+    let isAnalyzing: Bool
+    let onAnalyze: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("食事内容")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("キャンセル", action: onCancel)
+                    .font(.caption)
+            }
+
+            TextEditor(text: $inputText)
+                .frame(minHeight: 100)
+                .padding(8)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .scrollContentBackground(.hidden)
+
+            Text("例: 鶏むね肉100g、ご飯1杯、味噌汁")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button(action: onAnalyze) {
+                if isAnalyzing {
+                    HStack {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                        Text("分析中...")
+                    }
+                } else {
+                    Label("分析する", systemImage: "sparkles")
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Theme.primary)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnalyzing)
+        }
+    }
+}
+
 // MARK: - ImageSelectionSection
 
 private struct ImageSelectionSection: View {
@@ -348,10 +503,6 @@ private struct ImageSelectionSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("食事の画像")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
             if let image = selectedImage {
                 Image(uiImage: image)
                     .resizable()
