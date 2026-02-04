@@ -52,10 +52,10 @@
 | `10-ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
 | `11-backend-golang.md` | バックエンド開発規約（Go） |
 | `12-gemini-api.md` | Gemini API連携のベストプラクティス |
+| `13-firestore.md` | Firestore規約（インデックス管理） |
 | `14-testing-tdd.md` | テスト駆動開発（TDD） |
 | `15-security-practices.md` | セキュリティガイドライン |
 | `16-git-workflow-general.md` | Git運用とコードレビュー |
-| `17-firestore.md` | Firestore規約（インデックス管理） |
 
 ### Claude Code拡張
 
