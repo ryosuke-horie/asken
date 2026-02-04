@@ -41,7 +41,7 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// リクエストの検証
 			assert.Equal(t, "POST", r.Method)
-			assert.Contains(t, r.URL.Path, "/v1beta/models/gemini-2.5-flash:generateContent")
+			assert.Contains(t, r.URL.Path, "/v1beta/models/gemini-3-flash-preview:generateContent")
 			assert.Equal(t, "test-api-key", r.Header.Get("x-goog-api-key")) // APIキーはヘッダーで送信
 
 			// レスポンスを返す
