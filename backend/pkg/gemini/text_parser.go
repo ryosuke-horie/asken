@@ -33,24 +33,25 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 		return nil, fmt.Errorf("入力テキストが空です")
 	}
 
-	prompt := fmt.Sprintf(`以下のテキストから食材や料理を特定し、各食材の名前と推定量をJSON形式で出力してください。
+	prompt := fmt.Sprintf(`以下のテキストから料理やメニューを特定し、各料理の名前と推定量をJSON形式で出力してください。
 
 入力テキスト: %s
 
 出力フォーマット:
 [
   {
-    "name": "食材名",
-    "estimated_amount": "推定量（例: 100g, 1杯）"
+    "name": "料理名",
+    "estimated_amount": "推定量（例: 1人前, 1杯）"
   }
 ]
 
 重要なルール:
-- 料理名（例: チキンカツ定食、親子丼）の場合は、構成する食材に分解してください
+- 料理名（例: ラーメン、チキンカツ定食、親子丼、幕の内弁当）はそのまま1つの料理として扱ってください
+- 食材に分解しないでください（例: ラーメン → 麺、スープ、チャーシューに分解しない）
 - 量が明記されていない場合は一般的な1食分の量を推定してください
 - 「大盛り」「おかわり」などの表現は量に反映してください
 - 個数（2個、3杯など）は適切な量に変換してください
-- 日本語の食品名を使用してください`, inputText)
+- 日本語の料理名を使用してください`, inputText)
 
 	response, err := tp.client.Execute(ctx, prompt)
 	if err != nil {
