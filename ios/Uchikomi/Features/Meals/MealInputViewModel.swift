@@ -17,6 +17,7 @@ final class MealInputViewModel {
     var selectedMealType: MealType = .lunch
     var mealDate = Date()
     var selectedImage: UIImage?
+    var inputText: String = ""
     var analysisResult: AnalysisResultResponse?
     var isAnalyzing = false
     var errorMessage: String?
@@ -41,24 +42,24 @@ final class MealInputViewModel {
         errorMessage = nil
 
         do {
-            // 画像アップロード（meal_typeとmeal_dateも一緒に送信）
-            // バックエンドは分析完了時に自動的に食事データを保存する
             let id = try await repository.uploadImage(
                 data: imageData,
                 filename: "meal.jpg",
                 mealType: selectedMealType,
                 mealDate: mealDate
             )
+
+            guard !Task.isCancelled else { return }
             analysisId = id
 
-            // ポーリングで完了を待つ
             try await pollForCompletion(id: id)
 
-            // 結果を取得
-            analysisResult = try await repository.getAnalysisResult(id: id)
+            guard !Task.isCancelled else { return }
 
-            // 編集画面を表示
+            analysisResult = try await repository.getAnalysisResult(id: id)
             showEditor = true
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
@@ -66,6 +67,52 @@ final class MealInputViewModel {
             debugPrint("[MealInputViewModel] Unexpected error: \(error)")
             #endif
             errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
+        }
+
+        isAnalyzing = false
+    }
+
+    func analyzeText() async {
+        let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedText.isEmpty else {
+            errorMessage = "食事内容を入力してください"
+            return
+        }
+
+        guard trimmedText.count <= 1_000 else {
+            errorMessage = "入力は1000文字以内にしてください"
+            return
+        }
+
+        isAnalyzing = true
+        errorMessage = nil
+
+        do {
+            let id = try await repository.analyzeText(
+                inputText: trimmedText,
+                mealType: selectedMealType,
+                mealDate: mealDate
+            )
+
+            guard !Task.isCancelled else { return }
+            analysisId = id
+
+            try await pollForCompletion(id: id)
+
+            guard !Task.isCancelled else { return }
+
+            analysisResult = try await repository.getAnalysisResult(id: id)
+            showEditor = true
+        } catch is CancellationError {
+            return
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+        } catch {
+            #if DEBUG
+            debugPrint("[MealInputViewModel] Unexpected error: \(error)")
+            #endif
+            errorMessage = "テキスト分析に失敗しました: \(error.localizedDescription)"
         }
 
         isAnalyzing = false
@@ -107,14 +154,22 @@ final class MealInputViewModel {
         isCompleted = true
     }
 
-    func deleteHistory(id: String) async {
+    func deleteHistory(id: String) async -> Bool {
         do {
             try await repository.deleteHistory(historyId: id)
-        } catch {
+            return true
+        } catch let error as APIError {
             #if DEBUG
             debugPrint("[MealInputViewModel] Delete error: \(error)")
             #endif
-            errorMessage = "削除に失敗しました"
+            errorMessage = "削除に失敗しました: \(error.localizedDescription)"
+            return false
+        } catch {
+            #if DEBUG
+            debugPrint("[MealInputViewModel] Delete unexpected error: \(error)")
+            #endif
+            errorMessage = "削除に失敗しました: \(error.localizedDescription)"
+            return false
         }
     }
 }
