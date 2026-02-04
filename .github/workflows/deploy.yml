@@ -170,3 +170,86 @@ jobs:
           echo "**Region:** ${GCP_REGION}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Check the workflow logs for details." >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # E2E テスト
+  # ---------------------------------------------------------------------------
+  e2e-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: dev
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      CLOUD_RUN_SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE_NAME }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+      SERVICE_ACCOUNT_EMAIL: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.sum
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Cloud Run URL
+        id: get-url
+        run: |
+          URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
+            --region "${GCP_REGION}" \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "Cloud Run URL: ${URL}"
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: ${{ steps.get-url.outputs.url }}
+          E2E_FIREBASE_API_KEY: ${{ secrets.E2E_FIREBASE_API_KEY }}
+          E2E_TEST_UID: "e2e-test-user"
+        working-directory: backend
+        run: |
+          echo "Running E2E tests against ${E2E_BASE_URL}"
+          go test -v -tags=e2e ./e2e/... 2>&1 | tee e2e-results.txt
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          exit $TEST_EXIT_CODE
+
+      - name: Report E2E results
+        if: always()
+        working-directory: backend
+        run: |
+          echo "### E2E Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f e2e-results.txt ]; then
+            # テスト結果のサマリを抽出
+            if grep -q "PASS" e2e-results.txt; then
+              PASSED=$(grep -c "^--- PASS" e2e-results.txt || echo "0")
+              echo "Passed: ${PASSED} tests" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if grep -q "FAIL" e2e-results.txt; then
+              FAILED=$(grep -c "^--- FAIL" e2e-results.txt || echo "0")
+              echo "Failed: ${FAILED} tests" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if grep -q "SKIP" e2e-results.txt; then
+              SKIPPED=$(grep -c "^--- SKIP" e2e-results.txt || echo "0")
+              echo "Skipped: ${SKIPPED} tests" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "No test results found" >> "$GITHUB_STEP_SUMMARY"
+          fi
