@@ -1,3 +1,8 @@
+---
+description: iOSビルドエラー発生時のトラブルシューティング。SPMキャッシュ、Firebase SDK、XcodeGen関連の問題を解決。
+globs: ios/**/*.swift, ios/project.yml, ios/**/Package.resolved
+---
+
 # iOSビルドトラブルシューティング
 
 ## SPMキャッシュの完全クリア
@@ -33,9 +38,9 @@ open ios/Uchikomi.xcodeproj
 ### Xcodeでの追加操作
 
 Xcodeが起動したら:
-1. **File > Packages > Reset Package Caches**
-2. **File > Packages > Resolve Package Versions**
-3. **Product > Clean Build Folder** (Shift+Cmd+K)
+1. File > Packages > Reset Package Caches
+2. File > Packages > Resolve Package Versions
+3. Product > Clean Build Folder (Shift+Cmd+K)
 
 ### Taskfileコマンド
 
@@ -48,11 +53,6 @@ task ios:clean
 ```
 
 ## Firebase SDK関連の問題
-
-### 現状
-
-Firebase SDK 11.15.0は21個の推移的依存関係を持つ:
-- abseil-cpp-binary, app-check, appauth-ios, grpc-binary, nanopb など
 
 ### ベストプラクティス
 
@@ -120,23 +120,3 @@ DerivedDataの破損:
 ```bash
 rm -rf ~/Library/Developer/Xcode/DerivedData
 ```
-
-## CI/CDでのiOSビルド
-
-### 現状
-
-- GitHub ActionsでmacOSランナーは10倍のコスト
-- LinuxでiOSアプリのビルドは不可能（Xcode/iOS SDKが必要）
-
-### 代替案
-
-| 方法 | コスト | カバー範囲 |
-|:---|:---|:---|
-| Linuxでlint/format | 低 | 構文チェックのみ |
-| mainマージ時のみmacOS | 中 | ビルド検証 |
-| self-hosted Mac mini | 初期のみ | 完全なビルド/テスト |
-
-### 現在の設定
-
-- PR時: SwiftLint, SwiftFormat（Linux）
-- ビルド検証: ローカルのみ
