@@ -27,9 +27,15 @@ users/{userId}/analysisRequests/{requestId}
 | mealType | string | 食事タイプ (breakfast/lunch/dinner/snack) |
 | mealDate | timestamp | 食事日 |
 | errorMessage | string | エラーメッセージ |
+| confirmed | boolean | ユーザーが保存確定したか（trueのみ一覧に表示） |
 | createdAt | timestamp | 作成日時 |
 | updatedAt | timestamp | 更新日時 |
 | result | map | 分析結果（下記参照） |
+
+**confirmedフィールドの動作:**
+- 分析開始時: `confirmed: false`（一覧に表示されない）
+- ユーザーが「保存」: `confirmed: true`（一覧に表示される）
+- マイリスト/スキップ記録: 即座に`confirmed: true`
 
 ### result フィールド構造
 
@@ -94,11 +100,15 @@ users/
         ├── analysisRequests/  (サブコレクション) ← 実装済み
         │     └── {requestId}/
         │           ├── status: string
+        │           ├── inputType: string
         │           ├── imagePath: string
+        │           ├── inputText: string
         │           ├── mealType: string
         │           ├── mealDate: timestamp
+        │           ├── confirmed: boolean
         │           ├── result: map (foods, totalCalories, etc.)
-        │           └── createdAt: timestamp
+        │           ├── createdAt: timestamp
+        │           └── updatedAt: timestamp
         │
         └── mylist/  (サブコレクション)
               └── {itemId}/
@@ -109,13 +119,18 @@ users/
 
 ## インデックス
 
-Firestoreの複合インデックスは自動作成されますが、以下のクエリパターンで使用されます:
+Firestoreの複合インデックスは`firestore.indexes.json`で管理されています。
 
-| コレクション | クエリパターン | 用途 |
+| コレクション | フィールド | 用途 |
 |:---|:---|:---|
-| analysisRequests | status == "pending", orderBy createdAt | ワーカーのポーリング |
-| analysisRequests | status == "completed", orderBy createdAt DESC | 履歴一覧 |
-| analysisRequests | mealDate == date, status == "completed" | 日次食事取得 |
+| analysisRequests | status, createdAt | ワーカーのポーリング |
+| analysisRequests | status, confirmed, createdAt DESC | 履歴一覧（confirmed=true のみ） |
+| analysisRequests | confirmed, status, mealDate | 日次食事取得（confirmed=true のみ） |
+| analysisRequests | mealType, confirmed, mealDate | 未確定レコード削除用 |
+| analysisRequests | inputType, mealType, mealDate | マイリスト/スキップ検索 |
+| analysisRequests | status, mealDate | ステータス別日次検索 |
+
+インデックス更新手順は[docs/CONTRIB.md](../CONTRIB.md#firestoreインデックス管理)を参照。
 
 ## 関連コードマップ
 
