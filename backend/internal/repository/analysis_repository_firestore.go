@@ -28,6 +28,8 @@ type firestoreAnalysisDocument struct {
 	ErrorMessage string         `firestore:"errorMessage,omitempty"`
 	CreatedAt    time.Time      `firestore:"createdAt"`
 	UpdatedAt    time.Time      `firestore:"updatedAt"`
+	// ユーザーが「保存」を押した時点でtrueになる（一覧に表示される条件）
+	Confirmed bool `firestore:"confirmed"`
 	// analysis_resultsを統合
 	Result *firestoreAnalysisResult `firestore:"result,omitempty"`
 }
@@ -85,6 +87,11 @@ func (r *firestoreAnalysisRepository) CreateRequest(ctx context.Context, imagePa
 		return uuid.Nil, err
 	}
 
+	// 同日/同食事タイプの未確定レコードを削除
+	if err := r.deleteUnconfirmedRecords(ctx, *userID, mealType, mealDateTime); err != nil {
+		return uuid.Nil, err
+	}
+
 	doc := firestoreAnalysisDocument{
 		ID:        id.String(),
 		Status:    StatusPending,
@@ -94,6 +101,7 @@ func (r *firestoreAnalysisRepository) CreateRequest(ctx context.Context, imagePa
 		MealDate:  mealDateTime,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Confirmed: false,
 	}
 
 	_, err = r.getUserAnalysisCollection(*userID).Doc(id.String()).Set(ctx, doc)
@@ -123,6 +131,11 @@ func (r *firestoreAnalysisRepository) CreateRequestWithText(ctx context.Context,
 		return uuid.Nil, err
 	}
 
+	// 同日/同食事タイプの未確定レコードを削除
+	if err := r.deleteUnconfirmedRecords(ctx, *userID, mealType, mealDateTime); err != nil {
+		return uuid.Nil, err
+	}
+
 	doc := firestoreAnalysisDocument{
 		ID:        id.String(),
 		Status:    StatusPending,
@@ -132,6 +145,7 @@ func (r *firestoreAnalysisRepository) CreateRequestWithText(ctx context.Context,
 		MealDate:  mealDateTime,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Confirmed: false,
 	}
 
 	_, err = r.getUserAnalysisCollection(*userID).Doc(id.String()).Set(ctx, doc)
@@ -310,9 +324,10 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, userID
 		limit = 20
 	}
 
-	// 総件数を取得（ユーザーのコレクションから）
+	// 総件数を取得（ユーザーのコレクションから、confirmed==trueのみ）
 	countIter := r.getUserAnalysisCollection(userID).
 		Where("status", "==", string(StatusCompleted)).
+		Where("confirmed", "==", true).
 		Documents(ctx)
 
 	total := 0
@@ -332,9 +347,10 @@ func (r *firestoreAnalysisRepository) GetHistoryList(ctx context.Context, userID
 	// ページネーション用のオフセットを計算
 	offset := (page - 1) * limit
 
-	// 履歴一覧を取得（ユーザーのコレクションから）
+	// 履歴一覧を取得（ユーザーのコレクションから、confirmed==trueのみ）
 	iter := r.getUserAnalysisCollection(userID).
 		Where("status", "==", string(StatusCompleted)).
+		Where("confirmed", "==", true).
 		OrderBy("createdAt", firestore.Desc).
 		Offset(offset).
 		Limit(limit).
@@ -447,11 +463,12 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID 
 		return nil, DailyTotal{}, err
 	}
 
-	// ユーザーのコレクションから対象日の食事を取得
+	// ユーザーのコレクションから対象日の食事を取得（confirmed==trueのみ）
 	iter := r.getUserAnalysisCollection(userID).
 		Where("mealDate", ">=", startOfDay).
 		Where("mealDate", "<", endOfDay).
 		Where("status", "==", string(StatusCompleted)).
+		Where("confirmed", "==", true).
 		OrderBy("mealDate", firestore.Asc).
 		Documents(ctx)
 	defer iter.Stop()
@@ -526,6 +543,7 @@ func (r *firestoreAnalysisRepository) CreateRequestFromMylist(ctx context.Contex
 		MealDate:  mealDateTime,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Confirmed: true, // マイリストからの記録は即座に確定
 		Result: &firestoreAnalysisResult{
 			Foods:              result.Foods,
 			TotalCalories:      result.TotalCalories,
@@ -570,6 +588,7 @@ func (r *firestoreAnalysisRepository) CreateSkippedMeal(ctx context.Context, mea
 		MealDate:  mealDateTime,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Confirmed: true, // スキップ記録は即座に確定
 		Result: &firestoreAnalysisResult{
 			Foods:              []gemini.NutritionInfo{},
 			TotalCalories:      0,
@@ -630,12 +649,87 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 		TotalCarbohydrates: totalCarbohydrates,
 	}
 
+	// confirmed: trueに更新し、一覧に表示されるようにする
 	_, err = docRef.Update(ctx, []firestore.Update{
 		{Path: "result", Value: fsResult},
+		{Path: "confirmed", Value: true},
 		{Path: "updatedAt", Value: time.Now()},
 	})
 	if err != nil {
 		return fmt.Errorf("分析結果の更新に失敗: %w", err)
+	}
+
+	return nil
+}
+
+// deleteUnconfirmedRecords は同日/同食事タイプの未確定レコードを削除します（画像も含む）
+func (r *firestoreAnalysisRepository) deleteUnconfirmedRecords(ctx context.Context, userID, mealType string, mealDate time.Time) error {
+	startOfDay := time.Date(mealDate.Year(), mealDate.Month(), mealDate.Day(), 0, 0, 0, 0, time.UTC)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	iter := r.getUserAnalysisCollection(userID).
+		Where("mealType", "==", mealType).
+		Where("mealDate", ">=", startOfDay).
+		Where("mealDate", "<", endOfDay).
+		Where("confirmed", "==", false).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var imagePaths []string
+	var docRefs []*firestore.DocumentRef
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("未確定記録の確認に失敗: %w", err)
+		}
+
+		var fsDoc firestoreAnalysisDocument
+		if err := doc.DataTo(&fsDoc); err != nil {
+			return fmt.Errorf("ドキュメントのパースに失敗: %w", err)
+		}
+
+		// 画像入力の場合は画像パスを記録
+		if fsDoc.InputType == InputTypeImage && fsDoc.ImagePath != "" {
+			imagePaths = append(imagePaths, fsDoc.ImagePath)
+		}
+
+		docRefs = append(docRefs, doc.Ref)
+	}
+
+	// Cloud Storageから画像を先に削除
+	for _, path := range imagePaths {
+		if err := r.storageRepo.Delete(ctx, path); err != nil {
+			log.Printf("Error: 未確定記録の画像削除に失敗: %s: %v", path, err)
+			// 画像削除失敗は続行（ドキュメント削除を優先）
+		}
+	}
+
+	// BulkWriterでFirestoreドキュメントを削除
+	if len(docRefs) > 0 {
+		bw := r.client.BulkWriter(ctx)
+		var deleteJobs []*firestore.BulkWriterJob
+
+		for _, ref := range docRefs {
+			job, err := bw.Delete(ref)
+			if err != nil {
+				return fmt.Errorf("未確定記録の削除ジョブ追加に失敗: %w", err)
+			}
+			deleteJobs = append(deleteJobs, job)
+		}
+
+		bw.Flush()
+		bw.End()
+
+		// 各削除ジョブの結果を確認
+		for _, job := range deleteJobs {
+			if _, err := job.Results(); err != nil {
+				return fmt.Errorf("未確定記録の削除に失敗: %w", err)
+			}
+		}
 	}
 
 	return nil
