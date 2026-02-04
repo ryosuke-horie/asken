@@ -37,12 +37,12 @@ struct FoodItemEditRow: View {
                     editingName = item.name
                 }
                 .onChange(of: isNameFocused) { _, focused in
-                    if !focused && editingName != item.originalName && !editingName.isEmpty {
+                    if !focused, editingName != item.originalName, !editingName.isEmpty {
                         onNameCommitted(editingName)
                     }
                 }
                 .onSubmit {
-                    if editingName != item.originalName && !editingName.isEmpty {
+                    if editingName != item.originalName, !editingName.isEmpty {
                         onNameCommitted(editingName)
                     }
                 }
@@ -56,7 +56,7 @@ struct FoodItemEditRow: View {
                 Stepper(value: Binding(
                     get: { item.servingCount },
                     set: { onServingCountChanged($0) }
-                ), in: 1...10) {
+                ), in: 1 ... 10) {
                     Text("\(item.servingCount) 人前")
                         .font(.subheadline)
                 }

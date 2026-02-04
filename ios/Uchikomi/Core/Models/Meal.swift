@@ -53,6 +53,11 @@ struct NutritionInfo: Codable, Identifiable, Equatable {
     let proteinG: Double
     let fatG: Double
     let carbohydratesG: Double
+    let servingCount: Int?
+
+    var effectiveServingCount: Int {
+        servingCount ?? 1
+    }
 }
 
 // MARK: - HistoryDetail

@@ -16,6 +16,7 @@ type NutritionInfo struct {
 	Protein         float64 `json:"protein_g"`
 	Fat             float64 `json:"fat_g"`
 	Carbohydrates   float64 `json:"carbohydrates_g"`
+	ServingCount    int     `json:"serving_count,omitempty"`
 }
 
 // NutritionCalculator は栄養素計算を行うクライアント

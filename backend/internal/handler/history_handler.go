@@ -161,6 +161,7 @@ type UpdateFoodItem struct {
 	Protein         float64 `json:"protein_g"`
 	Fat             float64 `json:"fat_g"`
 	Carbohydrates   float64 `json:"carbohydrates_g"`
+	ServingCount    int     `json:"serving_count,omitempty"`
 }
 
 // UpdateHistoryRequest は履歴更新リクエストの構造体
@@ -215,6 +216,10 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	// リクエストをNutritionInfo形式に変換（現在の値をそのまま保存）
 	foods := make([]gemini.NutritionInfo, len(req.Foods))
 	for i, f := range req.Foods {
+		servingCount := f.ServingCount
+		if servingCount < 1 {
+			servingCount = 1
+		}
 		foods[i] = gemini.NutritionInfo{
 			Name:            f.Name,
 			EstimatedAmount: f.EstimatedAmount,
@@ -222,6 +227,7 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 			Protein:         f.Protein,
 			Fat:             f.Fat,
 			Carbohydrates:   f.Carbohydrates,
+			ServingCount:    servingCount,
 		}
 	}
 

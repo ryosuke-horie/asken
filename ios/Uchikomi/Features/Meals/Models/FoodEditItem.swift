@@ -18,7 +18,7 @@ final class FoodEditItem: Identifiable {
     var baseFat: Double
     var baseCarbohydrates: Double
 
-    // メニュー名変更時のローディング状態
+    /// メニュー名変更時のローディング状態
     var isEstimating: Bool = false
 
     init(
@@ -48,6 +48,9 @@ final class FoodEditItem: Identifiable {
     }
 
     convenience init(from nutritionInfo: NutritionInfo) {
+        let count = nutritionInfo.effectiveServingCount
+        // サーバーから読み込んだ値は計算後の値なので、基準値を逆算
+        let divisor = Double(max(count, 1))
         self.init(
             name: nutritionInfo.name,
             quantity: nutritionInfo.estimatedAmount,
@@ -55,8 +58,13 @@ final class FoodEditItem: Identifiable {
             protein: nutritionInfo.proteinG,
             fat: nutritionInfo.fatG,
             carbohydrates: nutritionInfo.carbohydratesG,
-            servingCount: 1
+            servingCount: count
         )
+        // 基準値を設定（1人前あたりの値）
+        self.baseCalories = nutritionInfo.caloriesKcal / divisor
+        self.baseProtein = nutritionInfo.proteinG / divisor
+        self.baseFat = nutritionInfo.fatG / divisor
+        self.baseCarbohydrates = nutritionInfo.carbohydratesG / divisor
     }
 
     func toUpdateFoodItem() -> UpdateFoodItem {
@@ -66,7 +74,8 @@ final class FoodEditItem: Identifiable {
             caloriesKcal: calories,
             proteinG: protein,
             fatG: fat,
-            carbohydratesG: carbohydrates
+            carbohydratesG: carbohydrates,
+            servingCount: servingCount
         )
     }
 

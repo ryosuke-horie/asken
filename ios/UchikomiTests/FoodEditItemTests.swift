@@ -37,7 +37,7 @@ struct FoodEditItemTests {
         item.updateServingCount(2)
 
         #expect(item.servingCount == 2)
-        #expect(item.calories == 1000)
+        #expect(item.calories == 1_000)
         #expect(item.protein == 40)
         #expect(item.fat == 30)
         #expect(item.carbohydrates == 120)
@@ -108,7 +108,7 @@ struct FoodEditItemTests {
         #expect(item.name == "味噌ラーメン")
         #expect(item.originalName == "味噌ラーメン")
         #expect(item.baseCalories == 600)
-        #expect(item.calories == 1200)
+        #expect(item.calories == 1_200)
         #expect(item.protein == 50)
         #expect(item.fat == 40)
         #expect(item.carbohydrates == 140)
@@ -139,7 +139,8 @@ struct FoodEditItemTests {
             caloriesKcal: 165,
             proteinG: 31,
             fatG: 3.6,
-            carbohydratesG: 0
+            carbohydratesG: 0,
+            servingCount: 1
         )
 
         let item = FoodEditItem(from: nutritionInfo)
@@ -151,6 +152,32 @@ struct FoodEditItemTests {
         #expect(item.fat == 3.6)
         #expect(item.carbohydrates == 0)
         #expect(item.servingCount == 1)
+    }
+
+    @Test
+    func NutritionInfoから杯数付きで初期化できるべき() {
+        // サーバーから取得した2人前のデータ（栄養素は計算後の値）
+        let nutritionInfo = NutritionInfo(
+            name: "ラーメン",
+            estimatedAmount: "1杯",
+            caloriesKcal: 1_000, // 500 × 2
+            proteinG: 40, // 20 × 2
+            fatG: 30, // 15 × 2
+            carbohydratesG: 120, // 60 × 2
+            servingCount: 2
+        )
+
+        let item = FoodEditItem(from: nutritionInfo)
+
+        // 杯数と計算後の栄養素が正しく設定されること
+        #expect(item.servingCount == 2)
+        #expect(item.calories == 1_000)
+        #expect(item.protein == 40)
+        // 基準値（1人前あたり）が逆算されること
+        #expect(item.baseCalories == 500)
+        #expect(item.baseProtein == 20)
+        #expect(item.baseFat == 15)
+        #expect(item.baseCarbohydrates == 60)
     }
 
     @Test
@@ -170,9 +197,10 @@ struct FoodEditItemTests {
 
         #expect(updateItem.name == "ラーメン")
         #expect(updateItem.estimatedAmount == "1杯")
-        #expect(updateItem.caloriesKcal == 1000)  // 杯数2なので2倍
+        #expect(updateItem.caloriesKcal == 1_000) // 杯数2なので2倍
         #expect(updateItem.proteinG == 40)
         #expect(updateItem.fatG == 30)
         #expect(updateItem.carbohydratesG == 120)
+        #expect(updateItem.servingCount == 2) // 杯数も保存される
     }
 }
