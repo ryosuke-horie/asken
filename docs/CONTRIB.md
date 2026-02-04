@@ -158,13 +158,29 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
 
-### データベース（Firestoreエミュレータ）
+### データベース（Firestore）
 
 | コマンド | 説明 |
 |:---|:---|
 | `firebase emulators:start --only firestore` | Firestoreエミュレータを起動 |
+| `firebase deploy --only firestore:indexes` | Firestoreインデックスをデプロイ |
+| `firebase firestore:indexes` | 現在のインデックス一覧を取得 |
 
 **注意**: PostgreSQL関連のコマンド（`task db-*`）はTaskfile.ymlに残っていますが、Firestore移行後は使用しません。
+
+### Firestoreインデックス管理
+
+リポジトリ層でFirestoreクエリを追加・変更した場合、複合インデックスが必要になることがあります。
+
+```bash
+# インデックスエラーが発生した場合
+# 1. エラーメッセージのURLをブラウザで開いてインデックスを作成
+# または
+# 2. firestore.indexes.jsonを更新してデプロイ
+firebase deploy --only firestore:indexes --project utikomi-dev
+```
+
+詳細は[.claude/rules/17-firestore.md](../.claude/rules/17-firestore.md)を参照してください。
 
 ### iOS
 
