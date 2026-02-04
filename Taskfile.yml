@@ -152,3 +152,40 @@ tasks:
     cmds:
       - echo "=== SwiftFormatチェック ==="
       - swiftformat . --lint
+
+  ios:clean:
+    desc: iOSビルドキャッシュを削除（DerivedData）
+    cmds:
+      - echo "=== iOS DerivedData削除 ==="
+      - rm -rf ~/Library/Developer/Xcode/DerivedData
+      - echo "DerivedData削除完了"
+
+  ios:clean-all:
+    desc: iOSビルドキャッシュを完全削除（SPMキャッシュ含む）
+    cmds:
+      - echo "=== iOS完全クリーンアップ ==="
+      - echo "Xcodeを終了..."
+      - killall Xcode 2>/dev/null || true
+      - echo "DerivedData削除..."
+      - rm -rf ~/Library/Developer/Xcode/DerivedData
+      - echo "SPMキャッシュ削除..."
+      - rm -rf ~/Library/Caches/org.swift.swiftpm
+      - echo "プロジェクトローカルキャッシュ削除..."
+      - rm -rf ios/.swiftpm
+      - rm -rf ios/.build
+      - echo "Package.resolved削除（再解決を強制）..."
+      - rm -f ios/Uchikomi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+      - echo ""
+      - echo "完全クリーンアップ完了"
+      - echo "次のステップ:"
+      - echo "  1. open ios/Uchikomi.xcodeproj"
+      - echo "  2. File > Packages > Resolve Package Versions"
+      - echo "  3. Product > Clean Build Folder (Shift+Cmd+K)"
+
+  ios:reset-packages:
+    desc: Package.resolvedを削除してSPM依存関係を再解決
+    cmds:
+      - echo "=== Package.resolved削除 ==="
+      - rm -f ios/Uchikomi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+      - echo "Package.resolved削除完了"
+      - echo "Xcodeで File > Packages > Resolve Package Versions を実行してください"
