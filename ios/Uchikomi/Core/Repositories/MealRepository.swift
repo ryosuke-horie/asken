@@ -11,6 +11,7 @@ protocol MealRepositoryProtocol {
     func getHistoryDetail(id: String) async throws -> HistoryDetail
     func updateHistory(historyId: String, foods: [UpdateFoodItem]) async throws -> HistoryDetail
     func deleteHistory(historyId: String) async throws
+    func estimateNutrition(foodName: String, quantity: Int) async throws -> NutritionEstimateResponse
 }
 
 // MARK: - UpdateFoodItem
@@ -28,6 +29,24 @@ struct UpdateFoodItem: Encodable {
 
 struct UpdateHistoryRequest: Encodable {
     let foods: [UpdateFoodItem]
+}
+
+// MARK: - NutritionEstimateRequest
+
+struct NutritionEstimateRequest: Encodable {
+    let foodName: String
+    let quantity: Int
+}
+
+// MARK: - NutritionEstimateResponse
+
+struct NutritionEstimateResponse: Decodable {
+    let name: String
+    let estimatedAmount: String
+    let caloriesKcal: Double
+    let proteinG: Double
+    let fatG: Double
+    let carbohydratesG: Double
 }
 
 // MARK: - MealRepository
@@ -83,6 +102,11 @@ final class MealRepository: MealRepositoryProtocol {
 
     func deleteHistory(historyId: String) async throws {
         try await apiClient.requestWithoutResponse(endpoint: .deleteHistory(id: historyId))
+    }
+
+    func estimateNutrition(foodName: String, quantity: Int) async throws -> NutritionEstimateResponse {
+        let request = NutritionEstimateRequest(foodName: foodName, quantity: quantity)
+        return try await apiClient.request(endpoint: .nutritionEstimate, body: request)
     }
 }
 

@@ -89,3 +89,49 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 
 	return nutritionList, nil
 }
+
+// EstimateSingleFood は単一の食品名から栄養素を推定する
+func (nc *NutritionCalculator) EstimateSingleFood(ctx context.Context, foodName string, quantity int) (*NutritionInfo, error) {
+	if foodName == "" {
+		return nil, fmt.Errorf("食品名を入力してください")
+	}
+
+	if quantity < 1 {
+		quantity = 1
+	}
+
+	// プロンプトを構築
+	prompt := fmt.Sprintf(`以下の食品について、%d人前のカロリーと栄養素（タンパク質、脂質、炭水化物）を推定してJSON形式で出力してください。
+
+食品名: %s
+数量: %d人前
+
+出力フォーマット:
+{
+  "name": "食品名",
+  "estimated_amount": "推定量（例: 1杯、1皿、100gなど）",
+  "calories_kcal": カロリー数値,
+  "protein_g": タンパク質グラム数,
+  "fat_g": 脂質グラム数,
+  "carbohydrates_g": 炭水化物グラム数
+}
+
+一般的な食品成分表に基づいて、妥当な値を推定してください。数量が複数の場合は、合計値を出力してください。`, quantity, foodName, quantity)
+
+	// Gemini APIを呼び出す
+	response, err := nc.httpClient.Execute(ctx, prompt)
+	if err != nil {
+		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
+	}
+
+	// レスポンス内のJSONコードブロックを抽出
+	nutritionJSON := removeCodeBlock(response.Response)
+
+	// 栄養素情報をパース
+	var nutrition NutritionInfo
+	if err := json.Unmarshal([]byte(nutritionJSON), &nutrition); err != nil {
+		return nil, fmt.Errorf("栄養素情報のパースエラー: %w\nデータ: %s", err, nutritionJSON)
+	}
+
+	return &nutrition, nil
+}

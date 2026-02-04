@@ -50,14 +50,15 @@ func main() {
 }
 
 type handlers struct {
-	health        *handler.HealthHandler
-	analyze       *handler.AnalyzeHandler
-	status        *handler.StatusHandler
-	history       *handler.HistoryHandler
-	historyDelete *handler.HistoryDeleteHandler
-	image         *handler.ImageHandler
-	dailyMeals    *handler.DailyMealsHandler
-	skipMeal      *handler.SkipMealHandler
+	health            *handler.HealthHandler
+	analyze           *handler.AnalyzeHandler
+	status            *handler.StatusHandler
+	history           *handler.HistoryHandler
+	historyDelete     *handler.HistoryDeleteHandler
+	image             *handler.ImageHandler
+	dailyMeals        *handler.DailyMealsHandler
+	skipMeal          *handler.SkipMealHandler
+	nutritionEstimate *handler.NutritionEstimateHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -71,6 +72,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupAnalyzeRoutes(mux, h, authMiddleware)
 	setupHistoryRoutes(mux, h, authMiddleware)
 	setupMealsRoutes(mux, h, authMiddleware)
+	setupNutritionRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -130,6 +132,9 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.
 	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
 }
 
+func setupNutritionRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+	mux.Handle("/api/nutrition/estimate", authMiddleware.Authenticate(http.HandlerFunc(h.nutritionEstimate.Handle)))
+}
 
 func run() error {
 	ctx := context.Background()
@@ -203,14 +208,15 @@ func run() error {
 
 	// ハンドラーの初期化
 	h := handlers{
-		health:        handler.NewHealthHandler(),
-		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
-		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo),
-		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
-		image:         handler.NewImageHandler(storageRepo),
-		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
-		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
+		health:            handler.NewHealthHandler(),
+		analyze:           handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
+		status:            handler.NewStatusHandler(analysisRepo),
+		history:           handler.NewHistoryHandler(analysisRepo),
+		historyDelete:     handler.NewHistoryDeleteHandler(analysisRepo),
+		image:             handler.NewImageHandler(storageRepo),
+		dailyMeals:        handler.NewDailyMealsHandler(analysisRepo),
+		skipMeal:          handler.NewSkipMealHandler(analysisRepo),
+		nutritionEstimate: handler.NewNutritionEstimateHandler(calculator),
 	}
 
 	// ワーカーの初期化

@@ -28,7 +28,12 @@ final class NutritionEditorViewModel {
     }
 
     var canSave: Bool {
-        !foods.isEmpty && foods.allSatisfy { !$0.name.isEmpty }
+        !foods.isEmpty && foods.allSatisfy { !$0.name.isEmpty && !$0.isEstimating }
+    }
+
+    /// ローディング中のアイテムがあるかどうか
+    var hasEstimatingItems: Bool {
+        foods.contains { $0.isEstimating }
     }
 
     init(
@@ -84,5 +89,37 @@ final class NutritionEditorViewModel {
         }
 
         isSaving = false
+    }
+
+    /// 杯数を変更（即時計算、API呼び出しなし）
+    func updateServingCount(for item: FoodEditItem, newCount: Int) {
+        item.updateServingCount(newCount)
+    }
+
+    /// メニュー名を変更してLLMで栄養素を再推定
+    func updateFoodName(for item: FoodEditItem, newName: String) async {
+        guard !newName.isEmpty, newName != item.originalName else { return }
+
+        item.name = newName
+        item.isEstimating = true
+        errorMessage = nil
+
+        do {
+            let response = try await repository.estimateNutrition(foodName: newName, quantity: 1)
+            item.updateBaseNutrition(
+                name: response.name,
+                estimatedAmount: response.estimatedAmount,
+                calories: response.caloriesKcal,
+                protein: response.proteinG,
+                fat: response.fatG,
+                carbohydrates: response.carbohydratesG
+            )
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+        } catch {
+            errorMessage = "栄養素の取得に失敗しました"
+        }
+
+        item.isEstimating = false
     }
 }

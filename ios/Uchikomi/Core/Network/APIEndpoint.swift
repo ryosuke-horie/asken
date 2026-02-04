@@ -85,4 +85,12 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
+
+    // MARK: - Nutrition Endpoints
+
+    static let nutritionEstimate = APIEndpoint(
+        path: "nutrition/estimate",
+        method: .post,
+        requiresAuth: true
+    )
 }

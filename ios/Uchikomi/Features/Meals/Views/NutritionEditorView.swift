@@ -27,7 +27,7 @@ struct NutritionEditorView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             // 説明テキスト
-                            Text("料理名と量を編集してください。\n栄養素は保存後に自動計算されます。")
+                            Text("料理名や数量を編集してください。\n数量を変更すると栄養素が自動計算されます。\n料理名を変更するとAIが栄養素を推定します。")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -44,9 +44,20 @@ struct NutritionEditorView: View {
                             }
 
                             ForEach(viewModel.foods) { food in
-                                FoodItemEditRow(item: food) {
-                                    viewModel.removeFood(food)
-                                }
+                                FoodItemEditRow(
+                                    item: food,
+                                    onDelete: {
+                                        viewModel.removeFood(food)
+                                    },
+                                    onServingCountChanged: { newCount in
+                                        viewModel.updateServingCount(for: food, newCount: newCount)
+                                    },
+                                    onNameCommitted: { newName in
+                                        Task {
+                                            await viewModel.updateFoodName(for: food, newName: newName)
+                                        }
+                                    }
+                                )
                             }
 
                             Button {
