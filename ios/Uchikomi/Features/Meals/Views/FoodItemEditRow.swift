@@ -9,7 +9,7 @@ struct FoodItemEditRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("食材")
+                Text("メニュー")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -19,10 +19,10 @@ struct FoodItemEditRow: View {
                 }
             }
 
-            TextField("料理名（例：鶏むね肉、ご飯）", text: $item.name)
+            TextField("メニュー名（例：醤油ラーメン、カレーライス）", text: $item.name)
                 .textFieldStyle(.roundedBorder)
 
-            TextField("量（例：100g、1杯、大盛り）", text: $item.quantity)
+            TextField("量（例：1杯、1人前、大盛り）", text: $item.quantity)
                 .textFieldStyle(.roundedBorder)
 
             // 現在の栄養素を参考情報として表示（読み取り専用）

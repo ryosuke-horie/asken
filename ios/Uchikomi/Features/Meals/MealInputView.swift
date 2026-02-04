@@ -389,7 +389,7 @@ private struct ManualFoodInputSection: View {
             }
 
             Button(action: onAdd) {
-                Label("食品を追加", systemImage: "plus.circle")
+                Label("メニューを追加", systemImage: "plus.circle")
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color(.secondarySystemBackground))
@@ -462,7 +462,7 @@ private struct AnalysisResultSection: View {
             )
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("検出された食品")
+                Text("検出されたメニュー")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
