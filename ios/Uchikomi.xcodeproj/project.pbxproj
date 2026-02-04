@@ -45,6 +45,9 @@
 		C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */; };
 		C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */; };
 		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E2 /* QuantityParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* QuantityParser.swift */; };
+		F2A3B4C5D6E7F8A9B0C1D2E3 /* QuantityParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F7A8B9C0D1E2F3 /* QuantityParserTests.swift */; };
+		F3A4B5C6D7E8F9A0B1C2D3E4 /* FoodEditItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B4C5D6E7F8A9B0C1D2E3F4 /* FoodEditItemTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +64,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = C53720A77BB7F46352985FE6;
 			remoteInfo = UchikomiCore;
+		};
+		D2E3F4A5B6C7D8E9F0A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BF52F75889D6BB9E1968612B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B600300EE7A5CB7D431959E3;
+			remoteInfo = Uchikomi;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -97,6 +107,9 @@
 		654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		7270033D73999E560F355AF4 /* FoodEditItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditItem.swift; sourceTree = "<group>"; };
 		73781A308EDE339E10EA5366 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* QuantityParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParser.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F7A8B9C0D1E2F3 /* QuantityParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParserTests.swift; sourceTree = "<group>"; };
+		A3B4C5D6E7F8A9B0C1D2E3F4 /* FoodEditItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditItemTests.swift; sourceTree = "<group>"; };
 		74BA1A7B25B0A786BB8F9486 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7566864AF9A1104077390858 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorView.swift; sourceTree = "<group>"; };
@@ -301,10 +314,28 @@
 			children = (
 				D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */,
 				8F948686D9186C257FE8BB85 /* AuthManagerTests.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A2 /* Features */,
 				9E652BE1B68421105C6F032B /* Generated */,
 				5D750EAFD57EBCFF7E9F88E7 /* Resources */,
 			);
 			path = UchikomiTests;
+			sourceTree = "<group>";
+		};
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* Meals */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* Meals */ = {
+			isa = PBXGroup;
+			children = (
+				A2B3C4D5E6F7A8B9C0D1E2F3 /* QuantityParserTests.swift */,
+				A3B4C5D6E7F8A9B0C1D2E3F4 /* FoodEditItemTests.swift */,
+			);
+			path = Meals;
 			sourceTree = "<group>";
 		};
 		AE867D1AB9A701599685364A /* Auth */ = {
@@ -320,6 +351,7 @@
 			isa = PBXGroup;
 			children = (
 				7270033D73999E560F355AF4 /* FoodEditItem.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* QuantityParser.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -431,6 +463,7 @@
 			);
 			dependencies = (
 				8BC1A8E8891B7A4C4F0C0A1F /* PBXTargetDependency */,
+				C1D2E3F4A5B6C7D8E9F0A1B2 /* PBXTargetDependency */,
 			);
 			name = UchikomiTests;
 			packageProductDependencies = (
@@ -514,6 +547,8 @@
 			files = (
 				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
 				C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */,
+				F2A3B4C5D6E7F8A9B0C1D2E3 /* QuantityParserTests.swift in Sources */,
+				F3A4B5C6D7E8F9A0B1C2D3E4 /* FoodEditItemTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -539,6 +574,7 @@
 				11289E4A7F0B4068E62C9064 /* AppleSignInManager.swift in Sources */,
 				C68F4A4EA4C55E115D39ADB7 /* FirebaseAuthService.swift in Sources */,
 				EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */,
+				F1A2B3C4D5E6F7A8B9C0D1E2 /* QuantityParser.swift in Sources */,
 				1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */,
 				9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */,
 				393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */,
@@ -570,6 +606,11 @@
 			target = C53720A77BB7F46352985FE6 /* UchikomiCore */;
 			targetProxy = CF473514A5C0EC76D46775D6 /* PBXContainerItemProxy */;
 		};
+		C1D2E3F4A5B6C7D8E9F0A1B2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B600300EE7A5CB7D431959E3 /* Uchikomi */;
+			targetProxy = D2E3F4A5B6C7D8E9F0A1B2C3 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -597,7 +638,7 @@
 		04D3A9BAE111C1289ECC3344 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -607,7 +648,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Uchikomi";
 			};
 			name = Debug;
 		};
@@ -635,7 +676,7 @@
 		48DED03C5CCA4B5066CDBC5D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -645,7 +686,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Uchikomi";
 			};
 			name = Release;
 		};
