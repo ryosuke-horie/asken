@@ -56,6 +56,7 @@
 | `14-testing-tdd.md` | テスト駆動開発（TDD） |
 | `15-security-practices.md` | セキュリティガイドライン |
 | `16-git-workflow-general.md` | Git運用とコードレビュー |
+| `17-ios-build-troubleshooting.md` | iOSビルドトラブル対応（SPMキャッシュ、Firebase SDK） |
 
 ### Claude Code拡張
 
