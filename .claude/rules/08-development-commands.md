@@ -54,6 +54,27 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task ios:lint` | SwiftLintを実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
 | `task ios:format-check` | SwiftFormatチェック（CI用） |
+| `task ios:clean` | DerivedDataを削除 |
+| `task ios:clean-all` | SPMキャッシュを含む完全クリア |
+| `task ios:reset-packages` | Package.resolvedを削除して再解決 |
+
+## iOSビルドトラブル時
+
+SPMキャッシュやFirebase SDK関連の問題が発生した場合:
+
+```bash
+# 段階1: DerivedDataのみ削除
+task ios:clean
+
+# 段階2: SPMキャッシュ含む完全クリア
+task ios:clean-all
+
+# 段階3: 既知の良いPackage.resolvedに戻す
+git checkout ios/Uchikomi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+task ios:clean-all
+```
+
+詳細は `.claude/rules/17-ios-build-troubleshooting.md` を参照。
 
 ## 注意
 
