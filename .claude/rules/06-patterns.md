@@ -28,9 +28,9 @@ func respondError(w http.ResponseWriter, status int, message string) {
 }
 ```
 
-## Result型パターン（Swift）
+## エラーハンドリングパターン（Swift）
 
-エラーハンドリングにはResult型を使用:
+async/awaitではthrowsでエラーを伝播する:
 
 ```swift
 enum AppError: Error {
@@ -39,12 +39,11 @@ enum AppError: Error {
     case notFound
 }
 
-func analyzeImage(_ imageData: Data) async -> Result<NutritionData, AppError> {
+func analyzeImage(_ imageData: Data) async throws -> NutritionData {
     do {
-        let data = try await geminiService.analyze(imageData)
-        return .success(data)
+        return try await geminiService.analyze(imageData)
     } catch {
-        return .failure(.networkError(underlying: error))
+        throw AppError.networkError(underlying: error)
     }
 }
 ```
