@@ -8,14 +8,14 @@ dependabotは`.github/dependabot.yml`で設定されており、週次（月曜�
 
 ライブラリは論理的なグループにまとめてPRを作成する設定になっている。
 
-**gomod (backend)**
+gomod (backend)
 | グループ | パッケージ |
 |:---|:---|
-| testing | testify, sqlmock |
+| testing | testify |
 | security | jwt, crypto |
 | database | pq |
 
-**swift (iOS)**
+swift (iOS)
 | グループ | パッケージ |
 |:---|:---|
 | testing | swift-snapshot-testing, swift-custom-dump, xctest-dynamic-overlay |
@@ -25,14 +25,14 @@ dependabotは`.github/dependabot.yml`で設定されており、週次（月曜�
 
 新しいライブラリを追加した場合、以下を確認すること：
 
-1. **既存グループに該当するか確認**
+1. 既存グループに該当するか確認
    - 該当するグループがあれば、そのグループのパターンに追加
    - 例: 新しいテストユーティリティ → `testing`グループに追加
 
-2. **新規グループが必要か検討**
+2. 新規グループが必要か検討
    - 既存グループに該当しない場合は新規グループの作成を検討
    - グループ名は用途が明確にわかる名前にする
 
-3. **`.github/dependabot.yml`を更新**
+3. `.github/dependabot.yml`を更新
    - `groups`セクションの該当グループにパターンを追加
    - このドキュメントの表も同時に更新する

@@ -15,9 +15,9 @@ iOSシミュレータではパスキー認証が動作しないため、開発�
 
 ## 制約事項
 
-- **個人プロジェクト**（GCP組織に属さないプロジェクト）では、OAuthクライアントのプログラム作成に制限があります
+- 個人プロジェクト（GCP組織に属さないプロジェクト）では、OAuthクライアントのプログラム作成に制限があります
 - IAP Brand APIは組織所属プロジェクトでのみ利用可能
-- そのため、Web OAuthクライアントの作成は**一度だけ手動で**行う必要があります
+- そのため、Web OAuthクライアントの作成は一度だけ手動で行う必要があります
 
 ## 手順1: Web OAuthクライアントの作成（手動・一度だけ）
 
@@ -31,7 +31,7 @@ https://console.cloud.google.com/apis/credentials?project=utikomi-dev
 
 1. 「+ CREATE CREDENTIALS」をクリック
 2. 「OAuth client ID」を選択
-3. アプリケーションの種類: **Web application** を選択
+3. アプリケーションの種類: Web application を選択
 4. 名前: `Firebase Auth Web Client` など任意の名前
 5. 承認済みのリダイレクトURI:
    - `https://utikomi-dev.firebaseapp.com/__/auth/handler`
@@ -40,8 +40,8 @@ https://console.cloud.google.com/apis/credentials?project=utikomi-dev
 ### 1.3 クライアントIDとシークレットを記録
 
 作成後に表示される以下の情報を安全に保存：
-- **Client ID**: `xxx.apps.googleusercontent.com`
-- **Client Secret**: `GOCSPX-xxx`
+- Client ID: `xxx.apps.googleusercontent.com`
+- Client Secret: `GOCSPX-xxx`
 
 ## 手順2: Firebase AuthでGoogle Sign-Inを有効化
 

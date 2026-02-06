@@ -6,12 +6,13 @@ AIエージェント（未実装）による減量サポートが差別化ポイ
 
 ## 概要
 
-ウチコミは、Gemini API（Gemini 3）を活用して、日々の体重・食事・体調を記録し、AIと対話しながら減量計画を進めるアプリケーションです。食事の画像から自動的に食材を認識し、カロリーと栄養素を計算する機能も備えています。
+ウチコミは、Gemini API（gemini-3-flash-preview）を活用して、日々の体重・食事・体調を記録し、AIと対話しながら減量計画を進めるアプリケーションです。食事の画像から自動的に食材を認識し、カロリーと栄養素を計算する機能も備えています。
 
 ### 主要機能
 
 - 画像認識: 食事の画像をアップロードして食材を自動判定
-- 2ステップアプローチ:
+- 手入力: 食品名・栄養素を手動で入力して食事を記録
+- 2ステップアプローチ（画像分析時）:
   - Step 1: 食材分類（食材名と推定量を抽出）
   - Step 2: 栄養素計算（カロリー、タンパク質、脂質、炭水化物を算出）
 - 栄養素表示: テーブル形式で見やすく表示
@@ -21,7 +22,7 @@ AIエージェント（未実装）による減量サポートが差別化ポイ
 | レイヤー | 技術 |
 |:---|:---|
 | iOSアプリ | Swift / SwiftUI |
-| バックエンド | Go 1.23 |
+| バックエンド | Go 1.25 |
 | AI | Gemini API（将来的にLangChain等でAIエージェント自作予定） |
 
 ## ディレクトリ構成
@@ -34,8 +35,7 @@ utikomi/
 │   │   ├── handler/           # HTTPハンドラー
 │   │   ├── service/           # ビジネスロジック
 │   │   └── repository/        # データアクセス
-│   ├── pkg/gemini/            # Gemini CLI クライアント
-│   └── database/              # マイグレーション
+│   └── pkg/gemini/            # Gemini API クライアント
 ├── ios/                        # iOSアプリ
 │   ├── Uchikomi/              # メインアプリ（SwiftUI）
 │   ├── UchikomiTests/         # ユニットテスト
@@ -51,10 +51,9 @@ utikomi/
 
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
-| Go | 1.23以上 | バックエンド開発 |
+| Go | 1.25以上 | バックエンド開発 |
 | Xcode | 16以上 | iOS開発 |
 | Task | 3.x | タスクランナー |
-| Gemini CLI | 最新 | AI機能 |
 
 ### バックエンドのセットアップ
 
@@ -92,8 +91,8 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 ### デプロイ
 
-- **自動デプロイ**: `backend/**` への変更がmainブランチにマージされると自動デプロイ
-- **手動デプロイ**: GitHub Actions の「Deploy」ワークフローから手動実行可能
+- 自動デプロイ: `backend/**` への変更がmainブランチにマージされると自動デプロイ
+- 手動デプロイ: GitHub Actions の「Deploy」ワークフローから手動実行可能
 
 詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
@@ -169,7 +168,7 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 - ディレクトリトラバーサル対策: `/tmp/uchikomi/uploads/` に保存制限
 - ファイル名サニタイズ: UUIDを使用
 - コマンドインジェクション対策: 画像パスの絶対パス変換
-- CORS設定: localhost:3000のみ許可
+- CORS設定: 許可オリジンを制限
 
 ## 制限事項
 
@@ -179,13 +178,6 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 - マルチユーザー対応は未実装
 
 ## トラブルシューティング
-
-### Gemini CLIがタイムアウトする
-
-- タイムアウト時間を延長: `backend/cmd/server/main.go` の `NewClassifier(120 * time.Second)` を調整
-- Gemini CLIのワークスペース設定を確認
-
-### API接続エラー
 
 詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
@@ -202,6 +194,5 @@ Ryosuke Horie
 ## 関連ドキュメント
 
 - [CLAUDE.md](./CLAUDE.md): プロジェクトガイドライン
-- [IMPLEMENTATION.md](./IMPLEMENTATION.md): 実装サマリー
 - [docs/CONTRIB.md](./docs/CONTRIB.md): 開発者ガイド
 - [.claude/rules/](./.claude/rules/): 詳細規約

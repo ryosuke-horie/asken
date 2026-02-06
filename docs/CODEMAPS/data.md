@@ -10,7 +10,7 @@
 users/{userId}/analysisRequests/{requestId}
 ```
 
-**注意**: 体重、体調、トレーニング、マイリスト、プロフィールのコレクションは未実装です。ADR-002に設計仕様があります。
+注意: 体重、体調、トレーニング、マイリスト、プロフィールのコレクションは未実装です。ADR-002に設計仕様があります。
 
 ## ドキュメント定義
 
@@ -32,7 +32,7 @@ users/{userId}/analysisRequests/{requestId}
 | updatedAt | timestamp | 更新日時 |
 | result | map | 分析結果（下記参照） |
 
-**confirmedフィールドの動作:**
+confirmedフィールドの動作:
 - 分析開始時: `confirmed: false`（一覧に表示されない）
 - ユーザーが「保存」: `confirmed: true`（一覧に表示される）
 - マイリスト/スキップ記録: 即座に`confirmed: true`

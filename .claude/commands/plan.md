@@ -69,8 +69,8 @@ Agent (planner):
 - ローディング状態の表示
 
 ## 依存関係
-- Gemini CLI（環境設定が必要）
-- PostgreSQL（食品データベース）
+- Gemini HTTP API
+- Firestore
 
 ## リスク
 - HIGH: Gemini APIのレスポンス精度

@@ -33,7 +33,7 @@ model: opus
 | 対象 | モック可否 | 理由 |
 | :--- | :--------- | :--- |
 | 外部API（Gemini API等） | 可 | ネットワーク依存を排除 |
-| データベース（PostgreSQL） | 可 | テスト実行速度と独立性 |
+| データベース（Firestore） | 可 | テスト実行速度と独立性 |
 | 現在時刻 | 可 | 再現性の確保 |
 | 内部クラス | 不可 | 実装詳細への依存を避ける |
 | ユーティリティ関数 | 不可 | 実際の振る舞いを検証 |
@@ -179,11 +179,12 @@ vi.mock('@/lib/gemini', () => ({
 }))
 ```
 
-### PostgreSQLをモック
+### Firestoreをモック
 ```typescript
-vi.mock('@/lib/db', () => ({
-  query: vi.fn(() => Promise.resolve({
-    rows: [{ id: 1, name: 'テストデータ' }]
+vi.mock('@/lib/firestore', () => ({
+  getDoc: vi.fn(() => Promise.resolve({
+    exists: true,
+    data: () => ({ id: '1', name: 'テストデータ' })
   }))
 }))
 ```

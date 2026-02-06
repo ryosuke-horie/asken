@@ -20,7 +20,7 @@ TypeScript/Node.jsを使用して分析。実装詳細ではなく高レベル�
 
 バックエンド:
 - Golang構造
-- Handler → Service → Repository → PostgreSQL
+- Handler → Service → Repository → Firestore
 - 外部サービス連携（Gemini API）
 
 フロントエンド:

@@ -188,12 +188,13 @@ jest.mock('@/lib/gemini', () => ({
 }))
 ```
 
-### PostgreSQLモック
+### Firestoreモック
 
 ```typescript
-jest.mock('@/lib/db', () => ({
-  query: jest.fn(() => Promise.resolve({
-    rows: [{ id: 1, name: 'テストデータ' }]
+jest.mock('@/lib/firestore', () => ({
+  getDoc: jest.fn(() => Promise.resolve({
+    exists: true,
+    data: () => ({ id: '1', name: 'テストデータ' })
   }))
 }))
 ```
