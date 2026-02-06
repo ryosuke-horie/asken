@@ -36,11 +36,11 @@
 |:---|:---|
 | `00-common.md` | 共通ルール |
 | `01-testing-details.md` | テスト詳細（古典派スタイル、モック基準） |
-| `02-git-workflow-details.md` | Git/GitHubワークフロー詳細（Linear連携） |
+| `02-git-workflow-details.md` | Git/GitHubワークフロー詳細（Linear連携、PRレビュー、マージ戦略） |
 | `03-coding-style.md` | コーディングスタイル（KISS, DRY, YAGNI） |
 | `04-security-details.md` | セキュリティ詳細（コミット前チェック） |
 | `05-performance.md` | パフォーマンス最適化（モデル選択、コンテキスト管理） |
-| `06-patterns.md` | 共通パターン（Result型、APIレスポンス形式） |
+| `06-patterns.md` | 共通パターン（APIレスポンス形式、Repositoryパターン） |
 | `07-dependencies.md` | 依存関係管理（dependabot設定） |
 | `08-development-commands.md` | 開発コマンド（Taskfile） |
 | `09-documentation.md` | ドキュメント更新ルール |
@@ -55,7 +55,6 @@
 | `13-firestore.md` | Firestore規約（インデックス管理） |
 | `14-testing-tdd.md` | テスト駆動開発（TDD） |
 | `15-security-practices.md` | セキュリティガイドライン |
-| `16-git-workflow-general.md` | Git運用とコードレビュー |
 | `17-ios-build-troubleshooting.md` | iOSビルドトラブル対応（SPMキャッシュ、Firebase SDK） |
 
 ### Claude Code拡張
