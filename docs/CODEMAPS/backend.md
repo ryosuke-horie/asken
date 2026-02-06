@@ -111,8 +111,6 @@ Context に firebase_uid を設定
 | analysis_models.go | 分析関連の型定義・インターフェース |
 | analysis_repository_firestore.go | 分析リクエスト・結果（Firestore実装） |
 
-注意: 体重、体調、トレーニング、マイリスト、プロフィールのリポジトリは未実装です。
-
 ### Middleware (internal/middleware/)
 
 | ファイル | 責務 |
