@@ -32,15 +32,13 @@ func updateUser(users []User, idx int, name string) []User {
 ### Swift
 
 ```swift
-// OK: 構造体はValue Typeなのでイミュータブル
+// OK: 構造体はValue Type（コピーセマンティクス）なので元の値に影響しない
 struct User {
-    var name: String
+    let name: String
 }
 
 func updateUser(_ user: User, name: String) -> User {
-    var updated = user
-    updated.name = name
-    return updated
+    return User(name: name)
 }
 ```
 
