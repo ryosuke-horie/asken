@@ -55,7 +55,7 @@ apiKey := os.Getenv("GEMINI_API_KEY")
 apiKey := "sk-1234567890abcdef"
 ```
 
-## 個人利用のための簡略化
+## 認証・CORS
 
 - 認証・認可: Cloud Run環境でFirebase認証済みユーザーのみアクセス
 - CORS: iOSアプリからのアクセスのため、必要に応じて設定
