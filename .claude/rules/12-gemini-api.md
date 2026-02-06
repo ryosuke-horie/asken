@@ -81,10 +81,10 @@ func (s *FoodService) SearchFood(ctx context.Context, foodName string) (*Nutriti
 - エラーレスポンスに機密情報（APIキー等）を含めない
 
 ```go
-// ✅ 良い例 - APIキーをヘッダーで送信
+// 良い例 - APIキーをヘッダーで送信
 req.Header.Set("x-goog-api-key", c.apiKey)
 
-// ✅ 良い例 - タイムアウト付きコンテキスト
+// 良い例 - タイムアウト付きコンテキスト
 ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 defer cancel()
 ```

@@ -44,7 +44,7 @@ ios/
    - Organization Identifier: `dev.exe`
    - Interface: SwiftUI
    - Language: Swift
-   - ✅ Include Tests
+   - Include Tests にチェック
 5. `ios/` ディレクトリ内に保存
 
 ### 2. 既存ファイルの追加

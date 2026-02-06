@@ -25,13 +25,13 @@ paths:
 - カスタムエラー型を定義する場合は`errors.New`を使用
 
 ```go
-// ✅ 良い例
+// 良い例
 food, err := repo.GetFoodByID(ctx, id)
 if err != nil {
     return nil, fmt.Errorf("failed to get food %s: %w", id, err)
 }
 
-// ❌ 悪い例
+// 悪い例
 food, _ := repo.GetFoodByID(ctx, id)  // エラーを無視
 ```
 
@@ -44,7 +44,7 @@ food, _ := repo.GetFoodByID(ctx, id)  // エラーを無視
 - ステータスコード別のエラーハンドリングを実装する
 
 ```go
-// ✅ 良い例 - HTTP APIクライアントの使用
+// 良い例 - HTTP APIクライアントの使用
 func (s *GeminiService) AnalyzeImage(ctx context.Context, imageData []byte, mimeType string) (*AnalysisResult, error) {
     resp, err := s.client.ExecuteWithImage(ctx, analyzeImagePrompt, imageData, mimeType)
     if err != nil {
@@ -73,7 +73,7 @@ func (s *GeminiService) AnalyzeImage(ctx context.Context, imageData []byte, mime
 - インターフェースは使用する側で定義
 
 ```go
-// ✅ 良い例
+// 良い例
 type Food struct {
     ID          string    `json:"id" db:"id"`
     Name        string    `json:"name" db:"name"`
@@ -101,7 +101,7 @@ type GeminiCaller interface {
 Gemini API呼び出しなど、独立した操作は並列化を検討する：
 
 ```go
-// ❌ 悪い例 - 逐次実行
+// 悪い例 - 逐次実行
 result1, err := gemini.AnalyzeFood(ctx, food1)
 if err != nil {
     return err
@@ -111,7 +111,7 @@ if err != nil {
     return err
 }
 
-// ✅ 良い例 - 並列実行
+// 良い例 - 並列実行
 var wg sync.WaitGroup
 var mu sync.Mutex
 results := make([]*AnalysisResult, 2)

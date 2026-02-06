@@ -28,7 +28,7 @@ paths:
 - Gemini HTTP APIはモックする（実際のAPI呼び出しはテストしない）
 
 ```go
-// ✅ 良い例 - Gemini HTTP APIのモック
+// 良い例 - Gemini HTTP APIのモック
 type mockGeminiCaller struct {
     mock.Mock
 }
