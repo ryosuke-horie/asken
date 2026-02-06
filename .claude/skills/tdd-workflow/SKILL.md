@@ -13,7 +13,6 @@ description: 新機能の実装、バグ修正、リファクタリング時に�
 - バグや問題の修正時
 - 既存コードのリファクタリング時
 - APIエンドポイントの追加時
-- 新しいコンポーネントの作成時
 
 ## 基本原則
 
@@ -32,250 +31,149 @@ description: 新機能の実装、バグ修正、リファクタリング時に�
 
 #### ユニットテスト
 
-- 個別の関数とユーティリティ
-- コンポーネントロジック
-- 純粋関数
-- ヘルパーとユーティリティ
+- Go: `testing`パッケージ + testify
+- Swift: Swift Testing
 
 #### 統合テスト
 
-- APIエンドポイント
-- データベース操作
-- サービス間の相互作用
-- 外部API呼び出し
+- APIエンドポイント（httptest）
+- Firestoreエミュレータを使用したデータベース操作
 
 #### E2Eテスト
 
-- 重要なユーザーフロー
-- 完全なワークフロー
-- ブラウザ自動化
-- UI操作
+- XCUITestで重要なユーザーフロー
 
 ## TDDワークフローステップ
 
-### ステップ1: ユーザージャーニーを書く
+### ステップ1: テストを先に書く（RED）
 
-```
-[役割]として、[アクション]をしたい、[メリット]のために
+Go:
+```go
+func TestFoodService_SearchFood(t *testing.T) {
+    mockRepo := new(mockFoodRepository)
+    mockRepo.On("SearchByName", mock.Anything, "ごはん").
+        Return(&Food{Name: "ごはん", Calories: 250}, nil)
+    service := NewFoodService(mockRepo, nil)
 
-例:
-ユーザーとして、食事画像をアップロードしたい、
-カロリーと栄養素を自動計算してもらうために。
-```
+    result, err := service.SearchFood(context.Background(), "ごはん")
 
-### ステップ2: テストケースを生成
-
-各ユーザージャーニーに対して包括的なテストケースを作成:
-
-```typescript
-describe('画像アップロード', () => {
-  it('有効な画像でカロリーを返すべき', async () => {
-    // テスト実装
-  })
-
-  it('無効なファイル形式でエラーを返すべき', async () => {
-    // エッジケースをテスト
-  })
-
-  it('API障害時にフォールバックすべき', async () => {
-    // フォールバック動作をテスト
-  })
-})
-```
-
-### ステップ3: テストを実行（失敗すべき）
-
-```bash
-npm test
-# テストは失敗すべき - まだ実装していない
-```
-
-### ステップ4: コードを実装
-
-テストを通す最小限のコードを書く:
-
-```typescript
-// テストに導かれた実装
-export async function analyzeImage(imagePath: string) {
-  // ここに実装
+    require.NoError(t, err)
+    assert.Equal(t, 250, result.Calories)
 }
 ```
 
-### ステップ5: 再度テストを実行
+Swift:
+```swift
+@Test func 食事記録が正常に保存されるべき() async throws {
+    let mockRepo = MockMealRepositoryProtocol()
+    mockRepo.saveMealHandler = { meal in }
+    let viewModel = MealInputViewModel(repository: mockRepo)
 
-```bash
-npm test
-# テストが通るはず
+    try await viewModel.saveMeal()
+
+    #expect(viewModel.isSaved == true)
+}
 ```
 
-### ステップ6: リファクタリング
-
-テストをグリーンに保ちながらコード品質を改善:
-
-- 重複を削除
-- 命名を改善
-- パフォーマンスを最適化
-- 可読性を向上
-
-### ステップ7: カバレッジを確認
+### ステップ2: テスト実行（失敗を確認）
 
 ```bash
-npm test -- --coverage
-# 80%以上のカバレッジを確認
+task test      # Go
+task ios:test  # iOS
+```
+
+### ステップ3: 最小限の実装を書く（GREEN）
+
+テストを通す最小限のコードを書く。
+
+### ステップ4: テスト実行（成功を確認）
+
+```bash
+task test
+```
+
+### ステップ5: リファクタリング
+
+テストをグリーンに保ちながらコード品質を改善。
+
+### ステップ6: カバレッジを確認
+
+```bash
+task test:coverage      # Go
+task ios:test:coverage  # iOS
 ```
 
 ## テストパターン
 
-### ユニットテストパターン（Jest）
+### Goテーブル駆動テスト
 
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react'
-import { Button } from './Button'
+```go
+func TestCalculateCalories(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    Food
+        expected int
+    }{
+        {"valid food", Food{Protein: 10, Fat: 5, Carbs: 20}, 165},
+        {"zero values", Food{}, 0},
+    }
 
-describe('Buttonコンポーネント', () => {
-  it('正しいテキストでレンダリングすべき', () => {
-    render(<Button>クリック</Button>)
-    expect(screen.getByText('クリック')).toBeInTheDocument()
-  })
-
-  it('クリック時にonClickを呼び出すべき', () => {
-    const handleClick = jest.fn()
-    render(<Button onClick={handleClick}>クリック</Button>)
-
-    fireEvent.click(screen.getByRole('button'))
-
-    expect(handleClick).toHaveBeenCalledTimes(1)
-  })
-
-  it('disabledプロパティがtrueの場合は無効化されるべき', () => {
-    render(<Button disabled>クリック</Button>)
-    expect(screen.getByRole('button')).toBeDisabled()
-  })
-})
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := CalculateCalories(tt.input)
+            assert.Equal(t, tt.expected, result)
+        })
+    }
+}
 ```
 
-### API統合テストパターン
+### Swift Testingテスト
 
-```typescript
-describe('GET /api/meals', () => {
-  it('食事データを正常に返すべき', async () => {
-    const response = await fetch('http://localhost:3000/api/meals')
-    const data = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(data.success).toBe(true)
-    expect(Array.isArray(data.data)).toBe(true)
-  })
-
-  it('クエリパラメータをバリデートすべき', async () => {
-    const response = await fetch('http://localhost:3000/api/meals?date=invalid')
-
-    expect(response.status).toBe(400)
-  })
-})
+```swift
+@Suite struct MealInputViewModelTests {
+    @Test func 空の食品名でバリデーションエラーになるべき() {
+        let viewModel = MealInputViewModel()
+        viewModel.foodName = ""
+        #expect(viewModel.validate() == false)
+    }
+}
 ```
 
 ## 外部サービスのモック
 
-### Gemini APIモック
+### Gemini APIモック（Go）
 
-```typescript
-jest.mock('@/lib/gemini', () => ({
-  analyzeFood: jest.fn(() => Promise.resolve({
-    foods: [{ name: 'ご飯', calories: 250 }],
-    success: true
-  }))
-}))
+```go
+type mockGeminiCaller struct {
+    mock.Mock
+}
+
+func (m *mockGeminiCaller) AnalyzeImage(ctx context.Context, data []byte, mimeType string) (*AnalysisResult, error) {
+    args := m.Called(ctx, data, mimeType)
+    if args.Get(0) == nil {
+        return nil, args.Error(1)
+    }
+    return args.Get(0).(*AnalysisResult), args.Error(1)
+}
 ```
 
-### PostgreSQLモック
+### Repositoryモック（Swift - Mockolo）
 
-```typescript
-jest.mock('@/lib/db', () => ({
-  query: jest.fn(() => Promise.resolve({
-    rows: [{ id: 1, name: 'テストデータ' }]
-  }))
-}))
+```swift
+let mockRepo = MockMealRepositoryProtocol()
+mockRepo.fetchDailyMealsHandler = { date in
+    return [Meal(id: "1", name: "テスト食事")]
+}
 ```
 
 ## テストカバレッジ確認
 
-### カバレッジレポートを実行
-
 ```bash
-npm test -- --coverage
-```
+# Go
+task test:coverage
 
-### カバレッジしきい値
-
-```json
-{
-  "jest": {
-    "coverageThreshold": {
-      "global": {
-        "branches": 80,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
-      }
-    }
-  }
-}
-```
-
-## よくあるテストの間違い
-
-### NG: 実装詳細をテスト
-
-```typescript
-// 内部状態をテストしない
-expect(component.state.count).toBe(5)
-```
-
-### OK: ユーザーに見える振る舞いをテスト
-
-```typescript
-// ユーザーが見るものをテスト
-expect(screen.getByText('カウント: 5')).toBeInTheDocument()
-```
-
-### NG: テスト分離なし
-
-```typescript
-// テストが相互依存
-test('ユーザーを作成', () => { /* ... */ })
-test('同じユーザーを更新', () => { /* 前のテストに依存 */ })
-```
-
-### OK: 独立したテスト
-
-```typescript
-// 各テストが自分のデータをセットアップ
-test('ユーザーを作成', () => {
-  const user = createTestUser()
-  // テストロジック
-})
-
-test('ユーザーを更新', () => {
-  const user = createTestUser()
-  // 更新ロジック
-})
-```
-
-## 継続的テスト
-
-### 開発中のウォッチモード
-
-```bash
-npm test -- --watch
-# ファイル変更時にテストが自動実行
-```
-
-### プリコミットフック
-
-```bash
-# 各コミット前に実行
-npm test && npm run lint
+# iOS
+task ios:test:coverage
 ```
 
 ## ベストプラクティス
@@ -285,19 +183,16 @@ npm test && npm run lint
 3. 説明的なテスト名 - 何をテストしているか説明
 4. Arrange-Act-Assert - 明確なテスト構造
 5. 外部依存をモック - ユニットテストを分離
-6. エッジケースをテスト - null、undefined、空、大きな値
+6. エッジケースをテスト - nil、ゼロ値、空、大きな値
 7. エラーパスをテスト - ハッピーパスだけでなく
 8. テストを高速に - ユニットテストは各50ms未満
-9. テスト後にクリーンアップ - 副作用なし
-10. カバレッジレポートをレビュー - ギャップを特定
 
 ## 成功指標
 
 - 80%以上のコードカバレッジ達成
 - すべてのテストがパス（グリーン）
 - スキップまたは無効化されたテストがない
-- 高速なテスト実行（ユニットテストは30秒未満）
-- テストが本番前にバグをキャッチ
+- 高速なテスト実行
 
 ---
 

@@ -21,8 +21,8 @@ model: opus
 
 1. コードマップ生成 - コードベース構造からアーキテクチャマップを作成
 2. ドキュメント更新 - コードからREADMEとガイドを更新
-3. AST分析 - TypeScriptコンパイラAPIを使用して構造を理解
-4. 依存関係マッピング - モジュール間のインポート/エクスポートを追跡
+3. コード構造分析 - Swift/Goのソースコードから構造を理解
+4. 依存関係マッピング - モジュール間の依存関係を追跡
 5. ドキュメント品質 - ドキュメントが現実と一致することを確認
 
 ## コードマップ生成ワークフロー
@@ -32,8 +32,8 @@ model: opus
 ```
 a) すべてのディレクトリを特定
 b) ディレクトリ構造をマッピング
-c) エントリーポイントを見つける（frontend/*, backend/*）
-d) フレームワークパターンを検出（Next.js, Golang等）
+c) エントリーポイントを見つける（ios/*, backend/*）
+d) フレームワークパターンを検出（SwiftUI, Golang等）
 ```
 
 ### 2. モジュール分析
@@ -52,7 +52,7 @@ d) フレームワークパターンを検出（Next.js, Golang等）
 構造:
 docs/CODEMAPS/
 ├── INDEX.md              # すべてのエリアの概要
-├── frontend.md           # フロントエンド構造
+├── ios.md                # iOSアプリ構造
 ├── backend.md            # バックエンド/API構造
 ├── database.md           # データベーススキーマ
 └── integrations.md       # 外部サービス
@@ -95,8 +95,8 @@ docs/CODEMAPS/
 ### 1. コードからドキュメントを抽出
 
 ```
-- JSDoc/TSDocコメントを読み取り
-- package.jsonからREADMEセクションを抽出
+- GoDocコメントを読み取り
+- SwiftDocコメントを読み取り
 - .env.exampleから環境変数をパース
 - APIエンドポイント定義を収集
 ```
@@ -107,7 +107,7 @@ docs/CODEMAPS/
 更新するファイル:
 - README.md - プロジェクト概要、セットアップ手順
 - docs/GUIDES/*.md - 機能ガイド、チュートリアル
-- package.json - 説明、スクリプトドキュメント
+- docs/CONTRIB.md - 開発者ガイド
 - APIドキュメント - エンドポイント仕様
 ```
 
@@ -122,39 +122,40 @@ docs/CODEMAPS/
 
 ## プロジェクト固有コードマップ
 
-### フロントエンドコードマップ（docs/CODEMAPS/frontend.md）
+### iOSコードマップ（docs/CODEMAPS/ios.md）
 
 ```markdown
-# フロントエンドアーキテクチャ
+# iOSアーキテクチャ
 
 最終更新: YYYY-MM-DD
-フレームワーク: Next.js 15（App Router）
-エントリーポイント: frontend/src/app/layout.tsx
+フレームワーク: Swift / SwiftUI
+エントリーポイント: ios/Uchikomi/UchikomiApp.swift
 
 ## 構造
 
-frontend/src/
-├── app/                # Next.js App Router
-│   ├── page.tsx       # トップページ
-│   ├── meals/         # 食事記録
-│   └── api/           # API Routes
-├── components/        # UIコンポーネント
-│   ├── server/        # Server Components
-│   └── client/        # Client Components
-├── hooks/             # カスタムフック
-└── lib/               # ユーティリティ
+ios/Uchikomi/
+├── UchikomiApp.swift          # エントリーポイント
+├── Features/                  # 機能モジュール
+│   ├── Auth/                  # 認証
+│   ├── Meals/                 # 食事記録
+│   └── Settings/              # 設定
+├── Core/                      # 共通基盤
+│   ├── Repositories/          # データアクセス
+│   ├── Services/              # ビジネスロジック
+│   └── Models/                # データモデル
+└── UI/                        # 共通UIコンポーネント
 
 ## 主要コンポーネント
 
 | コンポーネント | 用途 | 場所 |
 |----------------|------|------|
-| MealUpload | 食事画像アップロード | components/MealUpload.tsx |
-| NutritionDisplay | 栄養素表示 | components/NutritionDisplay.tsx |
-| FoodSearch | 食品検索 | components/FoodSearch.tsx |
+| MealUploadView | 食事画像アップロード | Features/Meals/ |
+| NutritionDisplayView | 栄養素表示 | Features/Meals/ |
+| FoodSearchView | 食品検索 | Features/Meals/ |
 
 ## データフロー
 
-ユーザー → 画像アップロード → API Route → Gemini API → 栄養素計算 → 表示
+ユーザー → 画像アップロード → Backend API → Gemini API → 栄養素計算 → 表示
 ```
 
 ### バックエンドコードマップ（docs/CODEMAPS/backend.md）
@@ -177,7 +178,7 @@ backend/
 │   ├── gemini.go              # Gemini API連携
 │   └── nutrition.go           # 栄養素計算
 ├── repositories/               # データアクセス
-│   └── postgres.go            # PostgreSQL
+│   └── firestore.go           # Firestore
 └── models/                     # データモデル
     ├── meal.go
     └── food.go
@@ -193,7 +194,7 @@ backend/
 
 ## データフロー
 
-Handler → Service → Repository → PostgreSQL
+Handler → Service → Repository → Firestore
             ↓
         Gemini API
 ```
@@ -211,7 +212,7 @@ Handler → Service → Repository → PostgreSQL
 - 食品名の抽出
 - カロリー推定
 
-## データベース（PostgreSQL）
+## データベース（Firestore）
 
 - 食品マスタデータ
 - 食事記録
@@ -230,15 +231,14 @@ README.mdを更新する際:
 ## セットアップ
 
 \`\`\`bash
-# インストール
-npm install
+# バックエンド依存関係
+task setup
 
-# 環境変数
-cp .env.example .env.local
+# 環境変数を設定
 # GEMINI_API_KEY等を設定
 
-# 開発サーバー起動
-npm run dev
+# バックエンドサーバー起動
+task run
 \`\`\`
 
 ## アーキテクチャ
@@ -247,13 +247,13 @@ npm run dev
 
 ### 主要ディレクトリ
 
-- `frontend/` - Next.jsフロントエンド
+- `ios/` - iOSアプリ（Swift/SwiftUI）
 - `backend/` - Golangバックエンド
 
 ## ドキュメント
 
-- [セットアップガイド](docs/GUIDES/setup.md)
-- [API仕様](docs/API.md)
+- [開発者ガイド](docs/CONTRIB.md)
+- [運用手順書](docs/RUNBOOK.md)
 - [アーキテクチャ](docs/CODEMAPS/INDEX.md)
 ```
 
@@ -261,9 +261,9 @@ npm run dev
 
 週次:
 
-- src/に新しいファイルがコードマップにないかチェック
+- ios/やbackend/に新しいファイルがコードマップにないかチェック
 - README.mdの手順が動作することを確認
-- package.jsonの説明を更新
+- go.modやPackage.swiftの依存関係を確認
 
 主要機能追加後:
 

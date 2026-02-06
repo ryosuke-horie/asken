@@ -4,13 +4,13 @@
 
 ## 技術スタック
 
-- **言語**: Swift 5.9+
-- **UI**: SwiftUI
-- **最小iOS**: iOS 17
-- **アーキテクチャ**: MVVM + Repository
-- **認証**: Keychain（JWT保存）
-- **非同期処理**: async/await
-- **グラフ**: Swift Charts
+- 言語: Swift 5.9+
+- UI: SwiftUI
+- 最小iOS: iOS 17
+- アーキテクチャ: MVVM + Repository
+- 認証: Keychain（JWT保存）
+- 非同期処理: async/await
+- グラフ: Swift Charts
 
 ## ディレクトリ構成
 
@@ -44,7 +44,7 @@ ios/
    - Organization Identifier: `dev.exe`
    - Interface: SwiftUI
    - Language: Swift
-   - ✅ Include Tests
+   - Include Tests にチェック
 5. `ios/` ディレクトリ内に保存
 
 ### 2. 既存ファイルの追加
@@ -69,7 +69,7 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 
 ### シミュレータで実行
 
-1. バックエンドを起動: `task db-up && task run`
+1. バックエンドを起動: `task run`
 2. Xcodeでシミュレータを選択してビルド
 
 ### 実機で実行（無料プロビジョニング）

@@ -9,27 +9,26 @@ paths:
 
 ## テストの原則
 
-1. **新機能実装時は必ずテストを先に書く**（Red → Green → Refactor）
-2. テストカバレッジは**80%以上**を目標とする
-3. テストは**独立性**を保ち、実行順序に依存しない
-4. テストコードも**リファクタリング対象**とする
+1. 新機能実装時は必ずテストを先に書く（Red → Green → Refactor）
+2. テストカバレッジは80%以上を目標とする
+3. テストは独立性を保ち、実行順序に依存しない
+4. テストコードもリファクタリング対象とする
 
 ## バックエンドテスト（Go）
 
 ### ツール
 
-- **標準ライブラリ**: `testing`パッケージ
-- **testify**: アサーションとモック
-- **sqlmock**: データベースモック
+- 標準ライブラリ: `testing`パッケージ
+- testify: アサーションとモック
 
 ### テスト方針
 
-- **テーブル駆動テスト**を使用
-- **依存性注入**でモックを容易にする
-- Gemini CLI実行は**モック**する（実際のAPI呼び出しはテストしない）
+- テーブル駆動テストを使用
+- 依存性注入でモックを容易にする
+- Gemini HTTP APIはモックする（実際のAPI呼び出しはテストしない）
 
 ```go
-// ✅ 良い例 - Gemini CLI実行のモック
+// 良い例 - Gemini HTTP APIのモック
 type mockGeminiCaller struct {
     mock.Mock
 }
@@ -65,10 +64,10 @@ iOSテストの詳細は`10-ios-testing.md`を参照。
 
 ### 概要
 
-- **Swift Testing**: ユニットテスト
-- **XCUITest**: UIテスト
-- **Mockolo**: モック生成
-- **swift-snapshot-testing**: スナップショットテスト
+- Swift Testing: ユニットテスト
+- XCUITest: UIテスト
+- Mockolo: モック生成
+- swift-snapshot-testing: スナップショットテスト
 
 ## テスト実行
 
