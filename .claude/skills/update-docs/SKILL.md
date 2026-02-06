@@ -1,6 +1,13 @@
-# ドキュメント更新
+---
+name: update-docs
+description: 正確な情報源（Taskfile.yml、.env.example）からドキュメントを同期・更新。
+---
 
-正確な情報源（source of truth）からドキュメントを同期:
+# ドキュメント更新スキル
+
+正確な情報源（source of truth）からドキュメントを同期します。
+
+## 実行手順
 
 1. Taskfile.ymlのタスク定義を読む
    - タスクリファレンステーブルを生成
