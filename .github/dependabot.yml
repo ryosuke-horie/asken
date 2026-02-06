@@ -24,14 +24,10 @@ updates:
       testing:
         patterns:
           - "github.com/stretchr/testify"
-          - "github.com/DATA-DOG/go-sqlmock"
       security:
         patterns:
           - "github.com/golang-jwt/*"
           - "golang.org/x/crypto"
-      database:
-        patterns:
-          - "github.com/lib/pq"
 
   # Swift (iOS)
   - package-ecosystem: "swift"

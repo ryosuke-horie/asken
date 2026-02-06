@@ -2,14 +2,14 @@
 
 ## ブランチ戦略
 
-- **main**: 本番環境と同期（常にデプロイ可能な状態）
-- **feature/**: 機能開発ブランチ（例: `feature/image-upload`）
-- **bugfix/**: バグ修正ブランチ（例: `bugfix/calories-calculation`）
-- **hotfix/**: 緊急修正ブランチ（例: `hotfix/gemini-api-error`）
+- main: 本番環境と同期（常にデプロイ可能な状態）
+- feature/: 機能開発ブランチ（例: `feature/image-upload`）
+- bugfix/: バグ修正ブランチ（例: `bugfix/calories-calculation`）
+- hotfix/: 緊急修正ブランチ（例: `hotfix/gemini-api-error`）
 
 ## ブランチ命名規則
 
-**Linearとの連携**
+Linearとの連携
 
 このプロジェクトはLinearで課題管理を行っているため、ブランチ名はLinearの課題IDを使用します。
 
@@ -22,18 +22,18 @@ edg-<issue-number>
 - edg-789
 ```
 
-**命名規則:**
+命名規則:
 - Linear課題ID（`edg-xxx`）をブランチ名として使用
 - わかりやすい説明が必要な場合は、`edg-xxx/short-description`の形式も可
   - 例: `edg-123/image-upload`
 
-**注意事項:**
+注意事項:
 - 必ずLinear課題を作成してからブランチを作成する
 - ブランチ名とLinear課題が一致していることを確認する
 
 ## コミットメッセージ
 
-**Conventional Commits**に従う：
+Conventional Commitsに従う：
 
 ```
 <type>(<scope>): <subject>
@@ -58,7 +58,7 @@ edg-<issue-number>
 ```
 feat(gemini): Gemini APIによる画像分析機能を追加
 
-- Gemini CLIのラッパーを実装
+- Gemini HTTP APIクライアントを実装
 - 画像から食品名を抽出する機能を追加
 - タイムアウト処理を実装（30秒）
 ```
@@ -96,14 +96,14 @@ feat(gemini): Gemini APIによる画像分析機能を追加
 
 ### コードレビューガイドライン
 
-**レビュアー（開発者自身）**
+レビュアー（開発者自身）
 
 - 機能が要件を満たしているか確認
 - テストが適切に書かれているか確認
 - セキュリティやパフォーマンスの問題がないか確認
 
-**個人開発のため、セルフレビューを重視**
+個人開発のため、セルフレビューを重視
 
 ## マージ戦略
 
-- **Squash and merge**を推奨（コミット履歴を整理）
+- Squash and mergeを推奨（コミット履歴を整理）

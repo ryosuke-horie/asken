@@ -61,7 +61,7 @@ task setup
 | GOOGLE_APPLICATION_CREDENTIALS | 必須 | Firebase/Firestoreサービスアカウント鍵のパス | `/path/to/sa-key.json` |
 | GEMINI_API_KEY | 必須 | Gemini API キー | `AIzaSy...` |
 | GCS_BUCKET_NAME | 必須 | Cloud Storage バケット名（画像保存用） | `utikomi-dev-images` |
-| ALLOWED_ORIGINS | オプション | CORS許可オリジン（カンマ区切り） | `http://localhost:3000` |
+| ALLOWED_ORIGINS | オプション | CORS許可オリジン（カンマ区切り） | - |
 | APP_ENV | オプション | 環境（`development`でモック認証有効） | `development` |
 
 #### インフラ管理（Terraform）
@@ -101,7 +101,7 @@ APP_ENV=development
 これにより:
 - Firebase認証の代わりにモック認証が使用される
 - トークン`dev-mock-token`で固定UID`dev-mock-user`として認証される
-- **本番環境では`APP_ENV`を設定しないこと**
+- 本番環境では`APP_ENV`を設定しないこと
 
 ## 開発ワークフロー
 
@@ -112,7 +112,7 @@ APP_ENV=development
 task run
 ```
 
-**注意**: データベースはFirestoreを使用しています。ローカル開発時にFirestoreエミュレータを使用する場合:
+注意: データベースはFirestoreを使用しています。ローカル開発時にFirestoreエミュレータを使用する場合:
 
 ```bash
 # Firestoreエミュレータを起動
@@ -166,8 +166,6 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `firebase deploy --only firestore:indexes` | Firestoreインデックスをデプロイ |
 | `firebase firestore:indexes` | 現在のインデックス一覧を取得 |
 
-**注意**: PostgreSQL関連のコマンド（`task db-*`）はTaskfile.ymlに残っていますが、Firestore移行後は使用しません。
-
 ### Firestoreインデックス管理
 
 リポジトリ層でFirestoreクエリを追加・変更した場合、複合インデックスが必要になることがあります。
@@ -192,10 +190,13 @@ firebase deploy --only firestore:indexes --project utikomi-dev
 | `task ios:lint` | SwiftLintを実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
 | `task ios:format-check` | SwiftFormatチェック（CI用） |
+| `task ios:clean` | DerivedDataを削除 |
+| `task ios:clean-all` | SPMキャッシュを含む完全クリア |
+| `task ios:reset-packages` | Package.resolvedを削除して再解決 |
 
 ### デプロイ
 
-デプロイは**GitHub Actions**により自動化されています。mainブランチにpushすると自動的にCloud Runにデプロイされます。
+デプロイはGitHub Actionsにより自動化されています。mainブランチにpushすると自動的にCloud Runにデプロイされます。
 
 詳細は[RUNBOOK.md](./RUNBOOK.md#デプロイ)を参照してください。
 
@@ -218,7 +219,7 @@ cd backend && go test ./... -v
 cd backend && go test ./... -cover
 ```
 
-**注意**: Firestore Repositoryのテストは`FIRESTORE_EMULATOR_HOST`が設定されていない場合、スキップされます。
+注意: Firestore Repositoryのテストは`FIRESTORE_EMULATOR_HOST`が設定されていない場合、スキップされます。
 
 ### iOSテスト
 

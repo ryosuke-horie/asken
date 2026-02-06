@@ -8,8 +8,8 @@ paths:
 
 ## レスポンス形式の統一
 
-- Gemini APIには**特定の形式**でレスポンスを返すようプロンプトで指示
-- **JSON形式**を推奨（パースしやすい）
+- Gemini APIには特定の形式でレスポンスを返すようプロンプトで指示
+- JSON形式を推奨（パースしやすい）
 
 ```go
 // プロンプト例
@@ -69,30 +69,22 @@ func (s *FoodService) SearchFood(ctx context.Context, foodName string) (*Nutriti
 
 ## データベースとの組み合わせ
 
-1. **まずデータベースを検索**（高速、正確）
-2. データベースに存在しない場合は**Gemini APIを使用**
-3. Gemini APIの結果を**データベースにキャッシュ**（次回以降の高速化）
+1. まずデータベースを検索（高速、正確）
+2. データベースに存在しない場合はGemini APIを使用
+3. Gemini APIの結果をデータベースにキャッシュ（次回以降の高速化）
 
 ## セキュリティ
 
-- **コマンドインジェクション**に注意し、ファイルパスをサニタイズする
-- Gemini CLIのコマンド実行時は**タイムアウトを設定**する
+- APIキーはヘッダー（`x-goog-api-key`）で送信する（URLパラメータに含めない）
+- HTTP APIリクエストにはタイムアウトを設定する（context.WithTimeout）
 - レスポンスのパース失敗を適切に処理する
+- エラーレスポンスに機密情報（APIキー等）を含めない
 
 ```go
-// ✅ 良い例 - コマンドインジェクション対策
-func sanitizeImagePath(path string) (string, error) {
-    // パスのバリデーション
-    if !filepath.IsAbs(path) {
-        return "", errors.New("path must be absolute")
-    }
+// ✅ 良い例 - APIキーをヘッダーで送信
+req.Header.Set("x-goog-api-key", c.apiKey)
 
-    // ディレクトリトラバーサル対策
-    cleanPath := filepath.Clean(path)
-    if !strings.HasPrefix(cleanPath, allowedUploadDir) {
-        return "", errors.New("path outside allowed directory")
-    }
-
-    return cleanPath, nil
-}
+// ✅ 良い例 - タイムアウト付きコンテキスト
+ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+defer cancel()
 ```

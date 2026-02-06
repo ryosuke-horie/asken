@@ -94,12 +94,12 @@ model: opus
 
 ## 一般的なパターン
 
-### フロントエンドパターン（Next.js）
+### iOSパターン（SwiftUI）
 
-- Server Components優先
-- コンポーネント合成: シンプルなコンポーネントから複雑なUIを構築
-- カスタムフック: 再利用可能なステートフルロジック
-- コード分割: ルートと重いコンポーネントの遅延読み込み
+- MVVM: ViewModelでロジックを管理し、Viewは描画に専念
+- プロトコル指向: テスタブルな設計のためProtocolで抽象化
+- async/await: Structured Concurrencyによる非同期処理
+- 依存性注入: テスト容易性のためProtocolベースのDI
 
 ### バックエンドパターン（Golang）
 
@@ -112,7 +112,7 @@ model: opus
 
 - 正規化データベース: 冗長性の削減
 - リポジトリ抽象化: ドメイン層からデータアクセスを分離
-- 型安全なクエリ: PostgreSQLとの型安全な連携
+- Firestoreとの連携
 - トランザクション管理: ユースケース単位でのトランザクション制御
 
 ## アーキテクチャ決定記録（ADR）
@@ -206,26 +206,26 @@ Gemini APIを採用する。
 
 ### 現在のアーキテクチャ
 
-- フロントエンド: Next.js 15（App Router）
-- バックエンド: Golang
-- AI: Gemini API
-- データベース: PostgreSQL
-- ホスティング: exe.dev（Ubuntu環境）
+- iOS: Swift / SwiftUI
+- バックエンド: Golang（Cloud Run）
+- AI: Gemini API（HTTP API経由）
+- データベース: Firestore
+- ホスティング: Cloud Run
 
 ### 主要な設計決定
 
 1. 画像認識: Gemini APIによる食事画像分析
-2. Server Components優先: Next.js App Routerでのサーバーサイドレンダリング
-3. 型安全: TypeScript + Golangによる堅牢な型システム
+2. iOSネイティブ: SwiftUI + MVVMによるネイティブアプリ
+3. 型安全: Swift + Golangによる堅牢な型システム
 
 ### レイヤー構成
 
 ```
-Frontend (Next.js)
+iOS App (SwiftUI)
     ↓ API呼び出し
-Backend (Golang)
+Backend (Golang / Cloud Run)
     ↓
-PostgreSQL
+Firestore
     ↑
 Gemini API（画像分析）
 ```

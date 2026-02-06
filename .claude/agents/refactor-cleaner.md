@@ -193,7 +193,7 @@ components/Button.tsx (variantプロパティで対応)
 
 絶対に削除禁止:
 - Gemini API連携コード
-- PostgreSQLデータベースクライアント
+- Firestoreデータベースクライアント
 - 環境変数設定
 
 安全に削除可能:

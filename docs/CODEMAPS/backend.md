@@ -111,7 +111,7 @@ Context に firebase_uid を設定
 | analysis_models.go | 分析関連の型定義・インターフェース |
 | analysis_repository_firestore.go | 分析リクエスト・結果（Firestore実装） |
 
-**注意**: 体重、体調、トレーニング、マイリスト、プロフィールのリポジトリは未実装です。
+注意: 体重、体調、トレーニング、マイリスト、プロフィールのリポジトリは未実装です。
 
 ### Middleware (internal/middleware/)
 
@@ -204,7 +204,7 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
 | ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
 
-**Secret Manager管理のシークレット:**
+Secret Manager管理のシークレット:
 
 | シークレット名 | 説明 |
 |:---|:---|

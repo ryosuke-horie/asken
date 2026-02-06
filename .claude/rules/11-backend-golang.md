@@ -7,21 +7,21 @@ paths:
 
 ## 命名規則
 
-- **パッケージ**: 小文字、単数形（例: `food`, `gemini`）
-- **変数・関数**: camelCase、エクスポートするものはPascalCase（例: `getFoodByID`, `FoodID`）
-- **定数**: PascalCaseまたはcamelCase（例: `MaxRetries`, `defaultTimeout`）
-- **インターフェース**: PascalCase、`-er`で終わる（例: `FoodRepository`, `GeminiCaller`）
+- パッケージ: 小文字、単数形（例: `food`, `gemini`）
+- 変数・関数: camelCase、エクスポートするものはPascalCase（例: `getFoodByID`, `FoodID`）
+- 定数: PascalCaseまたはcamelCase（例: `MaxRetries`, `defaultTimeout`）
+- インターフェース: PascalCase、`-er`で終わる（例: `FoodRepository`, `GeminiCaller`）
 
 ## パッケージ構成
 
-- **internal/**: プロジェクト内部のみで使用するパッケージ
-- **pkg/**: 外部からインポート可能なパッケージ（Gemini CLIラッパーなど）
+- internal/: プロジェクト内部のみで使用するパッケージ
+- pkg/: 外部からインポート可能なパッケージ（Gemini HTTP APIクライアント等の共有パッケージ）
 - レイヤードアーキテクチャを採用（Handler → Service → Repository）
 
 ## エラーハンドリング
 
-- エラーは**必ず処理**する - `_`でエラーを無視しない
-- エラーは**ラップ**して文脈情報を追加する（`fmt.Errorf`使用）
+- エラーは必ず処理する - `_`でエラーを無視しない
+- エラーはラップして文脈情報を追加する（`fmt.Errorf`使用）
 - カスタムエラー型を定義する場合は`errors.New`を使用
 
 ```go
@@ -35,32 +35,25 @@ if err != nil {
 food, _ := repo.GetFoodByID(ctx, id)  // エラーを無視
 ```
 
-## Gemini CLI実行のベストプラクティス
+## Gemini HTTP API連携
 
-- Gemini CLIは`os/exec`パッケージでラップする
-- **標準出力とエラー出力**を適切にキャプチャする
-- **タイムアウト処理**を実装する（context.WithTimeout）
-- **コマンド実行結果のパース**は構造化する（JSON形式を推奨）
+- Gemini APIは`pkg/gemini/http_client.go`のHTTPクライアントで直接通信する
+- タイムアウト処理を実装する（context.WithTimeout）
+- APIキーはヘッダー（`x-goog-api-key`）で送信する
+- レスポンスのパースエラーを適切に処理する
+- ステータスコード別のエラーハンドリングを実装する
 
 ```go
-// ✅ 良い例
-func (s *GeminiService) AnalyzeImage(ctx context.Context, imagePath string) (*AnalysisResult, error) {
-    ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-    defer cancel()
-
-    cmd := exec.CommandContext(ctx, "gemini", "analyze", "--image", imagePath, "--format", "json")
-
-    var stdout, stderr bytes.Buffer
-    cmd.Stdout = &stdout
-    cmd.Stderr = &stderr
-
-    if err := cmd.Run(); err != nil {
-        return nil, fmt.Errorf("gemini command failed: %w, stderr: %s", err, stderr.String())
+// ✅ 良い例 - HTTP APIクライアントの使用
+func (s *GeminiService) AnalyzeImage(ctx context.Context, imageData []byte, mimeType string) (*AnalysisResult, error) {
+    resp, err := s.client.ExecuteWithImage(ctx, analyzeImagePrompt, imageData, mimeType)
+    if err != nil {
+        return nil, fmt.Errorf("failed to analyze image: %w", err)
     }
 
     var result AnalysisResult
-    if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
-        return nil, fmt.Errorf("failed to parse gemini output: %w", err)
+    if err := json.Unmarshal([]byte(resp.Response), &result); err != nil {
+        return nil, fmt.Errorf("failed to parse gemini response: %w", err)
     }
 
     return &result, nil
@@ -69,13 +62,13 @@ func (s *GeminiService) AnalyzeImage(ctx context.Context, imagePath string) (*An
 
 ## コンテキスト使用
 
-- すべての外部呼び出し（DB、Gemini CLI実行）には**contextを渡す**
+- すべての外部呼び出し（DB、Gemini HTTP API）にはcontextを渡す
 - context.Backgroundは`main()`または`init()`のみで使用
 - タイムアウトとキャンセル処理を適切に実装
 
 ## 構造体とインターフェース
 
-- 構造体フィールドは**JSONタグ**を必ず定義
+- 構造体フィールドはJSONタグを必ず定義
 - 小さなインターフェースを定義（1〜3メソッド）
 - インターフェースは使用する側で定義
 

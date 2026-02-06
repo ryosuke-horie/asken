@@ -4,7 +4,6 @@ silent: true
 
 vars:
   BACKEND_DIR: backend
-  DOCKER_COMPOSE: docker-compose
 
 tasks:
   default:
@@ -72,40 +71,6 @@ tasks:
     cmds:
       - echo "=== サーバー起動 ==="
       - go run ./cmd/server
-
-  db-up:
-    desc: PostgreSQLを起動
-    cmds:
-      - echo "=== PostgreSQL起動 ==="
-      - "{{.DOCKER_COMPOSE}} up -d"
-
-  db-down:
-    desc: PostgreSQLを停止
-    cmds:
-      - echo "=== PostgreSQL停止 ==="
-      - "{{.DOCKER_COMPOSE}} down"
-
-  db-seed:
-    desc: テストデータを投入
-    cmds:
-      - echo "=== シードデータ投入 ==="
-      - |
-          if [ -f "{{.BACKEND_DIR}}/.env" ]; then
-            export $(cat "{{.BACKEND_DIR}}/.env" | grep -v '^#' | xargs)
-            (cd "{{.BACKEND_DIR}}" && go run ./cmd/seed -verbose)
-          else
-            (cd "{{.BACKEND_DIR}}" && go run ./cmd/seed -verbose)
-          fi
-
-  db-clean:
-    desc: DBをリセット（ボリューム削除+再起動）
-    cmds:
-      - echo "=== DBリセット ==="
-      - "{{.DOCKER_COMPOSE}} down -v"
-      - "{{.DOCKER_COMPOSE}} up -d"
-      - echo "DBの起動を待機中..."
-      - sleep 3
-      - echo "DBリセット完了"
 
   ios:generate-mocks:
     desc: Mockoloでモックを生成

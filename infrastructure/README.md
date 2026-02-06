@@ -237,9 +237,9 @@ GitHub ActionsからGCPへの認証にはWorkload Identity Federationを使用�
 これによりサービスアカウントキーの管理が不要になり、セキュリティが向上します。
 
 WIF構成:
-- **Workload Identity Pool**: `github-pool`
-- **OIDC Provider**: `github-provider`
-- **認証条件**: 特定リポジトリのみ許可
+- Workload Identity Pool: `github-pool`
+- OIDC Provider: `github-provider`
+- 認証条件: 特定リポジトリのみ許可
 
 > Note: Pool名、Provider名、認証条件の詳細は `infrastructure/modules/wif/` を参照してください。
 

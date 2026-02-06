@@ -22,19 +22,19 @@ description: 認証の追加、ユーザー入力の処理、シークレット�
 
 #### NG: 絶対にやってはいけない
 
-```typescript
-const apiKey = "sk-proj-xxxxx"  // ハードコードされたシークレット
-const dbPassword = "password123" // ソースコード内
+```go
+apiKey := "AIzaSy-xxxxx"  // ハードコードされたシークレット
+dbPassword := "password123" // ソースコード内
 ```
 
 #### OK: 必ずこうする
 
-```typescript
-const apiKey = process.env.GEMINI_API_KEY
+```go
+apiKey := os.Getenv("GEMINI_API_KEY")
 
 // シークレットの存在を検証
-if (!apiKey) {
-  throw new Error('GEMINI_API_KEY not configured')
+if apiKey == "" {
+    log.Fatal("GEMINI_API_KEY not configured")
 }
 ```
 
@@ -50,43 +50,49 @@ if (!apiKey) {
 
 #### 常にユーザー入力をバリデート
 
-```typescript
-// バリデーションスキーマを定義
-function validateInput(input: unknown) {
-  if (typeof input !== 'string') {
-    throw new Error('Invalid input type')
-  }
-  if (input.length > 1000) {
-    throw new Error('Input too long')
-  }
-  return input.trim()
+```go
+func validateInput(input string) (string, error) {
+    if len(input) == 0 {
+        return "", fmt.Errorf("input is empty")
+    }
+    if len(input) > 1000 {
+        return "", fmt.Errorf("input too long")
+    }
+    return strings.TrimSpace(input), nil
 }
 ```
 
 #### ファイルアップロードバリデーション
 
-```typescript
-function validateFileUpload(file: File) {
-  // サイズチェック（最大5MB）
-  const maxSize = 5 * 1024 * 1024
-  if (file.size > maxSize) {
-    throw new Error('File too large (max 5MB)')
-  }
+```go
+const maxFileSize = 5 * 1024 * 1024 // 5MB
 
-  // タイプチェック
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Invalid file type')
-  }
+var allowedContentTypes = map[string]bool{
+    "image/jpeg": true,
+    "image/png":  true,
+    "image/gif":  true,
+}
 
-  // 拡張子チェック
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif']
-  const extension = file.name.toLowerCase().match(/\.[^.]+$/)?.[0]
-  if (!extension || !allowedExtensions.includes(extension)) {
-    throw new Error('Invalid file extension')
-  }
+func validateFileUpload(header *multipart.FileHeader) error {
+    // サイズチェック
+    if header.Size > maxFileSize {
+        return fmt.Errorf("file too large (max 5MB)")
+    }
 
-  return true
+    // Content-Typeチェック
+    contentType := header.Header.Get("Content-Type")
+    if !allowedContentTypes[contentType] {
+        return fmt.Errorf("invalid file type: %s", contentType)
+    }
+
+    // 拡張子チェック
+    ext := strings.ToLower(filepath.Ext(header.Filename))
+    allowedExts := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true}
+    if !allowedExts[ext] {
+        return fmt.Errorf("invalid file extension: %s", ext)
+    }
+
+    return nil
 }
 ```
 
@@ -102,18 +108,18 @@ function validateFileUpload(file: File) {
 
 #### NG: SQLの文字列結合
 
-```typescript
+```go
 // 危険 - SQLインジェクション脆弱性
-const query = `SELECT * FROM foods WHERE name = '${userInput}'`
+query := fmt.Sprintf("SELECT * FROM foods WHERE name = '%s'", userInput)
 ```
 
 #### OK: パラメータ化クエリ
 
-```typescript
+```go
 // 安全 - パラメータ化クエリ
-await db.query(
-  'SELECT * FROM foods WHERE name = $1',
-  [userInput]
+row := db.QueryRowContext(ctx,
+    "SELECT * FROM foods WHERE name = $1",
+    userInput,
 )
 ```
 
@@ -122,85 +128,82 @@ await db.query(
 - [ ] すべてのデータベースクエリがパラメータ化されている
 - [ ] SQLで文字列連結がない
 
-### 4. コマンドインジェクション防止（Gemini CLI連携）
+### 4. Gemini HTTP API連携のセキュリティ
 
-シェルコマンドにユーザー入力を直接渡すことは危険です。
+Gemini APIとの連携時にはHTTPリクエストのセキュリティを確保すること。
 
-#### OK: ファイルパスをサニタイズ
+#### OK: サーバーサイドでのAPI呼び出し
 
-```typescript
-import path from 'path'
-
-function sanitizeFilePath(filePath: string): string {
-  // パストラバーサル防止
-  const normalized = path.normalize(filePath)
-  if (normalized.includes('..')) {
-    throw new Error('Invalid file path')
-  }
-
-  // 許可されたディレクトリ内のみ
-  const allowedDir = '/uploads/'
-  if (!normalized.startsWith(allowedDir)) {
-    throw new Error('File path not allowed')
-  }
-
-  return normalized
+```go
+// APIキーはサーバーサイドのみで使用
+func NewGeminiClient(apiKey string) *GeminiClient {
+    return &GeminiClient{
+        httpClient: &http.Client{
+            Timeout: 30 * time.Second, // タイムアウト必須
+        },
+        apiKey: apiKey,
+    }
 }
 ```
 
 #### 確認ステップ
 
-- [ ] ファイルパスがサニタイズされている
-- [ ] パストラバーサル攻撃が防止されている
-- [ ] シェルコマンドにユーザー入力が直接渡されていない
-- [ ] execFileを使用（シェルインジェクション防止）
+- [ ] APIキーがサーバーサイド（Go）のみで使用されている
+- [ ] HTTPリクエストにタイムアウトが設定されている
+- [ ] レスポンスのバリデーションが実装されている
+- [ ] APIキーがiOSアプリに埋め込まれていない
 
-### 5. XSS防止
+### 5. APIレスポンスの安全な処理
 
-#### HTMLのサニタイズ
+#### レスポンスバリデーション
 
-```typescript
-import DOMPurify from 'isomorphic-dompurify'
+```go
+// Gemini APIレスポンスのバリデーション
+func parseGeminiResponse(body []byte) (*AnalysisResult, error) {
+    var result AnalysisResult
+    if err := json.Unmarshal(body, &result); err != nil {
+        return nil, fmt.Errorf("invalid response format: %w", err)
+    }
 
-// ユーザー提供のHTMLは常にDOMPurifyでサニタイズ
-function sanitizeUserContent(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p'],
-    ALLOWED_ATTR: []
-  })
+    // レスポンス内容のバリデーション
+    if result.Calories < 0 || result.Calories > 10000 {
+        return nil, fmt.Errorf("unreasonable calorie value: %d", result.Calories)
+    }
+
+    return &result, nil
 }
 ```
 
 #### 確認ステップ
 
-- [ ] ユーザー提供のHTMLがサニタイズされている
-- [ ] Reactの組み込みXSS保護が使用されている
-- [ ] 生のHTML挿入は避ける
+- [ ] 外部APIレスポンスがバリデートされている
+- [ ] 不正なデータがデータベースに保存されない
+- [ ] エラーレスポンスが適切に処理されている
 
 ### 6. 機密データの露出
 
 #### ロギング
 
-```typescript
+```go
 // NG: 機密データをログ
-console.log('API Key:', apiKey)
+log.Printf("API Key: %s", apiKey)
 
 // OK: 機密データを編集
-console.log('API call made for userId:', userId)
+log.Printf("API call made for userId: %s", userId)
 ```
 
 #### エラーメッセージ
 
-```typescript
+```go
 // NG: 内部詳細を露出
-catch (error) {
-  return { error: error.message, stack: error.stack }
+if err != nil {
+    return fmt.Errorf("database error: %v, query: %s", err, query)
 }
 
 // OK: 汎用エラーメッセージ
-catch (error) {
-  console.error('Internal error:', error)
-  return { error: 'An error occurred. Please try again.' }
+if err != nil {
+    log.Printf("internal error: %v", err)
+    return fmt.Errorf("an error occurred, please try again")
 }
 ```
 
@@ -216,21 +219,21 @@ catch (error) {
 #### 定期的な更新
 
 ```bash
-# 脆弱性をチェック
-npm audit
+# Go依存関係の脆弱性チェック
+go list -m all
+govulncheck ./...
 
-# 自動修正可能な問題を修正
-npm audit fix
-
-# 依存関係を更新
-npm update
+# Go依存関係の更新
+go get -u ./...
+go mod tidy
 ```
 
 #### 確認ステップ
 
 - [ ] 依存関係が最新
-- [ ] 既知の脆弱性がない（npm auditがクリーン）
-- [ ] package-lock.jsonがコミットされている
+- [ ] 既知の脆弱性がない
+- [ ] go.sumがコミットされている
+- [ ] SPMのPackage.resolvedがコミットされている
 
 ## デプロイ前セキュリティチェックリスト
 
@@ -239,8 +242,8 @@ npm update
 - [ ] シークレット: ハードコードされたシークレットがない、すべて環境変数にある
 - [ ] 入力バリデーション: すべてのユーザー入力がバリデートされている
 - [ ] SQLインジェクション: すべてのクエリがパラメータ化されている
-- [ ] コマンドインジェクション: ファイルパスがサニタイズされている
-- [ ] XSS: ユーザーコンテンツがサニタイズされている
+- [ ] Gemini API: APIキーがサーバーサイドのみで使用、タイムアウト設定済み
+- [ ] レスポンスバリデーション: 外部APIレスポンスが検証されている
 - [ ] HTTPS: 本番環境で強制
 - [ ] エラーハンドリング: エラーに機密データがない
 - [ ] ロギング: 機密データがログされていない
@@ -250,7 +253,7 @@ npm update
 ## リソース
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Next.js Security](https://nextjs.org/docs/security)
+- [Go Security Best Practices](https://go.dev/doc/security/best-practices)
 
 ---
 
