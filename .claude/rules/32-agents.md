@@ -11,7 +11,6 @@
 | code-reviewer | コードレビュー | コード作成後 |
 | security-reviewer | セキュリティ分析 | コミット前 |
 | build-error-resolver | ビルドエラー修正 | ビルド失敗時 |
-| e2e-runner | E2Eテスト | 重要なユーザーフロー |
 | doc-updater | ドキュメント更新 | ドキュメント更新時 |
 
 ## 即座に使用すべきエージェント
