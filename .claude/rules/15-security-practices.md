@@ -14,11 +14,11 @@ paths:
 - クエリ文字列に直接ユーザー入力を埋め込まない
 
 ```go
-// ✅ 良い例 - SQLインジェクション対策
+// 良い例 - SQLインジェクション対策
 query := "SELECT * FROM foods WHERE name LIKE $1"
 rows, err := db.QueryContext(ctx, query, "%"+searchTerm+"%")
 
-// ❌ 悪い例 - SQLインジェクション脆弱性
+// 悪い例 - SQLインジェクション脆弱性
 query := fmt.Sprintf("SELECT * FROM foods WHERE name LIKE '%%%s%%'", searchTerm)
 rows, err := db.QueryContext(ctx, query)
 ```
@@ -29,7 +29,7 @@ rows, err := db.QueryContext(ctx, query)
 - ホワイトリスト方式を採用
 
 ```go
-// ✅ 良い例 - ホワイトリストバリデーション
+// 良い例 - ホワイトリストバリデーション
 func validateSortOrder(order string) error {
     allowedOrders := map[string]bool{
         "asc":  true,
@@ -48,10 +48,10 @@ func validateSortOrder(order string) error {
 - APIキー、パスワードはコミットしない
 
 ```go
-// ✅ 良い例 - 環境変数から取得
+// 良い例 - 環境変数から取得
 apiKey := os.Getenv("GEMINI_API_KEY")
 
-// ❌ 悪い例 - ハードコード
+// 悪い例 - ハードコード
 apiKey := "sk-1234567890abcdef"
 ```
 
@@ -66,9 +66,9 @@ apiKey := "sk-1234567890abcdef"
 - エラーログには十分な文脈情報を含める
 
 ```go
-// ✅ 良い例
+// 良い例
 log.Printf("failed to fetch food: foodID=%s, error=%v", foodID, err)
 
-// ❌ 悪い例 - 機密情報をログに出力
+// 悪い例 - 機密情報をログに出力
 log.Printf("API key: %s", apiKey)
 ```

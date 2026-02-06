@@ -98,12 +98,12 @@ c) 影響度で優先順位付け
 パターン1: Swiftプロトコル未準拠
 
 ```swift
-// ❌ エラー: Type 'FoodService' does not conform to protocol 'FoodServiceProtocol'
+// エラー: Type 'FoodService' does not conform to protocol 'FoodServiceProtocol'
 class FoodService: FoodServiceProtocol {
     // 必要なメソッドが欠けている
 }
 
-// ✅ 修正: プロトコル要件を実装
+// 修正: プロトコル要件を実装
 class FoodService: FoodServiceProtocol {
     func analyzeFoodImage(_ image: Data) async throws -> AnalysisResult {
         // 実装
@@ -114,13 +114,13 @@ class FoodService: FoodServiceProtocol {
 パターン2: Goの未使用import
 
 ```go
-// ❌ エラー: "fmt" imported and not used
+// エラー: "fmt" imported and not used
 import (
     "fmt"
     "net/http"
 )
 
-// ✅ 修正: 未使用importを削除
+// 修正: 未使用importを削除
 import (
     "net/http"
 )
@@ -129,26 +129,26 @@ import (
 パターン3: Swiftオプショナル
 
 ```swift
-// ❌ エラー: Value of optional type 'String?' must be unwrapped
+// エラー: Value of optional type 'String?' must be unwrapped
 let name: String? = user.name
 let upper = name.uppercased()
 
-// ✅ 修正: オプショナルバインディング
+// 修正: オプショナルバインディング
 if let name = user.name {
     let upper = name.uppercased()
 }
 
-// ✅ または: nil合体演算子
+// または: nil合体演算子
 let upper = (user.name ?? "").uppercased()
 ```
 
 パターン4: Goのエラー処理漏れ
 
 ```go
-// ❌ エラー: err declared and not used
+// エラー: err declared and not used
 result, err := service.Analyze(ctx, input)
 
-// ✅ 修正: エラーを処理
+// 修正: エラーを処理
 result, err := service.Analyze(ctx, input)
 if err != nil {
     return nil, fmt.Errorf("failed to analyze: %w", err)
@@ -158,9 +158,9 @@ if err != nil {
 パターン5: SPMパッケージ解決エラー
 
 ```bash
-# ❌ エラー: Package resolution failed
+# エラー: Package resolution failed
 
-# ✅ 修正: SPMキャッシュをクリアして再解決
+# 修正: SPMキャッシュをクリアして再解決
 task ios:clean-all
 ```
 
