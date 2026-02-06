@@ -141,7 +141,7 @@ rpc error: code = FailedPrecondition desc = The query requires an index
 firebase deploy --only firestore:indexes --project utikomi-dev
 ```
 
-**注意**: インデックス構築中は「That index is currently building」エラーが出ます。構築完了まで待機してください。
+注意: インデックス構築中は「That index is currently building」エラーが出ます。構築完了まで待機してください。
 
 ### Firebase権限エラー
 

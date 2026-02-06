@@ -58,6 +58,10 @@ ios/
     ├── Generated/
     │   └── MockGenerated.swift  # Mockolo生成
     ├── AuthManagerTests.swift
+    ├── Features/
+    │   └── Meals/
+    │       ├── MealInputViewModelTests.swift
+    │       └── MealInputManualFoodTests.swift
     └── Disabled/                # 一時無効化テスト
         ├── MealsViewModelTests.swift
         └── Snapshots/
@@ -360,6 +364,8 @@ UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase S
 | ファイル | テスト対象 | 状態 |
 |:---|:---|:---|
 | AuthManagerTests.swift | 認証状態管理 | 有効 |
+| MealInputViewModelTests.swift | 食事入力ロジック | 有効 |
+| MealInputManualFoodTests.swift | 食事手入力ロジック | 有効 |
 | MealsViewModelTests.swift | 食事一覧ロジック | 一時無効化 (Disabled/) |
 
 ### スナップショットテスト

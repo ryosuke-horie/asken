@@ -33,7 +33,7 @@ model: opus
 | 対象 | モック可否 | 理由 |
 | :--- | :--------- | :--- |
 | 外部API（Gemini API等） | 可 | ネットワーク依存を排除 |
-| データベース（PostgreSQL） | 可 | テスト実行速度と独立性 |
+| データベース（Firestore） | 可 | テスト実行速度と独立性 |
 | 現在時刻 | 可 | 再現性の確保 |
 | 内部クラス | 不可 | 実装詳細への依存を避ける |
 | ユーティリティ関数 | 不可 | 実際の振る舞いを検証 |
@@ -41,39 +41,63 @@ model: opus
 ## TDDワークフロー
 
 ### ステップ1: テストを先に書く（RED）
-```typescript
-// 必ず失敗するテストから開始
-describe('analyzeImage', () => {
-  it('有効な画像で食品情報を返すべき', async () => {
-    const result = await analyzeImage({
-      imagePath: '/path/to/food.jpg'
-    })
 
-    expect(result.success).toBe(true)
-    expect(result.foods).toBeDefined()
-    expect(result.foods.length).toBeGreaterThan(0)
-  })
-})
+Go:
+```go
+func TestFoodService_AnalyzeFoodImage(t *testing.T) {
+    // Arrange
+    mockGemini := new(mockGeminiCaller)
+    mockGemini.On("AnalyzeImage", mock.Anything, "/path/to/image.jpg").
+        Return(&AnalysisResult{
+            Foods:    []string{"ごはん", "味噌汁"},
+            Calories: 450,
+        }, nil)
+    service := NewFoodService(mockGemini, nil)
+
+    // Act
+    result, err := service.AnalyzeFoodImage(context.Background(), "/path/to/image.jpg")
+
+    // Assert
+    require.NoError(t, err)
+    assert.Equal(t, 450, result.Calories)
+    mockGemini.AssertExpectations(t)
+}
+```
+
+Swift:
+```swift
+@Test func ログイン成功時に認証状態がtrueになるべき() async throws {
+    // Arrange
+    let mockRepo = MockAuthRepositoryProtocol()
+    mockRepo.loginHandler = { _, _ in
+        AuthResponse(token: "token", user: testUser)
+    }
+    let manager = AuthManager(repository: mockRepo)
+
+    // Act
+    try await manager.login(email: "test@example.com", password: "Pass0123")
+
+    // Assert
+    #expect(manager.isAuthenticated == true)
+}
 ```
 
 ### ステップ2: テスト実行（失敗を確認）
 ```bash
-npm test
-# テストが失敗する - まだ実装していないため
+# Go
+task test
+
+# iOS
+task ios:test
 ```
 
 ### ステップ3: 最小限の実装を書く（GREEN）
-```typescript
-export async function analyzeImage(params: AnalyzeImageParams) {
-  const response = await callGeminiAPI(params.imagePath)
-  return { success: true, foods: response.foods }
-}
-```
+
+テストを通すために必要な最小限のコードのみを実装する。
 
 ### ステップ4: テスト実行（成功を確認）
 ```bash
-npm test
-# テストが成功するはず
+task test
 ```
 
 ### ステップ5: リファクタリング（IMPROVE）
@@ -84,120 +108,131 @@ npm test
 
 ### ステップ6: カバレッジを確認
 ```bash
-npm test -- --coverage
-# 80%以上のカバレッジを確認
+# Go
+task test:coverage
+
+# iOS
+task ios:test:coverage
 ```
 
 ## 書くべきテストの種類
 
 ### 1. ユニットテスト（必須）
-個々の関数を分離してテスト:
 
-```typescript
-import { calculateCalories } from './calories'
+Go - テーブル駆動テスト:
+```go
+func TestCalculateCalories(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    Food
+        expected int
+    }{
+        {"valid food", Food{Protein: 10, Fat: 5, Carbs: 20}, 165},
+        {"zero values", Food{}, 0},
+    }
 
-describe('calculateCalories', () => {
-  it('全ての食品のカロリーを正しく合計すべき', () => {
-    const foods = [
-      { name: 'ご飯', calories: 250 },
-      { name: '味噌汁', calories: 50 }
-    ]
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := CalculateCalories(tt.input)
+            assert.Equal(t, tt.expected, result)
+        })
+    }
+}
+```
 
-    const total = calculateCalories(foods)
+Swift - Swift Testing:
+```swift
+@Suite struct MealInputViewModelTests {
+    @Test func 空の食品名でバリデーションエラーになるべき() async throws {
+        let viewModel = MealInputViewModel()
+        viewModel.foodName = ""
 
-    expect(total).toBe(300)
-  })
+        let result = viewModel.validate()
 
-  it('空の食品リストで0を返すべき', () => {
-    const total = calculateCalories([])
-
-    expect(total).toBe(0)
-  })
-
-  it('負のカロリーでエラーをスローすべき', () => {
-    const foods = [{ name: 'invalid', calories: -100 }]
-
-    expect(() => calculateCalories(foods)).toThrow('Invalid calories')
-  })
-})
+        #expect(result == false)
+    }
+}
 ```
 
 ### 2. 統合テスト（必須）
+
 APIエンドポイントとデータベース操作をテスト:
 
-```typescript
-describe('GET /api/meals', () => {
-  it('200と有効な結果を返すべき', async () => {
-    const res = await fetch('/api/meals')
+```go
+func TestMealsHandler_GetDailyMeals(t *testing.T) {
+    // テスト用サーバーをセットアップ
+    handler := NewMealsHandler(mockService)
+    req := httptest.NewRequest("GET", "/api/meals/daily?date=2024-01-01", nil)
+    w := httptest.NewRecorder()
 
-    expect(res.status).toBe(200)
-    const data = await res.json()
-    expect(data.success).toBe(true)
-    expect(data.meals.length).toBeGreaterThan(0)
-  })
+    handler.GetDailyMeals(w, req)
 
-  it('無効な日付パラメータで400を返すべき', async () => {
-    const res = await fetch('/api/meals?date=invalid')
-
-    expect(res.status).toBe(400)
-  })
-})
+    assert.Equal(t, http.StatusOK, w.Code)
+}
 ```
 
 ### 3. E2Eテスト（重要フローのみ）
-完全なユーザージャーニーをテスト:
 
-```typescript
-import { test, expect } from '@playwright/test'
+XCUITestで完全なユーザージャーニーをテスト:
 
-test('ユーザーが食事画像をアップロードして結果を確認できる', async ({ page }) => {
-  await page.goto('/upload')
+```swift
+func testユーザーが食事画像をアップロードして結果を確認できる() {
+    let app = XCUIApplication()
+    app.launch()
 
-  // 画像をアップロード
-  await page.setInputFiles('[data-testid="file-input"]', 'test-images/lunch.jpg')
+    // 食事記録画面に遷移
+    app.buttons["addMealButton"].tap()
 
-  // 分析ボタンをクリック
-  await page.click('[data-testid="analyze-button"]')
+    // 画像選択
+    app.buttons["selectImageButton"].tap()
 
-  // 結果を確認
-  await expect(page.locator('[data-testid="food-list"]')).toBeVisible()
-  await expect(page.locator('[data-testid="total-calories"]')).toContainText('kcal')
-})
+    // 結果の確認
+    let resultLabel = app.staticTexts["totalCalories"]
+    XCTAssertTrue(resultLabel.waitForExistence(timeout: 10))
+}
 ```
 
 ## 外部依存関係のモック
 
-### Gemini APIをモック
-```typescript
-vi.mock('@/lib/gemini', () => ({
-  analyzeFood: vi.fn(() => Promise.resolve({
-    foods: [
-      { name: 'ご飯', calories: 250, protein: 5 }
-    ],
-    success: true
-  }))
-}))
+### Gemini APIをモック（Go）
+```go
+type mockGeminiCaller struct {
+    mock.Mock
+}
+
+func (m *mockGeminiCaller) AnalyzeImage(ctx context.Context, imagePath string) (*AnalysisResult, error) {
+    args := m.Called(ctx, imagePath)
+    if args.Get(0) == nil {
+        return nil, args.Error(1)
+    }
+    return args.Get(0).(*AnalysisResult), args.Error(1)
+}
 ```
 
-### PostgreSQLをモック
-```typescript
-vi.mock('@/lib/db', () => ({
-  query: vi.fn(() => Promise.resolve({
-    rows: [{ id: 1, name: 'テストデータ' }]
-  }))
-}))
+### Repositoryをモック（Swift - Mockolo）
+```swift
+// sourcery: AutoMockable
+protocol MealRepositoryProtocol {
+    func fetchDailyMeals(date: Date) async throws -> [Meal]
+}
+
+// Mockoloが自動生成するモック
+let mockRepo = MockMealRepositoryProtocol()
+mockRepo.fetchDailyMealsHandler = { date in
+    return [Meal(id: "1", name: "テスト食事")]
+}
 ```
 
 ## 必ずテストすべきエッジケース
 
-1. Null/Undefined: 入力がnullの場合は？
+1. nil/ゼロ値: 入力がnilまたはゼロ値の場合は？
 2. 空: 配列/文字列が空の場合は？
-3. 無効な型: 間違った型が渡された場合は？
+3. 無効な型: 間違った入力の場合は？
 4. 境界値: 最小/最大値
 5. エラー: ネットワーク障害、データベースエラー
 6. レースコンディション: 並行操作
 7. 大量データ: 10,000件以上のパフォーマンス
-8. 特殊文字: Unicode、絵文字、SQL文字
+8. 特殊文字: Unicode、絵文字
 
 ## テスト品質チェックリスト
 
@@ -206,7 +241,7 @@ vi.mock('@/lib/db', () => ({
 - [ ] 全パブリック関数にユニットテストあり
 - [ ] 全APIエンドポイントに統合テストあり
 - [ ] 重要なユーザーフローにE2Eテストあり
-- [ ] エッジケースをカバー（null、空、無効）
+- [ ] エッジケースをカバー（nil、空、無効）
 - [ ] エラーパスをテスト（ハッピーパスだけでない）
 - [ ] 外部依存関係にモックを使用
 - [ ] テストが独立している（共有状態なし）
@@ -216,61 +251,56 @@ vi.mock('@/lib/db', () => ({
 
 ## テストの悪い例（アンチパターン）
 
-### ❌ 実装詳細をテスト
-```typescript
+### 悪い例: 実装詳細をテスト
+```go
 // 内部状態をテストしない
-expect(component.state.count).toBe(5)
+assert.Equal(t, 5, service.internalCounter)
 ```
 
-### ✅ ユーザーに見える振る舞いをテスト
-```typescript
-// ユーザーが見るものをテスト
-expect(screen.getByText('Count: 5')).toBeInTheDocument()
+### 良い例: 外部から観察可能な振る舞いをテスト
+```go
+// 公開メソッドの戻り値をテスト
+result, err := service.GetCount(ctx)
+assert.NoError(t, err)
+assert.Equal(t, 5, result)
 ```
 
-### ❌ テストが相互依存
-```typescript
+### 悪い例: テストが相互依存
+```go
 // 前のテストに依存しない
-test('ユーザーを作成', () => { /* ... */ })
-test('同じユーザーを更新', () => { /* 前のテストが必要 */ })
+func TestCreateUser(t *testing.T) { /* ... */ }
+func TestUpdateSameUser(t *testing.T) { /* 前のテストが必要 */ }
 ```
 
-### ✅ 独立したテスト
-```typescript
+### 良い例: 独立したテスト
+```go
 // 各テストでデータをセットアップ
-test('ユーザーを更新', () => {
-  const user = createTestUser()
-  // テストロジック
-})
+func TestUpdateUser(t *testing.T) {
+    user := createTestUser(t)
+    // テストロジック
+}
 ```
 
 ## カバレッジレポート
 
 ```bash
-# カバレッジ付きでテスト実行
-npm test -- --coverage
+# Go - カバレッジ付きでテスト実行
+task test:coverage
 
-# HTMLレポートを表示
-open coverage/lcov-report/index.html
+# iOS - カバレッジ付きでテスト実行
+task ios:test:coverage
 ```
 
-必須閾値:
-- Branches: 80%
-- Functions: 80%
-- Lines: 80%
-- Statements: 80%
-
-## 継続的テスト
+## テスト実行コマンド
 
 ```bash
-# 開発中はwatchモード
-npm test -- --watch
+# Go
+task test           # すべてのテスト
+task test:coverage  # カバレッジ付き
 
-# コミット前に実行（git hook経由）
-npm test && npm run lint
-
-# CI/CD統合
-npm test -- --coverage --ci
+# iOS
+task ios:test           # すべてのテスト
+task ios:test:coverage  # カバレッジ付き
 ```
 
 ## 重要な注意事項

@@ -78,5 +78,5 @@ task ios:clean-all
 
 ## 注意
 
-- データベースはFirestoreを使用。PostgreSQL関連のコマンド（`task db-*`）はTaskfile.ymlに残っているが未使用
+- データベースはFirestoreを使用
 - Firestore Repositoryのテストは`FIRESTORE_EMULATOR_HOST`環境変数が設定されていない場合スキップされる
