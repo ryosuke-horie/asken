@@ -113,7 +113,7 @@ git commit -m "refactor: NutritionDisplayコンポーネントを分割"
 
 ## マージ戦略
 
-- Squash and mergeを推奨（コミット履歴を整理）
+- 通常のマージを使用すること（Squash mergeは禁止）
 
 ## 作業フロー例
 
