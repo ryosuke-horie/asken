@@ -6,6 +6,9 @@
     "security-guidance@claude-plugins-official": true,
     "linear@claude-plugins-official": true
   },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "enableAllProjectMcpServers": true,
   "permissions": {
     "deny": ["Read(.env)", "Read(.env.*)"]
