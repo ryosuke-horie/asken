@@ -2,9 +2,9 @@
 
 正確な情報源（source of truth）からドキュメントを同期:
 
-1. package.jsonのscriptsセクションを読む
-   - スクリプトリファレンステーブルを生成
-   - コメントから説明を含める
+1. Taskfile.ymlのタスク定義を読む
+   - タスクリファレンステーブルを生成
+   - 各タスクの説明を含める
 
 2. 全.env.exampleファイルを読む
    - 全環境変数を抽出
@@ -13,7 +13,7 @@
 
 3. docs/CONTRIB.mdを生成:
    - 開発ワークフロー
-   - 利用可能なスクリプト
+   - 利用可能なTaskfileコマンド
    - 環境セットアップ
    - テスト手順
 
@@ -29,4 +29,4 @@
 
 6. 差分サマリーを表示
 
-正確な情報源: package.jsonと各.env.example
+正確な情報源: Taskfile.ymlと各.env.example
