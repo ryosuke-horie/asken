@@ -10,8 +10,6 @@
 users/{userId}/analysisRequests/{requestId}
 ```
 
-注意: 体重、体調、トレーニング、マイリスト、プロフィールのコレクションは未実装です。ADR-002に設計仕様があります。
-
 ## ドキュメント定義
 
 ### analysisRequests/{requestId}
@@ -58,63 +56,6 @@ confirmedフィールドの動作:
   "fat": 5.0,
   "carbohydrates": 15.0
 }
-```
-
-## 将来のコレクション設計（ADR-002より）
-
-```
-users/
-  └── {userId}/
-        ├── weightGoal/  (サブコレクション、1ドキュメント)
-        │     └── goal/
-        │           ├── targetWeight: number
-        │           └── targetDate: timestamp
-        │
-        ├── weightRecords/  (サブコレクション)
-        │     └── {recordId}/
-        │           ├── weight: number
-        │           └── recordedAt: timestamp
-        │
-        ├── conditionRecords/  (サブコレクション)
-        │     └── {recordId}/
-        │           ├── condition: number (1-3)
-        │           ├── fatigue: number (1-3)
-        │           └── recordedAt: timestamp
-        │
-        ├── trainingLocations/  (サブコレクション)
-        │     └── {locationId}/
-        │           ├── name: string
-        │           ├── sortOrder: number
-        │           │
-        │           └── equipment/  (サブコレクション)
-        │                 └── {equipmentId}/
-        │                       ├── name: string
-        │                       └── sortOrder: number
-        │
-        ├── trainingRecords/  (サブコレクション)
-        │     └── {recordId}/
-        │           ├── locationId: string
-        │           ├── recordedAt: timestamp
-        │           └── completed: boolean
-        │
-        ├── analysisRequests/  (サブコレクション) ← 実装済み
-        │     └── {requestId}/
-        │           ├── status: string
-        │           ├── inputType: string
-        │           ├── imagePath: string
-        │           ├── inputText: string
-        │           ├── mealType: string
-        │           ├── mealDate: timestamp
-        │           ├── confirmed: boolean
-        │           ├── result: map (foods, totalCalories, etc.)
-        │           ├── createdAt: timestamp
-        │           └── updatedAt: timestamp
-        │
-        └── mylist/  (サブコレクション)
-              └── {itemId}/
-                    ├── name: string
-                    ├── foods: array
-                    └── totalCalories: number
 ```
 
 ## インデックス
