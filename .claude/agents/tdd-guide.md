@@ -3,6 +3,7 @@ name: tdd-guide
 description: テスト駆動開発（TDD）のスペシャリスト。テストを先に書く方法論を徹底します。新機能の実装、バグ修正、リファクタリング時に積極的に使用してください。80%以上のテストカバレッジを確保します。
 tools: Read, Write, Edit, Bash, Grep
 model: opus
+memory: project
 ---
 
 # TDDガイド
