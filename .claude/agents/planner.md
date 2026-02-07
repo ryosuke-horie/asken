@@ -3,6 +3,7 @@ name: planner
 description: 複雑な機能やリファクタリングのためのエキスパート計画スペシャリスト。機能実装、アーキテクチャ変更、複雑なリファクタリングのリクエスト時にプロアクティブに使用する。計画タスクで自動的にアクティブ化。
 tools: Read, Grep, Glob
 model: opus
+memory: project
 ---
 
 # プランナー
