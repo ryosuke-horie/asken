@@ -22,6 +22,18 @@
 - No backend .env.example file found (permission denied or missing)
 - Dev mock token hardcoded as constant "dev-mock-token"
 
+## CI/CD・インフラ診断結果 (2026-02-07)
+- CRITICAL: Cloud Run SAにランタイム+CI/CD権限が集約（SA分離が必要）
+- HIGH: サードパーティActionsがSHAピンニングされていない
+- HIGH: WIFにブランチ制限なし（任意ブランチからGCP認証可能）
+- HIGH: IAM権限がプロジェクトレベル（リソースレベルに変更推奨）
+- HIGH: SwiftLint/SwiftFormatダウンロード時のチェックサム検証なし
+- HIGH: deploy.ymlにトップレベルpermissions未定義
+- MEDIUM: Cloud Run ingress=INGRESS_TRAFFIC_ALL
+- MEDIUM: Terraform stateに機密データ格納（CMEK/アクセス制限確認必要）
+- MEDIUM: persist-credentials: false未設定
+- Dockerfile: distroless+nonroot+マルチステージで良好
+
 ## File Patterns
 - Backend: backend/ (Go, layered architecture: handler -> service -> repository)
 - iOS: ios/Uchikomi/ (SwiftUI)
