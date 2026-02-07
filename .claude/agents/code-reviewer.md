@@ -3,6 +3,7 @@ name: code-reviewer
 description: コードレビュースペシャリスト。コード品質、セキュリティ、保守性のレビューをプロアクティブに実施。コード作成・変更直後に使用する。すべてのコード変更で使用必須。
 tools: Read, Grep, Glob, Bash
 model: opus
+memory: project
 ---
 
 # コードレビューア
