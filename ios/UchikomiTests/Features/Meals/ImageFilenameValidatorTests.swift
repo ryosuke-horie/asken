@@ -39,6 +39,11 @@ import Testing
         #expect(result == true)
     }
 
+    @Test func 複数ドット含む正当なファイル名はバリデーションを通過すべき() {
+        let result = ImageFilenameValidator.isValid("image.backup.jpg")
+        #expect(result == true)
+    }
+
     // MARK: - 異常系
 
     @Test func 空文字列はバリデーション失敗すべき() {
