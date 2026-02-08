@@ -61,6 +61,14 @@
         { "fieldPath": "mealDate", "order": "ASCENDING" }
       ]
     }
+    ,
+    {
+      "collectionGroup": "weightRecords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "recordedAt", "order": "ASCENDING" }
+      ]
+    }
   ],
   "fieldOverrides": [
     {
