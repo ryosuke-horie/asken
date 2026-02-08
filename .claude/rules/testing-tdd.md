@@ -60,7 +60,7 @@ func TestFoodService_AnalyzeFoodImage(t *testing.T) {
 
 ## iOSテスト
 
-iOSテストの詳細は`10-ios-testing.md`を参照。
+iOSテストの詳細は`ios-testing.md`を参照。
 
 ### 概要
 

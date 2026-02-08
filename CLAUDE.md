@@ -16,34 +16,34 @@
 
 | ファイル | 内容 |
 |:---|:---|
-| `01-testing-details.md` | テスト詳細（古典派スタイル、モック基準） |
-| `02-git-workflow-details.md` | Git/GitHubワークフロー詳細（Linear連携、PRレビュー、マージ戦略） |
-| `03-coding-style.md` | コーディングスタイル（KISS, DRY, YAGNI） |
-| `04-security-details.md` | セキュリティ詳細（コミット前チェック） |
-| `05-performance.md` | パフォーマンス最適化（モデル選択、コンテキスト管理） |
-| `06-patterns.md` | 共通パターン（APIレスポンス形式、Repositoryパターン） |
-| `07-dependencies.md` | 依存関係管理（dependabot設定） |
-| `08-development-commands.md` | 開発コマンド（Taskfile） |
-| `09-documentation.md` | ドキュメント更新ルール |
+| `testing-details.md` | テスト詳細（古典派スタイル、モック基準） |
+| `git-workflow-details.md` | Git/GitHubワークフロー詳細（Linear連携、PRレビュー、マージ戦略） |
+| `coding-style.md` | コーディングスタイル（KISS, DRY, YAGNI） |
+| `security-details.md` | セキュリティ詳細（コミット前チェック） |
+| `performance.md` | パフォーマンス最適化（モデル選択、コンテキスト管理） |
+| `patterns.md` | 共通パターン（APIレスポンス形式、Repositoryパターン） |
+| `dependencies.md` | 依存関係管理（dependabot設定） |
+| `development-commands.md` | 開発コマンド（Taskfile） |
+| `documentation.md` | ドキュメント更新ルール |
 
 ### 技術別ルール
 
 | ファイル | 内容 |
 |:---|:---|
-| `10-ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
-| `11-backend-golang.md` | バックエンド開発規約（Go） |
-| `12-gemini-api.md` | Gemini API連携のベストプラクティス |
-| `13-firestore.md` | Firestore規約（インデックス管理） |
-| `14-testing-tdd.md` | テスト駆動開発（TDD） |
-| `15-security-practices.md` | セキュリティガイドライン |
-| `17-ios-build-troubleshooting.md` | iOSビルドトラブル対応（SPMキャッシュ、Firebase SDK） |
+| `ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
+| `backend-golang.md` | バックエンド開発規約（Go） |
+| `gemini-api.md` | Gemini API連携のベストプラクティス |
+| `firestore.md` | Firestore規約（インデックス管理） |
+| `testing-tdd.md` | テスト駆動開発（TDD） |
+| `security-practices.md` | セキュリティガイドライン |
+| `ios-build-troubleshooting.md` | iOSビルドトラブル対応（SPMキャッシュ、Firebase SDK） |
 
 ### Claude Code拡張
 
 | ファイル | 内容 |
 |:---|:---|
-| `31-hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
-| `33-plan-mode.md` | Plan Modeルール（プラン保存、Linear連携） |
+| `hooks.md` | フックシステム（PreToolUse, PostToolUse, Stop） |
+| `plan-mode.md` | Plan Modeルール（プラン保存、Linear連携） |
 
 ### 即座に使用すべきエージェント
 

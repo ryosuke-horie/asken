@@ -74,7 +74,7 @@ git checkout ios/Uchikomi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Pac
 task ios:clean-all
 ```
 
-詳細は `.claude/rules/17-ios-build-troubleshooting.md` を参照。
+詳細は `.claude/rules/ios-build-troubleshooting.md` を参照。
 
 ## 注意
 
