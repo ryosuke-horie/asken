@@ -58,6 +58,26 @@ func TestLoadRateLimitConfig(t *testing.T) {
 		assert.Equal(t, float64(10), config.IPRateLimit)
 		assert.Equal(t, 20, config.IPBurstSize)
 	})
+
+	t.Run("CleanupIntervalが0の場合に最低1秒に補正されるべき", func(t *testing.T) {
+		t.Setenv("RATE_LIMIT_CLEANUP_INTERVAL", "0")
+
+		config := LoadRateLimitConfig()
+
+		assert.Equal(t, 1*time.Second, config.CleanupInterval)
+	})
+
+	t.Run("バーストサイズが0の場合に最低1に補正されるべき", func(t *testing.T) {
+		t.Setenv("RATE_LIMIT_IP_BURST", "0")
+		t.Setenv("RATE_LIMIT_USER_BURST", "0")
+		t.Setenv("RATE_LIMIT_GEMINI_BURST", "0")
+
+		config := LoadRateLimitConfig()
+
+		assert.Equal(t, 1, config.IPBurstSize)
+		assert.Equal(t, 1, config.UserBurstSize)
+		assert.Equal(t, 1, config.GeminiBurstSize)
+	})
 }
 
 // --- TestInMemoryRateLimiterStore ---
@@ -545,6 +565,21 @@ func TestRateLimitMiddleware_Stop(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 
 		require.NotPanics(t, func() {
+			rl.Stop()
+		})
+	})
+
+	t.Run("Stop二重呼び出しでパニックしないべき", func(t *testing.T) {
+		config := RateLimitConfig{
+			IPRateLimit:     10,
+			IPBurstSize:     20,
+			CleanupInterval: 1 * time.Hour,
+			EntryTTL:        1 * time.Hour,
+		}
+		rl := NewRateLimitMiddleware(config)
+
+		require.NotPanics(t, func() {
+			rl.Stop()
 			rl.Stop()
 		})
 	})
