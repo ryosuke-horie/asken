@@ -67,6 +67,18 @@ func TestLoadRateLimitConfig(t *testing.T) {
 		assert.Equal(t, 1*time.Second, config.CleanupInterval)
 	})
 
+	t.Run("負のレートリミット値がデフォルトに補正されるべき", func(t *testing.T) {
+		t.Setenv("RATE_LIMIT_IP_RPS", "-5")
+		t.Setenv("RATE_LIMIT_USER_RPS", "-1")
+		t.Setenv("RATE_LIMIT_GEMINI_RPS", "-0.5")
+
+		config := LoadRateLimitConfig()
+
+		assert.Equal(t, float64(10), config.IPRateLimit)
+		assert.Equal(t, float64(5), config.UserRateLimit)
+		assert.Equal(t, 0.5, config.GeminiRateLimit)
+	})
+
 	t.Run("バーストサイズが0の場合に最低1に補正されるべき", func(t *testing.T) {
 		t.Setenv("RATE_LIMIT_IP_BURST", "0")
 		t.Setenv("RATE_LIMIT_USER_BURST", "0")
