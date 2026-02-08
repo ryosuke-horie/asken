@@ -62,6 +62,7 @@ final class NotificationSettingsViewModel {
             @unknown default:
                 logger.warning("未知の通知権限ステータス: \(String(describing: status))")
                 systemPermissionGranted = false
+                return
             }
         }
 

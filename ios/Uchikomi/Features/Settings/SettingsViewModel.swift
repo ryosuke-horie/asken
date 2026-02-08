@@ -1,5 +1,11 @@
 import Foundation
+import os
 import UchikomiCore
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
+    category: "SettingsViewModel"
+)
 
 // MARK: - SettingsViewModel
 
@@ -27,6 +33,7 @@ final class SettingsViewModel {
         do {
             try authManager.logout()
         } catch {
+            logger.error("ログアウト失敗: \(error.localizedDescription)")
             logoutErrorMessage = "ログアウトに失敗しました"
             showLogoutError = true
         }
