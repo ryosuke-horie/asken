@@ -5,8 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 )
 
 type contextKey string
@@ -18,14 +16,19 @@ type Authenticator interface {
 	Authenticate(next http.Handler) http.Handler
 }
 
-// AuthMiddleware は Firebase 認証を行うミドルウェア
-type AuthMiddleware struct {
-	firebaseAuthService *service.FirebaseAuthService
+// TokenVerifier はトークン検証を抽象化するインターフェース
+type TokenVerifier interface {
+	VerifyAndGetUID(ctx context.Context, idToken string) (string, error)
 }
 
-func NewAuthMiddleware(firebaseAuthService *service.FirebaseAuthService) *AuthMiddleware {
+// AuthMiddleware は Firebase 認証を行うミドルウェア
+type AuthMiddleware struct {
+	tokenVerifier TokenVerifier
+}
+
+func NewAuthMiddleware(tokenVerifier TokenVerifier) *AuthMiddleware {
 	return &AuthMiddleware{
-		firebaseAuthService: firebaseAuthService,
+		tokenVerifier: tokenVerifier,
 	}
 }
 
@@ -44,14 +47,14 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		}
 
 		idToken := parts[1]
-		token, err := m.firebaseAuthService.VerifyIDToken(r.Context(), idToken)
+		uid, err := m.tokenVerifier.VerifyAndGetUID(r.Context(), idToken)
 		if err != nil {
 			log.Printf("Firebase ID token validation failed: %v", err)
 			http.Error(w, "無効なトークンです", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), firebaseUIDContextKey, token.UID)
+		ctx := context.WithValue(r.Context(), firebaseUIDContextKey, uid)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
