@@ -93,5 +93,70 @@ class MealRepositoryProtocolMock: MealRepositoryProtocol {
     }
 }
 
+class WeightRepositoryProtocolMock: WeightRepositoryProtocol {
+    init() { }
+
+
+    private(set) var getRecordsCallCount = 0
+    var getRecordsHandler: ((Date, Date) async throws -> WeightRecordsListResponse)?
+    func getRecords(from: Date, to: Date) async throws -> WeightRecordsListResponse {
+        getRecordsCallCount += 1
+        if let getRecordsHandler = getRecordsHandler {
+            return try await getRecordsHandler(from, to)
+        }
+        fatalError("getRecordsHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var createRecordCallCount = 0
+    var createRecordHandler: ((Double, Date, String) async throws -> WeightRecord)?
+    func createRecord(weightKg: Double, recordedAt: Date, note: String) async throws -> WeightRecord {
+        createRecordCallCount += 1
+        if let createRecordHandler = createRecordHandler {
+            return try await createRecordHandler(weightKg, recordedAt, note)
+        }
+        fatalError("createRecordHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var updateRecordCallCount = 0
+    var updateRecordHandler: ((String, Double, String) async throws -> WeightRecord)?
+    func updateRecord(id: String, weightKg: Double, note: String) async throws -> WeightRecord {
+        updateRecordCallCount += 1
+        if let updateRecordHandler = updateRecordHandler {
+            return try await updateRecordHandler(id, weightKg, note)
+        }
+        fatalError("updateRecordHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var deleteRecordCallCount = 0
+    var deleteRecordHandler: ((String) async throws -> ())?
+    func deleteRecord(id: String) async throws {
+        deleteRecordCallCount += 1
+        if let deleteRecordHandler = deleteRecordHandler {
+            try await deleteRecordHandler(id)
+        }
+        
+    }
+
+    private(set) var getGoalCallCount = 0
+    var getGoalHandler: (() async throws -> WeightGoal?)?
+    func getGoal() async throws -> WeightGoal? {
+        getGoalCallCount += 1
+        if let getGoalHandler = getGoalHandler {
+            return try await getGoalHandler()
+        }
+        return nil
+    }
+
+    private(set) var setGoalCallCount = 0
+    var setGoalHandler: ((Double) async throws -> WeightGoal)?
+    func setGoal(targetWeightKg: Double) async throws -> WeightGoal {
+        setGoalCallCount += 1
+        if let setGoalHandler = setGoalHandler {
+            return try await setGoalHandler(targetWeightKg)
+        }
+        fatalError("setGoalHandler returns can't have a default value thus its handler must be set")
+    }
+}
+
 
 
