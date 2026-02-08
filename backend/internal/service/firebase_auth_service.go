@@ -53,3 +53,12 @@ func (s *FirebaseAuthService) VerifyIDToken(ctx context.Context, idToken string)
 func (s *FirebaseAuthService) GetUserUID(token *auth.Token) string {
 	return token.UID
 }
+
+// VerifyAndGetUID は Firebase ID トークンを検証し、UID を直接返す
+func (s *FirebaseAuthService) VerifyAndGetUID(ctx context.Context, idToken string) (string, error) {
+	token, err := s.VerifyIDToken(ctx, idToken)
+	if err != nil {
+		return "", err
+	}
+	return token.UID, nil
+}
