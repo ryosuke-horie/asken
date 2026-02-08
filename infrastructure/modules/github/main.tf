@@ -98,3 +98,16 @@ resource "github_actions_environment_variable" "service_account_email" {
   variable_name = "SERVICE_ACCOUNT_EMAIL"
   value         = var.service_account_email
 }
+
+# =============================================================================
+# Environment Secrets
+# =============================================================================
+
+resource "github_actions_environment_secret" "e2e_firebase_api_key" {
+  count = var.e2e_firebase_api_key != "" ? 1 : 0
+
+  repository      = data.github_repository.main.name
+  environment     = github_repository_environment.env.environment
+  secret_name     = "E2E_FIREBASE_API_KEY"
+  plaintext_value = var.e2e_firebase_api_key
+}
