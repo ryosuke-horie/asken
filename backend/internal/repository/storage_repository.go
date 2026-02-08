@@ -106,8 +106,8 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
 	}
 
-	// BucketHandle.SignedURL()はGoogleAccessID/SignBytesを自動検出する（v1.28.0+）
-	// Cloud Run環境ではメタデータサーバーからSAメールを取得し、IAM signBlobで署名する
+	// BucketHandle.SignedURL()は認証情報を自動検出する
+	// GCP環境ではデフォルト認証情報からSAメールを取得し、IAM signBlobで署名する
 	// 前提条件: サービスアカウントにroles/iam.serviceAccountTokenCreator権限が必要
 	opts := &storage.SignedURLOptions{
 		Method:  "GET",
@@ -117,7 +117,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 
 	url, err := r.client.Bucket(r.bucketName).SignedURL(objectName, opts)
 	if err != nil {
-		return "", fmt.Errorf("署名付きURLの生成に失敗（IAM権限を確認してください）: %w", err)
+		return "", fmt.Errorf("署名付きURLの生成に失敗: %w", err)
 	}
 
 	return url, nil
