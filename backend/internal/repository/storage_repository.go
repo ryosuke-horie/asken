@@ -100,11 +100,11 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 	}
 	defer reader.Close()
 
-	data, err := io.ReadAll(io.LimitReader(reader, maxDownloadSize))
+	data, err := io.ReadAll(io.LimitReader(reader, maxDownloadSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("Cloud Storageからのデータ読み取りに失敗: %w", err)
 	}
-	if int64(len(data)) >= maxDownloadSize {
+	if int64(len(data)) > maxDownloadSize {
 		return nil, fmt.Errorf("ファイルサイズが上限(%dMB)を超えています", maxDownloadSize>>20)
 	}
 

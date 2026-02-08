@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -65,9 +66,15 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		MealDate  string `json:"meal_date"`
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 4096) // 4KB: テキスト入力(最大1000文字 = UTF-8で最大3000バイト) + JSONオーバーヘッド
+	r.Body = http.MaxBytesReader(w, r.Body, 4096) // 4KB: テキスト入力(len()で最大1000バイト) + JSONオーバーヘッド
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			log.Printf("Request body too large: limit=%d", maxBytesErr.Limit)
+			http.Error(w, "リクエストボディが大きすぎます", http.StatusRequestEntityTooLarge)
+			return
+		}
 		log.Printf("Error decoding JSON: %v", err)
 		http.Error(w, "リクエストの解析に失敗しました", http.StatusBadRequest)
 		return

@@ -519,7 +519,8 @@ func TestHistoryHandler_HandleUpdate_OversizedBody(t *testing.T) {
 
 	handler.HandleUpdate(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	assert.Contains(t, w.Body.String(), "リクエストボディが大きすぎます")
 }
 
 func TestHistoryHandler_HandleUpdate_MethodNotAllowed(t *testing.T) {

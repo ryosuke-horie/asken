@@ -172,11 +172,11 @@ func (c *HTTPClient) doRequest(ctx context.Context, reqBody GenerateContentReque
 	defer resp.Body.Close()
 
 	// レスポンスボディを読み取り（サイズ制限付き）
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("レスポンス読み取りエラー: %w", err)
 	}
-	if int64(len(body)) >= maxResponseSize {
+	if int64(len(body)) > maxResponseSize {
 		return nil, fmt.Errorf("レスポンスサイズが上限(%dMB)を超えています", maxResponseSize>>20)
 	}
 
