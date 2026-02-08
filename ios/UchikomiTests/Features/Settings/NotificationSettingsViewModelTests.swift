@@ -177,6 +177,89 @@ struct NotificationSettingsViewModelTests {
         #expect(scheduler.scheduleAllNotificationsCallCount == 1)
     }
 
+    // MARK: - toggleGlobalEnabled エッジケース
+
+    @Test
+    @MainActor
+    func 権限リクエストが失敗した場合にアラートが表示されるべき() async {
+        let store = makeStoreMock()
+        let scheduler = makeSchedulerMock(authorizationStatus: .notDetermined)
+        scheduler.requestAuthorizationHandler = { throw NSError(domain: "test", code: -1) }
+        let viewModel = NotificationSettingsViewModel(store: store, scheduler: scheduler)
+
+        await viewModel.toggleGlobalEnabled()
+
+        #expect(viewModel.showPermissionAlert == true)
+        #expect(viewModel.settings.isGlobalEnabled == false)
+        #expect(store.saveCallCount == 0)
+    }
+
+    @Test
+    @MainActor
+    func 権限リクエストでfalseが返った場合にアラートが表示されるべき() async {
+        let store = makeStoreMock()
+        let scheduler = makeSchedulerMock(authorizationStatus: .notDetermined)
+        scheduler.requestAuthorizationHandler = { false }
+        let viewModel = NotificationSettingsViewModel(store: store, scheduler: scheduler)
+
+        await viewModel.toggleGlobalEnabled()
+
+        #expect(viewModel.showPermissionAlert == true)
+        #expect(viewModel.settings.isGlobalEnabled == false)
+        #expect(viewModel.systemPermissionGranted == false)
+        #expect(store.saveCallCount == 0)
+    }
+
+    // MARK: - updateTime バリデーション
+
+    @Test
+    @MainActor
+    func 範囲外の時間がクランプされるべき() async {
+        var settings = NotificationSettings.default
+        settings.isGlobalEnabled = true
+        let store = makeStoreMock(settings: settings)
+        let scheduler = makeSchedulerMock()
+        let viewModel = NotificationSettingsViewModel(store: store, scheduler: scheduler)
+
+        await viewModel.updateTime(for: .breakfast, hour: 25, minute: 70)
+
+        let breakfastSetting = viewModel.settings.setting(for: .breakfast)
+        #expect(breakfastSetting?.hour == 23)
+        #expect(breakfastSetting?.minute == 59)
+    }
+
+    @Test
+    @MainActor
+    func 負の時間が0にクランプされるべき() async {
+        var settings = NotificationSettings.default
+        settings.isGlobalEnabled = true
+        let store = makeStoreMock(settings: settings)
+        let scheduler = makeSchedulerMock()
+        let viewModel = NotificationSettingsViewModel(store: store, scheduler: scheduler)
+
+        await viewModel.updateTime(for: .dinner, hour: -1, minute: -5)
+
+        let dinnerSetting = viewModel.settings.setting(for: .dinner)
+        #expect(dinnerSetting?.hour == 0)
+        #expect(dinnerSetting?.minute == 0)
+    }
+
+    // MARK: - save値の検証
+
+    @Test
+    @MainActor
+    func toggleGlobalEnabledで保存された設定値が正しいべき() async {
+        let store = makeStoreMock()
+        var savedSettings: NotificationSettings?
+        store.saveHandler = { savedSettings = $0 }
+        let scheduler = makeSchedulerMock(authorizationStatus: .authorized)
+        let viewModel = NotificationSettingsViewModel(store: store, scheduler: scheduler)
+
+        await viewModel.toggleGlobalEnabled()
+
+        #expect(savedSettings?.isGlobalEnabled == true)
+    }
+
     // MARK: - グローバルオフ時の挙動
 
     @Test

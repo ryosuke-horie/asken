@@ -60,7 +60,8 @@ final class NotificationSettingsViewModel {
             case .authorized, .provisional, .ephemeral:
                 systemPermissionGranted = true
             @unknown default:
-                break
+                logger.warning("未知の通知権限ステータス: \(String(describing: status))")
+                systemPermissionGranted = false
             }
         }
 
@@ -84,10 +85,12 @@ final class NotificationSettingsViewModel {
     // MARK: - Time Update
 
     func updateTime(for mealType: MealType, hour: Int, minute: Int) async {
+        let clampedHour = min(max(hour, 0), 23)
+        let clampedMinute = min(max(minute, 0), 59)
         settings = settings.updatingSetting(for: mealType) { setting in
             var updated = setting
-            updated.hour = hour
-            updated.minute = minute
+            updated.hour = clampedHour
+            updated.minute = clampedMinute
             return updated
         }
         store.save(settings)
