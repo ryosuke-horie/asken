@@ -146,3 +146,13 @@ variable "gemini_api_key" {
   type        = string
   sensitive   = true
 }
+
+# -----------------------------------------------------------------------------
+# E2Eテスト設定
+# -----------------------------------------------------------------------------
+
+variable "e2e_firebase_api_key" {
+  description = "E2Eテスト用のFirebase Web API Key"
+  type        = string
+  sensitive   = true
+}

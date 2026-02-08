@@ -62,3 +62,10 @@ variable "service_account_email" {
   type        = string
   default     = ""
 }
+
+variable "e2e_firebase_api_key" {
+  description = "E2Eテスト用のFirebase Web API Key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
