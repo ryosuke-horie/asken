@@ -22,10 +22,18 @@ struct FoodItemEditRow: View {
             TextField("メニュー名（例：醤油ラーメン、カレーライス）", text: $item.name)
                 .textFieldStyle(.roundedBorder)
 
+            if item.hasNameChanged {
+                Text("保存後に栄養素が再計算されます")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+
             TextField("量（例：1杯、1人前、大盛り）", text: $item.quantity)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: item.quantity) {
+                    item.recalculateNutrition()
+                }
 
-            // 現在の栄養素を参考情報として表示（読み取り専用）
             if item.calories > 0 {
                 HStack(spacing: 12) {
                     NutrientLabel(label: "kcal", value: item.calories)

@@ -27,7 +27,7 @@ struct NutritionEditorView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             // 説明テキスト
-                            Text("料理名と量を編集してください。\n栄養素は保存後に自動計算されます。")
+                            Text("料理名と量を編集してください。\n量を変更すると栄養素が自動で再計算されます。")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -65,6 +65,13 @@ struct NutritionEditorView: View {
                                     .foregroundStyle(.red)
                                     .multilineTextAlignment(.center)
                             }
+
+                            if let message = viewModel.recalculatingMessage {
+                                Text(message)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .multilineTextAlignment(.center)
+                            }
                         }
                         .padding()
                     }
@@ -90,8 +97,21 @@ struct NutritionEditorView: View {
             }
             .onChange(of: viewModel.isSaved) { _, isSaved in
                 if isSaved {
-                    onSaved()
-                    dismiss()
+                    if viewModel.hasAnyNameChanged {
+                        viewModel.recalculatingMessage = "栄養素を再計算中です。次回表示で反映されます。"
+                        Task {
+                            do {
+                                try await Task.sleep(for: .seconds(2))
+                            } catch {
+                                // Taskキャンセル時は即座にdismiss
+                            }
+                            onSaved()
+                            dismiss()
+                        }
+                    } else {
+                        onSaved()
+                        dismiss()
+                    }
                 }
             }
         }

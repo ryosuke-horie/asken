@@ -6,6 +6,7 @@ final class NutritionEditorViewModel {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+    var recalculatingMessage: String?
     var isSaved = false
 
     private let historyId: String?
@@ -29,6 +30,10 @@ final class NutritionEditorViewModel {
 
     var canSave: Bool {
         !foods.isEmpty && foods.allSatisfy { !$0.name.isEmpty }
+    }
+
+    var hasAnyNameChanged: Bool {
+        foods.contains { $0.hasNameChanged }
     }
 
     init(

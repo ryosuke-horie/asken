@@ -114,7 +114,7 @@ Context に firebase_uid を設定
 | analyze_handler.go | 食事分析リクエスト |
 | status_handler.go | 分析ステータス確認 |
 | daily_meals_handler.go | 日次食事データ |
-| history_handler.go | 履歴一覧・詳細・更新（foodService依存なし） |
+| history_handler.go | 履歴一覧・詳細・更新（NutritionRecalculator依存、非同期再計算） |
 | history_delete_handler.go | 履歴削除 |
 | skip_meal_handler.go | 食事スキップ |
 | image_handler.go | 画像配信 |
@@ -137,6 +137,7 @@ Context に firebase_uid を設定
 |:---|:---|
 | auth.go | Firebase Auth認証ミドルウェア、Authenticatorインターフェース |
 | dev_auth.go | 開発用モック認証ミドルウェア |
+| security_headers.go | セキュリティヘッダー設定ミドルウェア |
 
 ### Services (internal/service/)
 
@@ -154,7 +155,6 @@ Context に firebase_uid を設定
 | classifier.go | 画像から食品分類 |
 | text_parser.go | テキストから食品抽出 |
 | nutrition.go | 栄養素計算 |
-| training_menu.go | トレーニングメニュー提案（未使用） |
 | equipment_normalizer.go | 器具名正規化（未使用） |
 
 ### Worker (internal/worker/)
@@ -175,6 +175,17 @@ Context に firebase_uid を設定
 |:---|:---|
 | firestore.go | Firestoreクライアント初期化 |
 
+### E2Eテスト (e2e/)
+
+| ファイル | 責務 |
+|:---|:---|
+| e2e_test.go | E2Eテストスイートセットアップ |
+| health_test.go | ヘルスチェックE2Eテスト |
+| analyze_test.go | 分析フローE2Eテスト |
+| auth.go | テスト用認証ヘルパー |
+| helpers.go | テスト用共通ヘルパー |
+| cleanup.go | テストデータクリーンアップ |
+
 ## 依存関係図
 
 ```
@@ -183,13 +194,17 @@ cmd/server/main.go
 │   ├── auth.go (Authenticator interface)
 │   │   └── AuthMiddleware (Firebase本番)
 │   │       └── internal/service/firebase_auth_service.go
-│   └── dev_auth.go
-│       └── DevAuthMiddleware (開発モック)
+│   ├── dev_auth.go
+│   │   └── DevAuthMiddleware (開発モック)
+│   └── security_headers.go
+│       └── SecurityHeaders (全ルート適用)
 ├── internal/handler/*
 │   ├── internal/service/*
 │   │   └── pkg/gemini/*
-│   └── internal/repository/*
-│       └── pkg/database/firestore.go
+│   ├── internal/repository/*
+│   │   └── pkg/database/firestore.go
+│   └── history_handler.go
+│       └── NutritionRecalculator (pkg/gemini/nutrition.go)
 ├── internal/worker/analysis_worker.go
 │   ├── internal/service/food_service.go
 │   └── internal/repository/analysis_repository_firestore.go
