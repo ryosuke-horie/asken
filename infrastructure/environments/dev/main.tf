@@ -170,4 +170,5 @@ module "github" {
   cloud_run_service_name     = module.cloud_run.service_name
   workload_identity_provider = module.wif.provider_name
   service_account_email      = module.cloud_run.service_account_email
+  e2e_firebase_api_key       = var.e2e_firebase_api_key
 }
