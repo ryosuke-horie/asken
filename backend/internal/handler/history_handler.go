@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
@@ -14,15 +16,24 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
+const recalculateTimeout = 120 * time.Second
+
+// NutritionRecalculator は栄養素再計算のインターフェース
+type NutritionRecalculator interface {
+	CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
+}
+
 // HistoryHandler は履歴取得エンドポイントのハンドラー
 type HistoryHandler struct {
-	repository repository.AnalysisRepository
+	repository   repository.AnalysisRepository
+	recalculator NutritionRecalculator
 }
 
 // NewHistoryHandler は新しいHistoryHandlerを作成
-func NewHistoryHandler(repository repository.AnalysisRepository) *HistoryHandler {
+func NewHistoryHandler(repository repository.AnalysisRepository, recalculator NutritionRecalculator) *HistoryHandler {
 	return &HistoryHandler{
-		repository: repository,
+		repository:   repository,
+		recalculator: recalculator,
 	}
 }
 
@@ -221,6 +232,18 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Updating history for ID: %s, userID: %s, with %d foods", historyID, userID, len(req.Foods))
 
+	// 保存前に旧データを取得（名前変更検知のため）
+	oldDetail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
+	if err != nil {
+		log.Printf("Error getting old history detail for comparison: %v", err)
+		if strings.Contains(err.Error(), "見つかりません") {
+			http.Error(w, "History not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to get history detail", http.StatusInternalServerError)
+		}
+		return
+	}
+
 	// リクエストをNutritionInfo形式に変換（現在の値をそのまま保存）
 	foods := make([]gemini.NutritionInfo, len(req.Foods))
 	for i, f := range req.Foods {
@@ -247,6 +270,15 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("History updated successfully for ID: %s", historyID)
 
+	// メニュー名変更を検知し、非同期で栄養素を再計算
+	if h.recalculator != nil {
+		changedFoods := detectNameChanges(oldDetail.Foods, foods)
+		if len(changedFoods) > 0 {
+			log.Printf("Detected %d food name changes, triggering async recalculation for history %s", len(changedFoods), historyID)
+			go h.recalculateAsync(userID, historyID, foods)
+		}
+	}
+
 	// 更新後の詳細を取得して返却（userIDでスコープ）
 	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
@@ -265,4 +297,53 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("History update response sent successfully for ID: %s", historyID)
+}
+
+// detectNameChanges は旧foodsと新foodsを比較し、名前が変わったインデックスを返す
+func detectNameChanges(oldFoods []gemini.NutritionInfo, newFoods []gemini.NutritionInfo) []int {
+	var changed []int
+	minLen := len(oldFoods)
+	if len(newFoods) < minLen {
+		minLen = len(newFoods)
+	}
+
+	for i := 0; i < minLen; i++ {
+		if oldFoods[i].Name != newFoods[i].Name {
+			changed = append(changed, i)
+		}
+	}
+
+	return changed
+}
+
+// recalculateAsync はGemini APIで非同期に栄養素を再計算し、結果をFirestoreに保存する
+func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, currentFoods []gemini.NutritionInfo) {
+	ctx, cancel := context.WithTimeout(context.Background(), recalculateTimeout)
+	defer cancel()
+
+	// 現在の食材リストをFoodItemに変換
+	foodItems := make([]gemini.FoodItem, len(currentFoods))
+	for i, f := range currentFoods {
+		foodItems[i] = gemini.FoodItem{
+			Name:            f.Name,
+			EstimatedAmount: f.EstimatedAmount,
+		}
+	}
+
+	log.Printf("Starting async nutrition recalculation for history %s with %d foods", historyID, len(foodItems))
+
+	// Gemini APIで栄養素を再計算
+	recalculated, err := h.recalculator.CalculateNutrition(ctx, foodItems)
+	if err != nil {
+		log.Printf("Error in async nutrition recalculation for history %s: %v", historyID, err)
+		return
+	}
+
+	// 再計算結果をFirestoreに保存
+	if err := h.repository.UpdateResult(ctx, userID, historyID, recalculated); err != nil {
+		log.Printf("Error saving recalculated nutrition for history %s: %v", historyID, err)
+		return
+	}
+
+	log.Printf("Async nutrition recalculation completed successfully for history %s", historyID)
 }

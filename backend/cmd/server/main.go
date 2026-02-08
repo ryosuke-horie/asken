@@ -253,7 +253,7 @@ func run() error {
 		health:        handler.NewHealthHandler(),
 		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo, geminiClient),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler(storageRepo),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),

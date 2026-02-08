@@ -57,7 +57,7 @@ func TestHistoryHandler_HandleList_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -91,7 +91,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history?page=2&limit=10", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -113,7 +113,7 @@ func TestHistoryHandler_HandleList_WithPagination(t *testing.T) {
 
 func TestHistoryHandler_HandleList_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history", nil)
 	w := httptest.NewRecorder()
@@ -131,7 +131,7 @@ func TestHistoryHandler_HandleList_RepositoryError(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -145,7 +145,7 @@ func TestHistoryHandler_HandleList_RepositoryError(t *testing.T) {
 
 func TestHistoryHandler_HandleList_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	// コンテキストにユーザーIDを設定しない
 	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
@@ -192,7 +192,7 @@ func TestHistoryHandler_HandleDetail_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -244,7 +244,7 @@ func TestHistoryHandler_HandleDetail_RepositoryError(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+historyID.String(), nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -259,7 +259,7 @@ func TestHistoryHandler_HandleDetail_RepositoryError(t *testing.T) {
 func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/history/invalid-uuid", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -273,7 +273,7 @@ func TestHistoryHandler_HandleDetail_InvalidUUID(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history/"+uuid.New().String(), nil)
 	w := httptest.NewRecorder()
@@ -285,7 +285,7 @@ func TestHistoryHandler_HandleDetail_MethodNotAllowed(t *testing.T) {
 
 func TestHistoryHandler_HandleDetail_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	// コンテキストにユーザーIDを設定しない
 	req := httptest.NewRequest(http.MethodGet, "/api/history/"+uuid.New().String(), nil)
@@ -338,7 +338,7 @@ func TestHistoryHandler_HandleUpdate_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	body := `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7}]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -361,7 +361,7 @@ func TestHistoryHandler_HandleUpdate_Success(t *testing.T) {
 
 func TestHistoryHandler_HandleUpdate_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	// コンテキストにユーザーIDを設定しない
 	body := `{"foods":[]}`
@@ -377,7 +377,7 @@ func TestHistoryHandler_HandleUpdate_Unauthorized(t *testing.T) {
 func TestHistoryHandler_HandleUpdate_InvalidUUID(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	body := `{"foods":[]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/invalid-uuid", strings.NewReader(body))
@@ -396,12 +396,12 @@ func TestHistoryHandler_HandleUpdate_NotFound(t *testing.T) {
 	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{
-		UpdateResultFunc: func(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
-			return fmt.Errorf("履歴が見つかりません: %s: %w", id, repository.ErrNotFound)
+		GetHistoryDetailFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
+			return nil, errors.New("履歴が見つかりません")
 		},
 	}
 
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	body := `{"foods":[]}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -471,7 +471,7 @@ func TestHistoryHandler_HandleUpdate_InvalidBody(t *testing.T) {
 	testUserID := "test-user-123"
 
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	body := `{invalid json}`
 	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
@@ -525,7 +525,7 @@ func TestHistoryHandler_HandleUpdate_OversizedBody(t *testing.T) {
 
 func TestHistoryHandler_HandleUpdate_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewHistoryHandler(mockRepo)
+	handler := NewHistoryHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/history/"+uuid.New().String(), nil)
 	w := httptest.NewRecorder()
@@ -533,4 +533,210 @@ func TestHistoryHandler_HandleUpdate_MethodNotAllowed(t *testing.T) {
 	handler.HandleUpdate(w, req)
 
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestDetectNameChanges(t *testing.T) {
+	tests := []struct {
+		name     string
+		oldFoods []gemini.NutritionInfo
+		newFoods []gemini.NutritionInfo
+		expected []int
+	}{
+		{
+			name: "名前変更なし",
+			oldFoods: []gemini.NutritionInfo{
+				{Name: "白米"},
+				{Name: "味噌汁"},
+			},
+			newFoods: []gemini.NutritionInfo{
+				{Name: "白米"},
+				{Name: "味噌汁"},
+			},
+			expected: nil,
+		},
+		{
+			name: "1つの名前が変更",
+			oldFoods: []gemini.NutritionInfo{
+				{Name: "白米"},
+				{Name: "味噌汁"},
+			},
+			newFoods: []gemini.NutritionInfo{
+				{Name: "玄米"},
+				{Name: "味噌汁"},
+			},
+			expected: []int{0},
+		},
+		{
+			name: "複数の名前が変更",
+			oldFoods: []gemini.NutritionInfo{
+				{Name: "白米"},
+				{Name: "味噌汁"},
+				{Name: "焼き魚"},
+			},
+			newFoods: []gemini.NutritionInfo{
+				{Name: "玄米"},
+				{Name: "味噌汁"},
+				{Name: "刺身"},
+			},
+			expected: []int{0, 2},
+		},
+		{
+			name:     "新しい食材が追加された場合（旧より多い）",
+			oldFoods: []gemini.NutritionInfo{{Name: "白米"}},
+			newFoods: []gemini.NutritionInfo{{Name: "白米"}, {Name: "味噌汁"}},
+			expected: nil,
+		},
+		{
+			name:     "食材が削除された場合（旧より少ない）",
+			oldFoods: []gemini.NutritionInfo{{Name: "白米"}, {Name: "味噌汁"}},
+			newFoods: []gemini.NutritionInfo{{Name: "白米"}},
+			expected: nil,
+		},
+		{
+			name:     "両方とも空",
+			oldFoods: []gemini.NutritionInfo{},
+			newFoods: []gemini.NutritionInfo{},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := detectNameChanges(tt.oldFoods, tt.newFoods)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// MockNutritionRecalculator はテスト用のNutritionRecalculatorモック
+type MockNutritionRecalculator struct {
+	CalculateNutritionFunc func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
+	Called                 bool
+}
+
+func (m *MockNutritionRecalculator) CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
+	m.Called = true
+	if m.CalculateNutritionFunc != nil {
+		return m.CalculateNutritionFunc(ctx, foods)
+	}
+	return nil, nil
+}
+
+func TestHistoryHandler_HandleUpdate_WithNameChange(t *testing.T) {
+	historyID := uuid.New()
+	createdAt := time.Now()
+	mealDate := time.Date(2026, 1, 21, 0, 0, 0, 0, time.UTC)
+	testUserID := "test-user-123"
+
+	recalcDone := make(chan struct{})
+
+	mockRecalculator := &MockNutritionRecalculator{
+		CalculateNutritionFunc: func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
+			defer close(recalcDone)
+			assert.Len(t, foods, 1)
+			assert.Equal(t, "玄米", foods[0].Name)
+			return []gemini.NutritionInfo{
+				{Name: "玄米", EstimatedAmount: "150g", Calories: 228, Protein: 4.2, Fat: 1.8, Carbohydrates: 47.8},
+			}, nil
+		},
+	}
+
+	updateCallCount := 0
+	mockRepo := &MockAnalysisRepository{
+		GetHistoryDetailFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
+			return &repository.HistoryDetail{
+				HistoryItem: repository.HistoryItem{
+					ID:                 historyID,
+					ImagePath:          "/uploads/test.jpg",
+					CreatedAt:          createdAt,
+					MealType:           "lunch",
+					MealDate:           mealDate,
+					TotalCalories:      252.0,
+					TotalProtein:       3.8,
+					TotalFat:           0.5,
+					TotalCarbohydrates: 55.7,
+				},
+				Foods: []gemini.NutritionInfo{
+					{Name: "白米", EstimatedAmount: "150g", Calories: 252, Protein: 3.8, Fat: 0.5, Carbohydrates: 55.7},
+				},
+			}, nil
+		},
+		UpdateResultFunc: func(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
+			updateCallCount++
+			return nil
+		},
+	}
+
+	handler := NewHistoryHandler(mockRepo, mockRecalculator)
+
+	body := `{"foods":[{"name":"玄米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7}]}`
+	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// 非同期再計算の完了を待つ
+	select {
+	case <-recalcDone:
+		assert.True(t, mockRecalculator.Called)
+		// UpdateResultは2回呼ばれる（同期保存 + 非同期再計算保存）
+		assert.Equal(t, 2, updateCallCount)
+	case <-time.After(5 * time.Second):
+		t.Fatal("非同期再計算がタイムアウト")
+	}
+}
+
+func TestHistoryHandler_HandleUpdate_NoNameChange(t *testing.T) {
+	historyID := uuid.New()
+	createdAt := time.Now()
+	mealDate := time.Date(2026, 1, 21, 0, 0, 0, 0, time.UTC)
+	testUserID := "test-user-123"
+
+	mockRecalculator := &MockNutritionRecalculator{}
+
+	mockRepo := &MockAnalysisRepository{
+		GetHistoryDetailFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
+			return &repository.HistoryDetail{
+				HistoryItem: repository.HistoryItem{
+					ID:                 historyID,
+					ImagePath:          "/uploads/test.jpg",
+					CreatedAt:          createdAt,
+					MealType:           "lunch",
+					MealDate:           mealDate,
+					TotalCalories:      252.0,
+					TotalProtein:       3.8,
+					TotalFat:           0.5,
+					TotalCarbohydrates: 55.7,
+				},
+				Foods: []gemini.NutritionInfo{
+					{Name: "白米", EstimatedAmount: "150g", Calories: 252, Protein: 3.8, Fat: 0.5, Carbohydrates: 55.7},
+				},
+			}, nil
+		},
+		UpdateResultFunc: func(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
+			return nil
+		},
+	}
+
+	handler := NewHistoryHandler(mockRepo, mockRecalculator)
+
+	body := `{"foods":[{"name":"白米","estimated_amount":"200g","calories_kcal":336,"protein_g":5.1,"fat_g":0.7,"carbohydrates_g":74.3}]}`
+	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// 少し待って、非同期再計算が呼ばれないことを確認
+	time.Sleep(100 * time.Millisecond)
+	assert.False(t, mockRecalculator.Called)
 }
