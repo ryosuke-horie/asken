@@ -1,36 +1,17 @@
 name: Infrastructure Lint
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/infrastructure-lint.yml'
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      infrastructure: ${{ steps.filter.outputs.infrastructure }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        id: filter
-        with:
-          filters: |
-            infrastructure:
-              - 'infrastructure/**'
-              - '.github/workflows/infrastructure-lint.yml'
-
   lint:
-    needs: changes
-    if: ${{ needs.changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
