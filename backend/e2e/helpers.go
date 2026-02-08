@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+const defaultTestUID = "e2e-test-user"
+
+// testUID はE2Eテスト用のユーザーIDを返す
+func testUID() string {
+	if uid := os.Getenv("E2E_TEST_UID"); uid != "" {
+		return uid
+	}
+	return defaultTestUID
+}
+
 // Client はE2Eテスト用のHTTPクライアント
 type Client struct {
 	baseURL    string
@@ -103,5 +113,12 @@ type Response struct {
 
 // JSON はレスポンスボディをJSONとしてデコードする
 func (r *Response) JSON(v any) error {
-	return json.Unmarshal(r.Body, v)
+	if err := json.Unmarshal(r.Body, v); err != nil {
+		bodyPreview := string(r.Body)
+		if len(bodyPreview) > 200 {
+			bodyPreview = bodyPreview[:200] + "..."
+		}
+		return fmt.Errorf("failed to decode response (status=%d, body=%s): %w", r.StatusCode, bodyPreview, err)
+	}
+	return nil
 }

@@ -6,6 +6,9 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 var testClient *Client
@@ -33,9 +36,28 @@ func TestMain(m *testing.M) {
 	exitCode := m.Run()
 
 	// テストデータのクリーンアップ
-	if err := CleanupTestData(ctx); err != nil {
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cleanupCancel()
+	if err := CleanupTestData(cleanupCtx); err != nil {
 		os.Stderr.WriteString("Failed to cleanup test data: " + err.Error() + "\n")
 	}
 
 	os.Exit(exitCode)
+}
+
+// authenticatedClient は認証済みクライアントとコンテキストを返すヘルパー
+// 認証が利用できない場合はテストをスキップする
+func authenticatedClient(t *testing.T, timeout time.Duration) (*Client, context.Context) {
+	t.Helper()
+	if authHelper == nil {
+		t.Skip("E2E_FIREBASE_API_KEY is not set, skipping authenticated tests")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	t.Cleanup(cancel)
+
+	token, err := authHelper.GetTestToken(ctx)
+	require.NoError(t, err, "Failed to get test token")
+
+	return testClient.WithAuthToken(token), ctx
 }
