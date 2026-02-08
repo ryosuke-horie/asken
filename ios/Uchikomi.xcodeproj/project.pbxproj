@@ -24,6 +24,7 @@
 		3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */; };
 		3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */; };
 		3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */; };
+		405B649B457B315731D9CF97 /* MealInputViewModelSkipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */; };
 		429200B9AEC62D0AA8360997 /* UchikomiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E4456D284B8FFDA32C61020F /* UchikomiCore.framework */; };
 		4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638F820A12494A2EFF5BA0B2 /* WeightChartView.swift */; };
 		516AA1DBC0D4B43E4CBE7153 /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A410440853CE4376951B253 /* Auth.swift */; };
@@ -31,6 +32,7 @@
 		5480C2A55D426869ACF0E45B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F851C2BC1FF724BCE4C2746 /* AppDelegate.swift */; };
 		56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 73781A308EDE339E10EA5366 /* Assets.xcassets */; };
 		5F5B7287856C23CF9B9C94D2 /* MealRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636C4DA5C817D1B8E0F02AF2 /* MealRepository.swift */; };
+		63B41CD47441987431C32377 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7BAD65BDD3EECCD02645FD /* CameraView.swift */; };
 		67FA1E5566B583F4558A3941 /* WeightGoalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9238F2DC08000E93B04CCF6C /* WeightGoalCard.swift */; };
 		6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD06CFC183C1CAC7FA104AB /* UchikomiApp.swift */; };
 		6C077CE8CE8874143A6BA70C /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 10E2B29939E6D92AB198963D /* SnapshotTesting */; };
@@ -153,8 +155,10 @@
 		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		E4456D284B8FFDA32C61020F /* UchikomiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UchikomiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7A1EE73C03E23E5ABEDCD01 /* WeightInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputView.swift; sourceTree = "<group>"; };
+		EB7BAD65BDD3EECCD02645FD /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParserTests.swift; sourceTree = "<group>"; };
 		F3CBE0301E1CCA902D6671AB /* WeightGoalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightGoalSheet.swift; sourceTree = "<group>"; };
+		F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModelSkipTests.swift; sourceTree = "<group>"; };
 		FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItemEditRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -290,6 +294,7 @@
 			children = (
 				CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */,
 				7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */,
+				F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */,
 				184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */,
 				F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */,
 			);
@@ -470,6 +475,7 @@
 		F9A0E061855B4AD583027E8F /* Meals */ = {
 			isa = PBXGroup;
 			children = (
+				EB7BAD65BDD3EECCD02645FD /* CameraView.swift */,
 				12EDB121AC061828D06504D0 /* MealInputView.swift */,
 				60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */,
 				51EF1CA05F42093F7BCC75CA /* MealsView.swift */,
@@ -624,6 +630,7 @@
 				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
 				DC915DC4CCA0EC233B1FA3DC /* FoodEditItemTests.swift in Sources */,
 				3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */,
+				405B649B457B315731D9CF97 /* MealInputViewModelSkipTests.swift in Sources */,
 				CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */,
 				C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */,
 				3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */,
@@ -652,6 +659,7 @@
 				5480C2A55D426869ACF0E45B /* AppDelegate.swift in Sources */,
 				BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */,
 				11289E4A7F0B4068E62C9064 /* AppleSignInManager.swift in Sources */,
+				63B41CD47441987431C32377 /* CameraView.swift in Sources */,
 				C68F4A4EA4C55E115D39ADB7 /* FirebaseAuthService.swift in Sources */,
 				EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */,
 				1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */,
