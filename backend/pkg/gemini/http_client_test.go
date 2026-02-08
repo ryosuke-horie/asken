@@ -318,6 +318,29 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 	})
 }
 
+func TestHTTPClient_Execute_OversizedResponse(t *testing.T) {
+	t.Run("10MBを超えるレスポンスでサイズ超過エラーを返す", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			// 11MBのレスポンスを返す（maxResponseSizeを超過）
+			data := make([]byte, 11<<20)
+			for i := range data {
+				data[i] = 'a'
+			}
+			w.Write(data)
+		}))
+		defer server.Close()
+
+		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client.baseURL = server.URL
+
+		_, err := client.Execute(context.Background(), "テスト")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "レスポンスサイズが上限")
+	})
+}
+
 func TestHTTPClient_HandleAPIError(t *testing.T) {
 	t.Run("認証エラー_401", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

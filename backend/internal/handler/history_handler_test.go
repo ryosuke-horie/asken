@@ -485,6 +485,44 @@ func TestHistoryHandler_HandleUpdate_InvalidBody(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestHistoryHandler_HandleUpdate_OversizedBody(t *testing.T) {
+	historyID := uuid.New()
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewHistoryHandler(mockRepo)
+
+	// 1MBを超えるJSONボディを作成
+	largeFoods := make([]map[string]interface{}, 0)
+	for i := 0; i < 10000; i++ {
+		largeFoods = append(largeFoods, map[string]interface{}{
+			"name":             strings.Repeat("あ", 100),
+			"estimated_amount": "100g",
+			"calories_kcal":    100.0,
+			"protein_g":        10.0,
+			"fat_g":            5.0,
+			"carbohydrates_g":  20.0,
+		})
+	}
+	reqBody := map[string]interface{}{
+		"foods": largeFoods,
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+	require.Greater(t, len(body), 1<<20, "テストボディが1MBを超えていること")
+
+	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	assert.Contains(t, w.Body.String(), "リクエストボディが大きすぎます")
+}
+
 func TestHistoryHandler_HandleUpdate_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewHistoryHandler(mockRepo)

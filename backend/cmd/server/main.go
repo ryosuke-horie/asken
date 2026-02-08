@@ -66,8 +66,8 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	// ヘルスチェックエンドポイント（認証不要 - Cloud Runのヘルスチェック用）
 	mux.HandleFunc("/api/health", h.health.Handle)
 
-	// 画像配信エンドポイント（認証不要 - UUIDファイル名で保護）
-	mux.HandleFunc("/api/images/", h.image.Handle)
+	// 画像配信エンドポイント（認証必須）
+	mux.Handle("/api/images/", authMiddleware.Authenticate(http.HandlerFunc(h.image.Handle)))
 
 	// 認証が必要なエンドポイント
 	setupAnalyzeRoutes(mux, h, authMiddleware)
@@ -276,14 +276,15 @@ func run() error {
 	mux := http.NewServeMux()
 	setupRoutes(mux, h, authMiddleware)
 
-	// CORSミドルウェアを適用
+	// ミドルウェアチェーンを構築（リクエスト処理順: セキュリティヘッダー → CORS → mux）
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
 	corsHandler := enableCORS(mux, allowedOrigins)
+	secureHandler := middleware.SecurityHeaders(corsHandler)
 
 	// HTTPサーバー設定
 	server := &http.Server{
 		Addr:         ":8080",
-		Handler:      corsHandler,
+		Handler:      secureHandler,
 		ReadTimeout:  150 * time.Second,
 		WriteTimeout: 150 * time.Second,
 		IdleTimeout:  150 * time.Second,
