@@ -3,12 +3,13 @@ module github.com/ryosuke-horie/uchikomi/backend
 go 1.25
 
 require (
-	cloud.google.com/go/firestore v1.18.0
+	cloud.google.com/go/firestore v1.21.0
 	cloud.google.com/go/storage v1.59.2
 	firebase.google.com/go/v4 v4.19.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/api v0.256.0
+	google.golang.org/grpc v1.76.0
 )
 
 require (
@@ -62,7 +63,6 @@ require (
 	google.golang.org/genproto v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
-	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
