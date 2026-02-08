@@ -902,9 +902,10 @@ func (r *firestoreAnalysisRepository) toHistoryDetail(doc *firestoreAnalysisDocu
 	}
 	detail := &HistoryDetail{
 		HistoryItem: *item,
+		Foods:       []gemini.NutritionInfo{},
 	}
 
-	if doc.Result != nil {
+	if doc.Result != nil && doc.Result.Foods != nil {
 		detail.Foods = doc.Result.Foods
 	}
 
