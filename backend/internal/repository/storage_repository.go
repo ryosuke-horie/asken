@@ -51,12 +51,24 @@ func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string)
 	}, nil
 }
 
-// Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
-func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
-	// UUIDを生成してオブジェクト名を作成
+// generateObjectName はファイル名からUUID付きのオブジェクト名を生成する
+func generateObjectName(filename string) string {
 	fileID := uuid.New().String()
 	ext := filepath.Ext(filename)
-	objectName := fmt.Sprintf("uploads/%s%s", fileID, ext)
+	return fmt.Sprintf("uploads/%s%s", fileID, ext)
+}
+
+// convertStorageError はCloud Storageのエラーをドメインエラーに変換する
+func convertStorageError(err error) error {
+	if errors.Is(err, storage.ErrObjectNotExist) {
+		return ErrObjectNotFound
+	}
+	return err
+}
+
+// Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
+func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+	objectName := generateObjectName(filename)
 
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	writer := obj.NewWriter(ctx)
