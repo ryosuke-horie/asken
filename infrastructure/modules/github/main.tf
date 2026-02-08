@@ -2,6 +2,17 @@
 # GitHub Module
 # =============================================================================
 
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
+  }
+}
+
 # GitHub Repository Data
 data "github_repository" "main" {
   full_name = var.github_repository
