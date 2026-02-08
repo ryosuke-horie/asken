@@ -212,9 +212,14 @@ jobs:
       - name: Get Cloud Run URL
         id: get-url
         run: |
+          set -euo pipefail
           URL=$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
             --region "${GCP_REGION}" \
             --format 'value(status.url)')
+          if [ -z "$URL" ]; then
+            echo "::error::Failed to get Cloud Run URL for ${CLOUD_RUN_SERVICE_NAME}"
+            exit 1
+          fi
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
           echo "Cloud Run URL: ${URL}"
 

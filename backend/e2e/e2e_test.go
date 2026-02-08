@@ -24,23 +24,27 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	// 認証ヘルパーの初期化（E2E_FIREBASE_API_KEYが設定されている場合のみ）
+	// 認証ヘルパーの初期化
 	if os.Getenv("E2E_FIREBASE_API_KEY") != "" {
 		authHelper, err = NewAuthHelper(ctx)
 		if err != nil {
 			os.Stderr.WriteString("Failed to create auth helper: " + err.Error() + "\n")
 			os.Exit(1)
 		}
+	} else if os.Getenv("CI") != "" {
+		// CI環境ではE2E_FIREBASE_API_KEYが必須（設定漏れによるサイレントスキップを防止）
+		os.Stderr.WriteString("E2E_FIREBASE_API_KEY is required in CI environment\n")
+		os.Exit(1)
 	}
 
 	exitCode := m.Run()
 
 	// テストデータのクリーンアップ
 	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cleanupCancel()
 	if err := CleanupTestData(cleanupCtx); err != nil {
 		os.Stderr.WriteString("Failed to cleanup test data: " + err.Error() + "\n")
 	}
+	cleanupCancel()
 
 	os.Exit(exitCode)
 }

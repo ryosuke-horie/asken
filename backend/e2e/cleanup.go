@@ -17,6 +17,9 @@ func CleanupTestData(ctx context.Context) error {
 	if projectID == "" {
 		projectID = os.Getenv("GCP_PROJECT")
 	}
+	if projectID == "" {
+		return fmt.Errorf("neither GOOGLE_CLOUD_PROJECT nor GCP_PROJECT environment variable is set")
+	}
 
 	client, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
@@ -33,6 +36,11 @@ func deleteCollection(ctx context.Context, client *firestore.Client, path string
 	defer iter.Stop()
 
 	bw := client.BulkWriter(ctx)
+	defer func() {
+		bw.Flush()
+		bw.End()
+	}()
+
 	var deleteJobs []*firestore.BulkWriterJob
 	count := 0
 
@@ -52,9 +60,6 @@ func deleteCollection(ctx context.Context, client *firestore.Client, path string
 		deleteJobs = append(deleteJobs, job)
 		count++
 	}
-
-	bw.Flush()
-	bw.End()
 
 	// 削除結果を確認
 	for _, job := range deleteJobs {
