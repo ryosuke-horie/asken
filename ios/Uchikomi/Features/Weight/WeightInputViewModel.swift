@@ -3,6 +3,8 @@ import os
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightInputViewModel")
 
+// MARK: - WeightInputViewModel
+
 @Observable
 final class WeightInputViewModel {
     var weightText: String = ""
