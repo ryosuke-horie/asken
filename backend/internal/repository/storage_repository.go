@@ -91,7 +91,7 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
-		if converted := convertStorageError(err); converted == ErrObjectNotFound {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			return nil, ErrObjectNotFound
 		}
 		return nil, fmt.Errorf("Cloud Storageからの読み取りに失敗: %w", err)
@@ -112,7 +112,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	_, err := obj.Attrs(ctx)
 	if err != nil {
-		if converted := convertStorageError(err); converted == ErrObjectNotFound {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			return "", ErrObjectNotFound
 		}
 		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
@@ -141,7 +141,7 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
-		if converted := convertStorageError(err); converted == ErrObjectNotFound {
+		if errors.Is(err, storage.ErrObjectNotExist) {
 			log.Printf("Debug: Cloud Storage object already deleted or not found: %s", objectName)
 			return nil
 		}

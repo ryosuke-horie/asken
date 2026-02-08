@@ -71,11 +71,6 @@ func TestAuthMiddleware_Authenticate(t *testing.T) {
 		verifier := &mockTokenVerifier{}
 		m := NewAuthMiddleware(verifier)
 
-		nextCalled := false
-		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			nextCalled = true
-		})
-
 		tests := []struct {
 			name   string
 			header string
@@ -88,6 +83,11 @@ func TestAuthMiddleware_Authenticate(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				nextCalled := false
+				next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					nextCalled = true
+				})
+
 				req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
 				req.Header.Set("Authorization", tt.header)
 				w := httptest.NewRecorder()
