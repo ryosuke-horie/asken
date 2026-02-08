@@ -30,12 +30,12 @@ type RateLimitConfig struct {
 // LoadRateLimitConfig は環境変数からレート制限設定をロードする
 func LoadRateLimitConfig() RateLimitConfig {
 	config := RateLimitConfig{
-		IPRateLimit:     getEnvFloat("RATE_LIMIT_IP_RPS", 10),
-		IPBurstSize:     getEnvInt("RATE_LIMIT_IP_BURST", 20),
-		UserRateLimit:   getEnvFloat("RATE_LIMIT_USER_RPS", 5),
-		UserBurstSize:   getEnvInt("RATE_LIMIT_USER_BURST", 10),
-		GeminiRateLimit: getEnvFloat("RATE_LIMIT_GEMINI_RPS", 0.5),
-		GeminiBurstSize: getEnvInt("RATE_LIMIT_GEMINI_BURST", 3),
+		IPRateLimit:     getEnvFloat("RATE_LIMIT_IP_RPS", 3),
+		IPBurstSize:     getEnvInt("RATE_LIMIT_IP_BURST", 8),
+		UserRateLimit:   getEnvFloat("RATE_LIMIT_USER_RPS", 2),
+		UserBurstSize:   getEnvInt("RATE_LIMIT_USER_BURST", 5),
+		GeminiRateLimit: getEnvFloat("RATE_LIMIT_GEMINI_RPS", 0.2),
+		GeminiBurstSize: getEnvInt("RATE_LIMIT_GEMINI_BURST", 2),
 		CleanupInterval: time.Duration(getEnvInt("RATE_LIMIT_CLEANUP_INTERVAL", 300)) * time.Second,
 		EntryTTL:        time.Duration(getEnvInt("RATE_LIMIT_ENTRY_TTL", 600)) * time.Second,
 	}
@@ -47,13 +47,13 @@ func LoadRateLimitConfig() RateLimitConfig {
 
 	// レートリミット値は正の数であること（0以下だとリミッターが意図しない動作をする）
 	if config.IPRateLimit <= 0 {
-		config.IPRateLimit = 10
+		config.IPRateLimit = 3
 	}
 	if config.UserRateLimit <= 0 {
-		config.UserRateLimit = 5
+		config.UserRateLimit = 2
 	}
 	if config.GeminiRateLimit <= 0 {
-		config.GeminiRateLimit = 0.5
+		config.GeminiRateLimit = 0.2
 	}
 
 	// バーストサイズは最低1を保証（0だと全リクエストがブロックされる）

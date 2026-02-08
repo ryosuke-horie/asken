@@ -17,12 +17,12 @@ func TestLoadRateLimitConfig(t *testing.T) {
 	t.Run("環境変数未設定時にデフォルト値が使用されるべき", func(t *testing.T) {
 		config := LoadRateLimitConfig()
 
-		assert.Equal(t, float64(10), config.IPRateLimit)
-		assert.Equal(t, 20, config.IPBurstSize)
-		assert.Equal(t, float64(5), config.UserRateLimit)
-		assert.Equal(t, 10, config.UserBurstSize)
-		assert.Equal(t, 0.5, config.GeminiRateLimit)
-		assert.Equal(t, 3, config.GeminiBurstSize)
+		assert.Equal(t, float64(3), config.IPRateLimit)
+		assert.Equal(t, 8, config.IPBurstSize)
+		assert.Equal(t, float64(2), config.UserRateLimit)
+		assert.Equal(t, 5, config.UserBurstSize)
+		assert.Equal(t, 0.2, config.GeminiRateLimit)
+		assert.Equal(t, 2, config.GeminiBurstSize)
 		assert.Equal(t, 300*time.Second, config.CleanupInterval)
 		assert.Equal(t, 600*time.Second, config.EntryTTL)
 	})
@@ -55,8 +55,8 @@ func TestLoadRateLimitConfig(t *testing.T) {
 
 		config := LoadRateLimitConfig()
 
-		assert.Equal(t, float64(10), config.IPRateLimit)
-		assert.Equal(t, 20, config.IPBurstSize)
+		assert.Equal(t, float64(3), config.IPRateLimit)
+		assert.Equal(t, 8, config.IPBurstSize)
 	})
 
 	t.Run("CleanupIntervalが0の場合に最低1秒に補正されるべき", func(t *testing.T) {
@@ -74,9 +74,9 @@ func TestLoadRateLimitConfig(t *testing.T) {
 
 		config := LoadRateLimitConfig()
 
-		assert.Equal(t, float64(10), config.IPRateLimit)
-		assert.Equal(t, float64(5), config.UserRateLimit)
-		assert.Equal(t, 0.5, config.GeminiRateLimit)
+		assert.Equal(t, float64(3), config.IPRateLimit)
+		assert.Equal(t, float64(2), config.UserRateLimit)
+		assert.Equal(t, 0.2, config.GeminiRateLimit)
 	})
 
 	t.Run("バーストサイズが0の場合に最低1に補正されるべき", func(t *testing.T) {
