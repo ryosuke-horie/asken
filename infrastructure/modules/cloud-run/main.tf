@@ -3,76 +3,93 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# サービスアカウント
+# ランタイムサービスアカウント（Cloud Run実行用）
 # -----------------------------------------------------------------------------
 
-resource "google_service_account" "cloud_run" {
+resource "google_service_account" "runtime" {
   project      = var.project_id
   account_id   = "${var.service_name}-sa"
-  display_name = "Cloud Run Service Account for ${var.service_name}"
-  description  = "Cloud Runサービス用のサービスアカウント"
+  display_name = "Cloud Run Runtime Service Account for ${var.service_name}"
+  description  = "Cloud Runサービスのランタイム用サービスアカウント"
 }
 
 # Firestoreアクセス権限
-resource "google_project_iam_member" "firestore_user" {
+resource "google_project_iam_member" "runtime_firestore_user" {
   project = var.project_id
   role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Cloud Storageアクセス権限（読み書きのみ、IAMポリシー管理は不要）
-resource "google_project_iam_member" "storage_object_user" {
+resource "google_project_iam_member" "runtime_storage_object_user" {
   project = var.project_id
   role    = "roles/storage.objectUser"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Firebase Auth検証権限（トークン検証のみ）
-resource "google_project_iam_member" "firebase_auth" {
+resource "google_project_iam_member" "runtime_firebase_auth" {
   project = var.project_id
   role    = "roles/firebaseauth.viewer"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Secret Managerアクセス権限
-resource "google_project_iam_member" "secret_accessor" {
+resource "google_project_iam_member" "runtime_secret_accessor" {
   count = length(var.secrets) > 0 ? 1 : 0
 
   project = var.project_id
   role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
-}
-
-# Artifact Registry書き込み権限（GitHub ActionsからのDockerイメージプッシュ用）
-# WIF経由でこのサービスアカウントを使用してイメージをプッシュするため必要
-resource "google_project_iam_member" "artifact_registry_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
-}
-
-# Cloud Runデプロイ権限（GitHub Actionsからのデプロイ用）
-# WIF経由でこのサービスアカウントを使用してCloud Runにデプロイするため必要
-resource "google_project_iam_member" "run_developer" {
-  project = var.project_id
-  role    = "roles/run.developer"
-  member  = "serviceAccount:${google_service_account.cloud_run.email}"
-}
-
-# サービスアカウント使用権限（GitHub Actionsからのデプロイ用）
-# Cloud Runデプロイ時にサービスアカウント自身を「act as」する権限が必要
-resource "google_service_account_iam_member" "service_account_user" {
-  service_account_id = google_service_account.cloud_run.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+  member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # 署名付きURL生成権限（Cloud Storage SignedURL用）
 # SA自身に対するToken Creator権限 - BucketHandle.SignedURL()がIAM signBlobで署名するために必要
-resource "google_service_account_iam_member" "self_token_creator" {
-  service_account_id = google_service_account.cloud_run.name
+resource "google_service_account_iam_member" "runtime_self_token_creator" {
+  service_account_id = google_service_account.runtime.name
   role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+  member             = "serviceAccount:${google_service_account.runtime.email}"
+}
+
+# -----------------------------------------------------------------------------
+# デプロイサービスアカウント（CI/CD用）
+# -----------------------------------------------------------------------------
+
+resource "google_service_account" "deploy" {
+  project      = var.project_id
+  account_id   = "${var.service_name}-deploy-sa"
+  display_name = "Cloud Run Deploy Service Account for ${var.service_name}"
+  description  = "CI/CDパイプラインからのデプロイ用サービスアカウント"
+}
+
+# Artifact Registry書き込み権限（GitHub ActionsからのDockerイメージプッシュ用）
+resource "google_project_iam_member" "deploy_artifact_registry_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+# Cloud Runデプロイ権限（GitHub Actionsからのデプロイ用）
+resource "google_project_iam_member" "deploy_run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+# デプロイSAがランタイムSAを指定してCloud Runをデプロイする権限
+# Cloud Runデプロイ時にランタイムSAをサービスアカウントとして設定するために必要
+resource "google_service_account_iam_member" "deploy_acts_as_runtime" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+# デプロイSAがランタイムSAに対するToken Creator権限を持つ
+# E2EテストでFirebase CustomToken署名時に、デプロイSAがランタイムSAのsignBlob APIを呼び出すために必要
+resource "google_service_account_iam_member" "deploy_token_creator_on_runtime" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.deploy.email}"
 }
 
 # -----------------------------------------------------------------------------
@@ -86,7 +103,7 @@ resource "google_cloud_run_v2_service" "api" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
-    service_account = google_service_account.cloud_run.email
+    service_account = google_service_account.runtime.email
 
     scaling {
       min_instance_count = var.min_instances
@@ -187,7 +204,7 @@ resource "google_cloud_run_v2_service" "api" {
 
   # Cloud Runサービスが起動時にSignedURL生成を試みるため、事前にIAM権限が必要
   depends_on = [
-    google_service_account_iam_member.self_token_creator,
+    google_service_account_iam_member.runtime_self_token_creator,
   ]
 }
 
