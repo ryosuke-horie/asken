@@ -76,8 +76,14 @@ struct WeightViewModelTests {
         mockRepo.getRecordsHandler = { _, _ in
             WeightRecordsListResponse(
                 records: [
-                    WeightRecord(id: "r1", weightKg: 65.5, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr),
-                    WeightRecord(id: "r2", weightKg: 65.1, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr),
+                    WeightRecord(
+                        id: "r1", weightKg: 65.5, recordedAt: todayStr,
+                        note: nil, createdAt: todayStr, updatedAt: todayStr
+                    ),
+                    WeightRecord(
+                        id: "r2", weightKg: 65.1, recordedAt: todayStr,
+                        note: nil, createdAt: todayStr, updatedAt: todayStr
+                    ),
                 ],
                 dailySummary: [:],
                 goal: nil
@@ -99,7 +105,10 @@ struct WeightViewModelTests {
 
         mockRepo.getRecordsHandler = { _, _ in
             WeightRecordsListResponse(
-                records: [WeightRecord(id: "record-1", weightKg: 65.0, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr)],
+                records: [WeightRecord(
+                    id: "record-1", weightKg: 65.0, recordedAt: todayStr,
+                    note: nil, createdAt: todayStr, updatedAt: todayStr
+                )],
                 dailySummary: [:],
                 goal: self.makeTestGoal(targetWeightKg: 63.0)
             )
