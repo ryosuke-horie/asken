@@ -45,6 +45,17 @@ func LoadRateLimitConfig() RateLimitConfig {
 		config.CleanupInterval = 1 * time.Second
 	}
 
+	// レートリミット値は正の数であること（0以下だとリミッターが意図しない動作をする）
+	if config.IPRateLimit <= 0 {
+		config.IPRateLimit = 10
+	}
+	if config.UserRateLimit <= 0 {
+		config.UserRateLimit = 5
+	}
+	if config.GeminiRateLimit <= 0 {
+		config.GeminiRateLimit = 0.5
+	}
+
 	// バーストサイズは最低1を保証（0だと全リクエストがブロックされる）
 	if config.IPBurstSize < 1 {
 		config.IPBurstSize = 1
