@@ -47,13 +47,44 @@ struct ContentView: View {
 // MARK: - MainTabView
 
 struct MainTabView: View {
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some View {
         TabView {
             MealsView()
                 .tabItem { Label("食事", systemImage: "fork.knife") }
             WeightView()
                 .tabItem { Label("体重", systemImage: "scalemass") }
+            SettingsView()
+                .tabItem { Label("設定", systemImage: "gearshape") }
         }
         .tint(Theme.primary)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task {
+                    await refreshTodayNotifications()
+                }
+            }
+        }
+    }
+
+    private func refreshTodayNotifications() async {
+        let store = NotificationSettingsStore()
+        let settings = store.load()
+        guard settings.isGlobalEnabled else { return }
+
+        let repository = MealRepository()
+        let notificationManager = NotificationManager()
+        do {
+            let dailyMeals = try await repository.getDailyMeals(date: Date())
+            for mealType in MealType.reminderTargets {
+                let meals = dailyMeals.meals.meals(for: mealType)
+                if !meals.isEmpty {
+                    await notificationManager.cancelDeliveredNotification(for: mealType)
+                }
+            }
+        } catch {
+            // APIエラー時は静かに失敗（通知はそのまま維持）
+        }
     }
 }
