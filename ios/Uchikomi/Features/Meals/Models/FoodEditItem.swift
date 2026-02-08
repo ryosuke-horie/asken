@@ -70,7 +70,9 @@ final class FoodEditItem: Identifiable {
 
     /// 量の変更に基づいて栄養素を再計算する。
     /// 元の量と現在の量をパースし、同じ単位の場合のみ比率で再計算する。
-    /// パース失敗時やゼロ除算の場合は元の値を維持する。
+    /// カロリーは整数に、たんぱく質・脂質・炭水化物は小数点第1位に丸める。
+    /// パース失敗時やゼロ除算の場合は何も変更しない（現在の栄養素値がそのまま残る）。
+    /// キーストロークごとに呼ばれるため、入力途中のパース失敗は正常動作でありUIエラー表示は行わない。
     func recalculateNutrition() {
         guard let originalParsed = QuantityParser.parse(originalQuantity),
               let currentParsed = QuantityParser.parse(quantity),
