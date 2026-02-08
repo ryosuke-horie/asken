@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -131,7 +132,7 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error getting history detail: %v", err)
-		if strings.Contains(err.Error(), "見つかりません") {
+		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, "History not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Failed to get history detail", http.StatusInternalServerError)
@@ -228,7 +229,7 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	// リポジトリで更新（userIDでスコープ、まず現在の値で保存）
 	if err := h.repository.UpdateResult(r.Context(), userID, historyID, foods); err != nil {
 		log.Printf("Error updating history: %v", err)
-		if strings.Contains(err.Error(), "見つかりません") {
+		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, "History not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Failed to update history", http.StatusInternalServerError)
