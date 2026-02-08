@@ -202,7 +202,7 @@ struct WeightInputViewModelTests {
 
     @Test
     @MainActor
-    func 無効な体重値で保存がスキップされるべき() async {
+    func 無効な体重値で保存がスキップされエラーメッセージが設定されるべき() async {
         let mockRepo = WeightRepositoryProtocolMock()
         let viewModel = WeightInputViewModel(repository: mockRepo)
         viewModel.weightText = "abc"
@@ -211,5 +211,24 @@ struct WeightInputViewModelTests {
 
         #expect(viewModel.didSave == false)
         #expect(mockRepo.createRecordCallCount == 0)
+        #expect(viewModel.errorMessage != nil)
+    }
+
+    @Test
+    @MainActor
+    func 削除失敗時にエラーメッセージが設定されるべき() async {
+        let mockRepo = WeightRepositoryProtocolMock()
+        let record = makeTestRecord()
+        mockRepo.deleteRecordHandler = { _ in
+            throw NSError(domain: "test", code: 500)
+        }
+
+        let viewModel = WeightInputViewModel(editingRecord: record, repository: mockRepo)
+
+        await viewModel.delete()
+
+        #expect(viewModel.didSave == false)
+        #expect(viewModel.errorMessage != nil)
+        #expect(mockRepo.deleteRecordCallCount == 1)
     }
 }

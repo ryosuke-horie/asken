@@ -20,7 +20,7 @@ func TestWeightGoalHandler_HandleGet_WithGoal(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
 
-	mockRepo := &MockWeightRecordRepository{
+	mockRepo := &MockWeightGoalRepository{
 		GetGoalFunc: func(ctx context.Context, userID string) (*repository.WeightGoal, error) {
 			assert.Equal(t, testUserID, userID)
 			return &repository.WeightGoal{
@@ -51,7 +51,7 @@ func TestWeightGoalHandler_HandleGet_WithGoal(t *testing.T) {
 func TestWeightGoalHandler_HandleGet_NoGoal(t *testing.T) {
 	testUserID := "test-user-123"
 
-	mockRepo := &MockWeightRecordRepository{
+	mockRepo := &MockWeightGoalRepository{
 		GetGoalFunc: func(ctx context.Context, userID string) (*repository.WeightGoal, error) {
 			return nil, nil
 		},
@@ -75,7 +75,7 @@ func TestWeightGoalHandler_HandleGet_NoGoal(t *testing.T) {
 }
 
 func TestWeightGoalHandler_HandleGet_Unauthorized(t *testing.T) {
-	mockRepo := &MockWeightRecordRepository{}
+	mockRepo := &MockWeightGoalRepository{}
 	handler := NewWeightGoalHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/weight/goal", nil)
@@ -90,7 +90,7 @@ func TestWeightGoalHandler_HandleSet_Success(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
 
-	mockRepo := &MockWeightRecordRepository{
+	mockRepo := &MockWeightGoalRepository{
 		SetGoalFunc: func(ctx context.Context, userID string, targetWeightKg float64) (*repository.WeightGoal, error) {
 			assert.Equal(t, testUserID, userID)
 			assert.Equal(t, 63.0, targetWeightKg)
@@ -123,7 +123,7 @@ func TestWeightGoalHandler_HandleSet_Success(t *testing.T) {
 
 func TestWeightGoalHandler_HandleSet_ValidationError(t *testing.T) {
 	testUserID := "test-user-123"
-	mockRepo := &MockWeightRecordRepository{}
+	mockRepo := &MockWeightGoalRepository{}
 	handler := NewWeightGoalHandler(mockRepo)
 
 	tests := []struct {
@@ -159,7 +159,7 @@ func TestWeightGoalHandler_HandleSet_ValidationError(t *testing.T) {
 }
 
 func TestWeightGoalHandler_HandleSet_Unauthorized(t *testing.T) {
-	mockRepo := &MockWeightRecordRepository{}
+	mockRepo := &MockWeightGoalRepository{}
 	handler := NewWeightGoalHandler(mockRepo)
 
 	req := httptest.NewRequest(http.MethodPut, "/api/weight/goal", nil)
@@ -173,7 +173,7 @@ func TestWeightGoalHandler_HandleSet_Unauthorized(t *testing.T) {
 func TestWeightGoalHandler_HandleGet_RepositoryError(t *testing.T) {
 	testUserID := "test-user-123"
 
-	mockRepo := &MockWeightRecordRepository{
+	mockRepo := &MockWeightGoalRepository{
 		GetGoalFunc: func(ctx context.Context, userID string) (*repository.WeightGoal, error) {
 			return nil, fmt.Errorf("database error")
 		},
@@ -194,7 +194,7 @@ func TestWeightGoalHandler_HandleGet_RepositoryError(t *testing.T) {
 func TestWeightGoalHandler_HandleSet_RepositoryError(t *testing.T) {
 	testUserID := "test-user-123"
 
-	mockRepo := &MockWeightRecordRepository{
+	mockRepo := &MockWeightGoalRepository{
 		SetGoalFunc: func(ctx context.Context, userID string, targetWeightKg float64) (*repository.WeightGoal, error) {
 			return nil, fmt.Errorf("database error")
 		},

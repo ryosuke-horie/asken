@@ -209,9 +209,9 @@ func run() error {
 		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
 	}
 
-	weightRepo, err := repository.NewWeightRecordRepositoryFirestore(firestoreClient)
+	weightRecordRepo, weightGoalRepo, err := repository.NewWeightRepositories(firestoreClient)
 	if err != nil {
-		log.Fatalf("Failed to initialize WeightRecordRepository: %v", err)
+		log.Fatalf("Failed to initialize WeightRepositories: %v", err)
 	}
 
 	// Gemini API Keyの確認
@@ -258,8 +258,8 @@ func run() error {
 		image:         handler.NewImageHandler(storageRepo),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
-		weightRecord:  handler.NewWeightRecordHandler(weightRepo),
-		weightGoal:    handler.NewWeightGoalHandler(weightRepo),
+		weightRecord:  handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
+		weightGoal:    handler.NewWeightGoalHandler(weightGoalRepo),
 	}
 
 	// ワーカーの初期化

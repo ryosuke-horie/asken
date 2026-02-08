@@ -34,12 +34,13 @@ type firestoreWeightRecordRepository struct {
 	client *firestore.Client
 }
 
-// NewWeightRecordRepositoryFirestore は新しいFirestoreベースのWeightRecordRepositoryを作成します
-func NewWeightRecordRepositoryFirestore(client *firestore.Client) (WeightRecordRepository, error) {
+// NewWeightRepositories は新しいFirestoreベースのWeightRecordRepositoryとWeightGoalRepositoryを作成します
+func NewWeightRepositories(client *firestore.Client) (WeightRecordRepository, WeightGoalRepository, error) {
 	if client == nil {
-		return nil, fmt.Errorf("firestore client is required")
+		return nil, nil, fmt.Errorf("firestore client is required")
 	}
-	return &firestoreWeightRecordRepository{client: client}, nil
+	repo := &firestoreWeightRecordRepository{client: client}
+	return repo, repo, nil
 }
 
 // getUserWeightRecordsCollection はユーザーのweightRecordsコレクション参照を取得
