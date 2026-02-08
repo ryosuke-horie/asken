@@ -45,6 +45,18 @@ func (m *MockGeminiClient) CalculateNutrition(ctx context.Context, foods []gemin
 	return nil, nil
 }
 
+// MockImageDownloader はテスト用のImageDownloader実装
+type MockImageDownloader struct {
+	DownloadFunc func(ctx context.Context, objectName string) ([]byte, error)
+}
+
+func (m *MockImageDownloader) Download(ctx context.Context, objectName string) ([]byte, error) {
+	if m.DownloadFunc != nil {
+		return m.DownloadFunc(ctx, objectName)
+	}
+	return nil, nil
+}
+
 func TestAnalyzeFoodImage_Success(t *testing.T) {
 	mockClient := &MockGeminiClient{
 		ClassifyFoodsFunc: func(ctx context.Context, imagePath string) ([]gemini.FoodItem, error) {
@@ -231,4 +243,131 @@ func TestAnalyzeFoodText_NutritionError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "栄養素計算エラー")
+}
+
+func TestDetectMimeTypeFromPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		expected string
+	}{
+		{"jpg拡張子", "uploads/image.jpg", "image/jpeg"},
+		{"jpeg拡張子", "uploads/image.jpeg", "image/jpeg"},
+		{"JPG大文字", "uploads/image.JPG", "image/jpeg"},
+		{"JPEG大文字", "uploads/image.JPEG", "image/jpeg"},
+		{"png拡張子", "uploads/image.png", "image/png"},
+		{"PNG大文字", "uploads/image.PNG", "image/png"},
+		{"gif拡張子", "uploads/image.gif", "image/gif"},
+		{"webp拡張子", "uploads/image.webp", "image/webp"},
+		{"bmpはデフォルト", "uploads/image.bmp", "image/jpeg"},
+		{"拡張子なしはデフォルト", "uploads/image", "image/jpeg"},
+		{"空文字はデフォルト", "", "image/jpeg"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := detectMimeTypeFromPath(tt.path)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestAnalyzeFoodImage_CloudStoragePath_Success(t *testing.T) {
+	imageData := []byte("fake image data")
+
+	mockDownloader := &MockImageDownloader{
+		DownloadFunc: func(ctx context.Context, objectName string) ([]byte, error) {
+			assert.Equal(t, "uploads/test-uuid.jpg", objectName)
+			return imageData, nil
+		},
+	}
+
+	var capturedImageData []byte
+	var capturedMimeType string
+	mockClient := &MockGeminiClient{
+		ClassifyFoodsFromDataFunc: func(ctx context.Context, data []byte, mimeType string) ([]gemini.FoodItem, error) {
+			capturedImageData = data
+			capturedMimeType = mimeType
+			return []gemini.FoodItem{
+				{Name: "カレーライス", EstimatedAmount: "1皿"},
+			}, nil
+		},
+		CalculateNutritionFunc: func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
+			return []gemini.NutritionInfo{
+				{
+					Name:            "カレーライス",
+					EstimatedAmount: "1皿",
+					Calories:        600.0,
+					Protein:         15.0,
+					Fat:             20.0,
+					Carbohydrates:   80.0,
+				},
+			}, nil
+		},
+	}
+
+	svc := NewFoodService(mockClient, mockDownloader)
+	result, err := svc.AnalyzeFoodImage(context.Background(), "uploads/test-uuid.jpg")
+
+	require.NoError(t, err)
+	assert.Equal(t, imageData, capturedImageData)
+	assert.Equal(t, "image/jpeg", capturedMimeType)
+	assert.Len(t, result.Foods, 1)
+	assert.Equal(t, 600.0, result.TotalCalories)
+}
+
+func TestAnalyzeFoodImage_CloudStoragePath_DownloadError(t *testing.T) {
+	mockDownloader := &MockImageDownloader{
+		DownloadFunc: func(ctx context.Context, objectName string) ([]byte, error) {
+			return nil, assert.AnError
+		},
+	}
+	mockClient := &MockGeminiClient{}
+
+	svc := NewFoodService(mockClient, mockDownloader)
+	_, err := svc.AnalyzeFoodImage(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "画像ダウンロードエラー")
+}
+
+func TestAnalyzeFoodImage_CloudStoragePath_ClassifyError(t *testing.T) {
+	mockDownloader := &MockImageDownloader{
+		DownloadFunc: func(ctx context.Context, objectName string) ([]byte, error) {
+			return []byte("image"), nil
+		},
+	}
+	mockClient := &MockGeminiClient{
+		ClassifyFoodsFromDataFunc: func(ctx context.Context, data []byte, mimeType string) ([]gemini.FoodItem, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	svc := NewFoodService(mockClient, mockDownloader)
+	_, err := svc.AnalyzeFoodImage(context.Background(), "uploads/test-uuid.png")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "食材分類エラー")
+}
+
+func TestAnalyzeFoodImage_CloudStoragePath_NilDownloader(t *testing.T) {
+	mockClient := &MockGeminiClient{
+		ClassifyFoodsFunc: func(ctx context.Context, imagePath string) ([]gemini.FoodItem, error) {
+			assert.Equal(t, "uploads/test-uuid.jpg", imagePath)
+			return []gemini.FoodItem{
+				{Name: "白米", EstimatedAmount: "1杯"},
+			}, nil
+		},
+		CalculateNutritionFunc: func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
+			return []gemini.NutritionInfo{
+				{Name: "白米", Calories: 252.0, Protein: 3.8, Fat: 0.5, Carbohydrates: 55.7},
+			}, nil
+		},
+	}
+
+	svc := NewFoodService(mockClient, nil)
+	result, err := svc.AnalyzeFoodImage(context.Background(), "uploads/test-uuid.jpg")
+
+	require.NoError(t, err)
+	assert.Len(t, result.Foods, 1)
 }
