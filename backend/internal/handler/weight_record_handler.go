@@ -95,14 +95,16 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 
 	from, err := util.ParseDateInTimezone(fromStr, tz)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("fromパラメータが不正です: %v", err), http.StatusBadRequest)
+		log.Printf("Error parsing from parameter: userID=%s, from=%s, error=%v", userID, fromStr, err)
+		http.Error(w, "fromパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
 		return
 	}
 
 	// toは日付の終了時刻まで含める
 	_, toEnd, err := util.GetDayRangeInTimezone(toStr, tz)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("toパラメータが不正です: %v", err), http.StatusBadRequest)
+		log.Printf("Error parsing to parameter: userID=%s, to=%s, error=%v", userID, toStr, err)
+		http.Error(w, "toパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
 		return
 	}
 

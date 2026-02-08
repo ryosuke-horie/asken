@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightRecord")
 
 // MARK: - WeightRecord
 
@@ -9,6 +12,29 @@ struct WeightRecord: Codable, Identifiable {
     let note: String?
     let createdAt: String
     let updatedAt: String
+
+    static let minWeightKg = 20.0
+    static let maxWeightKg = 300.0
+
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let iso8601FallbackFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    static func parseISO8601(_ string: String) -> Date? {
+        let result = iso8601Formatter.date(from: string) ?? iso8601FallbackFormatter.date(from: string)
+        if result == nil {
+            logger.warning("ISO8601日付パースに失敗: \(string)")
+        }
+        return result
+    }
 }
 
 // MARK: - WeightGoal

@@ -39,13 +39,13 @@ final class WeightInputViewModel {
 
     var isValid: Bool {
         guard let weight = weightValue else { return false }
-        return weight >= 20.0 && weight <= 300.0
+        return weight >= WeightRecord.minWeightKg && weight <= WeightRecord.maxWeightKg
     }
 
     func incrementWeight() {
         guard let current = weightValue else { return }
         let newValue = (current * 10 + 1).rounded() / 10
-        if newValue <= 300.0 {
+        if newValue <= WeightRecord.maxWeightKg {
             weightText = formatWeight(newValue)
         }
     }
@@ -53,14 +53,16 @@ final class WeightInputViewModel {
     func decrementWeight() {
         guard let current = weightValue else { return }
         let newValue = (current * 10 - 1).rounded() / 10
-        if newValue >= 20.0 {
+        if newValue >= WeightRecord.minWeightKg {
             weightText = formatWeight(newValue)
         }
     }
 
     func save() async {
         guard let weight = weightValue, isValid else {
-            errorMessage = "体重は20.0〜300.0kgの範囲で入力してください"
+            let min = String(format: "%.1f", WeightRecord.minWeightKg)
+            let max = String(format: "%.1f", WeightRecord.maxWeightKg)
+            errorMessage = "体重は\(min)〜\(max)kgの範囲で入力してください"
             return
         }
 
