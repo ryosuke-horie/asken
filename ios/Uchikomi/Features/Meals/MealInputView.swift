@@ -320,6 +320,7 @@ private struct ExistingMealCard: View {
         guard let imagePath = meal.imagePath, !imagePath.isEmpty else { return nil }
         // imagePath is stored as "uploads/xxx.jpg", extract just the filename
         let filename = (imagePath as NSString).lastPathComponent
+        guard ImageFilenameValidator.isValid(filename) else { return nil }
         let baseURL = AppEnvironment.current.baseURL
         return baseURL.appendingPathComponent("api/images/\(filename)")
     }
