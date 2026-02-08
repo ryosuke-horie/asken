@@ -31,7 +31,14 @@ func NewAuthHelper(ctx context.Context) (*AuthHelper, error) {
 		return nil, fmt.Errorf("E2E_FIREBASE_API_KEY environment variable is required")
 	}
 
-	app, err := firebase.NewApp(ctx, nil)
+	// WIF環境ではメタデータサーバーが利用できないため、
+	// ServiceAccountIDを明示的に指定してCustomToken()の署名を可能にする
+	var config *firebase.Config
+	if saEmail := os.Getenv("SERVICE_ACCOUNT_EMAIL"); saEmail != "" {
+		config = &firebase.Config{ServiceAccountID: saEmail}
+	}
+
+	app, err := firebase.NewApp(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Firebase app: %w", err)
 	}

@@ -228,6 +228,7 @@ jobs:
           E2E_BASE_URL: ${{ steps.get-url.outputs.url }}
           E2E_FIREBASE_API_KEY: ${{ secrets.E2E_FIREBASE_API_KEY }}
           E2E_TEST_UID: "e2e-test-user"
+          SERVICE_ACCOUNT_EMAIL: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
         working-directory: backend
         run: |
           echo "Running E2E tests against ${E2E_BASE_URL}"
