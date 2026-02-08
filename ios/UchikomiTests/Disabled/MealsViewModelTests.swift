@@ -4,20 +4,20 @@ import Testing
 
 @Suite
 struct MealsViewModelTests {
+    private let emptyDailyMeals = DailyMeals(
+        date: "2024-01-15",
+        meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+        dailyTotal: DailyTotal(
+            totalCalories: 0,
+            totalProtein: 0,
+            totalFat: 0,
+            totalCarbohydrates: 0
+        )
+    )
+
     private func createMockRepository() -> MealRepositoryProtocolMock {
         let mock = MealRepositoryProtocolMock()
-        mock.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mock.getDailyMealsHandler = { _ in emptyDailyMeals }
         return mock
     }
 
@@ -142,18 +142,7 @@ struct MealsViewModelTests {
     func 履歴削除が成功した場合食事データがリロードされるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in }
-        mockRepo.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 
@@ -166,23 +155,56 @@ struct MealsViewModelTests {
     }
 
     @Test
+    func MealsByTypeのisSkippedがskippedレコードを正しく判定するべき() {
+        let skippedMeal = HistoryDetail(
+            id: "skip-1",
+            inputType: .skipped,
+            imagePath: nil,
+            inputText: nil,
+            createdAt: "2024-01-15T00:00:00Z",
+            mealType: .breakfast,
+            mealDate: "2024-01-15",
+            totalCalories: 0,
+            totalProtein: 0,
+            totalFat: 0,
+            totalCarbohydrates: 0,
+            foods: []
+        )
+        let normalMeal = HistoryDetail(
+            id: "meal-1",
+            inputType: .text,
+            imagePath: nil,
+            inputText: "サラダ",
+            createdAt: "2024-01-15T00:00:00Z",
+            mealType: .lunch,
+            mealDate: "2024-01-15",
+            totalCalories: 200,
+            totalProtein: 10,
+            totalFat: 5,
+            totalCarbohydrates: 20,
+            foods: []
+        )
+
+        let mealsByType = MealsByType(
+            breakfast: [skippedMeal],
+            lunch: [normalMeal],
+            dinner: [],
+            snack: []
+        )
+
+        #expect(mealsByType.isSkipped(for: .breakfast) == true)
+        #expect(mealsByType.isSkipped(for: .lunch) == false)
+        #expect(mealsByType.isSkipped(for: .dinner) == false)
+        #expect(mealsByType.isSkipped(for: .snack) == false)
+    }
+
+    @Test
     func 履歴削除が失敗した場合エラーメッセージが設定されるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in
             throw APIError.networkError(NSError(domain: "", code: -1))
         }
-        mockRepo.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 

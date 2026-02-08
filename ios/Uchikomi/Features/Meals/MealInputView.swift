@@ -19,6 +19,7 @@ struct MealInputView: View {
     @State private var editingMeal: HistoryDetail?
     @State private var deletingMeal: HistoryDetail?
     @State private var showingImagePreview: URL?
+    @State private var showingSkipConfirmation = false
 
     let mealDate: Date
     let initialMealType: MealType
@@ -119,6 +120,22 @@ struct MealInputView: View {
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
                     }
+
+                    // Skip Meal Option
+                    if existingMeals.isEmpty {
+                        Divider()
+
+                        Button {
+                            showingSkipConfirmation = true
+                        } label: {
+                            Label("食べなかった", systemImage: "moon.zzz")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.secondary)
+                        .disabled(viewModel.isSkipping)
+                    }
                 }
                 .padding()
             }
@@ -206,6 +223,20 @@ struct MealInputView: View {
             } message: {
                 Text("この食事記録を削除しますか？")
             }
+            .alert("確認", isPresented: $showingSkipConfirmation) {
+                Button("キャンセル", role: .cancel) {}
+                Button("食べなかった") {
+                    Task {
+                        let success = await viewModel.skipMeal()
+                        if success {
+                            onSaved()
+                            dismiss()
+                        }
+                    }
+                }
+            } message: {
+                Text("\(initialMealType.displayName)を「食べなかった」として記録しますか？")
+            }
         }
         .onAppear {
             viewModel.mealDate = mealDate
@@ -222,12 +253,24 @@ private struct ExistingMealsSection: View {
     let onDelete: (HistoryDetail) -> Void
     let onImageTap: (URL) -> Void
 
+    private var skippedMeals: [HistoryDetail] {
+        meals.filter { $0.inputType == .skipped }
+    }
+
+    private var normalMeals: [HistoryDetail] {
+        meals.filter { $0.inputType != .skipped }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("登録済みの記録")
                 .font(.headline)
 
-            ForEach(meals) { meal in
+            ForEach(skippedMeals) { meal in
+                SkippedMealCard(onDelete: { onDelete(meal) })
+            }
+
+            ForEach(normalMeals) { meal in
                 ExistingMealCard(
                     meal: meal,
                     onEdit: { onEdit(meal) },
@@ -236,6 +279,32 @@ private struct ExistingMealsSection: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - SkippedMealCard
+
+private struct SkippedMealCard: View {
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack {
+            Image(systemName: "moon.zzz")
+                .foregroundStyle(.secondary)
+            Text("食べませんでした")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button(action: onDelete) {
+                Label("取り消す", systemImage: "arrow.uturn.backward")
+                    .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .tint(.secondary)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
@@ -481,48 +550,6 @@ private struct AnalysisResultSection: View {
             .padding()
             .background(Color(.secondarySystemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-    }
-}
-
-// MARK: - CameraView
-
-struct CameraView: UIViewControllerRepresentable {
-    @Environment(\.dismiss) private var dismiss
-    let onImageCaptured: (UIImage) -> Void
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraView
-
-        init(_ parent: CameraView) {
-            self.parent = parent
-        }
-
-        func imagePickerController(
-            _: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.onImageCaptured(image)
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_: UIImagePickerController) {
-            parent.dismiss()
         }
     }
 }

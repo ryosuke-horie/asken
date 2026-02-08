@@ -200,5 +200,6 @@ struct MealInputManualFoodTests {
 
         #expect(viewModel.manualFoods.count == 1)
         #expect(viewModel.manualFoods[0].name == "")
+        #expect(viewModel.isSkipping == false)
     }
 }
