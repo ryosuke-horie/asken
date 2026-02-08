@@ -204,8 +204,16 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// リクエストボディをパース
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB: 食材リストを含むため余裕を持たせる
+
 	var req UpdateHistoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			log.Printf("Request body too large: limit=%d", maxBytesErr.Limit)
+			http.Error(w, "リクエストボディが大きすぎます", http.StatusRequestEntityTooLarge)
+			return
+		}
 		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
