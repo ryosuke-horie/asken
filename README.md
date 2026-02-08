@@ -20,16 +20,24 @@ utikomi/
 │   ├── cmd/server/            # HTTPサーバー
 │   ├── internal/              # 内部パッケージ
 │   │   ├── handler/           # HTTPハンドラー
+│   │   ├── middleware/        # ミドルウェア（認証等）
 │   │   ├── service/           # ビジネスロジック
-│   │   └── repository/        # データアクセス
-│   └── pkg/gemini/            # Gemini API クライアント
+│   │   ├── repository/        # データアクセス
+│   │   ├── worker/            # バックグラウンドワーカー
+│   │   └── util/              # ユーティリティ
+│   └── pkg/                   # 共有パッケージ
+│       ├── gemini/            # Gemini API クライアント
+│       ├── database/          # データベース接続
+│       └── storage/           # Cloud Storage クライアント
 ├── ios/                        # iOSアプリ
 │   ├── Uchikomi/              # メインアプリ（SwiftUI）
-│   ├── UchikomiTests/         # ユニットテスト
-│   └── UchikomiUITests/       # UIテスト
+│   ├── UchikomiCore/          # コアフレームワーク
+│   └── UchikomiTests/         # ユニットテスト
+├── infrastructure/             # Terraform（GCPインフラ管理）
 └── docs/                       # ドキュメント
     ├── CODEMAPS/              # コードマップ
-    └── adr/                   # アーキテクチャ決定記録
+    ├── adr/                   # アーキテクチャ決定記録
+    └── plan/                  # 実装計画
 ```
 
 ## セットアップ
@@ -85,11 +93,14 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 ## 使用方法
 
-1. トップページにアクセス
-2. 「ファイルを選択」ボタンをクリックして食事の画像を選択
-3. プレビューが表示されたら「アップロードして分析」ボタンをクリック
-4. 約2分待機（食材分類 + 栄養素計算）
-5. 結果が表示されます
+### iOSアプリ
+
+1. バックエンドサーバーを起動（`task run`）
+2. XcodeでiOSアプリをビルド・実行
+3. ログイン（開発環境ではモック認証が使用可能）
+4. 食事記録画面でカメラまたはフォトライブラリから画像を選択
+5. Gemini APIによる自動栄養素分析が実行される
+6. 結果が表示され、食事として保存可能
 
 ## テスト実行
 
@@ -163,9 +174,9 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 
 ## 今後の拡張
 
-- [ ] 食事履歴保存
+- [x] 食事履歴保存
 - [ ] 栄養バランス分析
-- [ ] 体重推移グラフ
+- [x] 体重記録・推移グラフ
 
 ## 開発者
 
