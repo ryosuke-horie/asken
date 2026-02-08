@@ -48,7 +48,12 @@ struct ContentView: View {
 
 struct MainTabView: View {
     var body: some View {
-        MealsView()
-            .tint(Theme.primary)
+        TabView {
+            MealsView()
+                .tabItem { Label("食事", systemImage: "fork.knife") }
+            WeightView()
+                .tabItem { Label("体重", systemImage: "scalemass") }
+        }
+        .tint(Theme.primary)
     }
 }

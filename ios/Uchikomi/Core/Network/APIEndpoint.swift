@@ -85,4 +85,51 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
+
+    // MARK: - Weight Endpoints
+
+    static func weightRecords(from: String, to: String, timezone: String) -> APIEndpoint {
+        var allowedCharacters = CharacterSet.urlQueryAllowed
+        allowedCharacters.remove(charactersIn: "/")
+        let encodedTimezone = timezone.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? timezone
+        return APIEndpoint(
+            path: "weight/records?from=\(from)&to=\(to)&tz=\(encodedTimezone)",
+            method: .get,
+            requiresAuth: true
+        )
+    }
+
+    static let createWeightRecord = APIEndpoint(
+        path: "weight/records",
+        method: .post,
+        requiresAuth: true
+    )
+
+    static func updateWeightRecord(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "weight/records/\(id)",
+            method: .put,
+            requiresAuth: true
+        )
+    }
+
+    static func deleteWeightRecord(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "weight/records/\(id)",
+            method: .delete,
+            requiresAuth: true
+        )
+    }
+
+    static let getWeightGoal = APIEndpoint(
+        path: "weight/goal",
+        method: .get,
+        requiresAuth: true
+    )
+
+    static let setWeightGoal = APIEndpoint(
+        path: "weight/goal",
+        method: .put,
+        requiresAuth: true
+    )
 }

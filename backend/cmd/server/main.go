@@ -58,6 +58,8 @@ type handlers struct {
 	image         *handler.ImageHandler
 	dailyMeals    *handler.DailyMealsHandler
 	skipMeal      *handler.SkipMealHandler
+	weightRecord  *handler.WeightRecordHandler
+	weightGoal    *handler.WeightGoalHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -71,6 +73,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupAnalyzeRoutes(mux, h, authMiddleware)
 	setupHistoryRoutes(mux, h, authMiddleware)
 	setupMealsRoutes(mux, h, authMiddleware)
+	setupWeightRoutes(mux, h, authMiddleware)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
@@ -130,6 +133,45 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.
 	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
 }
 
+func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.weightRecord.HandleList(w, r)
+		case http.MethodPost:
+			h.weightRecord.HandleCreate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight/records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
+
+	weightRecordDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.weightRecord.HandleGet(w, r)
+		case http.MethodPut:
+			h.weightRecord.HandleUpdate(w, r)
+		case http.MethodDelete:
+			h.weightRecord.HandleDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight/records/", authMiddleware.Authenticate(http.HandlerFunc(weightRecordDetailRouteHandler)))
+
+	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.weightGoal.HandleGet(w, r)
+		case http.MethodPut:
+			h.weightGoal.HandleSet(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/weight/goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+}
 
 func run() error {
 	ctx := context.Background()
@@ -165,6 +207,11 @@ func run() error {
 	analysisRepo, err := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
 	if err != nil {
 		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
+	}
+
+	weightRepo, err := repository.NewWeightRecordRepositoryFirestore(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize WeightRecordRepository: %v", err)
 	}
 
 	// Gemini API Keyの確認
@@ -211,6 +258,8 @@ func run() error {
 		image:         handler.NewImageHandler(storageRepo),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
+		weightRecord:  handler.NewWeightRecordHandler(weightRepo),
+		weightGoal:    handler.NewWeightGoalHandler(weightRepo),
 	}
 
 	// ワーカーの初期化
