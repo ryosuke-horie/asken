@@ -88,6 +88,10 @@ struct MealsByType: Codable {
         case .snack: snack
         }
     }
+
+    func isSkipped(for type: MealType) -> Bool {
+        meals(for: type).contains { $0.inputType == .skipped }
+    }
 }
 
 // MARK: - DailyTotal
