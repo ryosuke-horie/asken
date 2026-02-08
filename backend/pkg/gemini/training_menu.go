@@ -18,14 +18,14 @@ type MenuItem struct {
 	Description string `json:"description"` // 説明・ポイント
 }
 
-// GeminiExecutor はGemini APIのプロンプト実行を抽象化するインターフェース
-type GeminiExecutor interface {
+// executor はGemini APIのプロンプト実行を抽象化するインターフェース
+type executor interface {
 	Execute(ctx context.Context, prompt string) (*Response, error)
 }
 
 // MenuSuggester はトレーニングメニューを提案するクライアント
 type MenuSuggester struct {
-	client GeminiExecutor
+	client executor
 }
 
 // NewMenuSuggester は新しいMenuSuggesterを作成
@@ -35,10 +35,10 @@ func NewMenuSuggester(timeout time.Duration) *MenuSuggester {
 	}
 }
 
-// newMenuSuggesterWithExecutor はテスト用にGeminiExecutorを注入してMenuSuggesterを作成
-func newMenuSuggesterWithExecutor(executor GeminiExecutor) *MenuSuggester {
+// newMenuSuggesterWithExecutor はテスト用にexecutorを注入してMenuSuggesterを作成
+func newMenuSuggesterWithExecutor(e executor) *MenuSuggester {
 	return &MenuSuggester{
-		client: executor,
+		client: e,
 	}
 }
 

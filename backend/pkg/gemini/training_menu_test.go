@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockGeminiExecutor はテスト用のGeminiExecutor実装
+// mockGeminiExecutor はテスト用のexecutor実装
 type mockGeminiExecutor struct {
 	executeFunc func(ctx context.Context, prompt string) (*Response, error)
 }

@@ -439,6 +439,33 @@ func TestHistoryHandler_HandleUpdate_RepositoryError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func TestHistoryHandler_HandleUpdate_GetDetailError(t *testing.T) {
+	historyID := uuid.New()
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateResultFunc: func(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
+			return nil
+		},
+		GetHistoryDetailFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	handler := NewHistoryHandler(mockRepo)
+
+	body := `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7}]}`
+	req := httptest.NewRequest(http.MethodPut, "/api/history/"+historyID.String(), strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
 func TestHistoryHandler_HandleUpdate_InvalidBody(t *testing.T) {
 	historyID := uuid.New()
 	testUserID := "test-user-123"
