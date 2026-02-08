@@ -95,9 +95,9 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 最大365日間のバリデーション
+	// 最大366日間のバリデーション（うるう年対応）
 	if toEnd.Sub(from) > 366*24*time.Hour {
-		http.Error(w, "取得期間は最大365日です", http.StatusBadRequest)
+		http.Error(w, "取得期間は最大366日です", http.StatusBadRequest)
 		return
 	}
 
@@ -116,10 +116,10 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// タイムゾーンをロード
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
-		loc = time.UTC
+		http.Error(w, fmt.Sprintf("タイムゾーンが不正です: %s", tz), http.StatusBadRequest)
+		return
 	}
 
 	// レスポンスを構築
@@ -153,7 +153,6 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
 	}
 }
 
@@ -321,6 +320,9 @@ func (h *WeightRecordHandler) HandleDelete(w http.ResponseWriter, r *http.Reques
 
 // validateWeightKg は体重値のバリデーション
 func validateWeightKg(weightKg float64) error {
+	if math.IsNaN(weightKg) || math.IsInf(weightKg, 0) {
+		return fmt.Errorf("weight_kgに無効な値が指定されています")
+	}
 	if weightKg < 20.0 || weightKg > 300.0 {
 		return fmt.Errorf("weight_kgは20.0〜300.0の範囲で指定してください")
 	}

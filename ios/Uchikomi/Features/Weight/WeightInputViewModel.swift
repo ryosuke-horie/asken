@@ -40,7 +40,9 @@ final class WeightInputViewModel {
     func incrementWeight() {
         guard let current = weightValue else { return }
         let newValue = (current * 10 + 1).rounded() / 10
-        weightText = formatWeight(newValue)
+        if newValue <= 300.0 {
+            weightText = formatWeight(newValue)
+        }
     }
 
     func decrementWeight() {

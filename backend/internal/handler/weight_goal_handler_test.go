@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -40,10 +41,11 @@ func TestWeightGoalHandler_HandleGet_WithGoal(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response WeightGoalResponse
+	var response WeightGoalNullableResponse
 	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
-	assert.Equal(t, 63.0, response.TargetWeightKg)
+	require.NotNil(t, response.Goal)
+	assert.Equal(t, 63.0, response.Goal.TargetWeightKg)
 }
 
 func TestWeightGoalHandler_HandleGet_NoGoal(t *testing.T) {
@@ -166,4 +168,49 @@ func TestWeightGoalHandler_HandleSet_Unauthorized(t *testing.T) {
 	handler.HandleSet(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestWeightGoalHandler_HandleGet_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		GetGoalFunc: func(ctx context.Context, userID string) (*repository.WeightGoal, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightGoalHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/goal", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestWeightGoalHandler_HandleSet_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		SetGoalFunc: func(ctx context.Context, userID string, targetWeightKg float64) (*repository.WeightGoal, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightGoalHandler(mockRepo)
+
+	body := SetWeightGoalRequest{TargetWeightKg: 63.0}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/weight/goal", bytes.NewReader(bodyBytes))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleSet(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }

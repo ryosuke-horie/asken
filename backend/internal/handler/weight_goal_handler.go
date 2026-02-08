@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -32,6 +31,11 @@ type WeightGoalResponse struct {
 	UpdatedAt      string  `json:"updated_at"`
 }
 
+// WeightGoalNullableResponse は目標体重取得のレスポンス（nilを許容）
+type WeightGoalNullableResponse struct {
+	Goal *WeightGoalResponse `json:"goal"`
+}
+
 // HandleGet はGET /api/weight/goalリクエストを処理
 func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
@@ -47,17 +51,12 @@ func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if goal == nil {
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(map[string]any{"goal": nil}); err != nil {
-			log.Printf("Error encoding response: %v", err)
+	var response WeightGoalNullableResponse
+	if goal != nil {
+		response.Goal = &WeightGoalResponse{
+			TargetWeightKg: goal.TargetWeightKg,
+			UpdatedAt:      goal.UpdatedAt.Format(time.RFC3339),
 		}
-		return
-	}
-
-	response := WeightGoalResponse{
-		TargetWeightKg: goal.TargetWeightKg,
-		UpdatedAt:      goal.UpdatedAt.Format(time.RFC3339),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -80,8 +79,8 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.TargetWeightKg < 20.0 || req.TargetWeightKg > 300.0 {
-		http.Error(w, fmt.Sprintf("target_weight_kgは20.0〜300.0の範囲で指定してください"), http.StatusBadRequest)
+	if err := validateWeightKg(req.TargetWeightKg); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

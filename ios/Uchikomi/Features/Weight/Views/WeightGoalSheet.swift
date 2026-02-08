@@ -74,8 +74,12 @@ struct WeightGoalSheet: View {
 
         do {
             _ = try await repository.setGoal(targetWeightKg: weight)
+            isSaving = false
             onSaved()
             dismiss()
+            return
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
         } catch {
             errorMessage = "保存に失敗しました"
         }
