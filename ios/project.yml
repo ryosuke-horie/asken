@@ -84,8 +84,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.exe.uchikomi.tests
         GENERATE_INFOPLIST_FILE: "YES"
-        TEST_HOST: ""
-        BUNDLE_LOADER: ""
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Uchikomi"
+        BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
       - target: Uchikomi
         embed: false

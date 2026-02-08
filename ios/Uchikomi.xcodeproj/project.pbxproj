@@ -22,6 +22,7 @@
 		31C172F20CED1CB91F498F10 /* FirebaseAuthServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D780587BCB8A0793B32F0A2A /* FirebaseAuthServiceProtocol.swift */; };
 		393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB076D4C09182F8F36C28530 /* LoginViewModel.swift */; };
 		3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */; };
+		3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */; };
 		3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */; };
 		429200B9AEC62D0AA8360997 /* UchikomiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E4456D284B8FFDA32C61020F /* UchikomiCore.framework */; };
 		4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638F820A12494A2EFF5BA0B2 /* WeightChartView.swift */; };
@@ -58,6 +59,8 @@
 		C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */; };
 		C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8193C72B63A234AA467F7E45 /* NutritionEditorView.swift */; };
 		CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */; };
+		DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */; };
+		DC915DC4CCA0EC233B1FA3DC /* FoodEditItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */; };
 		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
 /* End PBXBuildFile section */
 
@@ -140,6 +143,8 @@
 		BB9B889F094B7078D80B6774 /* WeightRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecord.swift; sourceTree = "<group>"; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParser.swift; sourceTree = "<group>"; };
+		CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodEditItemTests.swift; sourceTree = "<group>"; };
 		D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
 		D110691FF801C9B691572637 /* MockFirebaseAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFirebaseAuthService.swift; sourceTree = "<group>"; };
 		D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRepository.swift; sourceTree = "<group>"; };
@@ -148,6 +153,7 @@
 		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		E4456D284B8FFDA32C61020F /* UchikomiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UchikomiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7A1EE73C03E23E5ABEDCD01 /* WeightInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputView.swift; sourceTree = "<group>"; };
+		F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParserTests.swift; sourceTree = "<group>"; };
 		F3CBE0301E1CCA902D6671AB /* WeightGoalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightGoalSheet.swift; sourceTree = "<group>"; };
 		FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodItemEditRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -282,8 +288,10 @@
 		58696F19F30A422D600E69E2 /* Meals */ = {
 			isa = PBXGroup;
 			children = (
+				CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */,
 				7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */,
 				184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */,
+				F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */,
 			);
 			path = Meals;
 			sourceTree = "<group>";
@@ -397,6 +405,7 @@
 			isa = PBXGroup;
 			children = (
 				7270033D73999E560F355AF4 /* FoodEditItem.swift */,
+				C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -613,9 +622,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
+				DC915DC4CCA0EC233B1FA3DC /* FoodEditItemTests.swift in Sources */,
 				3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */,
 				CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */,
 				C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */,
+				3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */,
 				70726C309F0539D8BB60A33E /* WeightInputViewModelTests.swift in Sources */,
 				2821BEEF2B0F58C17E96AEBF /* WeightViewModelTests.swift in Sources */,
 			);
@@ -656,6 +667,7 @@
 				C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */,
 				547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */,
 				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
+				DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */,
 				9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */,
 				6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */,
 				4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */,
@@ -715,7 +727,7 @@
 		04D3A9BAE111C1289ECC3344 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -725,7 +737,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Uchikomi";
 			};
 			name = Debug;
 		};
@@ -752,7 +764,7 @@
 		48DED03C5CCA4B5066CDBC5D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "";
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -762,7 +774,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.exe.uchikomi.tests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Uchikomi.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Uchikomi";
 			};
 			name = Release;
 		};
