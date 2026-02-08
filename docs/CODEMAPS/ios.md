@@ -48,7 +48,7 @@ ios/
 │   │       ├── WeightInputView.swift
 │   │       ├── WeightInputViewModel.swift
 │   │       ├── Models/
-│   │       │   └── WeightRecord.swift, WeightGoal.swift, ChartPeriod.swift
+│   │       │   └── WeightRecord.swift
 │   │       └── Views/
 │   │           ├── WeightChartView.swift
 │   │           ├── WeightGoalCard.swift
