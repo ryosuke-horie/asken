@@ -222,12 +222,24 @@ private struct ExistingMealsSection: View {
     let onDelete: (HistoryDetail) -> Void
     let onImageTap: (URL) -> Void
 
+    private var skippedMeals: [HistoryDetail] {
+        meals.filter { $0.inputType == .skipped }
+    }
+
+    private var normalMeals: [HistoryDetail] {
+        meals.filter { $0.inputType != .skipped }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("登録済みの記録")
                 .font(.headline)
 
-            ForEach(meals) { meal in
+            ForEach(skippedMeals) { meal in
+                SkippedMealCard(onDelete: { onDelete(meal) })
+            }
+
+            ForEach(normalMeals) { meal in
                 ExistingMealCard(
                     meal: meal,
                     onEdit: { onEdit(meal) },
@@ -236,6 +248,32 @@ private struct ExistingMealsSection: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - SkippedMealCard
+
+private struct SkippedMealCard: View {
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack {
+            Image(systemName: "moon.zzz")
+                .foregroundStyle(.secondary)
+            Text("食べませんでした")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button(action: onDelete) {
+                Label("取り消す", systemImage: "arrow.uturn.backward")
+                    .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .tint(.secondary)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

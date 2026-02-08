@@ -4,20 +4,20 @@ import Testing
 
 @Suite
 struct MealsViewModelTests {
+    private let emptyDailyMeals = DailyMeals(
+        date: "2024-01-15",
+        meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
+        dailyTotal: DailyTotal(
+            totalCalories: 0,
+            totalProtein: 0,
+            totalFat: 0,
+            totalCarbohydrates: 0
+        )
+    )
+
     private func createMockRepository() -> MealRepositoryProtocolMock {
         let mock = MealRepositoryProtocolMock()
-        mock.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mock.getDailyMealsHandler = { _ in emptyDailyMeals }
         return mock
     }
 
@@ -142,18 +142,7 @@ struct MealsViewModelTests {
     func 履歴削除が成功した場合食事データがリロードされるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in }
-        mockRepo.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 
@@ -166,23 +155,151 @@ struct MealsViewModelTests {
     }
 
     @Test
+    func skipMeal成功時に正しい引数で呼ばれ食事データがリロードされるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        var capturedMealType: MealType?
+        var capturedDate: Date?
+        mockRepo.skipMealHandler = { mealType, mealDate in
+            capturedMealType = mealType
+            capturedDate = mealDate
+        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
+
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        await viewModel.skipMeal(mealType: .breakfast)
+
+        #expect(mockRepo.skipMealCallCount == 1)
+        #expect(capturedMealType == .breakfast)
+        #expect(capturedDate != nil)
+        #expect(
+            Calendar.current.startOfDay(for: capturedDate!) ==
+                Calendar.current.startOfDay(for: viewModel.selectedDate)
+        )
+        #expect(mockRepo.getDailyMealsCallCount == 1)
+        #expect(viewModel.actionError == nil)
+        #expect(viewModel.isSkipping == false)
+    }
+
+    @Test
+    func skipMealがAPIError失敗時にactionErrorが設定されloadMealsが呼ばれないべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.skipMealHandler = { _, _ in
+            throw APIError.networkError(NSError(domain: "", code: -1))
+        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
+
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        await viewModel.skipMeal(mealType: .lunch)
+
+        #expect(mockRepo.skipMealCallCount == 1)
+        #expect(viewModel.actionError != nil)
+        #expect(mockRepo.getDailyMealsCallCount == 0)
+        #expect(viewModel.isSkipping == false)
+    }
+
+    @Test
+    func skipMealが非APIError失敗時にフォールバックメッセージが設定されるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        mockRepo.skipMealHandler = { _, _ in
+            throw NSError(domain: "test", code: 999)
+        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
+
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        await viewModel.skipMeal(mealType: .snack)
+
+        #expect(viewModel.actionError == "スキップに失敗しました")
+        #expect(viewModel.isSkipping == false)
+    }
+
+    @Test
+    func skipMeal中はisSkippingがtrueになるべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        var wasSkippingDuringCall = false
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        mockRepo.skipMealHandler = { _, _ in
+            wasSkippingDuringCall = viewModel.isSkipping
+        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
+
+        await viewModel.skipMeal(mealType: .dinner)
+
+        #expect(wasSkippingDuringCall == true)
+        #expect(viewModel.isSkipping == false)
+    }
+
+    @Test
+    func skipMealはisSkipping中に二重呼び出しを防止するべき() async {
+        let mockRepo = MealRepositoryProtocolMock()
+        let viewModel = MealsViewModel(repository: mockRepo)
+
+        mockRepo.skipMealHandler = { _, _ in
+            // 呼び出し中にもう一度skipMealを呼ぶ
+            await viewModel.skipMeal(mealType: .lunch)
+        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
+
+        await viewModel.skipMeal(mealType: .breakfast)
+
+        // ガードにより2回目の呼び出しはスキップされる
+        #expect(mockRepo.skipMealCallCount == 1)
+    }
+
+    @Test
+    func MealsByTypeのisSkippedがskippedレコードを正しく判定するべき() {
+        let skippedMeal = HistoryDetail(
+            id: "skip-1",
+            inputType: .skipped,
+            imagePath: nil,
+            inputText: nil,
+            createdAt: "2024-01-15T00:00:00Z",
+            mealType: .breakfast,
+            mealDate: "2024-01-15",
+            totalCalories: 0,
+            totalProtein: 0,
+            totalFat: 0,
+            totalCarbohydrates: 0,
+            foods: []
+        )
+        let normalMeal = HistoryDetail(
+            id: "meal-1",
+            inputType: .text,
+            imagePath: nil,
+            inputText: "サラダ",
+            createdAt: "2024-01-15T00:00:00Z",
+            mealType: .lunch,
+            mealDate: "2024-01-15",
+            totalCalories: 200,
+            totalProtein: 10,
+            totalFat: 5,
+            totalCarbohydrates: 20,
+            foods: []
+        )
+
+        let mealsByType = MealsByType(
+            breakfast: [skippedMeal],
+            lunch: [normalMeal],
+            dinner: [],
+            snack: []
+        )
+
+        #expect(mealsByType.isSkipped(for: .breakfast) == true)
+        #expect(mealsByType.isSkipped(for: .lunch) == false)
+        #expect(mealsByType.isSkipped(for: .dinner) == false)
+        #expect(mealsByType.isSkipped(for: .snack) == false)
+    }
+
+    @Test
     func 履歴削除が失敗した場合エラーメッセージが設定されるべき() async {
         let mockRepo = MealRepositoryProtocolMock()
         mockRepo.deleteHistoryHandler = { _ in
             throw APIError.networkError(NSError(domain: "", code: -1))
         }
-        mockRepo.getDailyMealsHandler = { _ in
-            DailyMeals(
-                date: "2024-01-15",
-                meals: MealsByType(breakfast: [], lunch: [], dinner: [], snack: []),
-                dailyTotal: DailyTotal(
-                    totalCalories: 0,
-                    totalProtein: 0,
-                    totalFat: 0,
-                    totalCarbohydrates: 0
-                )
-            )
-        }
+        mockRepo.getDailyMealsHandler = { _ in emptyDailyMeals }
 
         let viewModel = MealsViewModel(repository: mockRepo)
 

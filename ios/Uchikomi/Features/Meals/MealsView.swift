@@ -5,11 +5,11 @@ import SwiftUI
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
+    @State private var skippingMealType: MealType?
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Date Navigation
                 DateNavigationBar(
                     formattedDate: viewModel.formattedDate,
                     isToday: viewModel.isToday,
@@ -33,7 +33,6 @@ struct MealsView: View {
                 } else if let dailyMeals = viewModel.dailyMeals {
                     ScrollView {
                         VStack(spacing: 16) {
-                            // Daily Total
                             NutritionSummaryCard(
                                 calories: dailyMeals.dailyTotal.totalCalories,
                                 protein: dailyMeals.dailyTotal.totalProtein,
@@ -41,13 +40,17 @@ struct MealsView: View {
                                 carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates
                             )
 
-                            // Meals by Type
                             ForEach(MealType.allCases, id: \.self) { mealType in
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
+                                    isSkipped: dailyMeals.meals.isSkipped(for: mealType),
+                                    isSkipping: viewModel.isSkipping,
                                     onTapped: {
                                         selectedMealTypeForInput = mealType
+                                    },
+                                    onSkipped: {
+                                        skippingMealType = mealType
                                     }
                                 )
                             }
@@ -71,6 +74,34 @@ struct MealsView: View {
                     Task {
                         await viewModel.loadMeals()
                     }
+                }
+            }
+            .alert("確認", isPresented: Binding(
+                get: { skippingMealType != nil },
+                set: { if !$0 { skippingMealType = nil } }
+            )) {
+                Button("キャンセル", role: .cancel) {}
+                Button("食べなかった") {
+                    if let mealType = skippingMealType {
+                        Task {
+                            await viewModel.skipMeal(mealType: mealType)
+                        }
+                    }
+                    skippingMealType = nil
+                }
+            } message: {
+                if let mealType = skippingMealType {
+                    Text("\(mealType.displayName)を「食べなかった」として記録しますか？")
+                }
+            }
+            .alert("エラー", isPresented: Binding(
+                get: { viewModel.actionError != nil },
+                set: { if !$0 { viewModel.actionError = nil } }
+            )) {
+                Button("OK") {}
+            } message: {
+                if let error = viewModel.actionError {
+                    Text(error)
                 }
             }
         }
@@ -127,19 +158,22 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
+    let isSkipped: Bool
+    let isSkipping: Bool
     let onTapped: () -> Void
+    let onSkipped: () -> Void
 
     var body: some View {
-        Button(action: onTapped) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onTapped) {
                 HStack {
-                    Image(systemName: mealType.icon)
-                        .foregroundStyle(Theme.primary)
+                    Image(systemName: isSkipped ? "moon.zzz" : mealType.icon)
+                        .foregroundStyle(isSkipped ? .secondary : Theme.primary)
                     Text(mealType.displayName)
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Spacer()
-                    if !meals.isEmpty {
+                    if !isSkipped, !meals.isEmpty {
                         Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
                             .font(.subheadline)
                             .foregroundStyle(Theme.primary)
@@ -148,38 +182,51 @@ private struct MealTypeSection: View {
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
+            }
+            .buttonStyle(.plain)
 
-                if meals.isEmpty {
-                    Text("記録なし")
+            if isSkipped {
+                Text("食べませんでした")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else if meals.isEmpty {
+                Text("記録なし")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 4)
+
+                Button(action: onSkipped) {
+                    Label("食べなかった", systemImage: "moon.zzz")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 8)
-                } else {
-                    let allFoods = meals.flatMap(\.foods)
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
-                            HStack {
-                                Text(food.name)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Text("\(Int(food.caloriesKcal)) kcal")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.bordered)
+                .tint(.secondary)
+                .disabled(isSkipping)
+            } else {
+                let allFoods = meals.flatMap(\.foods)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
+                        HStack {
+                            Text(food.name)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text("\(Int(food.caloriesKcal)) kcal")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .buttonStyle(.plain)
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
