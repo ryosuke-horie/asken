@@ -574,6 +574,34 @@ func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
 	assert.True(t, deleteCalled, "Cloud Storage delete should be called on repository failure")
 }
 
+func TestAnalyzeHandler_TextInput_OversizedBody(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	// 4KBを超えるJSONボディを作成
+	largeBody := make([]byte, 5000)
+	for i := range largeBody {
+		largeBody[i] = 'a'
+	}
+	reqBody := map[string]string{
+		"input_text": string(largeBody),
+		"meal_type":  "lunch",
+		"meal_date":  "2024-01-15",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}

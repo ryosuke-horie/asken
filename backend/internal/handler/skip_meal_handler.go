@@ -38,6 +38,8 @@ func (h *SkipMealHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1024) // 1KB: meal_typeとmeal_dateの2フィールドのみ
+
 	var req SkipMealRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "無効なリクエスト形式です", http.StatusBadRequest)

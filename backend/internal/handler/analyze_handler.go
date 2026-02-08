@@ -65,6 +65,8 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		MealDate  string `json:"meal_date"`
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 4096) // 4KB: テキスト入力(最大1000文字 = UTF-8で最大3000バイト) + JSONオーバーヘッド
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("Error decoding JSON: %v", err)
 		http.Error(w, "リクエストの解析に失敗しました", http.StatusBadRequest)

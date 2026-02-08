@@ -161,6 +161,31 @@ func TestSkipMealHandler_Handle_RepositoryError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
+func TestSkipMealHandler_Handle_OversizedBody(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewSkipMealHandler(mockRepo)
+
+	// 1KBを超えるJSONボディを作成
+	largeBody := map[string]string{
+		"meal_type": "lunch",
+		"meal_date": "2026-01-24",
+		"padding":   string(make([]byte, 2000)),
+	}
+	body, _ := json.Marshal(largeBody)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	userID := "test-firebase-uid"
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestSkipMealHandler_Handle_AllMealTypes(t *testing.T) {
 	mealTypes := []string{"breakfast", "lunch", "dinner", "snack"}
 	userID := "test-firebase-uid"
