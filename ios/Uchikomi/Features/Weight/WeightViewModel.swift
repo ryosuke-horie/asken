@@ -49,8 +49,10 @@ final class WeightViewModel {
     func loadChartData() async {
         do {
             chartRecords = try await loadChartRecords()
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
         } catch {
-            // chartデータ更新のエラーは静かに処理
+            errorMessage = "チャートデータの更新に失敗しました"
         }
     }
 

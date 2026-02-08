@@ -357,3 +357,147 @@ func TestWeightRecordHandler_HandleDelete_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+func TestWeightRecordHandler_HandleGet_Success(t *testing.T) {
+	testUserID := "test-user-123"
+	now := time.Now()
+
+	mockRepo := &MockWeightRecordRepository{
+		GetRecordFunc: func(ctx context.Context, userID string, recordID string) (*repository.WeightRecord, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "record-1", recordID)
+			return &repository.WeightRecord{
+				ID:         "record-1",
+				WeightKg:   65.3,
+				RecordedAt: now,
+				Note:       "朝食前",
+				CreatedAt:  now,
+				UpdatedAt:  now,
+			}, nil
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records/record-1", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response WeightRecordResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Equal(t, "record-1", response.ID)
+	assert.Equal(t, 65.3, response.WeightKg)
+	assert.Equal(t, "朝食前", response.Note)
+}
+
+func TestWeightRecordHandler_HandleGet_NotFound(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		GetRecordFunc: func(ctx context.Context, userID string, recordID string) (*repository.WeightRecord, error) {
+			return nil, fmt.Errorf("体重記録が見つかりません: %w", repository.ErrNotFound)
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records/nonexistent", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestWeightRecordHandler_HandleGet_Unauthorized(t *testing.T) {
+	mockRepo := &MockWeightRecordRepository{}
+	handler := NewWeightRecordHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records/record-1", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestWeightRecordHandler_HandleCreate_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		CreateRecordFunc: func(ctx context.Context, userID string, weightKg float64, recordedAt time.Time, note string) (*repository.WeightRecord, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo)
+
+	body := CreateWeightRecordRequest{
+		WeightKg:   65.3,
+		RecordedAt: time.Now().Format(time.RFC3339),
+		Note:       "テスト",
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/weight/records", bytes.NewReader(bodyBytes))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleCreate(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestWeightRecordHandler_HandleList_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		ListRecordsByDateRangeFunc: func(ctx context.Context, userID string, from time.Time, to time.Time) ([]repository.WeightRecord, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records?from=2026-02-01&to=2026-02-28", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleList(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestWeightRecordHandler_HandleList_GoalError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		ListRecordsByDateRangeFunc: func(ctx context.Context, userID string, from time.Time, to time.Time) ([]repository.WeightRecord, error) {
+			return []repository.WeightRecord{}, nil
+		},
+		GetGoalFunc: func(ctx context.Context, userID string) (*repository.WeightGoal, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records?from=2026-02-01&to=2026-02-28", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleList(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
