@@ -147,11 +147,10 @@ module "cloud_run" {
 module "wif" {
   source = "../../modules/wif"
 
-  project_id            = var.gcp_project_id
-  github_owner          = var.github_owner
-  github_repo           = var.github_repo
-  service_account_id    = module.cloud_run.service_account_id
-  service_account_email = module.cloud_run.service_account_email
+  project_id         = var.gcp_project_id
+  github_owner       = var.github_owner
+  github_repo        = var.github_repo
+  service_account_id = module.cloud_run.deploy_service_account_id
 }
 
 # -----------------------------------------------------------------------------
@@ -161,15 +160,16 @@ module "wif" {
 module "github" {
   source = "../../modules/github"
 
-  github_repository          = var.github_repository
-  environment                = local.environment
-  gcp_project_id             = var.gcp_project_id
-  gcp_region                 = var.gcp_region
-  firestore_database         = module.firestore.database_name
-  storage_bucket             = module.storage.bucket_name
-  artifact_registry_url      = module.artifact_registry.repository_url
-  cloud_run_service_name     = module.cloud_run.service_name
-  workload_identity_provider = module.wif.provider_name
-  service_account_email      = module.cloud_run.service_account_email
-  e2e_firebase_api_key       = var.e2e_firebase_api_key
+  github_repository            = var.github_repository
+  environment                  = local.environment
+  gcp_project_id               = var.gcp_project_id
+  gcp_region                   = var.gcp_region
+  firestore_database           = module.firestore.database_name
+  storage_bucket               = module.storage.bucket_name
+  artifact_registry_url        = module.artifact_registry.repository_url
+  cloud_run_service_name       = module.cloud_run.service_name
+  workload_identity_provider   = module.wif.provider_name
+  service_account_email        = module.cloud_run.service_account_email
+  deploy_service_account_email = module.cloud_run.deploy_service_account_email
+  e2e_firebase_api_key         = var.e2e_firebase_api_key
 }

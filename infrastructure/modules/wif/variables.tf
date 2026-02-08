@@ -30,11 +30,6 @@ variable "github_repo" {
 }
 
 variable "service_account_id" {
-  description = "WIFを関連付けるサービスアカウントのフルパス（projects/PROJECT/serviceAccounts/SA@PROJECT.iam.gserviceaccount.com）"
-  type        = string
-}
-
-variable "service_account_email" {
-  description = "サービスアカウントのメールアドレス（Token Creator権限付与に使用）"
+  description = "WIFを関連付けるデプロイサービスアカウントのフルパス（projects/PROJECT/serviceAccounts/SA@PROJECT.iam.gserviceaccount.com）"
   type        = string
 }
