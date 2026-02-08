@@ -58,9 +58,23 @@ variable "workload_identity_provider" {
 }
 
 variable "service_account_email" {
-  description = "GitHub ActionsがimpersonateするサービスアカウントのEmail"
+  description = "ランタイムサービスアカウントのEmail（E2Eテスト等で使用）"
   type        = string
-  default     = ""
+
+  validation {
+    condition     = var.service_account_email != ""
+    error_message = "service_account_emailはE2EテストのFirebase CustomToken署名に必須です。"
+  }
+}
+
+variable "deploy_service_account_email" {
+  description = "デプロイサービスアカウントのEmail（GitHub ActionsのWIF認証で使用）"
+  type        = string
+
+  validation {
+    condition     = var.deploy_service_account_email != ""
+    error_message = "deploy_service_account_emailはデプロイワークフローのWIF認証に必須です。"
+  }
 }
 
 variable "e2e_firebase_api_key" {

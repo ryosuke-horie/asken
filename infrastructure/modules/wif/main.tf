@@ -51,16 +51,3 @@ resource "google_service_account_iam_member" "workload_identity_user" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_owner}/${var.github_repo}"
 }
-
-# -----------------------------------------------------------------------------
-# サービスアカウントトークン作成権限（signBlob）
-# Firebase Admin SDKのCustomToken()にはsignBlob権限が必要
-# WIF経由の認証ではメタデータサーバーが利用できないため、
-# サービスアカウント自身にToken Creator権限を付与する
-# -----------------------------------------------------------------------------
-
-resource "google_service_account_iam_member" "token_creator" {
-  service_account_id = var.service_account_id
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${var.service_account_email}"
-}

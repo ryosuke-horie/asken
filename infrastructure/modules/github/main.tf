@@ -99,6 +99,13 @@ resource "github_actions_environment_variable" "service_account_email" {
   value         = var.service_account_email
 }
 
+resource "github_actions_environment_variable" "deploy_service_account_email" {
+  repository    = data.github_repository.main.name
+  environment   = github_repository_environment.env.environment
+  variable_name = "DEPLOY_SERVICE_ACCOUNT_EMAIL"
+  value         = var.deploy_service_account_email
+}
+
 # =============================================================================
 # Environment Secrets
 # =============================================================================
