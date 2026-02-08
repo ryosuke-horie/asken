@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -31,6 +31,7 @@
 		45D6AACBFF1252C4A9C6C7B2 /* NotificationSettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F5628A80D5EB8CFEEE5712B /* NotificationSettingsViewModelTests.swift */; };
 		4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638F820A12494A2EFF5BA0B2 /* WeightChartView.swift */; };
 		516AA1DBC0D4B43E4CBE7153 /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A410440853CE4376951B253 /* Auth.swift */; };
+		52C4B4412B212735591D5E22 /* ImageFilenameValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 578AB03F8600834E16F8A2C7 /* ImageFilenameValidator.swift */; };
 		547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */; };
 		5480C2A55D426869ACF0E45B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F851C2BC1FF724BCE4C2746 /* AppDelegate.swift */; };
 		56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 73781A308EDE339E10EA5366 /* Assets.xcassets */; };
@@ -44,6 +45,7 @@
 		7664962D026963AAC04D3B83 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 66AE8D03922DFDF6355C2511 /* GoogleSignInSwift */; };
 		7848B10E4D4CFAA85D5321BF /* WeightGoalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3CBE0301E1CCA902D6671AB /* WeightGoalSheet.swift */; };
 		7D29394812008529F927A80F /* WeightRecordRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 339AA9044DFFD3CF4742F75A /* WeightRecordRow.swift */; };
+		7E4E32A9D70EFB06FE044798 /* ImageFilenameValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2508D22F9255BC9CAEE97A4B /* ImageFilenameValidatorTests.swift */; };
 		80C1E84D907E8AD6B18F82FC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7566864AF9A1104077390858 /* APIClient.swift */; };
 		8770D6E552995CB5033F5D32 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 5E51A7683A1290B3173CB499 /* GoogleSignIn */; };
 		9011CBE04F0819CF5A2D075D /* MealInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */; };
@@ -120,6 +122,7 @@
 		165353821DFBE63F176DD5EC /* WeightInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputViewModel.swift; sourceTree = "<group>"; };
 		184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModelTests.swift; sourceTree = "<group>"; };
 		213294F059CDFA7FCD9035B1 /* WeightInputViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputViewModelTests.swift; sourceTree = "<group>"; };
+		2508D22F9255BC9CAEE97A4B /* ImageFilenameValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageFilenameValidatorTests.swift; sourceTree = "<group>"; };
 		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightViewModel.swift; sourceTree = "<group>"; };
 		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
@@ -131,9 +134,10 @@
 		3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
 		42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGenerated.swift; sourceTree = "<group>"; };
-		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		578AB03F8600834E16F8A2C7 /* ImageFilenameValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageFilenameValidator.swift; sourceTree = "<group>"; };
 		5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UchikomiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModel.swift; sourceTree = "<group>"; };
 		60FBB22212EE45FDC05FA9F3 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
@@ -337,6 +341,7 @@
 			isa = PBXGroup;
 			children = (
 				CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */,
+				2508D22F9255BC9CAEE97A4B /* ImageFilenameValidatorTests.swift */,
 				7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */,
 				F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */,
 				184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */,
@@ -465,6 +470,7 @@
 			isa = PBXGroup;
 			children = (
 				7270033D73999E560F355AF4 /* FoodEditItem.swift */,
+				578AB03F8600834E16F8A2C7 /* ImageFilenameValidator.swift */,
 				C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */,
 			);
 			path = Models;
@@ -619,6 +625,7 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B600300EE7A5CB7D431959E3 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C53720A77BB7F46352985FE6 = {
@@ -646,6 +653,7 @@
 				210E3921DA83E5D403E3D7B7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -683,6 +691,7 @@
 			files = (
 				928F02C73C3073928089B90A /* AuthManagerTests.swift in Sources */,
 				DC915DC4CCA0EC233B1FA3DC /* FoodEditItemTests.swift in Sources */,
+				7E4E32A9D70EFB06FE044798 /* ImageFilenameValidatorTests.swift in Sources */,
 				3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */,
 				405B649B457B315731D9CF97 /* MealInputViewModelSkipTests.swift in Sources */,
 				CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */,
@@ -719,6 +728,7 @@
 				C68F4A4EA4C55E115D39ADB7 /* FirebaseAuthService.swift in Sources */,
 				EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */,
 				1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */,
+				52C4B4412B212735591D5E22 /* ImageFilenameValidator.swift in Sources */,
 				9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */,
 				393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */,
 				15FB70824FCCE86C38D34772 /* Meal.swift in Sources */,
@@ -781,7 +791,6 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -819,7 +828,6 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
