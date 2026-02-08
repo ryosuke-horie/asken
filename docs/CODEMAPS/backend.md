@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-04
+最終更新: 2026-02-08
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -18,10 +18,13 @@ backend/
 │   ├── middleware/         # ミドルウェア（認証）
 │   ├── repository/         # データアクセス (Firestore)
 │   ├── service/            # ビジネスロジック
-│   └── worker/             # バックグラウンドワーカー
+│   ├── worker/             # バックグラウンドワーカー
+│   ├── util/               # ユーティリティ（タイムゾーン等）
+│   └── testutil/           # テストユーティリティ
 └── pkg/
     ├── database/           # Firestore接続
-    └── gemini/             # Gemini HTTP API連携
+    ├── gemini/             # Gemini HTTP API連携
+    └── storage/            # Cloud Storage接続
 ```
 
 ## レイヤードアーキテクチャ
@@ -83,6 +86,18 @@ Context に firebase_uid を設定
 | PUT | /api/history/{id} | HistoryHandler | 履歴更新（食材編集） |
 | DELETE | /api/history/{id} | HistoryDeleteHandler | 履歴削除 |
 
+### 体重 (認証必要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| GET | /api/weight/records | WeightRecordHandler | 体重記録一覧 |
+| POST | /api/weight/records | WeightRecordHandler | 体重記録作成 |
+| GET | /api/weight/records/{id} | WeightRecordHandler | 体重記録取得 |
+| PUT | /api/weight/records/{id} | WeightRecordHandler | 体重記録更新 |
+| DELETE | /api/weight/records/{id} | WeightRecordHandler | 体重記録削除 |
+| GET | /api/weight/goal | WeightGoalHandler | 目標体重取得 |
+| PUT | /api/weight/goal | WeightGoalHandler | 目標体重設定 |
+
 ### 画像配信 (認証不要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -103,6 +118,8 @@ Context に firebase_uid を設定
 | history_delete_handler.go | 履歴削除 |
 | skip_meal_handler.go | 食事スキップ |
 | image_handler.go | 画像配信 |
+| weight_record_handler.go | 体重記録CRUD |
+| weight_goal_handler.go | 目標体重取得・設定 |
 
 ### Repositories (internal/repository/)
 
@@ -110,6 +127,9 @@ Context に firebase_uid を設定
 |:---|:---|
 | analysis_models.go | 分析関連の型定義・インターフェース |
 | analysis_repository_firestore.go | 分析リクエスト・結果（Firestore実装） |
+| storage_repository.go | 画像ストレージ操作（Cloud Storage） |
+| weight_models.go | 体重関連の型定義・インターフェース |
+| weight_repository_firestore.go | 体重記録・目標（Firestore実装） |
 
 ### Middleware (internal/middleware/)
 
@@ -143,6 +163,12 @@ Context に firebase_uid を設定
 |:---|:---|
 | analysis_worker.go | 非同期分析処理 (5秒間隔ポーリング) |
 
+### Storage (pkg/storage/)
+
+| ファイル | 責務 |
+|:---|:---|
+| client.go | Cloud Storageクライアント初期化 |
+
 ### Database (pkg/database/)
 
 | ファイル | 責務 |
@@ -164,9 +190,14 @@ cmd/server/main.go
 │   │   └── pkg/gemini/*
 │   └── internal/repository/*
 │       └── pkg/database/firestore.go
-└── internal/worker/analysis_worker.go
-    ├── internal/service/food_service.go
-    └── internal/repository/analysis_repository_firestore.go
+├── internal/worker/analysis_worker.go
+│   ├── internal/service/food_service.go
+│   └── internal/repository/analysis_repository_firestore.go
+└── internal/repository/
+    ├── storage_repository.go
+    │   └── pkg/storage/client.go
+    └── weight_repository_firestore.go
+        └── pkg/database/firestore.go
 ```
 
 ## コンテナ化
@@ -198,6 +229,7 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 |:---|:---|:---|
 | GOOGLE_APPLICATION_CREDENTIALS | Firebase/Firestore認証 | ローカル: 手動設定 / Cloud Run: サービスアカウント |
 | GEMINI_API_KEY | Gemini API キー | ローカル: 手動設定 / Cloud Run: Secret Manager |
+| GCS_BUCKET_NAME | Cloud Storageバケット名 | ローカル: 手動設定 / Cloud Run: 環境変数 |
 | GCP_PROJECT_ID | GCPプロジェクトID | Cloud Run環境変数 |
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
 | ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |

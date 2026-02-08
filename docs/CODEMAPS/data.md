@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-04
+最終更新: 2026-02-08
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -8,6 +8,8 @@
 
 ```
 users/{userId}/analysisRequests/{requestId}
+users/{userId}/weightRecords/{recordId}
+users/{userId}/weightGoal/current
 ```
 
 ## ドキュメント定義
@@ -58,6 +60,32 @@ confirmedフィールドの動作:
 }
 ```
 
+### weightRecords/{recordId}
+
+体重記録
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| id | string | レコードID |
+| weightKg | number | 体重 (kg, 20.0-300.0, 小数点1桁) |
+| recordedAt | timestamp | 記録日時 |
+| note | string | メモ |
+| createdAt | timestamp | 作成日時 |
+| updatedAt | timestamp | 更新日時 |
+
+バリデーション:
+- 体重範囲: 20.0 - 300.0 kg
+- 小数点1桁に丸め
+
+### weightGoal/current
+
+目標体重（ユーザーごとに1ドキュメント）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| targetWeightKg | number | 目標体重 (kg) |
+| updatedAt | timestamp | 更新日時 |
+
 ## インデックス
 
 Firestoreの複合インデックスは`firestore.indexes.json`で管理されています。
@@ -71,6 +99,7 @@ Firestoreの複合インデックスは`firestore.indexes.json`で管理され�
 | analysisRequests | inputType, mealType, mealDate | 既存マイリスト/スキップ検索 |
 | analysisRequests | mealType, mealDate, inputType | スキップ記録削除用 |
 | analysisRequests | status, mealDate | ステータス別日次検索 |
+| weightRecords | recordedAt | 期間別体重記録取得 |
 
 インデックス更新手順は[docs/CONTRIB.md](../CONTRIB.md#firestoreインデックス管理)を参照。
 
