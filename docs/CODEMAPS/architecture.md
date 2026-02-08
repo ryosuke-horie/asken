@@ -1,6 +1,6 @@
 # 全体アーキテクチャ
 
-最終更新: 2026-02-04
+最終更新: 2026-02-08
 
 ## システム概要
 
@@ -56,9 +56,18 @@
 ```
 1. iOSアプリ → Go Backend: 画像アップロード
 2. Go Backend → Cloud Storage: 画像保存
-3. Go Backend → Gemini API: 画像分析リクエスト
+3. Go Backend → Gemini API: 画像分析リクエスト（ワーカーで非同期）
 4. Go Backend → Firestore: 結果保存
-5. iOSアプリ → Go Backend: 結果取得
+5. iOSアプリ → Go Backend: ポーリングで結果取得
+```
+
+### 体重記録フロー
+
+```
+1. iOSアプリ → Go Backend: 体重データ送信 (POST /api/weight/records)
+2. Go Backend → Firestore: 体重記録保存
+3. iOSアプリ → Go Backend: 期間指定で一覧取得 (GET /api/weight/records)
+4. iOSアプリ: Swift Chartsでグラフ表示
 ```
 
 ### 認証フロー
@@ -94,13 +103,16 @@ utikomi/
 │   └── pkg/          # 共有パッケージ
 ├── ios/               # iOSアプリ
 │   ├── Uchikomi/     # メインアプリ
+│   ├── UchikomiCore/ # コアフレームワーク
 │   └── UchikomiTests/ # テスト
 ├── infrastructure/    # Terraformインフラ
 │   ├── environments/ # 環境別設定 (dev, prod)
 │   ├── modules/      # 再利用可能モジュール
 │   └── scripts/      # セットアップスクリプト
 └── docs/              # ドキュメント
-    └── CODEMAPS/     # コードマップ
+    ├── CODEMAPS/     # コードマップ
+    ├── adr/          # アーキテクチャ決定記録
+    └── plan/         # 実装計画
 ```
 
 ## 外部依存関係
