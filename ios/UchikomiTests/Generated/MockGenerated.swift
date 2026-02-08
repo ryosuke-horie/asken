@@ -91,6 +91,16 @@ class MealRepositoryProtocolMock: MealRepositoryProtocol {
         }
         
     }
+
+    private(set) var skipMealCallCount = 0
+    var skipMealHandler: ((MealType, Date) async throws -> ())?
+    func skipMeal(mealType: MealType, mealDate: Date) async throws {
+        skipMealCallCount += 1
+        if let skipMealHandler = skipMealHandler {
+            try await skipMealHandler(mealType, mealDate)
+        }
+        
+    }
 }
 
 class WeightRepositoryProtocolMock: WeightRepositoryProtocol {

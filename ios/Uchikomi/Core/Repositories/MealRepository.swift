@@ -12,6 +12,7 @@ protocol MealRepositoryProtocol {
     func getHistoryDetail(id: String) async throws -> HistoryDetail
     func updateHistory(historyId: String, foods: [UpdateFoodItem]) async throws -> HistoryDetail
     func deleteHistory(historyId: String) async throws
+    func skipMeal(mealType: MealType, mealDate: Date) async throws
 }
 
 // MARK: - UpdateFoodItem
@@ -29,6 +30,18 @@ struct UpdateFoodItem: Encodable {
 
 struct UpdateHistoryRequest: Encodable {
     let foods: [UpdateFoodItem]
+}
+
+// MARK: - SkipMealRequest
+
+struct SkipMealRequest: Encodable {
+    let mealType: String
+    let mealDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case mealType = "meal_type"
+        case mealDate = "meal_date"
+    }
 }
 
 // MARK: - TextAnalyzeRequest
@@ -111,6 +124,14 @@ final class MealRepository: MealRepositoryProtocol {
 
     func deleteHistory(historyId: String) async throws {
         try await apiClient.requestWithoutResponse(endpoint: .deleteHistory(id: historyId))
+    }
+
+    func skipMeal(mealType: MealType, mealDate: Date) async throws {
+        let request = SkipMealRequest(
+            mealType: mealType.rawValue,
+            mealDate: dateFormatter.string(from: mealDate)
+        )
+        try await apiClient.requestWithoutResponse(endpoint: .skipMeal, body: request)
     }
 }
 

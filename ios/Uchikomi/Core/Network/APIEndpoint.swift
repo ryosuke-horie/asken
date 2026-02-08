@@ -38,6 +38,12 @@ struct APIEndpoint {
         )
     }
 
+    static let skipMeal = APIEndpoint(
+        path: "meals/skip",
+        method: .post,
+        requiresAuth: true
+    )
+
     static let analyze = APIEndpoint(
         path: "analyze",
         method: .post,

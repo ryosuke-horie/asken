@@ -9,7 +9,6 @@ struct MealsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Date Navigation
                 DateNavigationBar(
                     formattedDate: viewModel.formattedDate,
                     isToday: viewModel.isToday,
@@ -33,7 +32,6 @@ struct MealsView: View {
                 } else if let dailyMeals = viewModel.dailyMeals {
                     ScrollView {
                         VStack(spacing: 16) {
-                            // Daily Total
                             NutritionSummaryCard(
                                 calories: dailyMeals.dailyTotal.totalCalories,
                                 protein: dailyMeals.dailyTotal.totalProtein,
@@ -41,11 +39,11 @@ struct MealsView: View {
                                 carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates
                             )
 
-                            // Meals by Type
                             ForEach(MealType.allCases, id: \.self) { mealType in
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
+                                    isSkipped: dailyMeals.meals.isSkipped(for: mealType),
                                     onTapped: {
                                         selectedMealTypeForInput = mealType
                                     }
@@ -127,19 +125,20 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
+    let isSkipped: Bool
     let onTapped: () -> Void
 
     var body: some View {
-        Button(action: onTapped) {
-            VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onTapped) {
                 HStack {
-                    Image(systemName: mealType.icon)
-                        .foregroundStyle(Theme.primary)
+                    Image(systemName: isSkipped ? "moon.zzz" : mealType.icon)
+                        .foregroundStyle(isSkipped ? .secondary : Theme.primary)
                     Text(mealType.displayName)
                         .font(.headline)
                         .foregroundStyle(.primary)
                     Spacer()
-                    if !meals.isEmpty {
+                    if !isSkipped, !meals.isEmpty {
                         Text("\(Int(meals.reduce(0) { $0 + $1.totalCalories })) kcal")
                             .font(.subheadline)
                             .foregroundStyle(Theme.primary)
@@ -148,38 +147,43 @@ private struct MealTypeSection: View {
                         .font(.title3)
                         .foregroundStyle(Theme.primary)
                 }
+            }
+            .buttonStyle(.plain)
 
-                if meals.isEmpty {
-                    Text("記録なし")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 8)
-                } else {
-                    let allFoods = meals.flatMap(\.foods)
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
-                            HStack {
-                                Text(food.name)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Text("\(Int(food.caloriesKcal)) kcal")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+            if isSkipped {
+                Text("食べませんでした")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else if meals.isEmpty {
+                Text("記録なし")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 4)
+            } else {
+                let allFoods = meals.flatMap(\.foods)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
+                        HStack {
+                            Text(food.name)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text("\(Int(food.caloriesKcal)) kcal")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
-        .buttonStyle(.plain)
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
