@@ -185,6 +185,7 @@ resource "google_cloud_run_v2_service" "api" {
     ]
   }
 
+  # Cloud Runサービスが起動時にSignedURL生成を試みるため、事前にIAM権限が必要
   depends_on = [
     google_service_account_iam_member.self_token_creator,
   ]
