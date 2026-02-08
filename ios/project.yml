@@ -55,9 +55,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Uchikomi/Uchikomi.entitlements
     entitlements:
       path: Uchikomi/Uchikomi.entitlements
-      properties:
-        com.apple.developer.applesignin:
-          - Default
+      properties: {}
     dependencies:
       - target: UchikomiCore
         embed: true
