@@ -8,7 +8,7 @@
 |:---|:---|
 | 新機能追加 | README.md（主要機能）、CLAUDE.md（機能一覧）、docs/CODEMAPS/ |
 | API変更 | README.md（API仕様）、docs/RUNBOOK.md |
-| 開発コマンド追加 | docs/CONTRIB.md（コマンド一覧）、.claude/rules/08-development-commands.md |
+| 開発コマンド追加 | docs/CONTRIB.md（コマンド一覧）、.claude/rules/development-commands.md |
 | アーキテクチャ変更 | docs/adr/に新規ADRを作成 |
 
 ## 記法ルール

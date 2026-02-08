@@ -178,7 +178,7 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 firebase deploy --only firestore:indexes --project utikomi-dev
 ```
 
-詳細は[.claude/rules/13-firestore.md](../.claude/rules/13-firestore.md)を参照してください。
+詳細は[.claude/rules/firestore.md](../.claude/rules/firestore.md)を参照してください。
 
 ### iOS
 

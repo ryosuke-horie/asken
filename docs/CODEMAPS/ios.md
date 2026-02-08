@@ -74,6 +74,7 @@ ios/
     ├── Features/
     │   ├── Meals/
     │   │   ├── MealInputViewModelTests.swift
+    │   │   ├── MealInputViewModelSkipTests.swift
     │   │   ├── MealInputManualFoodTests.swift
     │   │   ├── FoodEditItemTests.swift
     │   │   └── QuantityParserTests.swift
@@ -414,6 +415,7 @@ UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase S
 |:---|:---|:---|
 | AuthManagerTests.swift | 認証状態管理 | 有効 |
 | MealInputViewModelTests.swift | 食事入力ロジック | 有効 |
+| MealInputViewModelSkipTests.swift | 食事スキップロジック | 有効 |
 | MealInputManualFoodTests.swift | 食事手入力ロジック | 有効 |
 | FoodEditItemTests.swift | 食品編集モデル（栄養素再計算） | 有効 |
 | QuantityParserTests.swift | 量パーサー | 有効 |
