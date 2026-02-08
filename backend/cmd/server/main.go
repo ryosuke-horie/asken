@@ -274,6 +274,10 @@ func run() error {
 
 	// レート制限ミドルウェアの初期化
 	rateLimitConfig := middleware.LoadRateLimitConfig()
+	log.Printf("Rate limit config: IP=%v rps (burst %d), User=%v rps (burst %d), Gemini=%v rps (burst %d)",
+		rateLimitConfig.IPRateLimit, rateLimitConfig.IPBurstSize,
+		rateLimitConfig.UserRateLimit, rateLimitConfig.UserBurstSize,
+		rateLimitConfig.GeminiRateLimit, rateLimitConfig.GeminiBurstSize)
 	rateLimitMiddleware := middleware.NewRateLimitMiddleware(rateLimitConfig)
 	defer rateLimitMiddleware.Stop()
 

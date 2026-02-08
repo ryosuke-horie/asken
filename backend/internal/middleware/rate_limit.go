@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -72,6 +73,7 @@ type RateLimitMiddleware struct {
 	userStore   *InMemoryRateLimiterStore
 	config      RateLimitConfig
 	stopCleanup chan struct{}
+	stopOnce    sync.Once
 }
 
 // NewRateLimitMiddleware は新しいレート制限ミドルウェアを作成し、クリーンアップゴルーチンを起動する
@@ -86,9 +88,11 @@ func NewRateLimitMiddleware(config RateLimitConfig) *RateLimitMiddleware {
 	return m
 }
 
-// Stop はクリーンアップゴルーチンを停止する
+// Stop はクリーンアップゴルーチンを停止する（複数回呼び出し可能）
 func (m *RateLimitMiddleware) Stop() {
-	close(m.stopCleanup)
+	m.stopOnce.Do(func() {
+		close(m.stopCleanup)
+	})
 }
 
 func (m *RateLimitMiddleware) startCleanup() {
@@ -117,6 +121,7 @@ func (m *RateLimitMiddleware) LimitByIP(next http.Handler) http.Handler {
 		limiter := m.ipStore.GetOrCreate(ip, rate.Limit(m.config.IPRateLimit), m.config.IPBurstSize)
 
 		if !limiter.Allow() {
+			log.Printf("Rate limit exceeded: ip=%s path=%s", ip, r.URL.Path)
 			w.Header().Set("Retry-After", "1")
 			http.Error(w, "リクエスト数が制限を超えました。しばらくしてから再試行してください", http.StatusTooManyRequests)
 			return
@@ -139,6 +144,7 @@ func (m *RateLimitMiddleware) LimitByUser(next http.Handler) http.Handler {
 			key := "gemini:" + uid
 			limiter := m.userStore.GetOrCreate(key, rate.Limit(m.config.GeminiRateLimit), m.config.GeminiBurstSize)
 			if !limiter.Allow() {
+				log.Printf("Gemini rate limit exceeded: uid=%s path=%s", uid, r.URL.Path)
 				w.Header().Set("Retry-After", "2")
 				http.Error(w, "分析リクエスト数が制限を超えました。しばらくしてから再試行してください", http.StatusTooManyRequests)
 				return
@@ -148,6 +154,7 @@ func (m *RateLimitMiddleware) LimitByUser(next http.Handler) http.Handler {
 		key := "user:" + uid
 		limiter := m.userStore.GetOrCreate(key, rate.Limit(m.config.UserRateLimit), m.config.UserBurstSize)
 		if !limiter.Allow() {
+			log.Printf("User rate limit exceeded: uid=%s path=%s", uid, r.URL.Path)
 			w.Header().Set("Retry-After", "1")
 			http.Error(w, "リクエスト数が制限を超えました。しばらくしてから再試行してください", http.StatusTooManyRequests)
 			return

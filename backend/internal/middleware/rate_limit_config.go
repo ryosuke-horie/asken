@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -28,7 +29,7 @@ type RateLimitConfig struct {
 
 // LoadRateLimitConfig は環境変数からレート制限設定をロードする
 func LoadRateLimitConfig() RateLimitConfig {
-	return RateLimitConfig{
+	config := RateLimitConfig{
 		IPRateLimit:     getEnvFloat("RATE_LIMIT_IP_RPS", 10),
 		IPBurstSize:     getEnvInt("RATE_LIMIT_IP_BURST", 20),
 		UserRateLimit:   getEnvFloat("RATE_LIMIT_USER_RPS", 5),
@@ -38,6 +39,24 @@ func LoadRateLimitConfig() RateLimitConfig {
 		CleanupInterval: time.Duration(getEnvInt("RATE_LIMIT_CLEANUP_INTERVAL", 300)) * time.Second,
 		EntryTTL:        time.Duration(getEnvInt("RATE_LIMIT_ENTRY_TTL", 600)) * time.Second,
 	}
+
+	// CleanupInterval=0だとtime.NewTickerがパニックするため最低1秒を保証
+	if config.CleanupInterval < 1*time.Second {
+		config.CleanupInterval = 1 * time.Second
+	}
+
+	// バーストサイズは最低1を保証（0だと全リクエストがブロックされる）
+	if config.IPBurstSize < 1 {
+		config.IPBurstSize = 1
+	}
+	if config.UserBurstSize < 1 {
+		config.UserBurstSize = 1
+	}
+	if config.GeminiBurstSize < 1 {
+		config.GeminiBurstSize = 1
+	}
+
+	return config
 }
 
 func getEnvFloat(key string, defaultVal float64) float64 {
@@ -47,6 +66,7 @@ func getEnvFloat(key string, defaultVal float64) float64 {
 	}
 	parsed, err := strconv.ParseFloat(val, 64)
 	if err != nil {
+		log.Printf("WARNING: invalid value for %s=%q, using default %v", key, val, defaultVal)
 		return defaultVal
 	}
 	return parsed
@@ -59,6 +79,7 @@ func getEnvInt(key string, defaultVal int) int {
 	}
 	parsed, err := strconv.Atoi(val)
 	if err != nil {
+		log.Printf("WARNING: invalid value for %s=%q, using default %d", key, val, defaultVal)
 		return defaultVal
 	}
 	return parsed
