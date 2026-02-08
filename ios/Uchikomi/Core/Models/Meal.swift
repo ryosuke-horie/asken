@@ -70,6 +70,22 @@ struct HistoryDetail: Codable, Identifiable {
     let totalFat: Double
     let totalCarbohydrates: Double
     let foods: [NutritionInfo]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        inputType = try container.decode(InputType.self, forKey: .inputType)
+        imagePath = try container.decodeIfPresent(String.self, forKey: .imagePath)
+        inputText = try container.decodeIfPresent(String.self, forKey: .inputText)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        mealType = try container.decodeIfPresent(MealType.self, forKey: .mealType)
+        mealDate = try container.decodeIfPresent(String.self, forKey: .mealDate)
+        totalCalories = try container.decode(Double.self, forKey: .totalCalories)
+        totalProtein = try container.decode(Double.self, forKey: .totalProtein)
+        totalFat = try container.decode(Double.self, forKey: .totalFat)
+        totalCarbohydrates = try container.decode(Double.self, forKey: .totalCarbohydrates)
+        foods = try container.decodeIfPresent([NutritionInfo].self, forKey: .foods) ?? []
+    }
 }
 
 // MARK: - MealsByType
