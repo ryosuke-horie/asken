@@ -1,0 +1,48 @@
+name: Infrastructure Lint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/infrastructure-lint.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.10'
+
+      - name: Terraform Format Check
+        working-directory: infrastructure
+        run: terraform fmt -check -recursive -diff
+
+      - name: Terraform Init
+        working-directory: infrastructure/environments/dev
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: infrastructure/environments/dev
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@4cb9feea73331a35b422df102992a03a44a3bb33 # v6.2.1
+        with:
+          tflint_version: v0.61.0
+
+      - name: Init TFLint
+        working-directory: infrastructure
+        run: tflint --init
+
+      - name: Run TFLint
+        working-directory: infrastructure
+        run: tflint --recursive

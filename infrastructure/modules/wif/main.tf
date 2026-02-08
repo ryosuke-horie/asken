@@ -2,6 +2,17 @@
 # Workload Identity Federation - GitHub Actions用キーレス認証
 # =============================================================================
 
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # -----------------------------------------------------------------------------
 # Workload Identity Pool
 # -----------------------------------------------------------------------------
