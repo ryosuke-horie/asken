@@ -129,8 +129,12 @@ func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 		},
 	})
 
+	rateLimitConfig := middleware.LoadRateLimitConfig()
+	rl := middleware.NewRateLimitMiddleware(rateLimitConfig)
+	defer rl.Stop()
+
 	mux := http.NewServeMux()
-	setupRoutes(mux, h, authMiddleware)
+	setupRoutes(mux, h, authMiddleware, rl)
 
 	// 認証ヘッダーなしでリクエスト → 401
 	req := httptest.NewRequest(http.MethodGet, "/api/images/test.jpg", nil)
