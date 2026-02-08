@@ -26,6 +26,9 @@ LinearイシューのURLを受け取り、ブランチ作成からPR作成・レ
 | Backend Engineer | Go/API/Firestore領域の専門家。API設計、データモデル、パフォーマンスの観点から意見を出す |
 | iOS Engineer | Swift/SwiftUI領域の専門家。UI実装、ViewModel設計、テストの観点から意見を出す |
 | Security Engineer | セキュリティ観点の専門家。認証、入力検証、脆弱性リスクの観点から意見を出す |
+| Infra Engineer | インフラ領域の専門家。Firestore設計、Firebase設定、デプロイ構成、スケーラビリティの観点から意見を出す |
+| DevOps Engineer | CI/CD・運用の専門家。ビルドパイプライン、デプロイフロー、モニタリング、自動化の観点から意見を出す |
+| QA Engineer | 品質保証の専門家。テスト戦略、エッジケース、ユーザビリティ、回帰リスクの観点から意見を出す |
 
 ### チーム運営ルール
 
@@ -47,6 +50,9 @@ LinearイシューのURLを受け取り、ブランチ作成からPR作成・レ
 [Backend] API側の懸念として、Firestoreのクエリ制約があります...
 [iOS] ViewModel側では既存のパターンに合わせて...
 [Security] 入力バリデーションについて確認したい点があります...
+[Infra] Firestoreのインデックス設計について確認が必要です...
+[DevOps] CI/CDパイプラインへの影響を確認します...
+[QA] このケースのエッジケーステストが必要です...
 [PdM → ユーザー] 以下の点を確認させてください: ...
 ```
 
@@ -78,6 +84,9 @@ LinearイシューのURLを受け取り、ブランチ作成からPR作成・レ
    - Backend: API設計、DB設計、パフォーマンス
    - iOS: UI/UX、ViewModel設計、テスト方針
    - Security: 認証・認可、入力検証、リスク評価
+   - Infra: Firestoreインデックス、Firebase設定、デプロイへの影響
+   - DevOps: CI/CDパイプライン、ビルド構成への影響
+   - QA: テスト戦略、エッジケース、回帰リスク
 4. 議論中に疑問・懸念が出たら、PdMがユーザーに質問する
    - `AskUserQuestion` を使用
    - 複数の選択肢がある場合はチームの推奨案を提示する
