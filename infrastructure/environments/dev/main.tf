@@ -147,10 +147,11 @@ module "cloud_run" {
 module "wif" {
   source = "../../modules/wif"
 
-  project_id         = var.gcp_project_id
-  github_owner       = var.github_owner
-  github_repo        = var.github_repo
-  service_account_id = module.cloud_run.service_account_id
+  project_id            = var.gcp_project_id
+  github_owner          = var.github_owner
+  github_repo           = var.github_repo
+  service_account_id    = module.cloud_run.service_account_id
+  service_account_email = module.cloud_run.service_account_email
 }
 
 # -----------------------------------------------------------------------------
