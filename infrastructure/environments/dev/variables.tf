@@ -131,12 +131,6 @@ variable "github_token" {
   sensitive   = true
 }
 
-variable "gcp_sa_key" {
-  description = "GCPサービスアカウントキー（JSON）"
-  type        = string
-  sensitive   = true
-}
-
 # -----------------------------------------------------------------------------
 # Gemini API設定
 # -----------------------------------------------------------------------------
