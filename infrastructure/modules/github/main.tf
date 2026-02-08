@@ -100,8 +100,6 @@ resource "github_actions_environment_variable" "service_account_email" {
 }
 
 resource "github_actions_environment_variable" "deploy_service_account_email" {
-  count = var.deploy_service_account_email != "" ? 1 : 0
-
   repository    = data.github_repository.main.name
   environment   = github_repository_environment.env.environment
   variable_name = "DEPLOY_SERVICE_ACCOUNT_EMAIL"
