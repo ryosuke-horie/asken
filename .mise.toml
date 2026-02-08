@@ -31,3 +31,5 @@ TF_VAR_gcp_sa_key = "{{ exec(command='op read op://Personal/hktuxvsk6lsnfsntjvqn
 TF_VAR_gemini_api_key = "{{ exec(command='op read op://Personal/obor4lhoi4tuuffbs67prldqli/password') }}"
 # バックエンド用 Gemini API Key
 GEMINI_API_KEY = "{{ exec(command='op read op://Personal/obor4lhoi4tuuffbs67prldqli/password') }}"
+# 1Password から Firebase Web API Key を取得（E2Eテスト用）
+TF_VAR_e2e_firebase_api_key = "{{ exec(command='op read op://Personal/rv57ami32mfypnskdwd4gpvlvm/credential') }}"
