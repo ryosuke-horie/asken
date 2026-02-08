@@ -25,6 +25,9 @@ type WeightRecordHandler struct {
 
 // NewWeightRecordHandler は新しいWeightRecordHandlerを作成
 func NewWeightRecordHandler(repo repository.WeightRecordRepository, goalRepo repository.WeightGoalRepository) *WeightRecordHandler {
+	if repo == nil || goalRepo == nil {
+		panic("weight record handler: repositories must not be nil")
+	}
 	return &WeightRecordHandler{repository: repo, goalRepository: goalRepo}
 }
 
@@ -116,12 +119,10 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 目標体重を取得
+	// 目標体重を取得（取得失敗時はnilのまま続行）
 	goal, err := h.goalRepository.GetGoal(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error getting weight goal: userID=%s, error=%v", userID, err)
-		http.Error(w, "目標体重の取得に失敗しました", http.StatusInternalServerError)
-		return
+		log.Printf("Warning: failed to get weight goal, continuing without it: userID=%s, error=%v", userID, err)
 	}
 
 	// レスポンスを構築
@@ -176,6 +177,7 @@ func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Reques
 
 	var req CreateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: userID=%s, error=%v", userID, err)
 		http.Error(w, "リクエストのパースに失敗しました", http.StatusBadRequest)
 		return
 	}
@@ -236,9 +238,9 @@ func (h *WeightRecordHandler) HandleGet(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	recordID := extractRecordID(r.URL.Path)
-	if recordID == "" {
-		http.Error(w, "記録IDが指定されていません", http.StatusBadRequest)
+	recordID, err := extractRecordID(r.URL.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -273,9 +275,9 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	recordID := extractRecordID(r.URL.Path)
-	if recordID == "" {
-		http.Error(w, "記録IDが指定されていません", http.StatusBadRequest)
+	recordID, err := extractRecordID(r.URL.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -283,6 +285,7 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 
 	var req UpdateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: userID=%s, error=%v", userID, err)
 		http.Error(w, "リクエストのパースに失敗しました", http.StatusBadRequest)
 		return
 	}
@@ -328,13 +331,13 @@ func (h *WeightRecordHandler) HandleDelete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	recordID := extractRecordID(r.URL.Path)
-	if recordID == "" {
-		http.Error(w, "記録IDが指定されていません", http.StatusBadRequest)
+	recordID, err := extractRecordID(r.URL.Path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err := h.repository.DeleteRecord(r.Context(), userID, recordID)
+	err = h.repository.DeleteRecord(r.Context(), userID, recordID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			http.Error(w, "体重記録が見つかりません", http.StatusNotFound)
@@ -350,13 +353,7 @@ func (h *WeightRecordHandler) HandleDelete(w http.ResponseWriter, r *http.Reques
 
 // validateWeightKg は体重値のバリデーション
 func validateWeightKg(weightKg float64) error {
-	if math.IsNaN(weightKg) || math.IsInf(weightKg, 0) {
-		return fmt.Errorf("weight_kgに無効な値が指定されています")
-	}
-	if weightKg < 20.0 || weightKg > 300.0 {
-		return fmt.Errorf("weight_kgは20.0〜300.0の範囲で指定してください")
-	}
-	return nil
+	return repository.ValidateWeightKg(weightKg)
 }
 
 // validateNote はメモのバリデーション
@@ -368,17 +365,17 @@ func validateNote(note string) error {
 }
 
 // extractRecordID はURLパスから記録IDを抽出しUUID形式を検証する
-func extractRecordID(path string) string {
+func extractRecordID(path string) (string, error) {
 	// /api/weight/records/{id} からIDを抽出
 	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
-	if len(parts) < 4 {
-		return ""
+	if len(parts) < 4 || parts[len(parts)-1] == "" {
+		return "", fmt.Errorf("記録IDが指定されていません")
 	}
 	id := parts[len(parts)-1]
 	if _, err := uuid.Parse(id); err != nil {
-		return ""
+		return "", fmt.Errorf("記録IDの形式が不正です")
 	}
-	return id
+	return id, nil
 }
 
 // roundToOneDecimalForJSON はレスポンス生成用に小数点1桁に丸める

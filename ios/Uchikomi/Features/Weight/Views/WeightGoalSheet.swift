@@ -1,4 +1,9 @@
+import os
 import SwiftUI
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightGoalSheet")
+
+// MARK: - WeightGoalSheet
 
 struct WeightGoalSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -79,8 +84,10 @@ struct WeightGoalSheet: View {
             dismiss()
             return
         } catch let error as APIError {
+            logger.error("目標体重保存でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("目標体重保存で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "保存に失敗しました"
         }
 

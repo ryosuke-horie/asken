@@ -17,6 +17,9 @@ type WeightGoalHandler struct {
 
 // NewWeightGoalHandler は新しいWeightGoalHandlerを作成
 func NewWeightGoalHandler(repository repository.WeightGoalRepository) *WeightGoalHandler {
+	if repository == nil {
+		panic("weight goal handler: repository must not be nil")
+	}
 	return &WeightGoalHandler{repository: repository}
 }
 
@@ -54,7 +57,7 @@ func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	var response WeightGoalNullableResponse
 	if goal != nil {
 		response.Goal = &WeightGoalResponse{
-			TargetWeightKg: goal.TargetWeightKg,
+			TargetWeightKg: roundToOneDecimalForJSON(goal.TargetWeightKg),
 			UpdatedAt:      goal.UpdatedAt.Format(time.RFC3339),
 		}
 	}
@@ -83,6 +86,7 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 
 	var req SetWeightGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("Error decoding request: userID=%s, error=%v", userID, err)
 		http.Error(w, "リクエストのパースに失敗しました", http.StatusBadRequest)
 		return
 	}
@@ -100,7 +104,7 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := WeightGoalResponse{
-		TargetWeightKg: goal.TargetWeightKg,
+		TargetWeightKg: roundToOneDecimalForJSON(goal.TargetWeightKg),
 		UpdatedAt:      goal.UpdatedAt.Format(time.RFC3339),
 	}
 

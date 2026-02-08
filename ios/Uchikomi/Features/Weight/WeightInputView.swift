@@ -11,7 +11,6 @@ struct WeightInputView: View {
 
     init(
         editingRecord: WeightRecord? = nil,
-        lastWeight _: Double? = nil,
         repository: WeightRepositoryProtocol = WeightRepository(),
         onSaved: @escaping () -> Void
     ) {

@@ -87,7 +87,7 @@ struct WeightView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("体重記録")
             .sheet(isPresented: $showingInput) {
-                WeightInputView(lastWeight: viewModel.latestWeight) {
+                WeightInputView {
                     Task { await viewModel.loadData() }
                 }
             }

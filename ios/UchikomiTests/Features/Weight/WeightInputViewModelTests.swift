@@ -107,6 +107,18 @@ struct WeightInputViewModelTests {
 
     @Test
     @MainActor
+    func incrementWeightで300kgを超えないべき() {
+        let mockRepo = WeightRepositoryProtocolMock()
+        let viewModel = WeightInputViewModel(repository: mockRepo)
+        viewModel.weightText = "300.0"
+
+        viewModel.incrementWeight()
+
+        #expect(viewModel.weightText == "300.0")
+    }
+
+    @Test
+    @MainActor
     func 新規保存成功時にdidSaveがtrueになるべき() async {
         let mockRepo = WeightRepositoryProtocolMock()
         mockRepo.createRecordHandler = { weightKg, _, note in

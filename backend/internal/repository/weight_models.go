@@ -2,8 +2,26 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"time"
 )
+
+const (
+	MinWeightKg = 20.0
+	MaxWeightKg = 300.0
+)
+
+// ValidateWeightKg は体重値の範囲バリデーション
+func ValidateWeightKg(weightKg float64) error {
+	if math.IsNaN(weightKg) || math.IsInf(weightKg, 0) {
+		return fmt.Errorf("weight_kgに無効な値が指定されています")
+	}
+	if weightKg < MinWeightKg || weightKg > MaxWeightKg {
+		return fmt.Errorf("weight_kgは%.1f〜%.1fの範囲で指定してください", MinWeightKg, MaxWeightKg)
+	}
+	return nil
+}
 
 // WeightRecord は体重記録を表す構造体
 type WeightRecord struct {

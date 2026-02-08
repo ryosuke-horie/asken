@@ -32,12 +32,22 @@ struct WeightViewModelTests {
     @MainActor
     func データ読み込み成功時に記録と目標が設定されるべき() async {
         let mockRepo = WeightRepositoryProtocolMock()
-        let testRecord = makeTestRecord()
         let testGoal = makeTestGoal()
+
+        // 今日の日付でレコードを作成（todayRecordsフィルタリングに必要）
+        let todayStr = ISO8601DateFormatter().string(from: Date())
+        let todayRecord = WeightRecord(
+            id: "record-1",
+            weightKg: 65.3,
+            recordedAt: todayStr,
+            note: nil,
+            createdAt: todayStr,
+            updatedAt: todayStr
+        )
 
         mockRepo.getRecordsHandler = { _, _ in
             WeightRecordsListResponse(
-                records: [testRecord],
+                records: [todayRecord],
                 dailySummary: ["2026-02-08": DailySummary(latestWeight: 65.3, count: 1)],
                 goal: testGoal
             )
@@ -47,23 +57,27 @@ struct WeightViewModelTests {
         let viewModel = WeightViewModel(repository: mockRepo)
         await viewModel.loadData()
 
+        // chartRecordsから今日のレコードがフィルタリングされる
         #expect(viewModel.todayRecords.count == 1)
         #expect(viewModel.todayRecords.first?.weightKg == 65.3)
         #expect(viewModel.goal?.targetWeightKg == 63.0)
         #expect(viewModel.isLoading == false)
         #expect(viewModel.errorMessage == nil)
+        // loadDataでgetRecordsは1回のみ呼ばれる（todayRecordsはchartRecordsからフィルタリング）
+        #expect(mockRepo.getRecordsCallCount == 1)
     }
 
     @Test
     @MainActor
     func 最新体重が正しく計算されるべき() async {
         let mockRepo = WeightRepositoryProtocolMock()
+        let todayStr = ISO8601DateFormatter().string(from: Date())
 
         mockRepo.getRecordsHandler = { _, _ in
             WeightRecordsListResponse(
                 records: [
-                    self.makeTestRecord(id: "r1", weightKg: 65.5),
-                    self.makeTestRecord(id: "r2", weightKg: 65.1),
+                    WeightRecord(id: "r1", weightKg: 65.5, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr),
+                    WeightRecord(id: "r2", weightKg: 65.1, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr),
                 ],
                 dailySummary: [:],
                 goal: nil
@@ -81,10 +95,11 @@ struct WeightViewModelTests {
     @MainActor
     func 目標との差分が正しく計算されるべき() async {
         let mockRepo = WeightRepositoryProtocolMock()
+        let todayStr = ISO8601DateFormatter().string(from: Date())
 
         mockRepo.getRecordsHandler = { _, _ in
             WeightRecordsListResponse(
-                records: [self.makeTestRecord(weightKg: 65.0)],
+                records: [WeightRecord(id: "record-1", weightKg: 65.0, recordedAt: todayStr, note: nil, createdAt: todayStr, updatedAt: todayStr)],
                 dailySummary: [:],
                 goal: self.makeTestGoal(targetWeightKg: 63.0)
             )
