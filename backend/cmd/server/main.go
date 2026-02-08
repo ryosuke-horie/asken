@@ -276,7 +276,7 @@ func run() error {
 	mux := http.NewServeMux()
 	setupRoutes(mux, h, authMiddleware)
 
-	// ミドルウェアチェーンを適用（内側から: mux → CORS → セキュリティヘッダー）
+	// ミドルウェアチェーンを構築（リクエスト処理順: セキュリティヘッダー → CORS → mux）
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
 	corsHandler := enableCORS(mux, allowedOrigins)
 	secureHandler := middleware.SecurityHeaders(corsHandler)
