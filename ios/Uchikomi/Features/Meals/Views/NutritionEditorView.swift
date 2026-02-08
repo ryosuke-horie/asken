@@ -100,7 +100,11 @@ struct NutritionEditorView: View {
                     if viewModel.hasAnyNameChanged {
                         viewModel.recalculatingMessage = "栄養素を再計算中です。次回表示で反映されます。"
                         Task {
-                            try? await Task.sleep(for: .seconds(2))
+                            do {
+                                try await Task.sleep(for: .seconds(2))
+                            } catch {
+                                // Taskキャンセル時は即座にdismiss
+                            }
                             onSaved()
                             dismiss()
                         }
