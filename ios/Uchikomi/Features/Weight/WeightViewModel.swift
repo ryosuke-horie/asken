@@ -16,18 +16,6 @@ final class WeightViewModel {
 
     private let repository: WeightRepositoryProtocol
 
-    private static let iso8601Formatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601FallbackFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     init(repository: WeightRepositoryProtocol = WeightRepository()) {
         self.repository = repository
     }
@@ -46,19 +34,25 @@ final class WeightViewModel {
         errorMessage = nil
 
         do {
-            async let chartData = loadChartRecords()
-            async let goalData = repository.getGoal()
-
-            let (chart, fetchedGoal) = try await (chartData, goalData)
-            chartRecords = chart
-            goal = fetchedGoal
-            todayRecords = filterTodayRecords(from: chart)
+            chartRecords = try await loadChartRecords()
+            todayRecords = filterTodayRecords(from: chartRecords)
         } catch let error as APIError {
             logger.error("体重データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
+            isLoading = false
+            return
         } catch {
             logger.error("体重データ取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "体重データの取得に失敗しました"
+            isLoading = false
+            return
+        }
+
+        do {
+            goal = try await repository.getGoal()
+        } catch {
+            logger.warning("目標体重の取得に失敗、データなしで続行: \(error.localizedDescription)")
+            goal = nil
         }
 
         isLoading = false
@@ -109,12 +103,8 @@ final class WeightViewModel {
         let calendar = Calendar.current
         let today = Date()
         return records.filter { record in
-            guard let date = Self.parseISO8601(record.recordedAt) else { return false }
+            guard let date = WeightRecord.parseISO8601(record.recordedAt) else { return false }
             return calendar.isDate(date, inSameDayAs: today)
         }
-    }
-
-    static func parseISO8601(_ string: String) -> Date? {
-        iso8601Formatter.date(from: string) ?? iso8601FallbackFormatter.date(from: string)
     }
 }

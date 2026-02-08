@@ -3,18 +3,6 @@ import SwiftUI
 struct WeightRecordRow: View {
     let record: WeightRecord
 
-    private static let iso8601Formatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601FallbackFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -23,8 +11,7 @@ struct WeightRecordRow: View {
     }()
 
     private var formattedTime: String {
-        guard let date = Self.iso8601Formatter.date(from: record.recordedAt)
-            ?? Self.iso8601FallbackFormatter.date(from: record.recordedAt) else {
+        guard let date = WeightRecord.parseISO8601(record.recordedAt) else {
             return "--:--"
         }
         return Self.timeFormatter.string(from: date)

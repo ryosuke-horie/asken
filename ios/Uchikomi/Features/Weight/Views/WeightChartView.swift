@@ -6,22 +6,9 @@ struct WeightChartView: View {
     let goal: WeightGoal?
     @Binding var selectedPeriod: ChartPeriod
 
-    private static let iso8601Formatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let iso8601FallbackFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
     private var chartData: [(date: Date, weight: Double)] {
         records.compactMap { record in
-            guard let date = Self.iso8601Formatter.date(from: record.recordedAt)
-                ?? Self.iso8601FallbackFormatter.date(from: record.recordedAt) else {
+            guard let date = WeightRecord.parseISO8601(record.recordedAt) else {
                 return nil
             }
             return (date: date, weight: record.weightKg)

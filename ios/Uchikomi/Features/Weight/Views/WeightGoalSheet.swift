@@ -30,7 +30,7 @@ struct WeightGoalSheet: View {
 
     private var isValid: Bool {
         guard let weight = Double(targetWeightText) else { return false }
-        return weight >= 20.0 && weight <= 300.0
+        return weight >= WeightRecord.minWeightKg && weight <= WeightRecord.maxWeightKg
     }
 
     var body: some View {
@@ -76,13 +76,12 @@ struct WeightGoalSheet: View {
 
         isSaving = true
         errorMessage = nil
+        defer { isSaving = false }
 
         do {
             _ = try await repository.setGoal(targetWeightKg: weight)
-            isSaving = false
             onSaved()
             dismiss()
-            return
         } catch let error as APIError {
             logger.error("目標体重保存でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
@@ -90,7 +89,5 @@ struct WeightGoalSheet: View {
             logger.error("目標体重保存で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "保存に失敗しました"
         }
-
-        isSaving = false
     }
 }
