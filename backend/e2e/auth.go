@@ -7,24 +7,38 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 )
 
 // AuthHelper はE2Eテスト用の認証ヘルパー
 type AuthHelper struct {
 	firebaseAPIKey string
 	httpClient     *http.Client
+	authClient     *auth.Client
 }
 
 // NewAuthHelper は新しいAuthHelperを作成する
-func NewAuthHelper() (*AuthHelper, error) {
+// Firebase Appとauth.Clientを初期化時にキャッシュする
+func NewAuthHelper(ctx context.Context) (*AuthHelper, error) {
 	apiKey := os.Getenv("E2E_FIREBASE_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("E2E_FIREBASE_API_KEY environment variable is required")
+	}
+
+	app, err := firebase.NewApp(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Firebase app: %w", err)
+	}
+
+	authClient, err := app.Auth(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Auth client: %w", err)
 	}
 
 	return &AuthHelper{
@@ -32,6 +46,7 @@ func NewAuthHelper() (*AuthHelper, error) {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		authClient: authClient,
 	}, nil
 }
 
@@ -42,23 +57,11 @@ func (h *AuthHelper) GetTestToken(ctx context.Context) (string, error) {
 		testUID = "e2e-test-user"
 	}
 
-	// Firebase Admin SDKでカスタムトークンを生成
-	app, err := firebase.NewApp(ctx, nil)
-	if err != nil {
-		return "", fmt.Errorf("failed to create Firebase app: %w", err)
-	}
-
-	authClient, err := app.Auth(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to create Auth client: %w", err)
-	}
-
-	customToken, err := authClient.CustomToken(ctx, testUID)
+	customToken, err := h.authClient.CustomToken(ctx, testUID)
 	if err != nil {
 		return "", fmt.Errorf("failed to create custom token: %w", err)
 	}
 
-	// カスタムトークンをIDトークンに交換
 	idToken, err := h.exchangeCustomTokenForIDToken(ctx, customToken)
 	if err != nil {
 		return "", fmt.Errorf("failed to exchange token: %w", err)
@@ -94,7 +97,8 @@ func (h *AuthHelper) exchangeCustomTokenForIDToken(ctx context.Context, customTo
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Firebase API returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("Firebase API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {

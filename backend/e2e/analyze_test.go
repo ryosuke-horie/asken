@@ -49,15 +49,13 @@ func TestAnalyze_TextInput_Unauthorized(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 認証トークンなしのクライアント
-	client := testClient.WithAuthToken("")
-
 	reqBody := map[string]string{
 		"input_text": "テスト用の食事データ",
 		"meal_type":  "lunch",
 	}
 
-	resp, err := client.Post(ctx, "/api/analyze", reqBody)
+	// 認証トークンなしのtestClientを直接使用
+	resp, err := testClient.Post(ctx, "/api/analyze", reqBody)
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
