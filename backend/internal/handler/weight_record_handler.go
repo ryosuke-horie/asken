@@ -172,7 +172,7 @@ func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
 
 	var req CreateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -279,7 +279,7 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
 
 	var req UpdateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

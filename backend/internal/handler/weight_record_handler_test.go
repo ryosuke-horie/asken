@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -586,6 +587,150 @@ func TestWeightRecordHandler_HandleCreate_NoteTooLong(t *testing.T) {
 	bodyBytes, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/weight/records", bytes.NewReader(bodyBytes))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleCreate(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestWeightRecordHandler_HandleUpdate_ValidationErrors(t *testing.T) {
+	mockRepo := &MockWeightRecordRepository{}
+	handler := NewWeightRecordHandler(mockRepo, &MockWeightGoalRepository{})
+	testUserID := "test-user-123"
+
+	tests := []struct {
+		name     string
+		body     string
+		wantCode int
+	}{
+		{
+			name:     "体重が範囲外（低すぎ）",
+			body:     `{"weight_kg": 10.0, "note": ""}`,
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "体重が範囲外（高すぎ）",
+			body:     `{"weight_kg": 500.0, "note": ""}`,
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "noteが200文字超",
+			body:     `{"weight_kg": 65.0, "note": "` + strings.Repeat("あ", 201) + `"}`,
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "不正なJSON",
+			body:     `invalid json`,
+			wantCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPut, "/api/weight/records/550e8400-e29b-41d4-a716-446655440000", bytes.NewReader([]byte(tt.body)))
+			ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+			req = req.WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			handler.HandleUpdate(w, req)
+
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
+func TestWeightRecordHandler_HandleUpdate_Unauthorized(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+
+	body := UpdateWeightRecordRequest{WeightKg: 65.0}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/weight/records/550e8400-e29b-41d4-a716-446655440000", bytes.NewReader(bodyBytes))
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestWeightRecordHandler_HandleUpdate_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		UpdateRecordFunc: func(ctx context.Context, userID string, recordID string, weightKg float64, note string) (*repository.WeightRecord, error) {
+			return nil, fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo, &MockWeightGoalRepository{})
+
+	body := UpdateWeightRecordRequest{WeightKg: 64.8}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/weight/records/550e8400-e29b-41d4-a716-446655440000", bytes.NewReader(bodyBytes))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestWeightRecordHandler_HandleDelete_Unauthorized(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/weight/records/550e8400-e29b-41d4-a716-446655440000", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleDelete(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestWeightRecordHandler_HandleDelete_RepositoryError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockWeightRecordRepository{
+		DeleteRecordFunc: func(ctx context.Context, userID string, recordID string) error {
+			return fmt.Errorf("database error")
+		},
+	}
+
+	handler := NewWeightRecordHandler(mockRepo, &MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/weight/records/550e8400-e29b-41d4-a716-446655440000", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleDelete(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestWeightRecordHandler_HandleList_InvalidTimezone(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+	testUserID := "test-user-123"
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weight/records?from=2026-02-01&to=2026-02-28&tz=Invalid/Zone", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleList(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestWeightRecordHandler_HandleCreate_InvalidJSON(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+	testUserID := "test-user-123"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/weight/records", bytes.NewReader([]byte("invalid json")))
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()

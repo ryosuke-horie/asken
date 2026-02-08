@@ -79,7 +79,7 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
 
 	var req SetWeightGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
