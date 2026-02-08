@@ -114,7 +114,7 @@ func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 		health:        handler.NewHealthHandler(),
 		analyze:       handler.NewAnalyzeHandler(&stubFoodService{}, analysisRepo, storageRepo),
 		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo, nil),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler(storageRepo),
 		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
