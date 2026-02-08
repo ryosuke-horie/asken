@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
@@ -18,12 +19,13 @@ import (
 
 // WeightRecordHandler は体重記録 CRUD エンドポイントのハンドラー
 type WeightRecordHandler struct {
-	repository repository.WeightRecordRepository
+	repository     repository.WeightRecordRepository
+	goalRepository repository.WeightGoalRepository
 }
 
 // NewWeightRecordHandler は新しいWeightRecordHandlerを作成
-func NewWeightRecordHandler(repository repository.WeightRecordRepository) *WeightRecordHandler {
-	return &WeightRecordHandler{repository: repository}
+func NewWeightRecordHandler(repo repository.WeightRecordRepository, goalRepo repository.WeightGoalRepository) *WeightRecordHandler {
+	return &WeightRecordHandler{repository: repo, goalRepository: goalRepo}
 }
 
 // CreateWeightRecordRequest は体重記録作成リクエスト
@@ -82,6 +84,12 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("タイムゾーンが不正です: %s", tz), http.StatusBadRequest)
+		return
+	}
+
 	from, err := util.ParseDateInTimezone(fromStr, tz)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("fromパラメータが不正です: %v", err), http.StatusBadRequest)
@@ -103,22 +111,16 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 
 	records, err := h.repository.ListRecordsByDateRange(r.Context(), userID, from, toEnd)
 	if err != nil {
-		log.Printf("Error listing weight records: %v", err)
+		log.Printf("Error listing weight records: userID=%s, error=%v", userID, err)
 		http.Error(w, "体重記録の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
 	// 目標体重を取得
-	goal, err := h.repository.GetGoal(r.Context(), userID)
+	goal, err := h.goalRepository.GetGoal(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error getting weight goal: %v", err)
+		log.Printf("Error getting weight goal: userID=%s, error=%v", userID, err)
 		http.Error(w, "目標体重の取得に失敗しました", http.StatusInternalServerError)
-		return
-	}
-
-	loc, err := time.LoadLocation(tz)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("タイムゾーンが不正です: %s", tz), http.StatusBadRequest)
 		return
 	}
 
@@ -150,9 +152,15 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		Goal:         goalResponse,
 	}
 
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
 	}
 }
 
@@ -163,6 +171,8 @@ func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
 
 	var req CreateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -200,15 +210,21 @@ func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Reques
 
 	record, err := h.repository.CreateRecord(r.Context(), userID, req.WeightKg, recordedAt, req.Note)
 	if err != nil {
-		log.Printf("Error creating weight record: %v", err)
+		log.Printf("Error creating weight record: userID=%s, error=%v", userID, err)
 		http.Error(w, "体重記録の作成に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
+	data, err := json.Marshal(toWeightRecordResponse(*record))
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(toWeightRecordResponse(*record)); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
 	}
 }
 
@@ -232,14 +248,20 @@ func (h *WeightRecordHandler) HandleGet(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "体重記録が見つかりません", http.StatusNotFound)
 			return
 		}
-		log.Printf("Error getting weight record: %v", err)
+		log.Printf("Error getting weight record: userID=%s, recordID=%s, error=%v", userID, recordID, err)
 		http.Error(w, "体重記録の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
+	data, err := json.Marshal(toWeightRecordResponse(*record))
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, recordID=%s, error=%v", userID, recordID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(toWeightRecordResponse(*record)); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, recordID=%s, error=%v", userID, recordID, err)
 	}
 }
 
@@ -256,6 +278,8 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "記録IDが指定されていません", http.StatusBadRequest)
 		return
 	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
 
 	var req UpdateWeightRecordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -279,14 +303,20 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "体重記録が見つかりません", http.StatusNotFound)
 			return
 		}
-		log.Printf("Error updating weight record: %v", err)
+		log.Printf("Error updating weight record: userID=%s, recordID=%s, error=%v", userID, recordID, err)
 		http.Error(w, "体重記録の更新に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
+	data, err := json.Marshal(toWeightRecordResponse(*record))
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, recordID=%s, error=%v", userID, recordID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(toWeightRecordResponse(*record)); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, recordID=%s, error=%v", userID, recordID, err)
 	}
 }
 
@@ -310,7 +340,7 @@ func (h *WeightRecordHandler) HandleDelete(w http.ResponseWriter, r *http.Reques
 			http.Error(w, "体重記録が見つかりません", http.StatusNotFound)
 			return
 		}
-		log.Printf("Error deleting weight record: %v", err)
+		log.Printf("Error deleting weight record: userID=%s, recordID=%s, error=%v", userID, recordID, err)
 		http.Error(w, "体重記録の削除に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -337,17 +367,23 @@ func validateNote(note string) error {
 	return nil
 }
 
-// extractRecordID はURLパスから記録IDを抽出する
+// extractRecordID はURLパスから記録IDを抽出しUUID形式を検証する
 func extractRecordID(path string) string {
 	// /api/weight/records/{id} からIDを抽出
 	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
 	if len(parts) < 4 {
 		return ""
 	}
-	return parts[len(parts)-1]
+	id := parts[len(parts)-1]
+	if _, err := uuid.Parse(id); err != nil {
+		return ""
+	}
+	return id
 }
 
-// roundToOneDecimalForJSON は小数点1桁に丸める（JSON用）
+// roundToOneDecimalForJSON はレスポンス生成用に小数点1桁に丸める
+// Firestoreの浮動小数点誤差に対する防御的な丸め処理
+// （保存時の丸めはrepository層のroundToOneDecimalが担当）
 func roundToOneDecimalForJSON(v float64) float64 {
 	return math.Round(v*10) / 10
 }

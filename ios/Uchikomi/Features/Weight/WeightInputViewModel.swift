@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightInputViewModel")
 
 @Observable
 final class WeightInputViewModel {
@@ -54,7 +57,10 @@ final class WeightInputViewModel {
     }
 
     func save() async {
-        guard let weight = weightValue, isValid else { return }
+        guard let weight = weightValue, isValid else {
+            errorMessage = "体重は20.0〜300.0kgの範囲で入力してください"
+            return
+        }
 
         isSaving = true
         errorMessage = nil
@@ -67,8 +73,10 @@ final class WeightInputViewModel {
             }
             didSave = true
         } catch let error as APIError {
+            logger.error("体重記録保存でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("体重記録保存で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "保存に失敗しました"
         }
 
@@ -85,8 +93,10 @@ final class WeightInputViewModel {
             try await repository.deleteRecord(id: record.id)
             didSave = true
         } catch let error as APIError {
+            logger.error("体重記録削除でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("体重記録削除で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "削除に失敗しました"
         }
 

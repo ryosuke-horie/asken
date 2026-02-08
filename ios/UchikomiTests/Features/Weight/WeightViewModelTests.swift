@@ -158,4 +158,19 @@ struct WeightViewModelTests {
         // getRecordsが呼ばれていることを確認
         #expect(mockRepo.getRecordsCallCount >= 1)
     }
+
+    @Test
+    @MainActor
+    func 記録削除失敗時にエラーメッセージが設定されるべき() async {
+        let mockRepo = WeightRepositoryProtocolMock()
+        mockRepo.deleteRecordHandler = { _ in
+            throw NSError(domain: "test", code: 500)
+        }
+
+        let viewModel = WeightViewModel(repository: mockRepo)
+        await viewModel.deleteRecord(id: "record-1")
+
+        #expect(viewModel.errorMessage != nil)
+        #expect(mockRepo.deleteRecordCallCount == 1)
+    }
 }

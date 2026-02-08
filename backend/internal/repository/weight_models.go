@@ -37,8 +37,12 @@ type WeightRecordRepository interface {
 
 	// ListRecordsByDateRange は期間指定で体重記録を取得します
 	ListRecordsByDateRange(ctx context.Context, userID string, from time.Time, to time.Time) ([]WeightRecord, error)
+}
 
+// WeightGoalRepository は目標体重の永続化を担当するインターフェース
+type WeightGoalRepository interface {
 	// GetGoal は目標体重を取得します
+	// 目標が未設定の場合は (nil, nil) を返します
 	GetGoal(ctx context.Context, userID string) (*WeightGoal, error)
 
 	// SetGoal は目標体重を設定・更新します

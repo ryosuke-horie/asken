@@ -49,11 +49,12 @@ func cleanupWeightTestData(ctx context.Context, client *firestore.Client, userID
 	return nil
 }
 
-func TestNewWeightRecordRepositoryFirestore(t *testing.T) {
+func TestNewWeightRepositories(t *testing.T) {
 	t.Run("nilクライアントでエラー", func(t *testing.T) {
-		repo, err := NewWeightRecordRepositoryFirestore(nil)
+		recordRepo, goalRepo, err := NewWeightRepositories(nil)
 		assert.Error(t, err)
-		assert.Nil(t, repo)
+		assert.Nil(t, recordRepo)
+		assert.Nil(t, goalRepo)
 	})
 }
 
@@ -66,7 +67,7 @@ func TestWeightRecordRepository_CreateRecord(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	repo, _, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("正常に体重記録を作成できる", func(t *testing.T) {
@@ -106,7 +107,7 @@ func TestWeightRecordRepository_GetRecord(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	repo, _, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("作成した記録を取得できる", func(t *testing.T) {
@@ -143,7 +144,7 @@ func TestWeightRecordRepository_UpdateRecord(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	repo, _, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("記録を更新できる", func(t *testing.T) {
@@ -179,7 +180,7 @@ func TestWeightRecordRepository_DeleteRecord(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	repo, _, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("記録を削除できる", func(t *testing.T) {
@@ -212,7 +213,7 @@ func TestWeightRecordRepository_ListRecordsByDateRange(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	repo, _, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("期間内の記録を取得できる", func(t *testing.T) {
@@ -249,7 +250,7 @@ func TestWeightRecordRepository_ListRecordsByDateRange(t *testing.T) {
 	})
 }
 
-func TestWeightRecordRepository_Goal(t *testing.T) {
+func TestWeightGoalRepository(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()
 	userID := "test-weight-user-goal"
@@ -258,7 +259,7 @@ func TestWeightRecordRepository_Goal(t *testing.T) {
 		cleanupWeightTestData(ctx, client, userID)
 	})
 
-	repo, err := NewWeightRecordRepositoryFirestore(client)
+	_, repo, err := NewWeightRepositories(client)
 	require.NoError(t, err)
 
 	t.Run("目標体重が未設定の場合nilを返す", func(t *testing.T) {

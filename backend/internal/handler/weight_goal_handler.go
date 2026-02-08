@@ -12,11 +12,11 @@ import (
 
 // WeightGoalHandler は目標体重エンドポイントのハンドラー
 type WeightGoalHandler struct {
-	repository repository.WeightRecordRepository
+	repository repository.WeightGoalRepository
 }
 
 // NewWeightGoalHandler は新しいWeightGoalHandlerを作成
-func NewWeightGoalHandler(repository repository.WeightRecordRepository) *WeightGoalHandler {
+func NewWeightGoalHandler(repository repository.WeightGoalRepository) *WeightGoalHandler {
 	return &WeightGoalHandler{repository: repository}
 }
 
@@ -46,7 +46,7 @@ func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	goal, err := h.repository.GetGoal(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error getting weight goal: %v", err)
+		log.Printf("Error getting weight goal: userID=%s, error=%v", userID, err)
 		http.Error(w, "目標体重の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -59,9 +59,15 @@ func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
 	}
 }
 
@@ -72,6 +78,8 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
 		return
 	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
 
 	var req SetWeightGoalRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -86,7 +94,7 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 
 	goal, err := h.repository.SetGoal(r.Context(), userID, req.TargetWeightKg)
 	if err != nil {
-		log.Printf("Error setting weight goal: %v", err)
+		log.Printf("Error setting weight goal: userID=%s, error=%v", userID, err)
 		http.Error(w, "目標体重の設定に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -96,8 +104,14 @@ func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:      goal.UpdatedAt.Format(time.RFC3339),
 	}
 
+	data, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
+		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
 	}
 }

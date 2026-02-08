@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightViewModel")
 
 @Observable
 final class WeightViewModel {
@@ -38,8 +41,10 @@ final class WeightViewModel {
             chartRecords = chart
             goal = fetchedGoal
         } catch let error as APIError {
+            logger.error("体重データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("体重データ取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "体重データの取得に失敗しました"
         }
 
@@ -50,8 +55,10 @@ final class WeightViewModel {
         do {
             chartRecords = try await loadChartRecords()
         } catch let error as APIError {
+            logger.error("チャートデータ更新でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("チャートデータ更新で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "チャートデータの更新に失敗しました"
         }
     }
@@ -63,8 +70,10 @@ final class WeightViewModel {
             try await repository.deleteRecord(id: id)
             await loadData()
         } catch let error as APIError {
+            logger.error("体重記録削除でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("体重記録削除で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "削除に失敗しました"
         }
     }
@@ -77,7 +86,10 @@ final class WeightViewModel {
 
     private func loadChartRecords() async throws -> [WeightRecord] {
         let to = Date()
-        let from = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: to) ?? to
+        guard let from = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: to) else {
+            logger.error("チャート期間の日付計算に失敗: days=\(self.selectedPeriod.days)")
+            return []
+        }
         let response = try await repository.getRecords(from: from, to: to)
         return response.records
     }
