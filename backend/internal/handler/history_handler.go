@@ -23,7 +23,7 @@ type NutritionRecalculator interface {
 	CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
 }
 
-// HistoryHandler は履歴取得エンドポイントのハンドラー
+// HistoryHandler は履歴の取得・更新エンドポイントのハンドラー
 type HistoryHandler struct {
 	repository   repository.AnalysisRepository
 	recalculator NutritionRecalculator
@@ -275,7 +275,10 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		changedFoods := detectNameChanges(oldDetail.Foods, foods)
 		if len(changedFoods) > 0 {
 			log.Printf("Detected %d food name changes, triggering async recalculation for history %s", len(changedFoods), historyID)
-			go h.recalculateAsync(userID, historyID, foods)
+			// goroutineに渡す前にスライスをコピー（呼び出し元との共有を防止）
+			foodsCopy := make([]gemini.NutritionInfo, len(foods))
+			copy(foodsCopy, foods)
+			go h.recalculateAsync(userID, historyID, foodsCopy)
 		}
 	}
 
@@ -299,7 +302,9 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Printf("History update response sent successfully for ID: %s", historyID)
 }
 
-// detectNameChanges は旧foodsと新foodsを比較し、名前が変わったインデックスを返す
+// detectNameChanges は旧foodsと新foodsをインデックスベースで比較し、名前が変わったインデックスを返す。
+// iOSクライアントはfoodsの順序を維持して送信するため、インデックスベースの比較で十分である。
+// 要素数が異なる場合は、短い方の長さまで比較する。
 func detectNameChanges(oldFoods []gemini.NutritionInfo, newFoods []gemini.NutritionInfo) []int {
 	var changed []int
 	minLen := len(oldFoods)
@@ -316,8 +321,15 @@ func detectNameChanges(oldFoods []gemini.NutritionInfo, newFoods []gemini.Nutrit
 	return changed
 }
 
-// recalculateAsync はGemini APIで非同期に栄養素を再計算し、結果をFirestoreに保存する
+// recalculateAsync はGemini APIで非同期に栄養素を再計算し、結果をFirestoreに保存する。
+// goroutineとして起動されるため、panicリカバリを含む。
 func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, currentFoods []gemini.NutritionInfo) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Panic recovered in recalculateAsync for history %s: %v", historyID, r)
+		}
+	}()
+
 	ctx, cancel := context.WithTimeout(context.Background(), recalculateTimeout)
 	defer cancel()
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -611,11 +612,11 @@ func TestDetectNameChanges(t *testing.T) {
 // MockNutritionRecalculator はテスト用のNutritionRecalculatorモック
 type MockNutritionRecalculator struct {
 	CalculateNutritionFunc func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error)
-	Called                 bool
+	called                 atomic.Bool
 }
 
 func (m *MockNutritionRecalculator) CalculateNutrition(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
-	m.Called = true
+	m.called.Store(true)
 	if m.CalculateNutritionFunc != nil {
 		return m.CalculateNutritionFunc(ctx, foods)
 	}
@@ -641,7 +642,7 @@ func TestHistoryHandler_HandleUpdate_WithNameChange(t *testing.T) {
 		},
 	}
 
-	updateCallCount := 0
+	var updateCallCount atomic.Int32
 	mockRepo := &MockAnalysisRepository{
 		GetHistoryDetailFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error) {
 			return &repository.HistoryDetail{
@@ -662,7 +663,7 @@ func TestHistoryHandler_HandleUpdate_WithNameChange(t *testing.T) {
 			}, nil
 		},
 		UpdateResultFunc: func(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
-			updateCallCount++
+			updateCallCount.Add(1)
 			return nil
 		},
 	}
@@ -683,9 +684,9 @@ func TestHistoryHandler_HandleUpdate_WithNameChange(t *testing.T) {
 	// 非同期再計算の完了を待つ
 	select {
 	case <-recalcDone:
-		assert.True(t, mockRecalculator.Called)
+		assert.True(t, mockRecalculator.called.Load())
 		// UpdateResultは2回呼ばれる（同期保存 + 非同期再計算保存）
-		assert.Equal(t, 2, updateCallCount)
+		assert.Equal(t, int32(2), updateCallCount.Load())
 	case <-time.After(5 * time.Second):
 		t.Fatal("非同期再計算がタイムアウト")
 	}
@@ -738,5 +739,5 @@ func TestHistoryHandler_HandleUpdate_NoNameChange(t *testing.T) {
 
 	// 少し待って、非同期再計算が呼ばれないことを確認
 	time.Sleep(100 * time.Millisecond)
-	assert.False(t, mockRecalculator.Called)
+	assert.False(t, mockRecalculator.called.Load())
 }
