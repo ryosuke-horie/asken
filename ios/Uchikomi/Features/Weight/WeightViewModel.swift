@@ -3,6 +3,8 @@ import os
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightViewModel")
 
+// MARK: - WeightViewModel
+
 @Observable
 final class WeightViewModel {
     var todayRecords: [WeightRecord] = []
