@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-04
+最終更新: 2026-02-08
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -30,7 +30,7 @@ ios/
 │   │   ├── Auth/               # 認証UI
 │   │   │   ├── LoginView.swift
 │   │   │   └── LoginViewModel.swift
-│   │   └── Meals/              # 食事
+│   │   ├── Meals/              # 食事
 │   │       ├── MealsView.swift
 │   │       ├── MealsViewModel.swift
 │   │       ├── MealInputView.swift
@@ -42,6 +42,18 @@ ios/
 │   │       └── Views/
 │   │           ├── NutritionEditorView.swift
 │   │           └── FoodItemEditRow.swift
+│   │   └── Weight/             # 体重
+│   │       ├── WeightView.swift
+│   │       ├── WeightViewModel.swift
+│   │       ├── WeightInputView.swift
+│   │       ├── WeightInputViewModel.swift
+│   │       ├── Models/
+│   │       │   └── WeightRecord.swift
+│   │       └── Views/
+│   │           ├── WeightChartView.swift
+│   │           ├── WeightGoalCard.swift
+│   │           ├── WeightGoalSheet.swift
+│   │           └── WeightRecordRow.swift
 │   ├── Shared/
 │   │   ├── Components/
 │   │   │   └── NutritionSummaryCard.swift
@@ -178,7 +190,9 @@ enum AuthServiceProvider {
 
 認証状態に応じて画面を切り替え:
 - 未認証: LoginView（シミュレータでは「開発用ログイン」ボタン表示）
-- 認証済み: MealsView（食事記録画面）
+- 認証済み: MainTabView
+  - タブ1: MealsView（食事記録画面）
+  - タブ2: WeightView（体重記録画面）
 
 ## 機能モジュール
 
@@ -213,6 +227,19 @@ enum AuthServiceProvider {
 | FoodItemEditRow.swift | 食品アイテム行 |
 | FoodEditItem.swift | 編集用食品モデル |
 
+### 体重 (Features/Weight/)
+
+| ファイル | 責務 |
+|:---|:---|
+| WeightViewModel.swift | 体重一覧・チャート・目標ロジック |
+| WeightInputViewModel.swift | 体重入力・更新・削除ロジック |
+| WeightView.swift | 体重メイン画面UI（チャート + 記録一覧） |
+| WeightInputView.swift | 体重入力UI（±0.1kg増減ボタン） |
+| WeightChartView.swift | Swift Chartsによる体重推移グラフ |
+| WeightGoalCard.swift | 現在体重・目標・差分表示 |
+| WeightGoalSheet.swift | 目標体重設定シート |
+| WeightRecordRow.swift | 体重記録行コンポーネント |
+
 ## Core層
 
 ### Models (UchikomiCore/Models/ + Uchikomi/Core/Models/)
@@ -235,6 +262,7 @@ enum AuthServiceProvider {
 | ファイル | 責務 |
 |:---|:---|
 | MealRepository.swift | 食事データアクセス |
+| WeightRepository.swift | 体重記録・目標データアクセス |
 
 ## 共通コンポーネント (Shared/)
 
@@ -309,14 +337,22 @@ UchikomiApp.swift
     ├── LoginView (未認証時)
     │   └── LoginViewModel
     │       └── AuthManager.signInWithGoogle()
-    └── MealsView (認証済み)
-        ├── MealsViewModel
-        │   └── MealRepository
-        │       └── APIClient
-        │           └── AuthServiceProvider.shared.getIDToken()
-        └── MealInputView
-            └── MealInputViewModel
-                └── MealRepository
+    └── MainTabView (認証済み)
+        ├── MealsView (タブ1)
+        │   ├── MealsViewModel
+        │   │   └── MealRepository
+        │   │       └── APIClient
+        │   │           └── AuthServiceProvider.shared.getIDToken()
+        │   └── MealInputView
+        │       └── MealInputViewModel
+        │           └── MealRepository
+        └── WeightView (タブ2)
+            ├── WeightViewModel
+            │   └── WeightRepository
+            │       └── APIClient
+            └── WeightInputView
+                └── WeightInputViewModel
+                    └── WeightRepository
 ```
 
 ## API通信 (APIClient)
@@ -347,10 +383,16 @@ actor APIClient {
 
 ```swift
 enum APIEndpoint {
+    // 食事
     case dailyMeals(date: String)
     case analyze
     case analysisStatus(id: String)
     case analysisResult(id: String)
+    // 体重
+    case weightRecords(from: String, to: String)
+    case createWeightRecord
+    case weightRecord(id: String)
+    case weightGoal
     // ...
 }
 ```
@@ -366,6 +408,8 @@ UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase S
 | AuthManagerTests.swift | 認証状態管理 | 有効 |
 | MealInputViewModelTests.swift | 食事入力ロジック | 有効 |
 | MealInputManualFoodTests.swift | 食事手入力ロジック | 有効 |
+| WeightViewModelTests.swift | 体重一覧ロジック | 有効 |
+| WeightInputViewModelTests.swift | 体重入力ロジック | 有効 |
 | MealsViewModelTests.swift | 食事一覧ロジック | 一時無効化 (Disabled/) |
 
 ### スナップショットテスト

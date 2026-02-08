@@ -19,16 +19,21 @@ ios/
 ├── Uchikomi/
 │   ├── App/              # アプリエントリポイント
 │   ├── Core/
+│   │   ├── Auth/         # 認証マネージャー
 │   │   ├── Network/      # APIClient, TokenManager
 │   │   ├── Models/       # データモデル
 │   │   └── Repositories/ # データアクセス層
 │   ├── Features/
 │   │   ├── Auth/         # ログイン画面
-│   │   └── Meals/        # 食事記録画面
+│   │   ├── Meals/        # 食事記録画面
+│   │   └── Weight/       # 体重記録画面
 │   ├── Shared/
 │   │   ├── Components/   # 共通UIコンポーネント
-│   │   └── Extensions/   # Swift拡張
+│   │   └── Theme.swift   # テーマ定義
 │   └── Resources/        # アセット、Info.plist
+├── UchikomiCore/          # コアフレームワーク
+│   ├── Auth/             # 認証関連
+│   └── Models/           # 共有モデル
 └── UchikomiTests/        # ユニットテスト
 ```
 
@@ -96,6 +101,10 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 - Gemini APIによる自動栄養素分析
 - 食事タイプ（朝食/昼食/夕食/間食）選択
 - 日別の栄養素サマリー表示
+
+### 体重記録
+- 体重の入力・記録
+- 体重推移の表示
 
 ## API エンドポイント
 
