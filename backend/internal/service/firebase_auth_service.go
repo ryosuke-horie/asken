@@ -9,9 +9,14 @@ import (
 	"google.golang.org/api/option"
 )
 
+// authClient は Firebase Auth Client の抽象インターフェース
+type authClient interface {
+	VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error)
+}
+
 // FirebaseAuthService は Firebase Authentication のトークン検証を行うサービス
 type FirebaseAuthService struct {
-	client *auth.Client
+	client authClient
 }
 
 // NewFirebaseAuthService は FirebaseAuthService を作成する
@@ -40,6 +45,11 @@ func NewFirebaseAuthService(ctx context.Context, credentialsPath string) (*Fireb
 	return &FirebaseAuthService{client: client}, nil
 }
 
+// newFirebaseAuthServiceWithClient はテスト用にauthClientを注入してFirebaseAuthServiceを作成
+func newFirebaseAuthServiceWithClient(client authClient) *FirebaseAuthService {
+	return &FirebaseAuthService{client: client}
+}
+
 // VerifyIDToken は Firebase ID トークンを検証し、ユーザー情報を返す
 func (s *FirebaseAuthService) VerifyIDToken(ctx context.Context, idToken string) (*auth.Token, error) {
 	token, err := s.client.VerifyIDToken(ctx, idToken)
@@ -52,4 +62,13 @@ func (s *FirebaseAuthService) VerifyIDToken(ctx context.Context, idToken string)
 // GetUserUID は検証済みトークンからユーザー UID を取得する
 func (s *FirebaseAuthService) GetUserUID(token *auth.Token) string {
 	return token.UID
+}
+
+// VerifyAndGetUID は Firebase ID トークンを検証し、UID を直接返す
+func (s *FirebaseAuthService) VerifyAndGetUID(ctx context.Context, idToken string) (string, error) {
+	token, err := s.VerifyIDToken(ctx, idToken)
+	if err != nil {
+		return "", err
+	}
+	return token.UID, nil
 }
