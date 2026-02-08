@@ -59,6 +59,17 @@
 
 ---
 
+## iOS実機ビルドに関する注意事項
+
+- 現在Apple Developer Program（有料）に未登録のため、Sign In with Apple の entitlement があると実機ビルドできない
+- 実機ビルド時は以下の2ファイルからSign In with Appleを一時的に無効化する（コミットしないこと）:
+  - `ios/Uchikomi/Uchikomi.entitlements`: `com.apple.developer.applesignin` エントリを削除
+  - `ios/project.yml`: `com.apple.developer.applesignin` プロパティを削除（`properties: {}` に変更）
+- 確認後は `git checkout ios/Uchikomi/Uchikomi.entitlements ios/project.yml` で元に戻す
+- Apple Developer Program登録後（本リリース時）にこのメモを削除すること
+
+---
+
 ## iOSビルド/テストに関する注意事項
 
 - `task ios:test` で Xcode ビルドシステムがクラッシュする場合がある
