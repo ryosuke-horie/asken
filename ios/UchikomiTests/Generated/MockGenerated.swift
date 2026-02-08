@@ -6,6 +6,8 @@
 
 import Foundation
 @testable import Uchikomi
+import UserNotifications
+import os
 
 
 class MealRepositoryProtocolMock: MealRepositoryProtocol {
@@ -165,6 +167,86 @@ class WeightRepositoryProtocolMock: WeightRepositoryProtocol {
             return try await setGoalHandler(targetWeightKg)
         }
         fatalError("setGoalHandler returns can't have a default value thus its handler must be set")
+    }
+}
+
+class NotificationSchedulerProtocolMock: NotificationSchedulerProtocol {
+    init() { }
+
+
+    private(set) var requestAuthorizationCallCount = 0
+    var requestAuthorizationHandler: (() async throws -> Bool)?
+    func requestAuthorization() async throws -> Bool {
+        requestAuthorizationCallCount += 1
+        if let requestAuthorizationHandler = requestAuthorizationHandler {
+            return try await requestAuthorizationHandler()
+        }
+        return false
+    }
+
+    private(set) var getAuthorizationStatusCallCount = 0
+    var getAuthorizationStatusHandler: (() async -> UNAuthorizationStatus)?
+    func getAuthorizationStatus() async -> UNAuthorizationStatus {
+        getAuthorizationStatusCallCount += 1
+        if let getAuthorizationStatusHandler = getAuthorizationStatusHandler {
+            return await getAuthorizationStatusHandler()
+        }
+        fatalError("getAuthorizationStatusHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var scheduleAllNotificationsCallCount = 0
+    var scheduleAllNotificationsHandler: ((NotificationSettings) async -> ())?
+    func scheduleAllNotifications(settings: NotificationSettings) async {
+        scheduleAllNotificationsCallCount += 1
+        if let scheduleAllNotificationsHandler = scheduleAllNotificationsHandler {
+            await scheduleAllNotificationsHandler(settings)
+        }
+        
+    }
+
+    private(set) var cancelAllNotificationsCallCount = 0
+    var cancelAllNotificationsHandler: (() async -> ())?
+    func cancelAllNotifications() async {
+        cancelAllNotificationsCallCount += 1
+        if let cancelAllNotificationsHandler = cancelAllNotificationsHandler {
+            await cancelAllNotificationsHandler()
+        }
+        
+    }
+
+    private(set) var cancelDeliveredNotificationCallCount = 0
+    var cancelDeliveredNotificationHandler: ((MealType) async -> ())?
+    func cancelDeliveredNotification(for mealType: MealType) async {
+        cancelDeliveredNotificationCallCount += 1
+        if let cancelDeliveredNotificationHandler = cancelDeliveredNotificationHandler {
+            await cancelDeliveredNotificationHandler(mealType)
+        }
+        
+    }
+}
+
+class NotificationSettingsStoreProtocolMock: NotificationSettingsStoreProtocol {
+    init() { }
+
+
+    private(set) var loadCallCount = 0
+    var loadHandler: (() -> NotificationSettings)?
+    func load() -> NotificationSettings {
+        loadCallCount += 1
+        if let loadHandler = loadHandler {
+            return loadHandler()
+        }
+        fatalError("loadHandler returns can't have a default value thus its handler must be set")
+    }
+
+    private(set) var saveCallCount = 0
+    var saveHandler: ((NotificationSettings) -> ())?
+    func save(_ settings: NotificationSettings) {
+        saveCallCount += 1
+        if let saveHandler = saveHandler {
+            saveHandler(settings)
+        }
+        
     }
 }
 

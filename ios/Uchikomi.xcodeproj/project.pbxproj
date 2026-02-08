@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,14 +18,17 @@
 		1FCF186149FC8849C784A7C1 /* FoodItemEditRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4E5055448E321007BE33D2 /* FoodItemEditRow.swift */; };
 		214BE413FC5F0DD36B7BBE0A /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29390303E2235204CDE4AE9C /* APIError.swift */; };
 		22180624F61C2C0F19B3ADBC /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */; };
+		22DC7B3450A37280C89A8A64 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */; };
 		2821BEEF2B0F58C17E96AEBF /* WeightViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E56E0BE789B63D10663336 /* WeightViewModelTests.swift */; };
 		31C172F20CED1CB91F498F10 /* FirebaseAuthServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D780587BCB8A0793B32F0A2A /* FirebaseAuthServiceProtocol.swift */; };
 		393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB076D4C09182F8F36C28530 /* LoginViewModel.swift */; };
 		3B26D80A8EC3B7EC05675E6F /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */; };
+		3C300AFADAC2D264E9069D05 /* NotificationSettingsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA42D088CCE3477078E9EDB7 /* NotificationSettingsModelTests.swift */; };
 		3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */; };
 		3FEE4B5E8485D3E298A72408 /* MealInputManualFoodTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1AABFCF12551A7DC270FE0 /* MealInputManualFoodTests.swift */; };
 		405B649B457B315731D9CF97 /* MealInputViewModelSkipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */; };
 		429200B9AEC62D0AA8360997 /* UchikomiCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E4456D284B8FFDA32C61020F /* UchikomiCore.framework */; };
+		45D6AACBFF1252C4A9C6C7B2 /* NotificationSettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F5628A80D5EB8CFEEE5712B /* NotificationSettingsViewModelTests.swift */; };
 		4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638F820A12494A2EFF5BA0B2 /* WeightChartView.swift */; };
 		516AA1DBC0D4B43E4CBE7153 /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A410440853CE4376951B253 /* Auth.swift */; };
 		547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */; };
@@ -52,7 +55,10 @@
 		9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFB317F298304ADE5A541E1 /* LoginView.swift */; };
 		9AC224A5F6470B885B8DDDC1 /* WeightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7618A20100D4B29C46ED6468 /* WeightView.swift */; };
 		9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA2222E86DCD9A696476C35 /* Theme.swift */; };
+		9E820E97DF8F143CB2DDED6E /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111989CFA3D813C2AF3757AC /* NotificationSettingsView.swift */; };
+		A02FAEFF3BEEC9BBC44E6291 /* NotificationSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB97F37288E662D82E4D89B3 /* NotificationSettingsViewModel.swift */; };
 		A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EF1CA05F42093F7BCC75CA /* MealsView.swift */; };
+		B1BF86A829BF5A63107F33C1 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */; };
 		B3D2D8854BFB1B4D794563D8 /* MockFirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D110691FF801C9B691572637 /* MockFirebaseAuthService.swift */; };
 		BC9C2C57BAA437DA714F71C5 /* UchikomiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E4456D284B8FFDA32C61020F /* UchikomiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
@@ -63,7 +69,9 @@
 		CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184D67B65EAB24741CDFAB0D /* MealInputViewModelTests.swift */; };
 		DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */; };
 		DC915DC4CCA0EC233B1FA3DC /* FoodEditItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD80B6D69ECA5BEDC5C6173 /* FoodEditItemTests.swift */; };
+		E278AC45E79840257F8A1253 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35059CC7496A739452218269 /* SettingsView.swift */; };
 		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
+		F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -106,6 +114,7 @@
 
 /* Begin PBXFileReference section */
 		0A410440853CE4376951B253 /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth.swift; sourceTree = "<group>"; };
+		111989CFA3D813C2AF3757AC /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		12EDB121AC061828D06504D0 /* MealInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputView.swift; sourceTree = "<group>"; };
 		144E0E491A0CAA01D5ED1667 /* FirebaseAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseAuthService.swift; sourceTree = "<group>"; };
 		165353821DFBE63F176DD5EC /* WeightInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputViewModel.swift; sourceTree = "<group>"; };
@@ -114,13 +123,17 @@
 		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightViewModel.swift; sourceTree = "<group>"; };
 		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
+		2F5628A80D5EB8CFEEE5712B /* NotificationSettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsViewModelTests.swift; sourceTree = "<group>"; };
 		3108E437ABED88CC7EAA39E3 /* Uchikomi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Uchikomi.entitlements; sourceTree = "<group>"; };
 		339AA9044DFFD3CF4742F75A /* WeightRecordRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecordRow.swift; sourceTree = "<group>"; };
+		35059CC7496A739452218269 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
 		3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
 		42D8BB07E83AA3271540B9F4 /* MockGenerated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGenerated.swift; sourceTree = "<group>"; };
-		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
+		5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		5C3691AD20FAA39F54C59A01 /* UchikomiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = UchikomiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		60D91DEAF3D61C3AD33B6715 /* MealInputViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModel.swift; sourceTree = "<group>"; };
 		60FBB22212EE45FDC05FA9F3 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
@@ -142,6 +155,7 @@
 		9F429EF1E72BA21AAB5D650F /* AppleSignInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
 		A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSummaryCard.swift; sourceTree = "<group>"; };
 		B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorViewModel.swift; sourceTree = "<group>"; };
+		BB97F37288E662D82E4D89B3 /* NotificationSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsViewModel.swift; sourceTree = "<group>"; };
 		BB9B889F094B7078D80B6774 /* WeightRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecord.swift; sourceTree = "<group>"; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -152,10 +166,12 @@
 		D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRepository.swift; sourceTree = "<group>"; };
 		D3EFCA36EC0123EE9C8DC57A /* MealsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsViewModel.swift; sourceTree = "<group>"; };
 		D780587BCB8A0793B32F0A2A /* FirebaseAuthServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseAuthServiceProtocol.swift; sourceTree = "<group>"; };
+		DA42D088CCE3477078E9EDB7 /* NotificationSettingsModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsModelTests.swift; sourceTree = "<group>"; };
 		DB076D4C09182F8F36C28530 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		E4456D284B8FFDA32C61020F /* UchikomiCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = UchikomiCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7A1EE73C03E23E5ABEDCD01 /* WeightInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightInputView.swift; sourceTree = "<group>"; };
 		EB7BAD65BDD3EECCD02645FD /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		F0DE89FB778FECC3E02500A2 /* QuantityParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParserTests.swift; sourceTree = "<group>"; };
 		F3CBE0301E1CCA902D6671AB /* WeightGoalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightGoalSheet.swift; sourceTree = "<group>"; };
 		F8B27EA596ED58D0CB9CB7BD /* MealInputViewModelSkipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealInputViewModelSkipTests.swift; sourceTree = "<group>"; };
@@ -210,6 +226,7 @@
 				3D156597270BE3D3C071FA55 /* Auth */,
 				03D462EB688278868763A4DF /* Models */,
 				39EFFCC2C6BAC7A5B3FD52C6 /* Network */,
+				356CE3D851D0D85EC39AE6C7 /* Notification */,
 				5B9BF1171E6F2B31EFAD1AA2 /* Repositories */,
 			);
 			path = Core;
@@ -229,8 +246,17 @@
 				BFA2222E86DCD9A696476C35 /* Theme.swift */,
 				12042A58C9A5CFE1847BA3BC /* Components */,
 				59D09B36A028648E98271E99 /* Extensions */,
+				50CAEDA997D5CCC6543DD20E /* Models */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		356CE3D851D0D85EC39AE6C7 /* Notification */ = {
+			isa = PBXGroup;
+			children = (
+				5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */,
+			);
+			path = Notification;
 			sourceTree = "<group>";
 		};
 		39EFFCC2C6BAC7A5B3FD52C6 /* Network */ = {
@@ -248,6 +274,7 @@
 			children = (
 				6E44B8D5E3F2501D5107C6D2 /* Auth */,
 				F9A0E061855B4AD583027E8F /* Meals */,
+				8E78F29440A1A0CCA7B1C4BE /* Settings */,
 				48D4E8675EB9A2A16276CD97 /* Weight */,
 			);
 			path = Features;
@@ -276,6 +303,15 @@
 			path = Uchikomi;
 			sourceTree = "<group>";
 		};
+		46327D5263450653496D0FB9 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				DA42D088CCE3477078E9EDB7 /* NotificationSettingsModelTests.swift */,
+				2F5628A80D5EB8CFEEE5712B /* NotificationSettingsViewModelTests.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		48D4E8675EB9A2A16276CD97 /* Weight */ = {
 			isa = PBXGroup;
 			children = (
@@ -287,6 +323,14 @@
 				AF4C7979C6475B7F4216F9F8 /* Views */,
 			);
 			path = Weight;
+			sourceTree = "<group>";
+		};
+		50CAEDA997D5CCC6543DD20E /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		58696F19F30A422D600E69E2 /* Meals */ = {
@@ -366,6 +410,17 @@
 				BB9B889F094B7078D80B6774 /* WeightRecord.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		8E78F29440A1A0CCA7B1C4BE /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				111989CFA3D813C2AF3757AC /* NotificationSettingsView.swift */,
+				BB97F37288E662D82E4D89B3 /* NotificationSettingsViewModel.swift */,
+				35059CC7496A739452218269 /* SettingsView.swift */,
+				EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		968CDD8F8842449928D66741 /* Weight */ = {
@@ -450,6 +505,7 @@
 			isa = PBXGroup;
 			children = (
 				58696F19F30A422D600E69E2 /* Meals */,
+				46327D5263450653496D0FB9 /* Settings */,
 				968CDD8F8842449928D66741 /* Weight */,
 			);
 			path = Features;
@@ -563,7 +619,6 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B600300EE7A5CB7D431959E3 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C53720A77BB7F46352985FE6 = {
@@ -591,7 +646,6 @@
 				210E3921DA83E5D403E3D7B7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -633,6 +687,8 @@
 				405B649B457B315731D9CF97 /* MealInputViewModelSkipTests.swift in Sources */,
 				CEF12EA06D304601907FD2B6 /* MealInputViewModelTests.swift in Sources */,
 				C6B7EF6646FE85F7757EB154 /* MockGenerated.swift in Sources */,
+				3C300AFADAC2D264E9069D05 /* NotificationSettingsModelTests.swift in Sources */,
+				45D6AACBFF1252C4A9C6C7B2 /* NotificationSettingsViewModelTests.swift in Sources */,
 				3FCC9E6AD3F302DDDC02FE67 /* QuantityParserTests.swift in Sources */,
 				70726C309F0539D8BB60A33E /* WeightInputViewModelTests.swift in Sources */,
 				2821BEEF2B0F58C17E96AEBF /* WeightViewModelTests.swift in Sources */,
@@ -672,10 +728,16 @@
 				A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */,
 				10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */,
 				B3D2D8854BFB1B4D794563D8 /* MockFirebaseAuthService.swift in Sources */,
+				B1BF86A829BF5A63107F33C1 /* NotificationManager.swift in Sources */,
+				22DC7B3450A37280C89A8A64 /* NotificationSettings.swift in Sources */,
+				9E820E97DF8F143CB2DDED6E /* NotificationSettingsView.swift in Sources */,
+				A02FAEFF3BEEC9BBC44E6291 /* NotificationSettingsViewModel.swift in Sources */,
 				C864477C1DA0E0D314F4D617 /* NutritionEditorView.swift in Sources */,
 				547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */,
 				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
 				DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */,
+				E278AC45E79840257F8A1253 /* SettingsView.swift in Sources */,
+				F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */,
 				9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */,
 				6B64EAE806E6B990E7D3D0E1 /* UchikomiApp.swift in Sources */,
 				4B830E0923EAD47927AB349E /* WeightChartView.swift in Sources */,
@@ -719,6 +781,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -756,6 +819,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
