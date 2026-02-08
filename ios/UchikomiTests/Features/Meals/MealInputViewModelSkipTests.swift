@@ -64,7 +64,7 @@ struct MealInputViewModelSkipTests {
         let result = await viewModel.skipMeal()
 
         #expect(result == false)
-        #expect(viewModel.errorMessage == "スキップに失敗しました")
+        #expect(viewModel.errorMessage?.contains("スキップに失敗しました") == true)
         #expect(viewModel.isSkipping == false)
     }
 

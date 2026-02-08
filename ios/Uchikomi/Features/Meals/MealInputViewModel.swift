@@ -206,11 +206,19 @@ final class MealInputViewModel {
         do {
             try await repository.skipMeal(mealType: selectedMealType, mealDate: mealDate)
             return true
+        } catch is CancellationError {
+            return false
         } catch let error as APIError {
-            errorMessage = error.localizedDescription
+            #if DEBUG
+            debugPrint("[MealInputViewModel] Skip meal error: \(error)")
+            #endif
+            errorMessage = "スキップに失敗しました: \(error.localizedDescription)"
             return false
         } catch {
-            errorMessage = "スキップに失敗しました"
+            #if DEBUG
+            debugPrint("[MealInputViewModel] Skip meal unexpected error: \(error)")
+            #endif
+            errorMessage = "スキップに失敗しました: \(error.localizedDescription)"
             return false
         }
     }
