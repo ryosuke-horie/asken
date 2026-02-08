@@ -599,7 +599,8 @@ func TestAnalyzeHandler_TextInput_OversizedBody(t *testing.T) {
 
 	handler.Handle(w, req)
 
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	assert.Contains(t, w.Body.String(), "リクエストボディが大きすぎます")
 }
 
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
