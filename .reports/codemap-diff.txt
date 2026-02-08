@@ -1,42 +1,44 @@
 # コードマップ更新レポート
-生成日時: $(date '+%Y-%m-%d %H:%M:%S')
+生成日時: 2026-02-08
 
 ## 更新概要
 
-Cloud Runデプロイ設定の追加に伴い、コードマップを更新しました。
+PR #153（食材編集・栄養素再計算）、PR #152（テスト改善）、PR #154（セキュリティ強化）の反映に伴い、コードマップを更新しました。
 
 ## 変更ファイル
 
-### architecture.md
-- 技術スタックにCI/CD関連を追加（Artifact Registry, GitHub Actions, WIF）
-- 外部依存関係にCloud Run, WIFを追加
-- Terraformモジュール一覧を更新（artifact-registry, cloud-run, wif追加）
-- Terraform管理リソース一覧を更新
-- CI/CDパイプライン図を追加
-
 ### backend.md
-- デプロイ先情報を追加（Cloud Run asia-northeast1）
-- ディレクトリ構造にDockerfile, .dockerignoreを追加
-- コンテナ化セクションを追加（Dockerfileマルチステージビルド）
-- ヘルスチェック設定を追加
-- 環境変数一覧を追加
+- history_handler.goの説明を更新（NutritionRecalculator依存、非同期再計算）
+- security_headers.goをMiddlewareセクションに追加
+- training_menu.goを削除（ファイル不存在）
+- E2Eテストセクションを追加（e2e/ディレクトリ）
+- 依存関係図を更新（SecurityHeaders、NutritionRecalculator）
+
+### ios.md
+- QuantityParser.swiftをFeatures/Meals/Models/に追加
+- FoodEditItem.swiftの説明を更新（栄養素再計算ロジック含む）
+- テストファイル4件を追加（FoodEditItemTests, QuantityParserTests, WeightViewModelTests, WeightInputViewModelTests）
+
+### architecture.md
+- 変更なし
 
 ### data.md
-- 変更なし（データモデルに変更なし）
+- 変更なし
 
 ## 差分率
 
-| ファイル | 追加行 | 削除行 | 変更率 |
-|:---|:---|:---|:---|
-| architecture.md | 36 | 4 | 約28% |
-| backend.md | 34 | 0 | 約20% |
-| data.md | 0 | 0 | 0% |
+| ファイル | 変更率 |
+|:---|:---|
+| architecture.md | 0% |
+| backend.md | 約12% |
+| ios.md | 約8% |
+| data.md | 0% |
 
-**総合変更率: 約16%** (変更率30%未満のため自動承認)
+総合変更率: 約5% (変更率30%未満のため自動承認)
 
 ## 鮮度タイムスタンプ
 
-- architecture.md: 2026-02-03 (本日更新)
-- backend.md: 2026-02-03 (本日更新)
-- data.md: 2026-02-03 (更新不要)
-- ios.md: 2026-02-03 (更新不要)
+- architecture.md: 2026-02-08 (更新不要)
+- backend.md: 2026-02-08 (本日更新)
+- data.md: 2026-02-08 (更新不要)
+- ios.md: 2026-02-08 (本日更新)

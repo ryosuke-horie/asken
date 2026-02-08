@@ -36,7 +36,8 @@ ios/
 │   │       ├── MealInputView.swift
 │   │       ├── MealInputViewModel.swift
 │   │       ├── Models/
-│   │       │   └── FoodEditItem.swift
+│   │       │   ├── FoodEditItem.swift
+│   │       │   └── QuantityParser.swift
 │   │       ├── ViewModels/
 │   │       │   └── NutritionEditorViewModel.swift
 │   │       └── Views/
@@ -71,9 +72,14 @@ ios/
     │   └── MockGenerated.swift  # Mockolo生成
     ├── AuthManagerTests.swift
     ├── Features/
-    │   └── Meals/
-    │       ├── MealInputViewModelTests.swift
-    │       └── MealInputManualFoodTests.swift
+    │   ├── Meals/
+    │   │   ├── MealInputViewModelTests.swift
+    │   │   ├── MealInputManualFoodTests.swift
+    │   │   ├── FoodEditItemTests.swift
+    │   │   └── QuantityParserTests.swift
+    │   └── Weight/
+    │       ├── WeightViewModelTests.swift
+    │       └── WeightInputViewModelTests.swift
     └── Disabled/                # 一時無効化テスト
         ├── MealsViewModelTests.swift
         └── Snapshots/
@@ -225,7 +231,8 @@ enum AuthServiceProvider {
 | MealInputView.swift | 食事入力UI |
 | NutritionEditorView.swift | 栄養素編集UI |
 | FoodItemEditRow.swift | 食品アイテム行 |
-| FoodEditItem.swift | 編集用食品モデル |
+| FoodEditItem.swift | 編集用食品モデル（量変更時の栄養素再計算ロジック含む） |
+| QuantityParser.swift | 量の文字列パーサー（数値と単位の抽出） |
 
 ### 体重 (Features/Weight/)
 
@@ -408,6 +415,8 @@ UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase S
 | AuthManagerTests.swift | 認証状態管理 | 有効 |
 | MealInputViewModelTests.swift | 食事入力ロジック | 有効 |
 | MealInputManualFoodTests.swift | 食事手入力ロジック | 有効 |
+| FoodEditItemTests.swift | 食品編集モデル（栄養素再計算） | 有効 |
+| QuantityParserTests.swift | 量パーサー | 有効 |
 | WeightViewModelTests.swift | 体重一覧ロジック | 有効 |
 | WeightInputViewModelTests.swift | 体重入力ロジック | 有効 |
 | MealsViewModelTests.swift | 食事一覧ロジック | 一時無効化 (Disabled/) |
