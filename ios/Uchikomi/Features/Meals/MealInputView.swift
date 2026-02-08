@@ -19,6 +19,7 @@ struct MealInputView: View {
     @State private var editingMeal: HistoryDetail?
     @State private var deletingMeal: HistoryDetail?
     @State private var showingImagePreview: URL?
+    @State private var showingSkipConfirmation = false
 
     let mealDate: Date
     let initialMealType: MealType
@@ -119,6 +120,22 @@ struct MealInputView: View {
                             .foregroundStyle(.red)
                             .multilineTextAlignment(.center)
                     }
+
+                    // Skip Meal Option
+                    if existingMeals.isEmpty {
+                        Divider()
+
+                        Button {
+                            showingSkipConfirmation = true
+                        } label: {
+                            Label("食べなかった", systemImage: "moon.zzz")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.secondary)
+                        .disabled(viewModel.isSkipping)
+                    }
                 }
                 .padding()
             }
@@ -205,6 +222,20 @@ struct MealInputView: View {
                 }
             } message: {
                 Text("この食事記録を削除しますか？")
+            }
+            .alert("確認", isPresented: $showingSkipConfirmation) {
+                Button("キャンセル", role: .cancel) {}
+                Button("食べなかった") {
+                    Task {
+                        let success = await viewModel.skipMeal()
+                        if success {
+                            onSaved()
+                            dismiss()
+                        }
+                    }
+                }
+            } message: {
+                Text("\(initialMealType.displayName)を「食べなかった」として記録しますか？")
             }
         }
         .onAppear {

@@ -7,8 +7,6 @@ final class MealsViewModel {
     var isLoading = false
     var errorMessage: String?
     var isDeleting = false
-    var isSkipping = false
-    var actionError: String?
 
     private let repository: MealRepositoryProtocol
 
@@ -62,23 +60,6 @@ final class MealsViewModel {
         Task {
             await loadMeals()
         }
-    }
-
-    func skipMeal(mealType: MealType) async {
-        guard !isSkipping else { return }
-        isSkipping = true
-        actionError = nil
-
-        do {
-            try await repository.skipMeal(mealType: mealType, mealDate: selectedDate)
-            await loadMeals()
-        } catch let error as APIError {
-            actionError = error.localizedDescription
-        } catch {
-            actionError = "スキップに失敗しました"
-        }
-
-        isSkipping = false
     }
 
     func deleteHistory(id: String) async {
