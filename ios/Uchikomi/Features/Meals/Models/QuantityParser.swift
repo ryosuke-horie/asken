@@ -13,7 +13,7 @@ enum QuantityParser {
     // グラム表記のパターン: "100g", "100G", "100グラム", "100 g"
     private static let gramPattern = #/(\d+(?:\.\d+)?)\s*(?:g|G|グラム)/#
 
-    // 日本語単位（キャプチャグループで単位も取得）
+    /// 日本語単位（キャプチャグループで単位も取得）
     private static let japaneseUnits = ["杯", "人前", "個", "枚", "本", "切れ", "食", "皿", "膳", "丁", "束", "袋", "缶", "合", "玉"]
 
     private static let japanesePattern: NSRegularExpression = {
@@ -37,8 +37,9 @@ enum QuantityParser {
         if let match = japanesePattern.firstMatch(in: trimmed, range: range) {
             guard let valueRange = Range(match.range(at: 1), in: trimmed),
                   let unitRange = Range(match.range(at: 2), in: trimmed),
-                  let value = Double(trimmed[valueRange])
-            else { return nil }
+                  let value = Double(trimmed[valueRange]) else {
+                return nil
+            }
             let unit = String(trimmed[unitRange])
             return ParsedQuantity(value: value, unit: unit)
         }

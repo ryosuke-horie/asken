@@ -76,8 +76,9 @@ final class FoodEditItem: Identifiable {
     func recalculateNutrition() {
         guard let originalParsed = QuantityParser.parse(originalQuantity),
               let currentParsed = QuantityParser.parse(quantity),
-              let ratio = QuantityParser.calculateRatio(from: originalParsed, to: currentParsed)
-        else { return }
+              let ratio = QuantityParser.calculateRatio(from: originalParsed, to: currentParsed) else {
+            return
+        }
 
         calories = (originalCalories * ratio).rounded()
         protein = (originalProtein * ratio * 10).rounded() / 10
