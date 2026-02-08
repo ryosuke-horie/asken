@@ -31,6 +31,12 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - MealType Reminder
+
+extension MealType {
+    static let reminderTargets: [MealType] = [.breakfast, .lunch, .dinner]
+}
+
 // MARK: - InputType
 
 enum InputType: String, Codable {
