@@ -62,21 +62,21 @@ type handlers struct {
 	weightGoal    *handler.WeightGoalHandler
 }
 
-func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	// ヘルスチェックエンドポイント（認証不要 - Cloud Runのヘルスチェック用）
 	mux.HandleFunc("/api/health", h.health.Handle)
 
 	// 画像配信エンドポイント（認証必須）
-	mux.Handle("/api/images/", authMiddleware.Authenticate(http.HandlerFunc(h.image.Handle)))
+	mux.Handle("/api/images/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(h.image.Handle))))
 
 	// 認証が必要なエンドポイント
-	setupAnalyzeRoutes(mux, h, authMiddleware)
-	setupHistoryRoutes(mux, h, authMiddleware)
-	setupMealsRoutes(mux, h, authMiddleware)
-	setupWeightRoutes(mux, h, authMiddleware)
+	setupAnalyzeRoutes(mux, h, authMiddleware, rl)
+	setupHistoryRoutes(mux, h, authMiddleware, rl)
+	setupMealsRoutes(mux, h, authMiddleware, rl)
+	setupWeightRoutes(mux, h, authMiddleware, rl)
 }
 
-func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	analyzeRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -87,8 +87,8 @@ func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middlewar
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/analyze", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
-	mux.Handle("/api/analyze/", authMiddleware.Authenticate(http.HandlerFunc(analyzeRouteHandler)))
+	mux.Handle("/api/analyze", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(analyzeRouteHandler))))
+	mux.Handle("/api/analyze/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(analyzeRouteHandler))))
 
 	uploadImageRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -98,11 +98,11 @@ func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middlewar
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/upload-image", authMiddleware.Authenticate(http.HandlerFunc(uploadImageRouteHandler)))
+	mux.Handle("/api/upload-image", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(uploadImageRouteHandler))))
 }
 
-func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	mux.Handle("/api/history", authMiddleware.Authenticate(http.HandlerFunc(h.history.HandleList)))
+func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	mux.Handle("/api/history", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(h.history.HandleList))))
 
 	historyDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -116,11 +116,11 @@ func setupHistoryRoutes(mux *http.ServeMux, h handlers, authMiddleware middlewar
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/history/", authMiddleware.Authenticate(http.HandlerFunc(historyDetailRouteHandler)))
+	mux.Handle("/api/history/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(historyDetailRouteHandler))))
 }
 
-func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
-	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(http.HandlerFunc(h.dailyMeals.Handle)))
+func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	mux.Handle("/api/meals/daily", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(h.dailyMeals.Handle))))
 
 	mealsSkipRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -130,10 +130,10 @@ func setupMealsRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(http.HandlerFunc(mealsSkipRouteHandler)))
+	mux.Handle("/api/meals/skip", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(mealsSkipRouteHandler))))
 }
 
-func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator) {
+func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	weightRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -144,7 +144,7 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/weight/records", authMiddleware.Authenticate(http.HandlerFunc(weightRecordsRouteHandler)))
+	mux.Handle("/api/weight/records", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(weightRecordsRouteHandler))))
 
 	weightRecordDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -158,7 +158,7 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/weight/records/", authMiddleware.Authenticate(http.HandlerFunc(weightRecordDetailRouteHandler)))
+	mux.Handle("/api/weight/records/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(weightRecordDetailRouteHandler))))
 
 	weightGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -170,7 +170,7 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}
-	mux.Handle("/api/weight/goal", authMiddleware.Authenticate(http.HandlerFunc(weightGoalRouteHandler)))
+	mux.Handle("/api/weight/goal", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(weightGoalRouteHandler))))
 }
 
 func run() error {
@@ -272,14 +272,20 @@ func run() error {
 	// ワーカーを別ゴルーチンで起動
 	go analysisWorker.Start(workerCtx)
 
+	// レート制限ミドルウェアの初期化
+	rateLimitConfig := middleware.LoadRateLimitConfig()
+	rateLimitMiddleware := middleware.NewRateLimitMiddleware(rateLimitConfig)
+	defer rateLimitMiddleware.Stop()
+
 	// ルーティング
 	mux := http.NewServeMux()
-	setupRoutes(mux, h, authMiddleware)
+	setupRoutes(mux, h, authMiddleware, rateLimitMiddleware)
 
-	// ミドルウェアチェーンを構築（リクエスト処理順: セキュリティヘッダー → CORS → mux）
+	// ミドルウェアチェーンを構築（リクエスト処理順: セキュリティヘッダー → IPレート制限 → CORS → mux）
 	allowedOrigins := parseAllowedOrigins(os.Getenv("ALLOWED_ORIGINS"))
 	corsHandler := enableCORS(mux, allowedOrigins)
-	secureHandler := middleware.SecurityHeaders(corsHandler)
+	ipLimited := rateLimitMiddleware.LimitByIP(corsHandler)
+	secureHandler := middleware.SecurityHeaders(ipLimited)
 
 	// HTTPサーバー設定
 	server := &http.Server{
