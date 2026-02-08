@@ -16,6 +16,8 @@ import (
 // ErrObjectNotFound はオブジェクトが存在しない場合のエラー
 var ErrObjectNotFound = errors.New("object not found")
 
+const maxDownloadSize = 15 << 20 // 15MB: アップロード制限10MBに安全マージンを追加
+
 // StorageRepository はファイルストレージ操作を担当するインターフェース
 type StorageRepository interface {
 	// Upload はファイルをストレージにアップロードし、オブジェクト名を返す
@@ -98,9 +100,12 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 	}
 	defer reader.Close()
 
-	data, err := io.ReadAll(reader)
+	data, err := io.ReadAll(io.LimitReader(reader, maxDownloadSize))
 	if err != nil {
 		return nil, fmt.Errorf("Cloud Storageからのデータ読み取りに失敗: %w", err)
+	}
+	if int64(len(data)) >= maxDownloadSize {
+		return nil, fmt.Errorf("ファイルサイズが上限(%dMB)を超えています", maxDownloadSize>>20)
 	}
 
 	return data, nil

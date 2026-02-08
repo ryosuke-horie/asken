@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	defaultBaseURL = "https://generativelanguage.googleapis.com"
-	modelName      = "gemini-3-flash-preview"
+	defaultBaseURL     = "https://generativelanguage.googleapis.com"
+	modelName          = "gemini-3-flash-preview"
+	maxResponseSize    = 10 << 20 // 10MB: JSONレスポンスの上限（通常100KB未満）
 )
 
 // HTTPClient はGemini HTTP APIクライアント
@@ -170,10 +171,13 @@ func (c *HTTPClient) doRequest(ctx context.Context, reqBody GenerateContentReque
 	}
 	defer resp.Body.Close()
 
-	// レスポンスボディを読み取り
-	body, err := io.ReadAll(resp.Body)
+	// レスポンスボディを読み取り（サイズ制限付き）
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("レスポンス読み取りエラー: %w", err)
+	}
+	if int64(len(body)) >= maxResponseSize {
+		return nil, fmt.Errorf("レスポンスサイズが上限(%dMB)を超えています", maxResponseSize>>20)
 	}
 
 	// ステータスコードをチェック
