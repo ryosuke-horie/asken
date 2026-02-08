@@ -124,6 +124,22 @@ struct NotificationSettingsModelTests {
     }
 
     @Test
+    func 破損データの場合にデフォルト設定を返すべき() {
+        let testDefaults = UserDefaults(suiteName: "test_notification_corrupted")!
+        testDefaults.removePersistentDomain(forName: "test_notification_corrupted")
+
+        // 不正なデータを直接書き込む
+        testDefaults.set(Data("invalid json".utf8), forKey: "notification_settings")
+
+        let store = NotificationSettingsStore(userDefaults: testDefaults)
+        let loaded = store.load()
+
+        #expect(loaded == .default)
+
+        testDefaults.removePersistentDomain(forName: "test_notification_corrupted")
+    }
+
+    @Test
     func データがない場合にデフォルト設定を返すべき() {
         let testDefaults = UserDefaults(suiteName: "test_notification_empty")!
         testDefaults.removePersistentDomain(forName: "test_notification_empty")

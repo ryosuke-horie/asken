@@ -1,4 +1,10 @@
 import Foundation
+import os
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
+    category: "NotificationSettingsStore"
+)
 
 // MARK: - MealNotificationSetting
 
@@ -78,15 +84,23 @@ final class NotificationSettingsStore: NotificationSettingsStoreProtocol {
     }
 
     func load() -> NotificationSettings {
-        guard let data = userDefaults.data(forKey: key),
-              let settings = try? JSONDecoder().decode(NotificationSettings.self, from: data) else {
+        guard let data = userDefaults.data(forKey: key) else {
             return .default
         }
-        return settings
+        do {
+            return try JSONDecoder().decode(NotificationSettings.self, from: data)
+        } catch {
+            logger.error("通知設定のデコード失敗（デフォルト値を使用）: \(error.localizedDescription)")
+            return .default
+        }
     }
 
     func save(_ settings: NotificationSettings) {
-        guard let data = try? JSONEncoder().encode(settings) else { return }
-        userDefaults.set(data, forKey: key)
+        do {
+            let data = try JSONEncoder().encode(settings)
+            userDefaults.set(data, forKey: key)
+        } catch {
+            logger.error("通知設定のエンコード失敗: \(error.localizedDescription)")
+        }
     }
 }

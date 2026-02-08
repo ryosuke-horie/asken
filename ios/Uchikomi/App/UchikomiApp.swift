@@ -1,6 +1,12 @@
 import GoogleSignIn
+import os
 import SwiftUI
 import UchikomiCore
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
+    category: "MainTabView"
+)
 
 // MARK: - UchikomiApp
 
@@ -84,7 +90,7 @@ struct MainTabView: View {
                 }
             }
         } catch {
-            // APIエラー時は静かに失敗（通知はそのまま維持）
+            logger.error("当日の食事記録取得に失敗（通知はそのまま維持）: \(error.localizedDescription)")
         }
     }
 }
