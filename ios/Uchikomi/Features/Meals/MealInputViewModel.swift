@@ -24,6 +24,7 @@ final class MealInputViewModel {
     var errorMessage: String?
     var isCompleted = false
     var showEditor = false
+    var isSkipping = false
 
     private(set) var analysisId: String?
     private let repository: MealRepositoryProtocol
@@ -190,10 +191,28 @@ final class MealInputViewModel {
         errorMessage = nil
         isCompleted = false
         showEditor = false
+        isSkipping = false
     }
 
     func markCompleted() {
         isCompleted = true
+    }
+
+    func skipMeal() async -> Bool {
+        guard !isSkipping else { return false }
+        isSkipping = true
+        defer { isSkipping = false }
+
+        do {
+            try await repository.skipMeal(mealType: selectedMealType, mealDate: mealDate)
+            return true
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+            return false
+        } catch {
+            errorMessage = "スキップに失敗しました"
+            return false
+        }
     }
 
     func deleteHistory(id: String) async -> Bool {

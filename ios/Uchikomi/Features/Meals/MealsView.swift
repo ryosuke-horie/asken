@@ -5,7 +5,6 @@ import SwiftUI
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
-    @State private var skippingMealType: MealType?
 
     var body: some View {
         NavigationStack {
@@ -45,12 +44,8 @@ struct MealsView: View {
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
                                     isSkipped: dailyMeals.meals.isSkipped(for: mealType),
-                                    isSkipping: viewModel.isSkipping,
                                     onTapped: {
                                         selectedMealTypeForInput = mealType
-                                    },
-                                    onSkipped: {
-                                        skippingMealType = mealType
                                     }
                                 )
                             }
@@ -74,34 +69,6 @@ struct MealsView: View {
                     Task {
                         await viewModel.loadMeals()
                     }
-                }
-            }
-            .alert("確認", isPresented: Binding(
-                get: { skippingMealType != nil },
-                set: { if !$0 { skippingMealType = nil } }
-            )) {
-                Button("キャンセル", role: .cancel) {}
-                Button("食べなかった") {
-                    if let mealType = skippingMealType {
-                        Task {
-                            await viewModel.skipMeal(mealType: mealType)
-                        }
-                    }
-                    skippingMealType = nil
-                }
-            } message: {
-                if let mealType = skippingMealType {
-                    Text("\(mealType.displayName)を「食べなかった」として記録しますか？")
-                }
-            }
-            .alert("エラー", isPresented: Binding(
-                get: { viewModel.actionError != nil },
-                set: { if !$0 { viewModel.actionError = nil } }
-            )) {
-                Button("OK") {}
-            } message: {
-                if let error = viewModel.actionError {
-                    Text(error)
                 }
             }
         }
@@ -159,9 +126,7 @@ private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
     let isSkipped: Bool
-    let isSkipping: Bool
     let onTapped: () -> Void
-    let onSkipped: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -195,14 +160,6 @@ private struct MealTypeSection: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 4)
-
-                Button(action: onSkipped) {
-                    Label("食べなかった", systemImage: "moon.zzz")
-                        .font(.subheadline)
-                }
-                .buttonStyle(.bordered)
-                .tint(.secondary)
-                .disabled(isSkipping)
             } else {
                 let allFoods = meals.flatMap(\.foods)
                 VStack(alignment: .leading, spacing: 4) {
