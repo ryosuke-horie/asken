@@ -51,12 +51,24 @@ func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string)
 	}, nil
 }
 
-// Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
-func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
-	// UUIDを生成してオブジェクト名を作成
+// generateObjectName はファイル名からUUID付きのオブジェクト名を生成する
+func generateObjectName(filename string) string {
 	fileID := uuid.New().String()
 	ext := filepath.Ext(filename)
-	objectName := fmt.Sprintf("uploads/%s%s", fileID, ext)
+	return fmt.Sprintf("uploads/%s%s", fileID, ext)
+}
+
+// convertStorageError はCloud Storageのエラーをドメインエラーに変換する
+func convertStorageError(err error) error {
+	if errors.Is(err, storage.ErrObjectNotExist) {
+		return ErrObjectNotFound
+	}
+	return err
+}
+
+// Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
+func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+	objectName := generateObjectName(filename)
 
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	writer := obj.NewWriter(ctx)
@@ -79,7 +91,7 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
-		if errors.Is(err, storage.ErrObjectNotExist) {
+		if converted := convertStorageError(err); converted == ErrObjectNotFound {
 			return nil, ErrObjectNotFound
 		}
 		return nil, fmt.Errorf("Cloud Storageからの読み取りに失敗: %w", err)
@@ -100,7 +112,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	_, err := obj.Attrs(ctx)
 	if err != nil {
-		if errors.Is(err, storage.ErrObjectNotExist) {
+		if converted := convertStorageError(err); converted == ErrObjectNotFound {
 			return "", ErrObjectNotFound
 		}
 		return "", fmt.Errorf("オブジェクト情報の取得に失敗: %w", err)
@@ -129,7 +141,7 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
-		if errors.Is(err, storage.ErrObjectNotExist) {
+		if converted := convertStorageError(err); converted == ErrObjectNotFound {
 			log.Printf("Debug: Cloud Storage object already deleted or not found: %s", objectName)
 			return nil
 		}
