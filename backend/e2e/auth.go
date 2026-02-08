@@ -52,12 +52,7 @@ func NewAuthHelper(ctx context.Context) (*AuthHelper, error) {
 
 // GetTestToken はテスト用のFirebase IDトークンを取得する
 func (h *AuthHelper) GetTestToken(ctx context.Context) (string, error) {
-	testUID := os.Getenv("E2E_TEST_UID")
-	if testUID == "" {
-		testUID = "e2e-test-user"
-	}
-
-	customToken, err := h.authClient.CustomToken(ctx, testUID)
+	customToken, err := h.authClient.CustomToken(ctx, testUID())
 	if err != nil {
 		return "", fmt.Errorf("failed to create custom token: %w", err)
 	}
@@ -97,7 +92,10 @@ func (h *AuthHelper) exchangeCustomTokenForIDToken(ctx context.Context, customTo
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return "", fmt.Errorf("Firebase API returned status %d (failed to read body: %w)", resp.StatusCode, readErr)
+		}
 		return "", fmt.Errorf("Firebase API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -107,6 +105,10 @@ func (h *AuthHelper) exchangeCustomTokenForIDToken(ctx context.Context, customTo
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if result.IDToken == "" {
+		return "", fmt.Errorf("Firebase API returned empty idToken")
 	}
 
 	return result.IDToken, nil

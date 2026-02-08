@@ -13,20 +13,8 @@ import (
 )
 
 func TestAnalyze_TextInput_Success(t *testing.T) {
-	if authHelper == nil {
-		t.Skip("E2E_FIREBASE_API_KEY is not set, skipping authenticated tests")
-	}
+	client, ctx := authenticatedClient(t, 30*time.Second)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// 認証トークンを取得
-	token, err := authHelper.GetTestToken(ctx)
-	require.NoError(t, err, "Failed to get test token")
-
-	client := testClient.WithAuthToken(token)
-
-	// テキスト分析リクエストを送信
 	reqBody := map[string]string{
 		"input_text": "テスト用の食事データ：ご飯一杯と味噌汁",
 		"meal_type":  "lunch",
@@ -62,17 +50,7 @@ func TestAnalyze_TextInput_Unauthorized(t *testing.T) {
 }
 
 func TestAnalyze_TextInput_InvalidMealType(t *testing.T) {
-	if authHelper == nil {
-		t.Skip("E2E_FIREBASE_API_KEY is not set, skipping authenticated tests")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	token, err := authHelper.GetTestToken(ctx)
-	require.NoError(t, err)
-
-	client := testClient.WithAuthToken(token)
+	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	reqBody := map[string]string{
 		"input_text": "テスト用の食事データ",
@@ -86,17 +64,7 @@ func TestAnalyze_TextInput_InvalidMealType(t *testing.T) {
 }
 
 func TestAnalyze_GetStatus_Success(t *testing.T) {
-	if authHelper == nil {
-		t.Skip("E2E_FIREBASE_API_KEY is not set, skipping authenticated tests")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	token, err := authHelper.GetTestToken(ctx)
-	require.NoError(t, err)
-
-	client := testClient.WithAuthToken(token)
+	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// まず分析リクエストを作成
 	reqBody := map[string]string{
@@ -133,17 +101,7 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 }
 
 func TestAnalyze_GetStatus_NotFound(t *testing.T) {
-	if authHelper == nil {
-		t.Skip("E2E_FIREBASE_API_KEY is not set, skipping authenticated tests")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	token, err := authHelper.GetTestToken(ctx)
-	require.NoError(t, err)
-
-	client := testClient.WithAuthToken(token)
+	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// 存在しないIDでステータスを取得
 	resp, err := client.Get(ctx, "/api/analyze/00000000-0000-0000-0000-000000000000")

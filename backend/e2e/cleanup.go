@@ -13,11 +13,6 @@ import (
 
 // CleanupTestData はE2Eテストで作成されたFirestoreのテストデータを削除する
 func CleanupTestData(ctx context.Context) error {
-	testUID := os.Getenv("E2E_TEST_UID")
-	if testUID == "" {
-		testUID = "e2e-test-user"
-	}
-
 	projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectID == "" {
 		projectID = os.Getenv("GCP_PROJECT")
@@ -29,7 +24,7 @@ func CleanupTestData(ctx context.Context) error {
 	}
 	defer client.Close()
 
-	return deleteCollection(ctx, client, fmt.Sprintf("users/%s/analysisRequests", testUID))
+	return deleteCollection(ctx, client, fmt.Sprintf("users/%s/analysisRequests", testUID()))
 }
 
 // deleteCollection は指定コレクション内の全ドキュメントを削除する
@@ -37,7 +32,8 @@ func deleteCollection(ctx context.Context, client *firestore.Client, path string
 	iter := client.Collection(path).Documents(ctx)
 	defer iter.Stop()
 
-	batch := client.BulkWriter(ctx)
+	bw := client.BulkWriter(ctx)
+	var deleteJobs []*firestore.BulkWriterJob
 	count := 0
 
 	for {
@@ -49,11 +45,24 @@ func deleteCollection(ctx context.Context, client *firestore.Client, path string
 			return fmt.Errorf("failed to iterate documents: %w", err)
 		}
 
-		batch.Delete(doc.Ref)
+		job, err := bw.Delete(doc.Ref)
+		if err != nil {
+			return fmt.Errorf("failed to add delete job for %s: %w", doc.Ref.Path, err)
+		}
+		deleteJobs = append(deleteJobs, job)
 		count++
 	}
 
-	batch.End()
+	bw.Flush()
+	bw.End()
+
+	// 削除結果を確認
+	for _, job := range deleteJobs {
+		if _, err := job.Results(); err != nil {
+			return fmt.Errorf("failed to delete document: %w", err)
+		}
+	}
+
 	fmt.Fprintf(os.Stderr, "Cleaned up %d test documents from %s\n", count, path)
 	return nil
 }
