@@ -18,7 +18,7 @@ description: 正確な情報源からドキュメント全体を同期・更新�
 | ios/README.md | ios/project.yml, ios/ | ビルド手順、依存関係、セットアップ |
 | infrastructure/README.md | infrastructure/ | インフラ構成、デプロイ手順 |
 | docs/setup/GOOGLE_SIGNIN_SETUP.md | ios/, backend/ | Google Sign-In設定手順 |
-| .claude/rules/08-development-commands.md | Taskfile.yml | Taskfileコマンド一覧の同期 |
+| .claude/rules/development-commands.md | Taskfile.yml | Taskfileコマンド一覧の同期 |
 
 対象外（別スキルまたは更新不要）:
 - docs/CODEMAPS/ → `update-codemaps` スキルが担当
@@ -55,7 +55,7 @@ CLAUDE.md:
 - rules/一覧テーブルとファイルの整合性
 - agents/一覧テーブルとファイルの整合性
 
-.claude/rules/08-development-commands.md:
+.claude/rules/development-commands.md:
 - Taskfile.ymlのタスクと一致しているか
 - コマンド説明が正確か
 
