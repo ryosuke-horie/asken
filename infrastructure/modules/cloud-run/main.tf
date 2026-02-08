@@ -67,6 +67,14 @@ resource "google_service_account_iam_member" "service_account_user" {
   member             = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+# 署名付きURL生成権限（Cloud Storage SignedURL用）
+# BucketHandle.SignedURL()の自動検出がIAM signBlobで署名するために必要
+resource "google_service_account_iam_member" "self_token_creator" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # -----------------------------------------------------------------------------
 # Cloud Runサービス
 # -----------------------------------------------------------------------------
