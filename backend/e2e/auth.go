@@ -34,9 +34,13 @@ func NewAuthHelper(ctx context.Context) (*AuthHelper, error) {
 	// WIF環境ではメタデータサーバーが利用できないため、
 	// ServiceAccountIDを明示的に指定してCustomToken()の署名を可能にする
 	var config *firebase.Config
-	if saEmail := os.Getenv("SERVICE_ACCOUNT_EMAIL"); saEmail != "" {
+	saEmail := os.Getenv("SERVICE_ACCOUNT_EMAIL")
+	if saEmail != "" {
 		config = &firebase.Config{ServiceAccountID: saEmail}
+	} else if os.Getenv("CI") != "" {
+		return nil, fmt.Errorf("SERVICE_ACCOUNT_EMAIL environment variable is required in CI for Firebase CustomToken signing via signBlob")
 	}
+	// ローカル開発時: SERVICE_ACCOUNT_EMAIL未設定でもADC（Application Default Credentials）で動作
 
 	app, err := firebase.NewApp(ctx, config)
 	if err != nil {
