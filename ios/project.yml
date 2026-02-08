@@ -87,6 +87,9 @@ targets:
         TEST_HOST: ""
         BUNDLE_LOADER: ""
     dependencies:
+      - target: Uchikomi
+        embed: false
+        link: false
       - target: UchikomiCore
         embed: false
         link: true
