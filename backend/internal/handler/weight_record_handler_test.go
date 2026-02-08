@@ -512,7 +512,13 @@ func TestWeightRecordHandler_HandleList_GoalError(t *testing.T) {
 
 	handler.HandleList(w, req)
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	// Goal取得失敗時は非致命的（200 OKを返す）
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response WeightRecordsListResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Nil(t, response.Goal)
 }
 
 func TestWeightRecordHandler_HandleList_DateRangeLimit(t *testing.T) {
@@ -726,11 +732,46 @@ func TestWeightRecordHandler_HandleList_InvalidTimezone(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestWeightRecordHandler_HandleList_InvalidDates(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+	testUserID := "test-user-123"
+
+	tests := []struct {
+		name     string
+		url      string
+		wantCode int
+	}{
+		{
+			name:     "無効なfrom日付",
+			url:      "/api/weight/records?from=not-a-date&to=2026-02-28",
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name:     "無効なto日付",
+			url:      "/api/weight/records?from=2026-02-01&to=invalid",
+			wantCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+			req = req.WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			handler.HandleList(w, req)
+
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
 func TestWeightRecordHandler_HandleCreate_InvalidJSON(t *testing.T) {
 	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
 	testUserID := "test-user-123"
 
-	req := httptest.NewRequest(http.MethodPost, "/api/weight/records", bytes.NewReader([]byte("invalid json")))
+	req := httptest.NewRequest(http.MethodPost, "/api/weight/records", bytes.NewReader([]byte("{invalid json}")))
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -738,6 +779,30 @@ func TestWeightRecordHandler_HandleCreate_InvalidJSON(t *testing.T) {
 	handler.HandleCreate(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestValidateWeightKg_BoundaryValues(t *testing.T) {
+	tests := []struct {
+		name    string
+		weight  float64
+		wantErr bool
+	}{
+		{"19.9は拒否", 19.9, true},
+		{"20.0は許可", 20.0, false},
+		{"300.0は許可", 300.0, false},
+		{"300.1は拒否", 300.1, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateWeightKg(tt.weight)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestWeightRecordHandler_ExtractRecordID_InvalidUUID(t *testing.T) {

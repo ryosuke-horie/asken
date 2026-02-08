@@ -16,6 +16,18 @@ final class WeightViewModel {
 
     private let repository: WeightRepositoryProtocol
 
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let iso8601FallbackFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
     init(repository: WeightRepositoryProtocol = WeightRepository()) {
         self.repository = repository
     }
@@ -34,14 +46,13 @@ final class WeightViewModel {
         errorMessage = nil
 
         do {
-            async let todayData = loadTodayRecords()
             async let chartData = loadChartRecords()
             async let goalData = repository.getGoal()
 
-            let (today, chart, fetchedGoal) = try await (todayData, chartData, goalData)
-            todayRecords = today
+            let (chart, fetchedGoal) = try await (chartData, goalData)
             chartRecords = chart
             goal = fetchedGoal
+            todayRecords = filterTodayRecords(from: chart)
         } catch let error as APIError {
             logger.error("体重データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
@@ -80,19 +91,30 @@ final class WeightViewModel {
         }
     }
 
-    private func loadTodayRecords() async throws -> [WeightRecord] {
-        let today = Date()
-        let response = try await repository.getRecords(from: today, to: today)
-        return response.records
-    }
-
     private func loadChartRecords() async throws -> [WeightRecord] {
         let to = Date()
         guard let from = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: to) else {
             logger.error("チャート期間の日付計算に失敗: days=\(self.selectedPeriod.days)")
-            return []
+            throw NSError(
+                domain: "WeightViewModel",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "チャート期間の計算に失敗しました"]
+            )
         }
         let response = try await repository.getRecords(from: from, to: to)
         return response.records
+    }
+
+    private func filterTodayRecords(from records: [WeightRecord]) -> [WeightRecord] {
+        let calendar = Calendar.current
+        let today = Date()
+        return records.filter { record in
+            guard let date = Self.parseISO8601(record.recordedAt) else { return false }
+            return calendar.isDate(date, inSameDayAs: today)
+        }
+    }
+
+    static func parseISO8601(_ string: String) -> Date? {
+        iso8601Formatter.date(from: string) ?? iso8601FallbackFormatter.date(from: string)
     }
 }

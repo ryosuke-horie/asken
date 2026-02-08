@@ -158,6 +158,21 @@ func TestWeightGoalHandler_HandleSet_ValidationError(t *testing.T) {
 	}
 }
 
+func TestWeightGoalHandler_HandleSet_InvalidJSON(t *testing.T) {
+	testUserID := "test-user-123"
+	mockRepo := &MockWeightGoalRepository{}
+	handler := NewWeightGoalHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/weight/goal", bytes.NewReader([]byte("{invalid json}")))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleSet(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestWeightGoalHandler_HandleSet_Unauthorized(t *testing.T) {
 	mockRepo := &MockWeightGoalRepository{}
 	handler := NewWeightGoalHandler(mockRepo)

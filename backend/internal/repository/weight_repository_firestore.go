@@ -34,7 +34,8 @@ type firestoreWeightRecordRepository struct {
 	client *firestore.Client
 }
 
-// NewWeightRepositories は新しいFirestoreベースのWeightRecordRepositoryとWeightGoalRepositoryを作成します
+// NewWeightRepositories は新しいFirestoreベースのリポジトリを作成します
+// 返される WeightRecordRepository と WeightGoalRepository は同一インスタンスです
 func NewWeightRepositories(client *firestore.Client) (WeightRecordRepository, WeightGoalRepository, error) {
 	if client == nil {
 		return nil, nil, fmt.Errorf("firestore client is required")
@@ -61,6 +62,10 @@ func roundToOneDecimal(v float64) float64 {
 func (r *firestoreWeightRecordRepository) CreateRecord(ctx context.Context, userID string, weightKg float64, recordedAt time.Time, note string) (*WeightRecord, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
+	}
+
+	if err := ValidateWeightKg(weightKg); err != nil {
+		return nil, err
 	}
 
 	now := time.Now()
@@ -108,6 +113,10 @@ func (r *firestoreWeightRecordRepository) GetRecord(ctx context.Context, userID 
 func (r *firestoreWeightRecordRepository) UpdateRecord(ctx context.Context, userID string, recordID string, weightKg float64, note string) (*WeightRecord, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
+	}
+
+	if err := ValidateWeightKg(weightKg); err != nil {
+		return nil, err
 	}
 
 	docRef := r.getUserWeightRecordsCollection(userID).Doc(recordID)
@@ -229,6 +238,10 @@ func (r *firestoreWeightRecordRepository) GetGoal(ctx context.Context, userID st
 func (r *firestoreWeightRecordRepository) SetGoal(ctx context.Context, userID string, targetWeightKg float64) (*WeightGoal, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
+	}
+
+	if err := ValidateWeightKg(targetWeightKg); err != nil {
+		return nil, err
 	}
 
 	now := time.Now()
