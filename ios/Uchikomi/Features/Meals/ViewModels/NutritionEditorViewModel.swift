@@ -63,6 +63,8 @@ final class NutritionEditorViewModel {
             errorMessage = error.localizedDescription
         } catch {
             errorMessage = "データの取得に失敗しました"
+            // エラーをログに記録（デバッグ用）
+            print("[NutritionEditorViewModel] loadFromHistory error: \(error)")
         }
 
         isLoading = false
@@ -98,6 +100,8 @@ final class NutritionEditorViewModel {
         } catch {
             errorMessage = "保存に失敗しました"
             recalculatingMessage = nil
+            // エラーをログに記録（デバッグ用）
+            print("[NutritionEditorViewModel] save error: \(error)")
         }
 
         isSaving = false

@@ -27,8 +27,11 @@ final class FoodEditItem: Identifiable {
     }
 
     var hasUnitChanged: Bool {
-        guard let originalUnit = QuantityParser.parse(originalQuantity)?.unit,
-              let current = quantityUnit else { return false }
+        guard let originalUnit = QuantityParser.parse(originalQuantity)?.unit else {
+            // 元の値をパースできない場合、現在単位が選択されていれば変更とみなす
+            return quantityUnit != nil
+        }
+        guard let current = quantityUnit else { return false }
         return originalUnit != current.rawValue
     }
 
