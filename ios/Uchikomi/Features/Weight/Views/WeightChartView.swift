@@ -5,6 +5,7 @@ struct WeightChartView: View {
     let records: [WeightRecord]
     let goal: WeightGoal?
     @Binding var selectedPeriod: ChartPeriod
+    let isLoading: Bool
 
     private var chartData: [(date: Date, weight: Double)] {
         records.compactMap { record in
@@ -36,8 +37,16 @@ struct WeightChartView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .disabled(isLoading)
 
-            if chartData.isEmpty {
+            if isLoading {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .frame(height: 200)
+                    .overlay {
+                        ProgressView()
+                    }
+            } else if chartData.isEmpty {
                 Text("この期間のデータがありません")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

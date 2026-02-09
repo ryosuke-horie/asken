@@ -59,15 +59,24 @@ final class WeightViewModel {
     }
 
     func loadChartData() async {
+        isLoading = true
+        errorMessage = nil
+
         do {
             chartRecords = try await loadChartRecords()
         } catch let error as APIError {
             logger.error("チャートデータ更新でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
+            isLoading = false
+            return
         } catch {
             logger.error("チャートデータ更新で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "チャートデータの更新に失敗しました"
+            isLoading = false
+            return
         }
+
+        isLoading = false
     }
 
     func deleteRecord(id: String) async {

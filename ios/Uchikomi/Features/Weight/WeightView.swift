@@ -42,7 +42,8 @@ struct WeightView: View {
                                         viewModel.selectedPeriod = newPeriod
                                         Task { await viewModel.loadChartData() }
                                     }
-                                )
+                                ),
+                                isLoading: viewModel.isLoading
                             )
 
                             // 今日の記録一覧
