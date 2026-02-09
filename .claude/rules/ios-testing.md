@@ -1,9 +1,19 @@
 ---
-description: iOSアプリのテストガイドライン。Swift Testing、XCUITest、Mockolo、swift-snapshot-testingを使用。
+description: iOSアプリのテストガイドライン。Swift Testing、Mockolo、swift-snapshot-testingを使用。
 globs: ios/**/*.swift
 ---
 
 # iOSテストガイドライン
+
+> **現状のテスト方針（一時停止中）**
+>
+> macOS および Xcode のバージョンアップにより、iOS テストが頻繁に壊れる問題が発生しています。
+> この問題が解消するまで、iOS テストを一時的に無効化しています。
+> 全てのテストコードは `ios/UchikomiTests/Disabled/` ディレクトリに移動されています。
+>
+> 詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
+
+---
 
 ## 基本方針
 
@@ -11,7 +21,7 @@ globs: ios/**/*.swift
 |:---|:---|
 | テストスタイル | 古典派（Classicist） |
 | Mock対象 | 外部依存（API、Keychain）のみ |
-| テストフレームワーク | Swift Testing（ユニット）、XCUITest（UI） |
+| テストフレームワーク | Swift Testing |
 | Mockライブラリ | Mockolo（Uber製） |
 | スナップショット | swift-snapshot-testing |
 
@@ -22,7 +32,6 @@ globs: ios/**/*.swift
 | ViewModel | 高 | 80%以上 |
 | Repository | 高 | 70%以上 |
 | Model（ロジックあり） | 中 | 80%以上 |
-| View（SwiftUI） | 低 | UIテスト/スナップショットでカバー |
 | 全体 | - | 60%以上 |
 
 ## テストタイミング
@@ -89,11 +98,10 @@ ios/
 │   └── Core/
 │       └── Repositories/
 │           └── AuthRepository.swift
-├── UchikomiTests/      # ユニットテスト
-│   ├── AuthManagerTests.swift
-│   └── MealsViewModelTests.swift
-└── UchikomiUITests/    # UIテスト（XCUITest）
-    └── LoginUITests.swift
+└── UchikomiTests/      # テスト（現在は無効化）
+    └── Disabled/       # テストコード一時移動先
+        ├── AuthManagerTests.swift
+        └── MealsViewModelTests.swift
 ```
 
 ## Mockの使用基準
@@ -105,17 +113,6 @@ ios/
 | 現在時刻 | 可 | 再現性の確保 |
 | 内部クラス | 不可 | 実装詳細への依存を避ける |
 | ユーティリティ | 不可 | 実際の振る舞いを検証 |
-
-## UIテスト（XCUITest）
-
-実行タイミング:
-- ローカル: PR作成前に実行（スキルで強制）
-- CI: 実行しない（コスト削減）
-
-ベストプラクティス:
-- Accessibility Identifierを使用
-- waitForExistenceで非同期待機（sleepは禁止）
-- ハードコードされた座標は使用しない
 
 ## スナップショットテスト
 
@@ -129,4 +126,3 @@ ios/
 - Mockだらけで実際の振る舞いを検証していないテスト
 - テスト間の依存関係（順序依存、共有状態）
 - `sleep()` による固定待機（`waitForExistence` を使用）
-- UIテストでのハードコードされた座標

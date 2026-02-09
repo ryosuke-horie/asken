@@ -6,7 +6,6 @@
 
 - テストフレームワークの選定（XCTest vs Swift Testing）
 - Mockライブラリの選定
-- UIテスト（E2E）の導入
 - スナップショットテストの導入
 - テスト実行タイミングとCI/CD戦略
 
@@ -17,7 +16,6 @@
 | 分野 | 選定 |
 |:---|:---|
 | ユニットテスト | Swift Testing |
-| UIテスト | XCUITest |
 
 ### ライブラリ
 
@@ -31,10 +29,7 @@
 | テスト種類 | ローカル | CI/PR |
 |:---|:---|:---|
 | ユニットテスト | 随時 | 毎回実行 |
-| UIテスト（XCUITest） | PR作成前に実行 | 実行しない |
 | スナップショットテスト | 開発時 | 毎回実行 |
-
-UIテストはClaude Codeスキルを使用してPR作成前にローカル実行を強制する。
 
 ### テスト方針
 
@@ -85,12 +80,6 @@ UIテストはClaude Codeスキルを使用してPR作成前にローカル実�
 - Mockable: Swift Testing明示対応だが、v0.4.1でまだ若い
 - 手動Mock: ボイラープレートが多く、規模拡大時に負担
 
-### UIテストをCIで実行しない理由
-
-- UIテストは実行時間が長く、CIコストが高い
-- ローカルでPR作成前に実行することで品質を担保
-- Claude Codeスキルで実行を強制し、漏れを防止
-
 ### スナップショットテストを導入する理由
 
 - UIの意図しない変更を検知できる
@@ -99,11 +88,17 @@ UIテストはClaude Codeスキルを使用してPR作成前にローカル実�
 
 ## 結果
 
+### 現状のテスト方針（一時停止中）
+
+macOS および Xcode のバージョンアップにより、iOS テストが頻繁に壊れる問題が発生しています。
+この問題が解消するまで、iOS テストを一時的に無効化しています。
+
+詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
+
 ### 導入が必要なもの
 
 1. Mockolo: Swift Package Managerで追加
 2. swift-snapshot-testing: Swift Package Managerで追加
-3. Claude Codeスキル: PR作成前UIテスト実行用
 
 ### 既存テストへの影響
 
@@ -114,9 +109,7 @@ UIテストはClaude Codeスキルを使用してPR作成前にローカル実�
 
 - ユニットテスト: GitHub Actionsで毎PR実行
 - スナップショットテスト: GitHub Actionsで毎PR実行（`record: .never`）
-- UIテスト: CI実行なし（ローカルのみ）
 
 ### ドキュメント
 
 - `.claude/rules/`にiOSテストガイドラインを追加
-- `.claude/skills/`にPR作成前UIテスト実行スキルを追加
