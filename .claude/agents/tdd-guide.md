@@ -174,24 +174,12 @@ func TestMealsHandler_GetDailyMeals(t *testing.T) {
 
 ### 3. E2Eテスト（重要フローのみ）
 
-XCUITestで完全なユーザージャーニーをテスト:
+バックエンドAPIのE2Eテスト（`backend/e2e/`）が統合テストを担います。
 
-```swift
-func testユーザーが食事画像をアップロードして結果を確認できる() {
-    let app = XCUIApplication()
-    app.launch()
-
-    // 食事記録画面に遷移
-    app.buttons["addMealButton"].tap()
-
-    // 画像選択
-    app.buttons["selectImageButton"].tap()
-
-    // 結果の確認
-    let resultLabel = app.staticTexts["totalCalories"]
-    XCTAssertTrue(resultLabel.waitForExistence(timeout: 10))
-}
-```
+> `注意: iOSテストは一時無効化されています`
+>
+> macOS/Xcode バージョン問題により、iOS テストを一時的に無効化しています。
+> 詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
 
 ## 外部依存関係のモック
 
@@ -241,7 +229,6 @@ mockRepo.fetchDailyMealsHandler = { date in
 
 - [ ] 全パブリック関数にユニットテストあり
 - [ ] 全APIエンドポイントに統合テストあり
-- [ ] 重要なユーザーフローにE2Eテストあり
 - [ ] エッジケースをカバー（nil、空、無効）
 - [ ] エラーパスをテスト（ハッピーパスだけでない）
 - [ ] 外部依存関係にモックを使用
