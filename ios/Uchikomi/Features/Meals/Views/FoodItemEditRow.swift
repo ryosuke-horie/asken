@@ -33,7 +33,6 @@ struct FoodItemEditRow: View {
                     .textFieldStyle(.roundedBorder)
                     .keyboardType(item.quantityUnit?.inputType == .decimal ? .decimalPad : .numberPad)
                     .onChange(of: item.quantityValue) {
-                        item.quantityValue = QuantityValidator.normalizeFullWidth(item.quantityValue)
                         item.updateQuantityString()
                         item.recalculateNutrition()
                     }
@@ -47,7 +46,6 @@ struct FoodItemEditRow: View {
                 .pickerStyle(.menu)
                 .onChange(of: item.quantityUnit) { _, _ in
                     item.updateQuantityString()
-                    item.handleUnitChange()
                 }
             }
 
