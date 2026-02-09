@@ -26,9 +26,9 @@ variable "lifecycle_delete_days" {
 }
 
 variable "cors_origins" {
-  description = "CORS許可オリジン"
+  description = "CORS許可オリジン（バックエンドAPI経由のみのアクセスのため空リスト）"
   type        = list(string)
-  default     = ["*"]
+  default     = []
 }
 
 variable "force_destroy" {

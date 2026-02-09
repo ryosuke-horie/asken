@@ -26,7 +26,7 @@ firestore_delete_protection = false
 storage_location              = "ASIA-NORTHEAST1"
 storage_versioning            = false
 storage_lifecycle_delete_days = 90
-storage_cors_origins          = ["*"]
+storage_cors_origins          = []
 storage_force_destroy         = true
 
 # -----------------------------------------------------------------------------

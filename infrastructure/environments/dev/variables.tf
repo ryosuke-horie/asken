@@ -56,9 +56,9 @@ variable "storage_lifecycle_delete_days" {
 }
 
 variable "storage_cors_origins" {
-  description = "Cloud StorageのCORS許可オリジン"
+  description = "Cloud StorageのCORS許可オリジン（バックエンドAPI経由のみのアクセスのため空リスト）"
   type        = list(string)
-  default     = ["*"]
+  default     = []
 }
 
 variable "storage_force_destroy" {
