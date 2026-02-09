@@ -119,4 +119,53 @@ import Testing
         let ratio = QuantityParser.calculateRatio(from: from, to: to)
         #expect(ratio == 0.5)
     }
+
+    // MARK: - parseUnit テスト
+
+    @Test func parseUnit_グラム表記でgramを返すべき() {
+        #expect(QuantityParser.parseUnit("100g") == .gram)
+        #expect(QuantityParser.parseUnit("150.5g") == .gram)
+        #expect(QuantityParser.parseUnit("200G") == .gram)
+    }
+
+    @Test func parseUnit_グラム表記_グラム文字でgramを返すべき() {
+        #expect(QuantityParser.parseUnit("100グラム") == .gram)
+    }
+
+    @Test func parseUnit_日本語単位で正しいMeasurementUnitを返すべき() {
+        #expect(QuantityParser.parseUnit("1杯") == .cup)
+        #expect(QuantityParser.parseUnit("2合") == .go)
+        #expect(QuantityParser.parseUnit("3人前") == .serving)
+        #expect(QuantityParser.parseUnit("1個") == .piece)
+    }
+
+    @Test func parseUnit_パース失敗時はnilを返すべき() {
+        #expect(QuantityParser.parseUnit("大盛り") == nil)
+        #expect(QuantityParser.parseUnit("") == nil)
+        #expect(QuantityParser.parseUnit("100") == nil)
+    }
+
+    // MARK: - parseValue テスト
+
+    @Test func parseValue_整数値を文字列として返すべき() {
+        #expect(QuantityParser.parseValue("100g") == "100")
+        #expect(QuantityParser.parseValue("2杯") == "2")
+        #expect(QuantityParser.parseValue("1合") == "1")
+    }
+
+    @Test func parseValue_小数値を文字列として返すべき() {
+        #expect(QuantityParser.parseValue("150.5g") == "150.5")
+        #expect(QuantityParser.parseValue("0.5g") == "0.5")
+    }
+
+    @Test func parseValue_小数値が整数の場合は整数文字列を返すべき() {
+        #expect(QuantityParser.parseValue("100.0g") == "100")
+        #expect(QuantityParser.parseValue("200g") == "200")
+    }
+
+    @Test func parseValue_パース失敗時はnilを返すべき() {
+        #expect(QuantityParser.parseValue("大盛り") == nil)
+        #expect(QuantityParser.parseValue("") == nil)
+        #expect(QuantityParser.parseValue("100") == nil)
+    }
 }
