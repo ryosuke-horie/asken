@@ -60,13 +60,12 @@ func TestFoodService_AnalyzeFoodImage(t *testing.T) {
 
 ## iOSテスト
 
+> `注意: iOSテストは一時無効化されています`
+>
+> macOS/Xcode バージョン問題により、iOS テストを一時的に無効化しています。
+> 詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
+
 iOSテストの詳細は`ios-testing.md`を参照。
-
-### 概要
-
-- Swift Testing: ユニットテスト
-- Mockolo: モック生成
-- swift-snapshot-testing: スナップショットテスト
 
 ## テスト実行
 
