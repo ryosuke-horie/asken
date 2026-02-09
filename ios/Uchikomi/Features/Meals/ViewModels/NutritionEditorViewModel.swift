@@ -36,6 +36,10 @@ final class NutritionEditorViewModel {
         foods.contains { $0.hasNameChanged }
     }
 
+    var hasAnyUnitChanged: Bool {
+        foods.contains { $0.hasUnitChanged }
+    }
+
     init(
         historyId: String? = nil,
         foods: [NutritionInfo] = [],
@@ -78,14 +82,22 @@ final class NutritionEditorViewModel {
         isSaving = true
         errorMessage = nil
 
+        // 単位変更がある場合はメッセージを表示
+        if hasAnyUnitChanged {
+            recalculatingMessage = "栄養素を再計算中です..."
+        }
+
         do {
             let updateFoods = foods.map { $0.toUpdateFoodItem() }
             _ = try await repository.updateHistory(historyId: historyId, foods: updateFoods)
             isSaved = true
+            recalculatingMessage = nil
         } catch let error as APIError {
             errorMessage = error.localizedDescription
+            recalculatingMessage = nil
         } catch {
             errorMessage = "保存に失敗しました"
+            recalculatingMessage = nil
         }
 
         isSaving = false

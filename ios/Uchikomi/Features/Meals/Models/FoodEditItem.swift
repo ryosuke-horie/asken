@@ -18,8 +18,21 @@ final class FoodEditItem: Identifiable {
     let originalFat: Double
     let originalCarbohydrates: Double
 
+    // 数値と単位を分離
+    var quantityValue: String = ""
+    var quantityUnit: MeasurementUnit?
+
     var hasNameChanged: Bool {
         !originalName.isEmpty && name != originalName
+    }
+
+    var hasUnitChanged: Bool {
+        guard let originalUnit = QuantityParser.parseUnit(originalQuantity) else {
+            // 元の値をパースできない場合、現在単位が選択されていれば変更とみなす
+            return quantityUnit != nil
+        }
+        guard let current = quantityUnit else { return false }
+        return originalUnit != current
     }
 
     init(
@@ -55,6 +68,11 @@ final class FoodEditItem: Identifiable {
             fat: nutritionInfo.fatG,
             carbohydrates: nutritionInfo.carbohydratesG
         )
+
+        // quantityからquantityValueとquantityUnitをパースして設定
+        // パース失敗時は元の文字列をそのまま使用（UIで表示・編集可能）
+        quantityValue = QuantityParser.parseValue(quantity) ?? quantity
+        quantityUnit = QuantityParser.parseUnit(quantity)
     }
 
     func toUpdateFoodItem() -> UpdateFoodItem {
@@ -84,5 +102,14 @@ final class FoodEditItem: Identifiable {
         protein = (originalProtein * ratio * 10).rounded() / 10
         fat = (originalFat * ratio * 10).rounded() / 10
         carbohydrates = (originalCarbohydrates * ratio * 10).rounded() / 10
+    }
+
+    /// quantityValueとquantityUnitからquantity文字列を生成
+    func updateQuantityString() {
+        guard let unit = quantityUnit, !quantityValue.isEmpty else {
+            quantity = ""
+            return
+        }
+        quantity = "\(quantityValue)\(unit.rawValue)"
     }
 }
