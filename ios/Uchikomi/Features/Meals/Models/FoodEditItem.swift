@@ -18,8 +18,18 @@ final class FoodEditItem: Identifiable {
     let originalFat: Double
     let originalCarbohydrates: Double
 
+    // 数値と単位を分離
+    var quantityValue: String = ""
+    var quantityUnit: MeasurementUnit?
+
     var hasNameChanged: Bool {
         !originalName.isEmpty && name != originalName
+    }
+
+    var hasUnitChanged: Bool {
+        guard let originalUnit = QuantityParser.parse(originalQuantity)?.unit,
+              let current = quantityUnit else { return false }
+        return originalUnit != current.rawValue
     }
 
     init(
@@ -55,6 +65,10 @@ final class FoodEditItem: Identifiable {
             fat: nutritionInfo.fatG,
             carbohydrates: nutritionInfo.carbohydratesG
         )
+
+        // quantityからquantityValueとquantityUnitをパースして設定
+        quantityValue = QuantityParser.parseValue(quantity) ?? ""
+        quantityUnit = QuantityParser.parseUnit(quantity)
     }
 
     func toUpdateFoodItem() -> UpdateFoodItem {
@@ -84,5 +98,21 @@ final class FoodEditItem: Identifiable {
         protein = (originalProtein * ratio * 10).rounded() / 10
         fat = (originalFat * ratio * 10).rounded() / 10
         carbohydrates = (originalCarbohydrates * ratio * 10).rounded() / 10
+    }
+
+    /// quantityValueとquantityUnitからquantity文字列を生成
+    func updateQuantityString() {
+        guard let unit = quantityUnit, !quantityValue.isEmpty else {
+            quantity = ""
+            return
+        }
+        quantity = "\(quantityValue)\(unit.rawValue)"
+    }
+
+    /// 単位変更時のハンドリング（現在は何もしない）
+    /// 単位が変わった場合は保存時にバックエンドでLLM再計算が行われる
+    func handleUnitChange() {
+        // hasUnitChangedで検知してUI表示するのみ
+        // 実際の再計算はバックエンドのLLMで行われる
     }
 }

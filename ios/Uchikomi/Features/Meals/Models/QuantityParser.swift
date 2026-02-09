@@ -52,4 +52,18 @@ enum QuantityParser {
         guard from.value > 0 else { return nil }
         return to.value / from.value
     }
+
+    /// 既存の文字列からMeasurementUnitを取得
+    static func parseUnit(_ text: String) -> MeasurementUnit? {
+        guard let parsed = parse(text) else { return nil }
+        return MeasurementUnit(rawValue: parsed.unit)
+    }
+
+    /// 数値部分のみを文字列として抽出
+    static func parseValue(_ text: String) -> String? {
+        guard let parsed = parse(text) else { return nil }
+        return parsed.value == floor(parsed.value)
+            ? String(Int(parsed.value))
+            : String(parsed.value)
+    }
 }

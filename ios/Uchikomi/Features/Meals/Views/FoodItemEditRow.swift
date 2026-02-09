@@ -28,11 +28,34 @@ struct FoodItemEditRow: View {
                     .foregroundStyle(.orange)
             }
 
-            TextField("量（例：1杯、1人前、大盛り）", text: $item.quantity)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: item.quantity) {
-                    item.recalculateNutrition()
+            HStack(spacing: 8) {
+                TextField("数値", text: $item.quantityValue)
+                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(item.quantityUnit?.inputType == .decimal ? .decimalPad : .numberPad)
+                    .onChange(of: item.quantityValue) {
+                        item.quantityValue = QuantityValidator.normalizeFullWidth(item.quantityValue)
+                        item.updateQuantityString()
+                        item.recalculateNutrition()
+                    }
+
+                Picker("単位", selection: $item.quantityUnit) {
+                    Text("選択").tag(nil as MeasurementUnit?)
+                    ForEach(MeasurementUnit.allCases) { unit in
+                        Text(unit.displayName).tag(unit as MeasurementUnit?)
+                    }
                 }
+                .pickerStyle(.menu)
+                .onChange(of: item.quantityUnit) { _, _ in
+                    item.updateQuantityString()
+                    item.handleUnitChange()
+                }
+            }
+
+            if item.hasUnitChanged {
+                Text("保存後に栄養素が再計算されます")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
 
             if item.calories > 0 {
                 HStack(spacing: 12) {
