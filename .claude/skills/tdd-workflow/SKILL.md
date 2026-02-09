@@ -1,17 +1,25 @@
 ---
 name: tdd-workflow
-description: 新機能の実装、バグ修正、リファクタリング時に使用するスキル。テスト駆動開発を強制し、80%以上のカバレッジを確保。ユニット、統合、E2Eテストを含む。
+description: Goバックエンドの新機能実装、バグ修正、リファクタリング時に使用するスキル。テスト駆動開発を強制し、80%以上のカバレッジを確保。
 ---
 
 # テスト駆動開発ワークフロー
 
-このスキルはすべてのコード開発がTDD原則に従い、包括的なテストカバレッジを確保することを保証します。
+> `注意: iOSテストは一時無効化されています`
+>
+> このスキルは Go バックエンドの実装時にのみ使用してください。
+> iOS の開発時には使用しないでください。
+>
+> macOS/Xcode バージョン問題により、iOS テストを一時的に無効化しています。
+> 詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
+
+このスキルは Go バックエンドのコード開発が TDD 原則に従い、包括的なテストカバレッジを確保することを保証します。
 
 ## 使用タイミング
 
-- 新機能や機能の実装時
-- バグや問題の修正時
-- 既存コードのリファクタリング時
+- Go バックエンドの新機能実装時
+- Go バックエンドのバグ修正時
+- Go バックエンドのリファクタリング時
 - APIエンドポイントの追加時
 
 ## 基本原則
@@ -22,7 +30,7 @@ description: 新機能の実装、バグ修正、リファクタリング時に�
 
 ### 2. カバレッジ要件
 
-- 最低80%カバレッジ（ユニット + 統合 + E2E）
+- 最低80%カバレッジ（ユニット + 統合）
 - すべてのエッジケースをカバー
 - エラーシナリオをテスト
 - 境界条件を検証
@@ -32,22 +40,16 @@ description: 新機能の実装、バグ修正、リファクタリング時に�
 #### ユニットテスト
 
 - Go: `testing`パッケージ + testify
-- Swift: Swift Testing
 
 #### 統合テスト
 
 - APIエンドポイント（httptest）
 - Firestoreエミュレータを使用したデータベース操作
 
-#### E2Eテスト
-
-- XCUITestで重要なユーザーフロー
-
 ## TDDワークフローステップ
 
 ### ステップ1: テストを先に書く（RED）
 
-Go:
 ```go
 func TestFoodService_SearchFood(t *testing.T) {
     mockRepo := new(mockFoodRepository)
@@ -62,24 +64,10 @@ func TestFoodService_SearchFood(t *testing.T) {
 }
 ```
 
-Swift:
-```swift
-@Test func 食事記録が正常に保存されるべき() async throws {
-    let mockRepo = MockMealRepositoryProtocol()
-    mockRepo.saveMealHandler = { meal in }
-    let viewModel = MealInputViewModel(repository: mockRepo)
-
-    try await viewModel.saveMeal()
-
-    #expect(viewModel.isSaved == true)
-}
-```
-
 ### ステップ2: テスト実行（失敗を確認）
 
 ```bash
-task test      # Go
-task ios:test  # iOS
+task test
 ```
 
 ### ステップ3: テストを通す実装を書く（GREEN）
@@ -99,8 +87,7 @@ task test
 ### ステップ6: カバレッジを確認
 
 ```bash
-task test:coverage      # Go
-task ios:test:coverage  # iOS
+task test:coverage
 ```
 
 ## テストパターン
@@ -127,18 +114,6 @@ func TestCalculateCalories(t *testing.T) {
 }
 ```
 
-### Swift Testingテスト
-
-```swift
-@Suite struct MealInputViewModelTests {
-    @Test func 空の食品名でバリデーションエラーになるべき() {
-        let viewModel = MealInputViewModel()
-        viewModel.foodName = ""
-        #expect(viewModel.validate() == false)
-    }
-}
-```
-
 ## 外部サービスのモック
 
 ### Gemini APIモック（Go）
@@ -157,23 +132,10 @@ func (m *mockGeminiCaller) AnalyzeImage(ctx context.Context, data []byte, mimeTy
 }
 ```
 
-### Repositoryモック（Swift - Mockolo）
-
-```swift
-let mockRepo = MockMealRepositoryProtocol()
-mockRepo.fetchDailyMealsHandler = { date in
-    return [Meal(id: "1", name: "テスト食事")]
-}
-```
-
 ## テストカバレッジ確認
 
 ```bash
-# Go
 task test:coverage
-
-# iOS
-task ios:test:coverage
 ```
 
 ## ベストプラクティス

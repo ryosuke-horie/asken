@@ -7,6 +7,7 @@ excluded:
   - Pods
   - Carthage
   - UchikomiTests/Generated
+  - UchikomiTests/Disabled
 
 # テストファイルでは日本語関数名を許可
 included:
