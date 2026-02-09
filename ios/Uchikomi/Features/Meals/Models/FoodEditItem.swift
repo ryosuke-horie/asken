@@ -111,11 +111,4 @@ final class FoodEditItem: Identifiable {
         }
         quantity = "\(quantityValue)\(unit.rawValue)"
     }
-
-    /// 単位変更時のハンドリング（現在は何もしない）
-    /// 単位が変わった場合は保存時にバックエンドでLLM再計算が行われる
-    func handleUnitChange() {
-        // hasUnitChangedで検知してUI表示するのみ
-        // 実際の再計算はバックエンドのLLMで行われる
-    }
 }
