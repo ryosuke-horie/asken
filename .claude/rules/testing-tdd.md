@@ -65,7 +65,6 @@ iOSテストの詳細は`ios-testing.md`を参照。
 ### 概要
 
 - Swift Testing: ユニットテスト
-- XCUITest: UIテスト
 - Mockolo: モック生成
 - swift-snapshot-testing: スナップショットテスト
 
