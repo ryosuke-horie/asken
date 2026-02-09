@@ -176,7 +176,7 @@ func TestMealsHandler_GetDailyMeals(t *testing.T) {
 
 バックエンドAPIのE2Eテスト（`backend/e2e/`）が統合テストを担います。
 
-> **注意: iOSテストは一時無効化されています**
+> `注意: iOSテストは一時無効化されています`
 >
 > macOS/Xcode バージョン問題により、iOS テストを一時的に無効化しています。
 > 詳細は `.claude/rules/ios-testing-policy.md` を参照してください。
