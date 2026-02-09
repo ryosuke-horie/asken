@@ -27,12 +27,12 @@ final class FoodEditItem: Identifiable {
     }
 
     var hasUnitChanged: Bool {
-        guard let originalUnit = QuantityParser.parse(originalQuantity)?.unit else {
+        guard let originalUnit = QuantityParser.parseUnit(originalQuantity) else {
             // 元の値をパースできない場合、現在単位が選択されていれば変更とみなす
             return quantityUnit != nil
         }
         guard let current = quantityUnit else { return false }
-        return originalUnit != current.rawValue
+        return originalUnit != current
     }
 
     init(
@@ -70,7 +70,8 @@ final class FoodEditItem: Identifiable {
         )
 
         // quantityからquantityValueとquantityUnitをパースして設定
-        quantityValue = QuantityParser.parseValue(quantity) ?? ""
+        // パース失敗時は元の文字列をそのまま使用（UIで表示・編集可能）
+        quantityValue = QuantityParser.parseValue(quantity) ?? quantity
         quantityUnit = QuantityParser.parseUnit(quantity)
     }
 
