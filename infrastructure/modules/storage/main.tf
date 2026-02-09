@@ -38,12 +38,15 @@ resource "google_storage_bucket" "images" {
     }
   }
 
-  # CORS設定（iOSアプリからのアクセス用）
-  cors {
-    origin          = var.cors_origins
-    method          = ["GET", "PUT", "POST", "DELETE", "HEAD"]
-    response_header = ["Content-Type", "Content-Length", "Content-MD5"]
-    max_age_seconds = 3600
+  # CORS設定（バックエンドAPI経由のみのアクセスのため空リスト時は適用しない）
+  dynamic "cors" {
+    for_each = length(var.cors_origins) > 0 ? [1] : []
+    content {
+      origin          = var.cors_origins
+      method          = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+      response_header = ["Content-Type", "Content-Length", "Content-MD5"]
+      max_age_seconds = 3600
+    }
   }
 
   uniform_bucket_level_access = true
