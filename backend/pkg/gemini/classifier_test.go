@@ -117,6 +117,79 @@ func TestClassifyFoods_RelativePath(t *testing.T) {
 	assert.NotEmpty(t, foods)
 }
 
+func TestClassifier_ClassifyFoodsFromData_MockSuccess(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+			return &Response{
+				Response: `[{"name": "味噌ラーメン", "estimated_amount": "1杯"}]`,
+			}, nil
+		},
+	}
+
+	classifier := NewClassifierWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+	foods, err := classifier.ClassifyFoodsFromData(ctx, imageData, "image/jpeg")
+
+	require.NoError(t, err)
+	assert.Len(t, foods, 1)
+	assert.Equal(t, "味噌ラーメン", foods[0].Name)
+	assert.Equal(t, "1杯", foods[0].EstimatedAmount)
+}
+
+func TestClassifier_ClassifyFoodsFromData_MockAPIError(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	classifier := NewClassifierWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+	_, err := classifier.ClassifyFoodsFromData(ctx, imageData, "image/jpeg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Gemini API呼び出しエラー")
+}
+
+func TestClassifier_ClassifyFoodsFromData_MockInvalidJSON(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+			return &Response{Response: `{invalid json}`}, nil
+		},
+	}
+
+	classifier := NewClassifierWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+	_, err := classifier.ClassifyFoodsFromData(ctx, imageData, "image/jpeg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "パースエラー")
+}
+
+func TestClassifier_ClassifyFoodsFromData_MockCodeBlock(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+			return &Response{Response: "```json\n[{\"name\": \"カレーライス\", \"estimated_amount\": \"1皿\"}]\n```"}, nil
+		},
+	}
+
+	classifier := NewClassifierWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+	foods, err := classifier.ClassifyFoodsFromData(ctx, imageData, "image/jpeg")
+
+	require.NoError(t, err)
+	assert.Len(t, foods, 1)
+	assert.Equal(t, "カレーライス", foods[0].Name)
+}
+
 func TestDetectMimeType(t *testing.T) {
 	tests := []struct {
 		name        string

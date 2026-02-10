@@ -18,6 +18,12 @@ const (
 	maxResponseSize    = 10 << 20 // 10MB: JSONレスポンスの上限（通常100KB未満）
 )
 
+// GeminiHTTPClient はGemini APIのHTTPクライアントを表すインターフェース
+type GeminiHTTPClient interface {
+	Execute(ctx context.Context, prompt string) (*Response, error)
+	ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error)
+}
+
 // HTTPClient はGemini HTTP APIクライアント
 type HTTPClient struct {
 	apiKey     string

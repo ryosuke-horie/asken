@@ -27,6 +27,13 @@ func NewTextParserWithAPIKey(apiKey string, timeout time.Duration) *TextParser {
 	}
 }
 
+// NewTextParserWithClient はClientインターフェースを受け取るコンストラクタ（テスト用）
+func NewTextParserWithClient(client *Client) *TextParser {
+	return &TextParser{
+		client: client,
+	}
+}
+
 // ParseTextToFoods はテキストから食材リストを生成する
 func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([]FoodItem, error) {
 	if inputText == "" {
