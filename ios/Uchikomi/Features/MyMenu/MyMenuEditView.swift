@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 // MARK: - MyMenuEditView
@@ -5,6 +6,8 @@ import SwiftUI
 struct MyMenuEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: MyMenuEditViewModel
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var showingCamera = false
 
     init(menuItem: MyMenuItem? = nil) {
         _viewModel = State(initialValue: MyMenuEditViewModel(menuItem: menuItem))
@@ -36,43 +39,112 @@ struct MyMenuEditView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
 
-                            // 栄養素サマリー
-                            if viewModel.totalCalories > 0 {
+                            // 既存の栄養素がある場合は表示
+                            if viewModel.totalCalories > 0 && viewModel.analysisResult == nil {
                                 NutritionSummaryCard(
                                     calories: viewModel.totalCalories,
                                     protein: viewModel.totalProtein,
                                     fat: viewModel.totalFat,
                                     carbohydrates: viewModel.totalCarbohydrates
                                 )
-                            }
 
-                            // 食品リスト
-                            ForEach(viewModel.foodItems) { food in
-                                FoodItemEditRow(item: food) {
-                                    if let index = viewModel.foodItems.firstIndex(where: { $0.id == food.id }) {
-                                        viewModel.removeFoodItem(at: index)
+                                Divider()
+
+                                Text("現在の登録内容")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+
+                                // 現在の食品リスト（読み取り専用）
+                                ForEach(viewModel.foodItems) { food in
+                                    HStack {
+                                        Text(food.name)
+                                            .font(.subheadline)
+                                        Text("(\(food.quantity))")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text("\(Int(food.calories)) kcal")
+                                            .font(.caption)
+                                            .foregroundStyle(Theme.primary)
                                     }
-                                }
-                            }
-
-                            Button {
-                                viewModel.addFoodItem()
-                            } label: {
-                                Label("食品を追加", systemImage: "plus.circle")
-                                    .frame(maxWidth: .infinity)
                                     .padding()
                                     .background(Color(.secondarySystemBackground))
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
                             }
 
+                            // 分析入力セクション（新規作成時のみ）
+                            if !viewModel.isEditMode {
+                                Divider()
+
+                                Text("食事内容を入力")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal)
+
+                                // Manual Food Input Section
+                                ManualFoodInputSection(
+                                    foods: viewModel.manualFoods,
+                                    onAdd: { viewModel.addManualFood() },
+                                    onRemove: { viewModel.removeManualFood($0) }
+                                )
+
+                                // Image Selection Section
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("または画像から入力")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+
+                                    ImageSelectionSection(
+                                        selectedImage: viewModel.selectedImage,
+                                        selectedItem: $selectedItem,
+                                        showingCamera: $showingCamera
+                                    )
+                                }
+                            }
+
+                            // Analyze Button
+                            if !viewModel.isEditMode {
+                                Button {
+                                    Task {
+                                        await viewModel.analyze()
+                                    }
+                                } label: {
+                                    if viewModel.isAnalyzing {
+                                        HStack {
+                                            ProgressView()
+                                                .progressViewStyle(.circular)
+                                                .tint(.white)
+                                            Text("分析中...")
+                                        }
+                                    } else {
+                                        Label("分析する", systemImage: "sparkles")
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(viewModel.canAnalyze ? Theme.primary : Color.gray)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .disabled(!viewModel.canAnalyze || viewModel.isAnalyzing)
+                                .padding(.horizontal)
+                            }
+
+                            // Analysis Result
+                            if let result = viewModel.analysisResult {
+                                AnalysisResultSection(response: result)
+                            }
+
+                            // Error Message
                             if let error = viewModel.errorMessage {
                                 Text(error)
                                     .font(.caption)
                                     .foregroundStyle(.red)
                                     .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
                             }
                         }
-                        .padding()
+                        .padding(.vertical)
                     }
                     .scrollDismissesKeyboard(.immediately)
                     .safeAreaInset(edge: .bottom) {
@@ -127,7 +199,148 @@ struct MyMenuEditView: View {
                     dismiss()
                 }
             }
+            .onChange(of: selectedItem) { _, newValue in
+                Task {
+                    guard let newValue else { return }
+                    do {
+                        guard let data = try await newValue.loadTransferable(type: Data.self) else {
+                            viewModel.errorMessage = "画像を読み込めませんでした"
+                            return
+                        }
+                        guard let image = UIImage(data: data) else {
+                            viewModel.errorMessage = "サポートされていない画像形式です"
+                            return
+                        }
+                        viewModel.selectedImage = image
+                    } catch {
+                        #if DEBUG
+                        debugPrint("[MyMenuEditView] Image load error: \(error)")
+                        #endif
+                        viewModel.errorMessage = "画像の読み込みに失敗しました"
+                    }
+                }
+            }
+            .fullScreenCover(isPresented: $showingCamera) {
+                CameraView { image in
+                    viewModel.selectedImage = image
+                }
+            }
         }
+    }
+}
+
+// MARK: - ManualFoodInputSection
+
+private struct ManualFoodInputSection: View {
+    let foods: [FoodEditItem]
+    let onAdd: () -> Void
+    let onRemove: (FoodEditItem) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(foods) { food in
+                FoodItemEditRow(item: food) {
+                    onRemove(food)
+                }
+            }
+
+            Button(action: onAdd) {
+                Label("メニューを追加", systemImage: "plus.circle")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .foregroundStyle(Theme.primary)
+        }
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - ImageSelectionSection
+
+private struct ImageSelectionSection: View {
+    let selectedImage: UIImage?
+    @Binding var selectedItem: PhotosPickerItem?
+    @Binding var showingCamera: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let image = selectedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 200)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            HStack(spacing: 12) {
+                PhotosPicker(selection: $selectedItem, matching: .images) {
+                    Label("写真を選択", systemImage: "photo.on.rectangle")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
+                Button {
+                    showingCamera = true
+                } label: {
+                    Label("カメラ", systemImage: "camera")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - AnalysisResultSection
+
+private struct AnalysisResultSection: View {
+    let response: AnalysisResultResponse
+
+    private var result: AnalysisResult {
+        response.result
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("分析結果")
+                .font(.headline)
+
+            NutritionSummaryCard(
+                calories: result.totalCalories,
+                protein: result.totalProtein,
+                fat: result.totalFat,
+                carbohydrates: result.totalCarbohydrates
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("検出されたメニュー")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                ForEach(result.foods) { food in
+                    HStack {
+                        Text(food.name)
+                        Text("(\(food.estimatedAmount))")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("\(Int(food.caloriesKcal)) kcal")
+                            .foregroundStyle(Theme.primary)
+                    }
+                    .font(.subheadline)
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .padding(.horizontal)
     }
 }
 

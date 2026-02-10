@@ -1,7 +1,18 @@
+import UIKit
 import Foundation
 
 @Observable
 final class MyMenuEditViewModel {
+    // MARK: - Constants
+
+    private enum Constants {
+        static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
+        static let maxPollingAttempts = 60
+        static let pollingTimeoutSeconds = 120
+    }
+
+    // MARK: - Properties
+
     var menuName: String = ""
     var foodItems: [FoodEditItem] = []
     var isLoading = false
@@ -9,11 +20,23 @@ final class MyMenuEditViewModel {
     var errorMessage: String?
     var shouldDismiss = false
 
+    // Analysis properties
+    var selectedImage: UIImage?
+    var manualFoods: [FoodEditItem] = [FoodEditItem()]
+    var isAnalyzing = false
+    var analysisResult: AnalysisResultResponse?
+
     private let repository: MyMenuRepositoryProtocol
+    private let mealRepository: MealRepositoryProtocol
     private let existingMenuItem: MyMenuItem?
 
-    init(repository: MyMenuRepositoryProtocol = MyMenuRepository(), menuItem: MyMenuItem? = nil) {
+    init(
+        repository: MyMenuRepositoryProtocol = MyMenuRepository(),
+        mealRepository: MealRepositoryProtocol = MealRepository(),
+        menuItem: MyMenuItem? = nil
+    ) {
         self.repository = repository
+        self.mealRepository = mealRepository
         self.existingMenuItem = menuItem
 
         if let item = menuItem {
@@ -103,5 +126,184 @@ final class MyMenuEditViewModel {
         }
 
         isSaving = false
+    }
+
+    // MARK: - Manual Food Input
+
+    func addManualFood() {
+        manualFoods.append(FoodEditItem())
+    }
+
+    func removeManualFood(_ item: FoodEditItem) {
+        manualFoods.removeAll { $0.id == item.id }
+        if manualFoods.isEmpty {
+            manualFoods.append(FoodEditItem())
+        }
+    }
+
+    var hasValidManualInput: Bool {
+        manualFoods.contains { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private func buildInputText(from foods: [FoodEditItem]) -> String {
+        foods
+            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .map { food in
+                let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let quantity = food.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
+                return quantity.isEmpty ? name : "\(name) \(quantity)"
+            }
+            .joined(separator: ", ")
+    }
+
+    var canAnalyze: Bool {
+        selectedImage != nil || hasValidManualInput
+    }
+
+    // MARK: - Analysis
+
+    func analyze() async {
+        if selectedImage != nil {
+            await analyzeImage()
+        } else if hasValidManualInput {
+            await analyzeText()
+        } else {
+            errorMessage = "食事内容を入力するか、画像を選択してください"
+        }
+    }
+
+    func analyzeImage() async {
+        guard let image = selectedImage,
+              let imageData = image.jpegData(compressionQuality: 0.8) else {
+            errorMessage = "画像を選択してください"
+            return
+        }
+
+        isAnalyzing = true
+        errorMessage = nil
+        defer { isAnalyzing = false }
+
+        do {
+            // マイメニュー用のダミー値
+            let id = try await mealRepository.uploadImage(
+                data: imageData,
+                filename: "mymenu.jpg",
+                mealType: .lunch,  // ダミー値
+                mealDate: Date()    // ダミー値
+            )
+
+            guard !Task.isCancelled else { return }
+
+            try await pollForCompletion(id: id)
+
+            guard !Task.isCancelled else { return }
+
+            analysisResult = try await mealRepository.getAnalysisResult(id: id)
+
+            // 分析結果をfoodItemsに反映
+            applyAnalysisResult()
+        } catch is CancellationError {
+            return
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+        } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] Unexpected error: \(error)")
+            #endif
+            errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
+        }
+    }
+
+    func analyzeText() async {
+        let inputText = buildInputText(from: manualFoods)
+        let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedText.isEmpty else {
+            errorMessage = "食事内容を入力してください"
+            return
+        }
+
+        guard trimmedText.count <= 1_000 else {
+            errorMessage = "入力は1000文字以内にしてください"
+            return
+        }
+
+        isAnalyzing = true
+        errorMessage = nil
+        defer { isAnalyzing = false }
+
+        do {
+            // マイメニュー用のダミー値
+            let id = try await mealRepository.analyzeText(
+                inputText: trimmedText,
+                mealType: .lunch,  // ダミー値
+                mealDate: Date()    // ダミー値
+            )
+
+            guard !Task.isCancelled else { return }
+
+            try await pollForCompletion(id: id)
+
+            guard !Task.isCancelled else { return }
+
+            analysisResult = try await mealRepository.getAnalysisResult(id: id)
+
+            // 分析結果をfoodItemsに反映
+            applyAnalysisResult()
+        } catch is CancellationError {
+            return
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
+        } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] Unexpected error: \(error)")
+            #endif
+            errorMessage = "テキスト分析に失敗しました: \(error.localizedDescription)"
+        }
+    }
+
+    private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
+        for _ in 0 ..< maxAttempts {
+            let status = try await mealRepository.checkAnalysisStatus(id: id)
+
+            switch status.status {
+            case "completed":
+                return
+            case "failed":
+                let errorMsg = status.error ?? "分析に失敗しました"
+                throw APIError.serverError(errorMsg)
+            case "pending", "processing":
+                try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
+            default:
+                #if DEBUG
+                debugPrint("[MyMenuEditViewModel] Unknown analysis status: \(status.status)")
+                #endif
+                throw APIError.serverError("分析ステータスが不明です: \(status.status)")
+            }
+        }
+
+        throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
+    }
+
+    private func applyAnalysisResult() {
+        guard let result = analysisResult else { return }
+
+        foodItems = result.result.foods.map { nutritionInfo in
+            FoodEditItem(
+                name: nutritionInfo.name,
+                quantity: nutritionInfo.estimatedAmount,
+                calories: nutritionInfo.caloriesKcal,
+                protein: nutritionInfo.proteinG,
+                fat: nutritionInfo.fatG,
+                carbohydrates: nutritionInfo.carbohydratesG
+            )
+        }
+    }
+
+    func resetAnalysis() {
+        selectedImage = nil
+        manualFoods = [FoodEditItem()]
+        analysisResult = nil
+        errorMessage = nil
     }
 }
