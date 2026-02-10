@@ -20,7 +20,7 @@ type NutritionInfo struct {
 
 // NutritionCalculator は栄養素計算を行うクライアント
 type NutritionCalculator struct {
-	httpClient *HTTPClient
+	httpClient GeminiHTTPClient
 }
 
 // NewNutritionCalculator は新しいNutritionCalculatorを作成
@@ -36,6 +36,13 @@ func NewNutritionCalculator(timeout time.Duration) *NutritionCalculator {
 func NewNutritionCalculatorWithAPIKey(apiKey string, timeout time.Duration) *NutritionCalculator {
 	return &NutritionCalculator{
 		httpClient: NewHTTPClient(apiKey, timeout),
+	}
+}
+
+// NewNutritionCalculatorWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
+func NewNutritionCalculatorWithHTTPClient(httpClient GeminiHTTPClient) *NutritionCalculator {
+	return &NutritionCalculator{
+		httpClient: httpClient,
 	}
 }
 

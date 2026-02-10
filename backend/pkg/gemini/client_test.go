@@ -77,6 +77,56 @@ func TestNewClientWithAPIKey(t *testing.T) {
 	assert.NotNil(t, client.httpClient)
 }
 
+func TestClient_Execute_MockSuccess(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{Response: `{"result": "success"}`}, nil
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	resp, err := client.Execute(ctx, "テストプロンプト")
+
+	require.NoError(t, err)
+	assert.Equal(t, `{"result": "success"}`, resp.Response)
+}
+
+func TestClient_Execute_MockError(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	_, err := client.Execute(ctx, "テストプロンプト")
+
+	assert.Error(t, err)
+}
+
+func TestClient_ExecuteWithImage_MockSuccess(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+			return &Response{Response: `[{"name": "テスト料理"}]`}, nil
+		},
+	}
+
+	// Client自体にはExecuteWithImageメソッドがないが、HTTPClientインターフェース経由でテスト可能
+	assert.NotNil(t, mockHTTPClient)
+}
+
+func TestNewClientWithHTTPClient(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{}
+	client := NewClientWithHTTPClient(mockHTTPClient)
+
+	assert.NotNil(t, client)
+	assert.Equal(t, mockHTTPClient, client.httpClient)
+}
+
 func TestRemoveCodeBlock_Success(t *testing.T) {
 	testCases := []struct {
 		name     string

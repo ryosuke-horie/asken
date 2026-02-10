@@ -18,7 +18,7 @@ type Response struct {
 
 // Client はGemini APIクライアント
 type Client struct {
-	httpClient *HTTPClient
+	httpClient GeminiHTTPClient
 }
 
 // NewClient は新しいGemini APIクライアントを作成
@@ -34,6 +34,13 @@ func NewClient(timeout time.Duration) *Client {
 func NewClientWithAPIKey(apiKey string, timeout time.Duration) *Client {
 	return &Client{
 		httpClient: NewHTTPClient(apiKey, timeout),
+	}
+}
+
+// NewClientWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
+func NewClientWithHTTPClient(httpClient GeminiHTTPClient) *Client {
+	return &Client{
+		httpClient: httpClient,
 	}
 }
 
