@@ -20,14 +20,18 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     case go = "合"
     case ball = "玉"
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
-    var displayName: String { rawValue }
+    var displayName: String {
+        rawValue
+    }
 
     var inputType: QuantityInputType {
         switch self {
-        case .gram: return .decimal
-        default: return .integer
+        case .gram: .decimal
+        default: .integer
         }
     }
 }

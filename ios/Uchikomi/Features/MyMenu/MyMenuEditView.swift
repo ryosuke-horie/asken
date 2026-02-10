@@ -40,7 +40,7 @@ struct MyMenuEditView: View {
                                 .padding(.horizontal)
 
                             // 既存の栄養素がある場合は表示
-                            if viewModel.totalCalories > 0 && viewModel.analysisResult == nil {
+                            if viewModel.totalCalories > 0, viewModel.analysisResult == nil {
                                 NutritionSummaryCard(
                                     calories: viewModel.totalCalories,
                                     protein: viewModel.totalProtein,
@@ -374,7 +374,7 @@ private struct AnalysisResultSection: View {
                 proteinG: 6,
                 fatG: 3,
                 carbohydratesG: 10
-            )
+            ),
         ],
         totalCalories: 450,
         totalProtein: 16,

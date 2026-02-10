@@ -72,7 +72,13 @@ struct MyMenuSelectionCard: View {
     @State private var isRecording = false
     @State private var errorMessage: String?
 
-    init(item: MyMenuItem, mealType: MealType, mealDate: Date, onRecorded: @escaping () -> Void, repository: MyMenuRepositoryProtocol = MyMenuRepository()) {
+    init(
+        item: MyMenuItem,
+        mealType: MealType,
+        mealDate: Date,
+        onRecorded: @escaping () -> Void,
+        repository: MyMenuRepositoryProtocol = MyMenuRepository()
+    ) {
         self.item = item
         self.mealType = mealType
         self.mealDate = mealDate
@@ -87,7 +93,7 @@ struct MyMenuSelectionCard: View {
                     Text(item.name)
                         .font(.headline)
 
-                    Text(item.foods.map { $0.name }.joined(separator: ", "))
+                    Text(item.foods.map(\.name).joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
