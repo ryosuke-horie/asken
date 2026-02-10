@@ -31,7 +31,8 @@ final class FoodEditItem: Identifiable {
             // 元の値をパースできない場合、現在単位が選択されていれば変更とみなす
             return quantityUnit != nil
         }
-        guard let current = quantityUnit else { return false }
+        // 単位をクリアした場合も変更とみなす
+        guard let current = quantityUnit else { return true }
         return originalUnit != current
     }
 
@@ -106,10 +107,17 @@ final class FoodEditItem: Identifiable {
 
     /// quantityValueとquantityUnitからquantity文字列を生成
     func updateQuantityString() {
-        guard let unit = quantityUnit, !quantityValue.isEmpty else {
+        // 数値が空の場合は空文字にする
+        guard !quantityValue.isEmpty else {
             quantity = ""
             return
         }
-        quantity = "\(quantityValue)\(unit.rawValue)"
+
+        // 単位がある場合は数値+単位、ない場合は数値のみ
+        if let unit = quantityUnit {
+            quantity = "\(quantityValue)\(unit.rawValue)"
+        } else {
+            quantity = quantityValue
+        }
     }
 }

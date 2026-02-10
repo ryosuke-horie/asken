@@ -89,7 +89,9 @@ final class NutritionEditorViewModel {
 
         do {
             let updateFoods = foods.map { $0.toUpdateFoodItem() }
-            _ = try await repository.updateHistory(historyId: historyId, foods: updateFoods)
+            let detail = try await repository.updateHistory(historyId: historyId, foods: updateFoods)
+            // サーバー側で再計算された栄養素値を反映
+            foods = detail.foods.map { FoodEditItem(from: $0) }
             isSaved = true
             recalculatingMessage = nil
         } catch let error as APIError {
