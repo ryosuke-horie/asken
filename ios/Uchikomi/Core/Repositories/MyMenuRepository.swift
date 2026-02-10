@@ -74,7 +74,7 @@ final class MyMenuRepository: MyMenuRepositoryProtocol {
     }
 
     func deleteMyMenu(id: String) async throws {
-        try await apiClient.request(endpoint: .deleteMyMenu(id: id))
+        try await apiClient.requestWithoutResponse(endpoint: .deleteMyMenu(id: id))
     }
 
     func recordFromMyMenu(id: String, mealType: MealType, mealDate: Date) async throws -> String {
