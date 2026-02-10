@@ -1,5 +1,5 @@
-import UIKit
 import Foundation
+import UIKit
 
 @Observable
 final class MyMenuEditViewModel {
