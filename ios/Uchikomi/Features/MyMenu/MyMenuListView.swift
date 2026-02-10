@@ -8,54 +8,56 @@ struct MyMenuListView: View {
     @State private var showingCreateSheet = false
 
     var body: some View {
-        List {
-            if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, alignment: .center)
-            } else if let error = viewModel.errorMessage {
-                ErrorView(message: error) {
-                    Task {
-                        await viewModel.loadMyMenuList()
+        NavigationStack {
+            List {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else if let error = viewModel.errorMessage {
+                    ErrorView(message: error) {
+                        Task {
+                            await viewModel.loadMyMenuList()
+                        }
                     }
+                } else if viewModel.myMenuItems.isEmpty {
+                    ContentUnavailableView {
+                        Label("マイメニューがありません", systemImage: "star")
+                    } description: {
+                        Text("よく食べる食事を登録すると、ワンタップで記録できます")
+                    } actions: {
+                        Button("マイメニューを追加") {
+                            showingCreateSheet = true
+                        }
+                    }
+                } else {
+                    ForEach(viewModel.myMenuItems) { item in
+                        NavigationLink {
+                            MyMenuEditView(menuItem: item)
+                        } label: {
+                            MyMenuRow(item: item)
+                        }
+                    }
+                    .onDelete(perform: deleteMenus)
                 }
-            } else if viewModel.myMenuItems.isEmpty {
-                ContentUnavailableView {
-                    Label("マイメニューがありません", systemImage: "star")
-                } description: {
-                    Text("よく食べる食事を登録すると、ワンタップで記録できます")
-                } actions: {
-                    Button("マイメニューを追加") {
+            }
+            .listStyle(.plain)
+            .navigationTitle("マイメニュー")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
                         showingCreateSheet = true
-                    }
-                }
-            } else {
-                ForEach(viewModel.myMenuItems) { item in
-                    NavigationLink {
-                        MyMenuEditView(menuItem: item)
                     } label: {
-                        MyMenuRow(item: item)
+                        Image(systemName: "plus")
                     }
                 }
-                .onDelete(perform: deleteMenus)
             }
-        }
-        .listStyle(.plain)
-        .navigationTitle("マイメニュー")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingCreateSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
+            .sheet(isPresented: $showingCreateSheet) {
+                MyMenuEditView()
             }
-        }
-        .sheet(isPresented: $showingCreateSheet) {
-            MyMenuEditView()
-        }
-        .task {
-            await viewModel.loadMyMenuList()
+            .task {
+                await viewModel.loadMyMenuList()
+            }
         }
     }
 
