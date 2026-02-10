@@ -65,6 +65,7 @@ struct MyMenuSelectionCard: View {
     let onRecorded: () -> Void
 
     @State private var isRecording = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -108,6 +109,16 @@ struct MyMenuSelectionCard: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .alert("エラー", isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button("OK") {
+                errorMessage = nil
+            }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private func recordFromMyMenu() async {
@@ -122,7 +133,7 @@ struct MyMenuSelectionCard: View {
             )
             onRecorded()
         } catch {
-            // TODO: エラー処理
+            errorMessage = "記録に失敗しました"
         }
 
         isRecording = false

@@ -117,8 +117,8 @@ struct MyMenuEditView: View {
                     }
                 }
             }
-            .onChange(of: viewModel.isDeleted) { _, isDeleted in
-                if isDeleted {
+            .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+                if shouldDismiss {
                     dismiss()
                 }
             }
