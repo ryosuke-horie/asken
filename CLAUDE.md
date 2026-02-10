@@ -86,6 +86,73 @@
 
 ---
 
+## Terraform認証
+
+### ローカル開発でのTerraform実行
+
+ローカルでTerraformを実行する場合、Google Application Default Credentials (ADC) が必要です:
+
+```bash
+# Google Cloud SDKで認証（ADCを設定）
+gcloud auth application-default login
+
+# Terraformの初期化と実行
+cd infrastructure/environments/dev
+terraform init
+terraform plan
+terraform apply
+```
+
+検証済み: 上記の方法でローカル環境からTerraformがGoogle Cloudに正常に認証されることを確認しています。
+
+### Backend設定
+
+- TerraformのstateはGCS (Google Cloud Storage) に保存
+- バケット: `utikomi-dev-tfstate`
+- パス: `terraform/state/dev`
+- 認証: Google Application Default Credentialsを使用
+
+### Workload Identity Federation (WIF)
+
+GitHub ActionsからGoogle Cloudへキーレス認証で接続する仕組み:
+
+| 設定項目 | 値 |
+|:---|:---|
+| OIDC Issuer | `https://token.actions.githubusercontent.com` |
+| プール | GitHub Actions用 |
+| プロバイダー | GitHub |
+| 制限 | 特定リポジトリのみ (`attribute_condition` で制限) |
+
+### GitHub Actionsでの認証フロー
+
+1. GitHub ActionsがOIDCトークンを取得 (`id-token: write` パーミッションが必要)
+2. `google-github-actions/auth` アクションでWIFプロバイダーとサービスアカウントを指定
+3. Google Cloud一時クレデンシャルを取得してgcloud/Docker操作を実行
+
+```yaml
+permissions:
+  id-token: write  # WIFで必須
+
+- name: Authenticate to Google Cloud
+  uses: google-github-actions/auth@v3
+  with:
+    workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+    service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT_EMAIL }}
+```
+
+### 環境変数（GitHub Actions Variables）
+
+以下の変数をGitHub Repository Settingsに設定済み:
+
+- `GCP_REGION`
+- `ARTIFACT_REGISTRY_URL`
+- `CLOUD_RUN_SERVICE_NAME`
+- `WORKLOAD_IDENTITY_PROVIDER`
+- `DEPLOY_SERVICE_ACCOUNT_EMAIL`
+- `SERVICE_ACCOUNT_EMAIL` (ランタイム用)
+
+---
+
 ## 関連ドキュメント
 
 | ドキュメント | 内容 |
