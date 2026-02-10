@@ -71,12 +71,6 @@ func TestClassifyFoods_UnsupportedImageFormat(t *testing.T) {
 	assert.Contains(t, err.Error(), "サポートされていない画像形式")
 }
 
-func TestClassifyFoods_EmptyResponse(t *testing.T) {
-	// このテストは実際のGemini APIの挙動に依存するためスキップ
-	// 実際には、Gemini APIが空のレスポンスを返すことは稀
-	t.Skip("Gemini APIの挙動に依存するためスキップ")
-}
-
 func TestClassifyFoods_Timeout(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
