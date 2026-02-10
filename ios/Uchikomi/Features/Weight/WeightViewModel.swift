@@ -64,6 +64,9 @@ final class WeightViewModel {
     }
 
     func loadChartData() async {
+        // 初期ロード中は期間変更を無視
+        guard !isInitialLoading else { return }
+
         isLoading = true
         errorMessage = nil
 
@@ -116,9 +119,20 @@ final class WeightViewModel {
     private func filterTodayRecords(from records: [WeightRecord]) -> [WeightRecord] {
         let calendar = Calendar.current
         let today = Date()
-        return records.filter { record in
-            guard let date = WeightRecord.parseISO8601(record.recordedAt) else { return false }
+        var parseFailureCount = 0
+
+        let filtered = records.filter { record in
+            guard let date = WeightRecord.parseISO8601(record.recordedAt) else {
+                parseFailureCount += 1
+                return false
+            }
             return calendar.isDate(date, inSameDayAs: today)
         }
+
+        if parseFailureCount > 0 {
+            logger.warning("体重記録の日付パースに失敗: \(parseFailureCount)件")
+        }
+
+        return filtered
     }
 }

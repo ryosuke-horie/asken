@@ -40,14 +40,7 @@ struct WeightChartView: View {
             .pickerStyle(.segmented)
             .disabled(isLoading || isInitialLoading)
 
-            if isInitialLoading {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
-                    .frame(height: 200)
-                    .overlay {
-                        ProgressView()
-                    }
-            } else if isLoading {
+            if isInitialLoading || isLoading {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
                     .frame(height: 200)
