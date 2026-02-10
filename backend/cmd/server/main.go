@@ -60,6 +60,7 @@ type handlers struct {
 	skipMeal      *handler.SkipMealHandler
 	weightRecord  *handler.WeightRecordHandler
 	weightGoal    *handler.WeightGoalHandler
+	myMenu        *handler.MyMenuHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -74,6 +75,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupHistoryRoutes(mux, h, authMiddleware, rl)
 	setupMealsRoutes(mux, h, authMiddleware, rl)
 	setupWeightRoutes(mux, h, authMiddleware, rl)
+	setupMyMenuRoutes(mux, h, authMiddleware, rl)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -173,6 +175,41 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/weight/goal", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(weightGoalRouteHandler))))
 }
 
+func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	myMenuListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.myMenu.HandleList(w, r)
+		case http.MethodPost:
+			h.myMenu.HandleCreate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/my-menu", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuListRouteHandler))))
+
+	myMenuDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		// /api/my-menu/:id/record エンドポイントの処理
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/record") {
+			h.myMenu.HandleRecord(w, r)
+			return
+		}
+
+		// 通常の詳細エンドポイント
+		switch r.Method {
+		case http.MethodGet:
+			h.myMenu.HandleGet(w, r)
+		case http.MethodPut:
+			h.myMenu.HandleUpdate(w, r)
+		case http.MethodDelete:
+			h.myMenu.HandleDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/my-menu/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuDetailRouteHandler))))
+}
+
 func run() error {
 	ctx := context.Background()
 
@@ -212,6 +249,11 @@ func run() error {
 	weightRecordRepo, weightGoalRepo, err := repository.NewWeightRepositories(firestoreClient)
 	if err != nil {
 		log.Fatalf("Failed to initialize WeightRepositories: %v", err)
+	}
+
+	myMenuRepo, err := repository.NewMyMenuRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
 	}
 
 	// Gemini API Keyの確認
@@ -260,6 +302,7 @@ func run() error {
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 		weightRecord:  handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
 		weightGoal:    handler.NewWeightGoalHandler(weightGoalRepo),
+		myMenu:        handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
 	}
 
 	// ワーカーの初期化
