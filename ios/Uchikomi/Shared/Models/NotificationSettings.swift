@@ -22,11 +22,33 @@ struct MealNotificationSetting: Codable, Equatable {
     }
 }
 
+// MARK: - WeightNotificationSetting
+
+struct WeightNotificationSetting: Codable, Equatable {
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
+
+    var timeComponents: DateComponents {
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        return components
+    }
+
+    static let `default` = WeightNotificationSetting(
+        isEnabled: true,
+        hour: 7,
+        minute: 0
+    )
+}
+
 // MARK: - NotificationSettings
 
 struct NotificationSettings: Codable, Equatable {
     var isGlobalEnabled: Bool
     var meals: [MealNotificationSetting]
+    var weight: WeightNotificationSetting
 
     static let `default` = NotificationSettings(
         isGlobalEnabled: false,
@@ -37,7 +59,8 @@ struct NotificationSettings: Codable, Equatable {
                 hour: defaultHour(for: mealType),
                 minute: 0
             )
-        }
+        },
+        weight: .default
     )
 
     func setting(for mealType: MealType) -> MealNotificationSetting? {
@@ -52,6 +75,14 @@ struct NotificationSettings: Codable, Equatable {
         updated.meals = meals.map { setting in
             setting.mealType == mealType ? transform(setting) : setting
         }
+        return updated
+    }
+
+    func updatingWeightSetting(
+        transform: (WeightNotificationSetting) -> WeightNotificationSetting
+    ) -> NotificationSettings {
+        var updated = self
+        updated.weight = transform(weight)
         return updated
     }
 

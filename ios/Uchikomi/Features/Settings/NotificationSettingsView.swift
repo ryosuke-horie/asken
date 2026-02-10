@@ -9,6 +9,7 @@ struct NotificationSettingsView: View {
         List {
             globalToggleSection
             if viewModel.settings.isGlobalEnabled {
+                weightNotificationSection
                 mealNotificationsSection
             }
         }
@@ -39,7 +40,7 @@ struct NotificationSettingsView: View {
                 }
             ))
         } footer: {
-            Text("食事の時間帯に記録のリマインドを通知します")
+            Text("食事と体重の時間帯に記録のリマインドを通知します")
         }
     }
 
@@ -59,6 +60,20 @@ struct NotificationSettingsView: View {
                     }
                 )
             }
+        }
+    }
+
+    private var weightNotificationSection: some View {
+        Section("体重リマインダー") {
+            WeightNotificationRow(
+                setting: viewModel.settings.weight,
+                onToggle: {
+                    Task { await viewModel.toggleWeightEnabled() }
+                },
+                onTimeChange: { hour, minute in
+                    Task { await viewModel.updateWeightTime(hour: hour, minute: minute) }
+                }
+            )
         }
     }
 }
@@ -99,6 +114,61 @@ private struct MealNotificationRow: View {
             )) {
                 HStack {
                     Text(setting.mealType.displayName)
+                    Spacer()
+                    if setting.isEnabled {
+                        DatePicker(
+                            "",
+                            selection: $selectedTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                        .labelsHidden()
+                        .onChange(of: selectedTime) { _, newValue in
+                            let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
+                            onTimeChange(components.hour ?? 0, components.minute ?? 0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - WeightNotificationRow
+
+private struct WeightNotificationRow: View {
+    let setting: WeightNotificationSetting
+    let onToggle: () -> Void
+    let onTimeChange: (Int, Int) -> Void
+
+    @State private var selectedTime: Date
+
+    init(
+        setting: WeightNotificationSetting,
+        onToggle: @escaping () -> Void,
+        onTimeChange: @escaping (Int, Int) -> Void
+    ) {
+        self.setting = setting
+        self.onToggle = onToggle
+        self.onTimeChange = onTimeChange
+
+        var components = DateComponents()
+        components.hour = setting.hour
+        components.minute = setting.minute
+        _selectedTime = State(initialValue: Calendar.current.date(from: components) ?? Date())
+    }
+
+    var body: some View {
+        HStack {
+            Image(systemName: "scalemass")
+                .foregroundStyle(setting.isEnabled ? Theme.primary : .secondary)
+                .frame(width: 24)
+
+            Toggle(isOn: Binding(
+                get: { setting.isEnabled },
+                set: { _ in onToggle() }
+            )) {
+                HStack {
+                    Text("体重")
                     Spacer()
                     if setting.isEnabled {
                         DatePicker(
