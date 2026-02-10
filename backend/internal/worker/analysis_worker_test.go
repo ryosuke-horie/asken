@@ -442,3 +442,109 @@ func TestProcessRequest_TextInput_AnalysisError(t *testing.T) {
 	assert.Equal(t, 2, updateStatusCalled)
 	assert.False(t, saveResultCalled)
 }
+
+func TestProcessRequest_UnknownInputType(t *testing.T) {
+	requestID := uuid.New()
+
+	// 不明な InputType を持つリクエスト
+	mockService := &MockFoodService{}
+
+	updateStatusCalled := 0
+	saveResultCalled := false
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			if updateStatusCalled == 1 {
+				assert.Equal(t, repository.StatusProcessing, status)
+			} else if updateStatusCalled == 2 {
+				assert.Equal(t, requestID, id)
+				assert.Equal(t, repository.StatusFailed, status)
+				assert.Contains(t, errorMessage, "不明な入力タイプ")
+			}
+			return nil
+		},
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+			saveResultCalled = true
+			return nil
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputType("unknown"), // 不明なタイプ
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), &request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 2, updateStatusCalled)
+	assert.False(t, saveResultCalled)
+}
+
+func TestProcessRequest_SaveResultError(t *testing.T) {
+	requestID := uuid.New()
+	imagePath := "/uploads/test.jpg"
+
+	// AnalyzeFoodImageは成功するが、SaveResultが失敗するケース
+	analysisError := errors.New("データベース保存エラー")
+	mockService := &MockFoodService{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+			return &service.AnalysisResult{
+				Foods: []gemini.NutritionInfo{
+					{
+						Name:            "白米",
+						EstimatedAmount: "150g",
+						Calories:        252,
+					},
+				},
+				TotalCalories: 252,
+			}, nil
+		},
+	}
+
+	updateStatusCalled := 0
+	saveResultCalled := false
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			if updateStatusCalled == 1 {
+				assert.Equal(t, repository.StatusProcessing, status)
+			} else if updateStatusCalled == 2 {
+				assert.Equal(t, requestID, id)
+				assert.Equal(t, repository.StatusFailed, status)
+				assert.Contains(t, errorMessage, "結果保存エラー")
+			}
+			return nil
+		},
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+			saveResultCalled = true
+			return analysisError // SaveResult を失敗させる
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
+		ImagePath: imagePath,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), &request)
+
+	// SaveResult 失敗時はエラーを返す
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to save result")
+	assert.Equal(t, 2, updateStatusCalled)
+	assert.True(t, saveResultCalled)
+}
