@@ -33,9 +33,104 @@ type StorageRepository interface {
 	Delete(ctx context.Context, objectName string) error
 }
 
+// ============================================================================
+// Cloud Storage 用インターフェース（テスト可能にするための抽象化）
+// ============================================================================
+
+// storageBucket は Cloud Storage バケットのインターフェース
+type storageBucket interface {
+	Object(name string) storageObject
+	SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error)
+}
+
+// storageObject は Cloud Storage オブジェクトのインターフェース
+type storageObject interface {
+	NewWriter(ctx context.Context) storageObjectWriter
+	NewReader(ctx context.Context) (io.ReadCloser, error)
+	Attrs(ctx context.Context) (*storage.ObjectAttrs, error)
+	Delete(ctx context.Context) error
+}
+
+// storageObjectWriter は Cloud Storage ライターのインターフェース
+type storageObjectWriter interface {
+	io.WriteCloser
+	SetContentType(contentType string)
+}
+
+// storageClient は Cloud Storage クライアントのインターフェース
+type storageClient interface {
+	Bucket(name string) storageBucket
+}
+
+// ============================================================================
+// 実装（storage.Client のアダプター）
+// ============================================================================
+
+// gcsStorageClientAdapter は storage.Client を storageClient インターフェースに適合させるアダプター
+type gcsStorageClientAdapter struct {
+	client *storage.Client
+}
+
+func (a *gcsStorageClientAdapter) Bucket(name string) storageBucket {
+	return &gcsBucketAdapter{bucket: a.client.Bucket(name)}
+}
+
+// gcsBucketAdapter は storage.BucketHandle を storageBucket インターフェースに適合させるアダプター
+type gcsBucketAdapter struct {
+	bucket *storage.BucketHandle
+}
+
+func (a *gcsBucketAdapter) Object(name string) storageObject {
+	return &gcsObjectAdapter{object: a.bucket.Object(name)}
+}
+
+func (a *gcsBucketAdapter) SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error) {
+	return a.bucket.SignedURL(objectName, opts)
+}
+
+// gcsObjectAdapter は storage.ObjectHandle を storageObject インターフェースに適合させるアダプター
+type gcsObjectAdapter struct {
+	object *storage.ObjectHandle
+}
+
+func (a *gcsObjectAdapter) NewWriter(ctx context.Context) storageObjectWriter {
+	return &gcsWriterAdapter{writer: a.object.NewWriter(ctx)}
+}
+
+func (a *gcsObjectAdapter) NewReader(ctx context.Context) (io.ReadCloser, error) {
+	return a.object.NewReader(ctx)
+}
+
+func (a *gcsObjectAdapter) Attrs(ctx context.Context) (*storage.ObjectAttrs, error) {
+	return a.object.Attrs(ctx)
+}
+
+func (a *gcsObjectAdapter) Delete(ctx context.Context) error {
+	return a.object.Delete(ctx)
+}
+
+// gcsWriterAdapter は storage.Writer を storageObjectWriter インターフェースに適合させるアダプター
+type gcsWriterAdapter struct {
+	writer *storage.Writer
+}
+
+func (a *gcsWriterAdapter) Write(p []byte) (int, error) {
+	return a.writer.Write(p)
+}
+
+func (a *gcsWriterAdapter) Close() error {
+	return a.writer.Close()
+}
+
+func (a *gcsWriterAdapter) SetContentType(contentType string) {
+	// storage.Writer.ContentType は公開フィールド
+	// GCS SDK の実装詳細に依存しているが、現行バージョンではこれが唯一の方法
+	a.writer.ContentType = contentType
+}
+
 // cloudStorageRepository はCloud Storageを使用したStorageRepositoryの実装
 type cloudStorageRepository struct {
-	client     *storage.Client
+	client     storageClient
 	bucketName string
 }
 
@@ -48,7 +143,7 @@ func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string)
 		return nil, fmt.Errorf("bucket name is required")
 	}
 	return &cloudStorageRepository{
-		client:     client,
+		client:     &gcsStorageClientAdapter{client: client},
 		bucketName: bucketName,
 	}, nil
 }
@@ -60,21 +155,13 @@ func generateObjectName(filename string) string {
 	return fmt.Sprintf("uploads/%s%s", fileID, ext)
 }
 
-// convertStorageError はCloud Storageのエラーをドメインエラーに変換する
-func convertStorageError(err error) error {
-	if errors.Is(err, storage.ErrObjectNotExist) {
-		return ErrObjectNotFound
-	}
-	return err
-}
-
 // Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
 func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
 	objectName := generateObjectName(filename)
 
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	writer := obj.NewWriter(ctx)
-	writer.ContentType = contentType
+	writer.SetContentType(contentType)
 
 	if _, err := io.Copy(writer, file); err != nil {
 		return "", fmt.Errorf("Cloud Storageへのアップロードに失敗: %w", err)
@@ -98,7 +185,11 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 		}
 		return nil, fmt.Errorf("Cloud Storageからの読み取りに失敗: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Printf("Warning: failed to close storage reader for %s: %v", objectName, err)
+		}
+	}()
 
 	data, err := io.ReadAll(io.LimitReader(reader, maxDownloadSize+1))
 	if err != nil {
@@ -114,7 +205,8 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 // GetSignedURL は指定されたオブジェクトの署名付きURLを生成
 func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
 	// オブジェクトの存在確認
-	obj := r.client.Bucket(r.bucketName).Object(objectName)
+	bucket := r.client.Bucket(r.bucketName)
+	obj := bucket.Object(objectName)
 	_, err := obj.Attrs(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
@@ -132,7 +224,7 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 		Scheme:  storage.SigningSchemeV4,
 	}
 
-	url, err := r.client.Bucket(r.bucketName).SignedURL(objectName, opts)
+	url, err := bucket.SignedURL(objectName, opts)
 	if err != nil {
 		return "", fmt.Errorf("署名付きURLの生成に失敗: %w", err)
 	}
@@ -147,7 +239,6 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
 		if errors.Is(err, storage.ErrObjectNotExist) {
-			log.Printf("Debug: Cloud Storage object already deleted or not found: %s", objectName)
 			return nil
 		}
 		return fmt.Errorf("Cloud Storageからの削除に失敗: %w", err)
