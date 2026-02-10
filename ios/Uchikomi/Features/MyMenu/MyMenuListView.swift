@@ -55,6 +55,14 @@ struct MyMenuListView: View {
             .sheet(isPresented: $showingCreateSheet) {
                 MyMenuEditView()
             }
+            .onChange(of: showingCreateSheet) { oldValue, newValue in
+                // シートが閉じたときにリストを再読み込み
+                if oldValue && !newValue {
+                    Task {
+                        await viewModel.loadMyMenuList()
+                    }
+                }
+            }
             .task {
                 await viewModel.loadMyMenuList()
             }
