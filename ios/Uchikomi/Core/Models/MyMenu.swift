@@ -17,12 +17,12 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
         case id
         case name
         case foods
-        case totalCalories = "totalCalories"
-        case totalProtein = "totalProtein"
-        case totalFat = "totalFat"
-        case totalCarbohydrates = "totalCarbohydrates"
-        case createdAt = "createdAt"
-        case updatedAt = "updatedAt"
+        case totalCalories
+        case totalProtein
+        case totalFat
+        case totalCarbohydrates
+        case createdAt
+        case updatedAt
     }
 
     init(from decoder: Decoder) throws {
