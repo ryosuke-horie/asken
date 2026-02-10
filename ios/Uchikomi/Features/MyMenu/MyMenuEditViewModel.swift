@@ -7,7 +7,7 @@ final class MyMenuEditViewModel {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
-    var isDeleted = false
+    var shouldDismiss = false
 
     private let repository: MyMenuRepositoryProtocol
     private let existingMenuItem: MyMenuItem?
@@ -77,7 +77,7 @@ final class MyMenuEditViewModel {
             } else {
                 _ = try await repository.createMyMenu(name: menuName, foods: foods)
             }
-            isDeleted = true // 成功フラグ（画面を閉じるため）
+            shouldDismiss = true // 成功フラグ（画面を閉じるため）
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
@@ -95,7 +95,7 @@ final class MyMenuEditViewModel {
 
         do {
             try await repository.deleteMyMenu(id: item.id)
-            isDeleted = true
+            shouldDismiss = true
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
