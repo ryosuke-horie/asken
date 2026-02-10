@@ -56,7 +56,7 @@ final class MyMenuRepository: MyMenuRepositoryProtocol {
     }()
 
     func fetchMyMenuList() async throws -> [MyMenuItem] {
-        return try await apiClient.request(endpoint: .myMenuList)
+        try await apiClient.request(endpoint: .myMenuList)
     }
 
     func createMyMenu(name: String, foods: [NutritionInfo]) async throws -> MyMenuItem {
@@ -65,7 +65,7 @@ final class MyMenuRepository: MyMenuRepositoryProtocol {
     }
 
     func getMyMenu(id: String) async throws -> MyMenuItem {
-        return try await apiClient.request(endpoint: .myMenuDetail(id: id))
+        try await apiClient.request(endpoint: .myMenuDetail(id: id))
     }
 
     func updateMyMenu(id: String, name: String, foods: [NutritionInfo]) async throws -> MyMenuItem {

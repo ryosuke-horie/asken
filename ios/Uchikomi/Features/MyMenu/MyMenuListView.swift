@@ -80,7 +80,7 @@ struct MyMenuListView: View {
                     // エラーは ViewModel で errorMessage に設定済み
                     // リストを再読み込みして状態を同期
                     await viewModel.loadMyMenuList()
-                    break  // 1つでも失敗したら中断
+                    break // 1つでも失敗したら中断
                 }
             }
         }
@@ -97,7 +97,7 @@ struct MyMenuRow: View {
             Text(item.name)
                 .font(.headline)
 
-            Text(item.foods.map { $0.name }.joined(separator: ", "))
+            Text(item.foods.map(\.name).joined(separator: ", "))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)

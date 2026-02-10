@@ -196,8 +196,8 @@ final class MyMenuEditViewModel {
             let id = try await mealRepository.uploadImage(
                 data: imageData,
                 filename: "mymenu.jpg",
-                mealType: .lunch,  // ダミー値（マイメニューでは使用しない）
-                mealDate: Date()    // ダミー値（マイメニューでは使用しない）
+                mealType: .lunch, // ダミー値（マイメニューでは使用しない）
+                mealDate: Date() // ダミー値（マイメニューでは使用しない）
             )
 
             guard !Task.isCancelled else { return }
@@ -246,8 +246,8 @@ final class MyMenuEditViewModel {
             // 将来的にはマイメニュー専用の分析エンドポイントを作成することを推奨します。
             let id = try await mealRepository.analyzeText(
                 inputText: trimmedText,
-                mealType: .lunch,  // ダミー値（マイメニューでは使用しない）
-                mealDate: Date()    // ダミー値（マイメニューでは使用しない）
+                mealType: .lunch, // ダミー値（マイメニューでは使用しない）
+                mealDate: Date() // ダミー値（マイメニューでは使用しない）
             )
 
             guard !Task.isCancelled else { return }
