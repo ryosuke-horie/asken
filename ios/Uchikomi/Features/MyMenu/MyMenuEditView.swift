@@ -31,7 +31,8 @@ struct MyMenuEditView: View {
                             // 説明テキスト
                             Text("よく食べる食事を登録すると、ワンタップで記録できます。")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
+                                .opacity(0.6)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
 
