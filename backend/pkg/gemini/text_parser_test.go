@@ -67,6 +67,88 @@ func TestParseTextToFoods_Timeout(t *testing.T) {
 	assert.Contains(t, err.Error(), "タイムアウト")
 }
 
+func TestTextParser_ParseTextToFoods_MockSuccess(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{
+				Response: `[{"name": "ラーメン", "estimated_amount": "1杯"}]`,
+			}, nil
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	parser := NewTextParserWithClient(client)
+	ctx := context.Background()
+
+	foods, err := parser.ParseTextToFoods(ctx, "ラーメンを食べた")
+
+	require.NoError(t, err)
+	assert.Len(t, foods, 1)
+	assert.Equal(t, "ラーメン", foods[0].Name)
+	assert.Equal(t, "1杯", foods[0].EstimatedAmount)
+}
+
+func TestTextParser_ParseTextToFoods_MockAPIError(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	parser := NewTextParserWithClient(client)
+	ctx := context.Background()
+
+	_, err := parser.ParseTextToFoods(ctx, "テスト")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Gemini APIコールエラー")
+}
+
+func TestTextParser_ParseTextToFoods_MockInvalidJSON(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{Response: `{invalid json}`}, nil
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	parser := NewTextParserWithClient(client)
+	ctx := context.Background()
+
+	_, err := parser.ParseTextToFoods(ctx, "テスト")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "パースエラー")
+}
+
+func TestTextParser_ParseTextToFoods_MockCodeBlock(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{Response: "```json\n[{\"name\": \"カレーライス\", \"estimated_amount\": \"1皿\"}]\n```"}, nil
+		},
+	}
+
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	parser := NewTextParserWithClient(client)
+	ctx := context.Background()
+
+	foods, err := parser.ParseTextToFoods(ctx, "カレーライス")
+
+	require.NoError(t, err)
+	assert.Len(t, foods, 1)
+	assert.Equal(t, "カレーライス", foods[0].Name)
+}
+
+func TestNewTextParserWithClient(t *testing.T) {
+	mockClient := &MockGeminiHTTPClient{}
+	client := NewClientWithHTTPClient(mockClient)
+	parser := NewTextParserWithClient(client)
+
+	assert.NotNil(t, parser)
+	assert.Equal(t, client, parser.client)
+}
+
 func TestNewTextParser(t *testing.T) {
 	timeout := 30 * time.Second
 	parser := NewTextParser(timeout)
