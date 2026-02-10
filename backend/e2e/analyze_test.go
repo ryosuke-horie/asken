@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// waitForGeminiRateLimit はGemini APIのレート制限リセットを待つ
+//
+// レート制限設定: GeminiRateLimit=0.2 (5秒に1回), GeminiBurstSize=2
+// バーストを使い切った後は5秒待つ必要がある
+func waitForGeminiRateLimit() {
+	time.Sleep(5 * time.Second)
+}
+
 func TestAnalyze_TextInput_Success(t *testing.T) {
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
@@ -64,6 +72,9 @@ func TestAnalyze_TextInput_InvalidMealType(t *testing.T) {
 }
 
 func TestAnalyze_GetStatus_Success(t *testing.T) {
+	// 前のテスト(TestAnalyze_TextInput_Success)からのレート制限リセットを待つ
+	waitForGeminiRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// まず分析リクエストを作成
