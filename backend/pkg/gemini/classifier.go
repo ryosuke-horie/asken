@@ -17,7 +17,7 @@ type FoodItem struct {
 
 // Classifier は料理分類を行うクライアント
 type Classifier struct {
-	httpClient *HTTPClient
+	httpClient GeminiHTTPClient
 }
 
 // NewClassifier は新しいClassifierを作成
@@ -33,6 +33,13 @@ func NewClassifier(timeout time.Duration) *Classifier {
 func NewClassifierWithAPIKey(apiKey string, timeout time.Duration) *Classifier {
 	return &Classifier{
 		httpClient: NewHTTPClient(apiKey, timeout),
+	}
+}
+
+// NewClassifierWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
+func NewClassifierWithHTTPClient(httpClient GeminiHTTPClient) *Classifier {
+	return &Classifier{
+		httpClient: httpClient,
 	}
 }
 
