@@ -204,19 +204,21 @@ struct MyMenuEditView: View {
                     guard let newValue else { return }
                     do {
                         guard let data = try await newValue.loadTransferable(type: Data.self) else {
-                            viewModel.errorMessage = "画像を読み込めませんでした"
+                            viewModel.errorMessage = "画像データを取得できませんでした。別の画像を選択してください。"
                             return
                         }
                         guard let image = UIImage(data: data) else {
-                            viewModel.errorMessage = "サポートされていない画像形式です"
+                            viewModel.errorMessage = "サポートされていない画像形式です。JPEGまたはPNGを使用してください。"
                             return
                         }
                         viewModel.selectedImage = image
+                    } catch is CancellationError {
+                        return
                     } catch {
                         #if DEBUG
                         debugPrint("[MyMenuEditView] Image load error: \(error)")
                         #endif
-                        viewModel.errorMessage = "画像の読み込みに失敗しました"
+                        viewModel.errorMessage = "画像の読み込みに失敗しました。再度お試しください。"
                     }
                 }
             }

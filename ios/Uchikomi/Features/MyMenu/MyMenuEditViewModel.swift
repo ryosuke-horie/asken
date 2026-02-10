@@ -173,9 +173,14 @@ final class MyMenuEditViewModel {
     }
 
     func analyzeImage() async {
-        guard let image = selectedImage,
-              let imageData = image.jpegData(compressionQuality: 0.8) else {
+        guard let image = selectedImage else {
             errorMessage = "画像を選択してください"
+            return
+        }
+
+        // JPEG圧縮 - 失敗した場合は画像データが無効
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            errorMessage = "画像の処理に失敗しました。別の画像を選択してください。"
             return
         }
 
@@ -184,12 +189,14 @@ final class MyMenuEditViewModel {
         defer { isAnalyzing = false }
 
         do {
-            // マイメニュー用のダミー値
+            // NOTE: 既存の分析APIはmealTypeとmealDateを要求するため、
+            // マイメニュー登録ではダミー値を使用しています。
+            // 将来的にはマイメニュー専用の分析エンドポイントを作成することを推奨します。
             let id = try await mealRepository.uploadImage(
                 data: imageData,
                 filename: "mymenu.jpg",
-                mealType: .lunch,  // ダミー値
-                mealDate: Date()    // ダミー値
+                mealType: .lunch,  // ダミー値（マイメニューでは使用しない）
+                mealDate: Date()    // ダミー値（マイメニューでは使用しない）
             )
 
             guard !Task.isCancelled else { return }
@@ -208,9 +215,9 @@ final class MyMenuEditViewModel {
             errorMessage = error.localizedDescription
         } catch {
             #if DEBUG
-            debugPrint("[MyMenuEditViewModel] Unexpected error: \(error)")
+            debugPrint("[MyMenuEditViewModel] analyzeImage unexpected error: \(error)")
             #endif
-            errorMessage = "画像分析に失敗しました: \(error.localizedDescription)"
+            errorMessage = "画像分析に失敗しました。ネットワークを確認してやり直してください。"
         }
     }
 
@@ -233,11 +240,13 @@ final class MyMenuEditViewModel {
         defer { isAnalyzing = false }
 
         do {
-            // マイメニュー用のダミー値
+            // NOTE: 既存の分析APIはmealTypeとmealDateを要求するため、
+            // マイメニュー登録ではダミー値を使用しています。
+            // 将来的にはマイメニュー専用の分析エンドポイントを作成することを推奨します。
             let id = try await mealRepository.analyzeText(
                 inputText: trimmedText,
-                mealType: .lunch,  // ダミー値
-                mealDate: Date()    // ダミー値
+                mealType: .lunch,  // ダミー値（マイメニューでは使用しない）
+                mealDate: Date()    // ダミー値（マイメニューでは使用しない）
             )
 
             guard !Task.isCancelled else { return }
@@ -256,14 +265,14 @@ final class MyMenuEditViewModel {
             errorMessage = error.localizedDescription
         } catch {
             #if DEBUG
-            debugPrint("[MyMenuEditViewModel] Unexpected error: \(error)")
+            debugPrint("[MyMenuEditViewModel] analyzeText unexpected error: \(error)")
             #endif
-            errorMessage = "テキスト分析に失敗しました: \(error.localizedDescription)"
+            errorMessage = "テキスト分析に失敗しました。ネットワークを確認してやり直してください。"
         }
     }
 
     private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
-        for _ in 0 ..< maxAttempts {
+        for attempt in 0 ..< maxAttempts {
             let status = try await mealRepository.checkAnalysisStatus(id: id)
 
             switch status.status {
@@ -275,19 +284,29 @@ final class MyMenuEditViewModel {
             case "pending", "processing":
                 try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
             default:
+                // 不明なステータスコード - バックエンドの仕様変更の可能性
                 #if DEBUG
-                debugPrint("[MyMenuEditViewModel] Unknown analysis status: \(status.status)")
+                debugPrint("[MyMenuEditViewModel] Unknown analysis status: \(status.status) at attempt \(attempt + 1)")
                 #endif
-                throw APIError.serverError("分析ステータスが不明です: \(status.status)")
+                // 新しいステータスに対応できるよう、処理中として扱う
+                try await Task.sleep(nanoseconds: Constants.pollingIntervalNanoseconds)
             }
         }
 
-        throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
+        throw APIError.serverError("分析がタイムアウトしました。時間をおいてやり直してください。")
     }
 
     private func applyAnalysisResult() {
-        guard let result = analysisResult else { return }
+        guard let result = analysisResult else {
+            // 分析成功後に結果がないのはロジックエラー
+            #if DEBUG
+            assertionFailure("applyAnalysisResult called but analysisResult is nil")
+            #endif
+            return
+        }
 
+        // 分析結果をfoodItemsに反映
+        // 分析後は、このfoodItemsをベースに保存される
         foodItems = result.result.foods.map { nutritionInfo in
             FoodEditItem(
                 name: nutritionInfo.name,
@@ -298,12 +317,5 @@ final class MyMenuEditViewModel {
                 carbohydrates: nutritionInfo.carbohydratesG
             )
         }
-    }
-
-    func resetAnalysis() {
-        selectedImage = nil
-        manualFoods = [FoodEditItem()]
-        analysisResult = nil
-        errorMessage = nil
     }
 }
