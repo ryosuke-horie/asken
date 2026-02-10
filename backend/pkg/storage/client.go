@@ -15,7 +15,7 @@ func NewStorageClient(ctx context.Context, credentialsPath string) (*storage.Cli
 	var err error
 
 	if credentialsPath != "" {
-		opt := option.WithCredentialsFile(credentialsPath)
+		opt := option.WithAuthCredentialsFile(option.ServiceAccount, credentialsPath)
 		client, err = storage.NewClient(ctx, opt)
 	} else {
 		// GOOGLE_APPLICATION_CREDENTIALS 環境変数を使用
