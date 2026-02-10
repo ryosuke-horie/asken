@@ -52,6 +52,9 @@ struct MyMenuSelectionView: View {
                     }
                 }
             }
+            .task {
+                await viewModel.loadMyMenuList()
+            }
         }
     }
 }
