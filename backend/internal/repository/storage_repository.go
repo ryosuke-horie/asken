@@ -40,55 +40,39 @@ type StorageRepository interface {
 // storageBucket は Cloud Storage バケットのインターフェース
 type storageBucket interface {
 	Object(name string) storageObject
+	SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error)
 }
 
 // storageObject は Cloud Storage オブジェクトのインターフェース
 type storageObject interface {
 	NewWriter(ctx context.Context) storageObjectWriter
-	NewReader(ctx context.Context) (storageObjectReader, error)
+	NewReader(ctx context.Context) (io.ReadCloser, error)
 	Attrs(ctx context.Context) (*storage.ObjectAttrs, error)
 	Delete(ctx context.Context) error
 }
 
 // storageObjectWriter は Cloud Storage ライターのインターフェース
 type storageObjectWriter interface {
-	Write(p []byte) (int, error)
-	Close() error
+	io.WriteCloser
 	SetContentType(contentType string)
-}
-
-// storageObjectReader は Cloud Storage リーダーのインターフェース
-type storageObjectReader interface {
-	Read(p []byte) (int, error)
-	Close() error
-}
-
-// storageBucketWithSignedURL は署名付きURL生成機能を持つバケットのインターフェース
-type storageBucketWithSignedURL interface {
-	SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error)
 }
 
 // storageClient は Cloud Storage クライアントのインターフェース
 type storageClient interface {
 	Bucket(name string) storageBucket
-	BucketWithSignedURL(name string) storageBucketWithSignedURL
 }
 
 // ============================================================================
 // 実装（storage.Client のアダプター）
 // ============================================================================
 
-// gcsStorageClient は storage.Client を storageClient インターフェースに適合させるアダプター
-type gcsStorageClient struct {
+// gcsStorageClientAdapter は storage.Client を storageClient インターフェースに適合させるアダプター
+type gcsStorageClientAdapter struct {
 	client *storage.Client
 }
 
-func (a *gcsStorageClient) Bucket(name string) storageBucket {
+func (a *gcsStorageClientAdapter) Bucket(name string) storageBucket {
 	return &gcsBucketAdapter{bucket: a.client.Bucket(name)}
-}
-
-func (a *gcsStorageClient) BucketWithSignedURL(name string) storageBucketWithSignedURL {
-	return a.client.Bucket(name)
 }
 
 // gcsBucketAdapter は storage.BucketHandle を storageBucket インターフェースに適合させるアダプター
@@ -100,6 +84,10 @@ func (a *gcsBucketAdapter) Object(name string) storageObject {
 	return &gcsObjectAdapter{object: a.bucket.Object(name)}
 }
 
+func (a *gcsBucketAdapter) SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error) {
+	return a.bucket.SignedURL(objectName, opts)
+}
+
 // gcsObjectAdapter は storage.ObjectHandle を storageObject インターフェースに適合させるアダプター
 type gcsObjectAdapter struct {
 	object *storage.ObjectHandle
@@ -109,7 +97,7 @@ func (a *gcsObjectAdapter) NewWriter(ctx context.Context) storageObjectWriter {
 	return &gcsWriterAdapter{writer: a.object.NewWriter(ctx)}
 }
 
-func (a *gcsObjectAdapter) NewReader(ctx context.Context) (storageObjectReader, error) {
+func (a *gcsObjectAdapter) NewReader(ctx context.Context) (io.ReadCloser, error) {
 	return a.object.NewReader(ctx)
 }
 
@@ -135,6 +123,8 @@ func (a *gcsWriterAdapter) Close() error {
 }
 
 func (a *gcsWriterAdapter) SetContentType(contentType string) {
+	// storage.Writer.ContentType は公開フィールド
+	// GCS SDK の実装詳細に依存しているが、現行バージョンではこれが唯一の方法
 	a.writer.ContentType = contentType
 }
 
@@ -153,7 +143,7 @@ func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string)
 		return nil, fmt.Errorf("bucket name is required")
 	}
 	return &cloudStorageRepository{
-		client:     &gcsStorageClient{client: client},
+		client:     &gcsStorageClientAdapter{client: client},
 		bucketName: bucketName,
 	}, nil
 }
@@ -164,7 +154,6 @@ func generateObjectName(filename string) string {
 	ext := filepath.Ext(filename)
 	return fmt.Sprintf("uploads/%s%s", fileID, ext)
 }
-
 
 // Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
 func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
@@ -196,7 +185,11 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 		}
 		return nil, fmt.Errorf("Cloud Storageからの読み取りに失敗: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Printf("Warning: failed to close storage reader for %s: %v", objectName, err)
+		}
+	}()
 
 	data, err := io.ReadAll(io.LimitReader(reader, maxDownloadSize+1))
 	if err != nil {
@@ -212,7 +205,8 @@ func (r *cloudStorageRepository) Download(ctx context.Context, objectName string
 // GetSignedURL は指定されたオブジェクトの署名付きURLを生成
 func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName string, expiration time.Duration) (string, error) {
 	// オブジェクトの存在確認
-	obj := r.client.Bucket(r.bucketName).Object(objectName)
+	bucket := r.client.Bucket(r.bucketName)
+	obj := bucket.Object(objectName)
 	_, err := obj.Attrs(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
@@ -230,7 +224,6 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 		Scheme:  storage.SigningSchemeV4,
 	}
 
-	bucket := r.client.BucketWithSignedURL(r.bucketName)
 	url, err := bucket.SignedURL(objectName, opts)
 	if err != nil {
 		return "", fmt.Errorf("署名付きURLの生成に失敗: %w", err)
@@ -246,7 +239,6 @@ func (r *cloudStorageRepository) Delete(ctx context.Context, objectName string) 
 	if err := obj.Delete(ctx); err != nil {
 		// オブジェクトが存在しない場合は無視（既に削除済み）
 		if errors.Is(err, storage.ErrObjectNotExist) {
-			log.Printf("Debug: Cloud Storage object already deleted or not found: %s", objectName)
 			return nil
 		}
 		return fmt.Errorf("Cloud Storageからの削除に失敗: %w", err)
