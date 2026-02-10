@@ -11,7 +11,8 @@ struct FoodItemEditRow: View {
             HStack {
                 Text("メニュー")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
+                    .opacity(0.6)
                 Spacer()
                 Button(action: onDelete) {
                     Image(systemName: "trash")
@@ -84,7 +85,7 @@ private struct NutrientLabel: View {
                 .foregroundStyle(.secondary)
             Text(String(format: "%.0f", value))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .fontWeight(.medium)
         }
         .frame(maxWidth: .infinity)
     }

@@ -138,4 +138,50 @@ struct APIEndpoint {
         method: .put,
         requiresAuth: true
     )
+
+    // MARK: - MyMenu Endpoints
+
+    static let myMenuList = APIEndpoint(
+        path: "my-menu",
+        method: .get,
+        requiresAuth: true
+    )
+
+    static let createMyMenu = APIEndpoint(
+        path: "my-menu",
+        method: .post,
+        requiresAuth: true
+    )
+
+    static func myMenuDetail(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "my-menu/\(id)",
+            method: .get,
+            requiresAuth: true
+        )
+    }
+
+    static func updateMyMenu(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "my-menu/\(id)",
+            method: .put,
+            requiresAuth: true
+        )
+    }
+
+    static func deleteMyMenu(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "my-menu/\(id)",
+            method: .delete,
+            requiresAuth: true
+        )
+    }
+
+    static func recordMyMenu(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "my-menu/\(id)/record",
+            method: .post,
+            requiresAuth: true
+        )
+    }
 }

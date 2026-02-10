@@ -21,7 +21,8 @@ struct NutritionSummaryCard: View {
                     .foregroundStyle(Theme.primary)
                 Text("kcal")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
+                    .opacity(0.5)
             }
 
             Divider()
@@ -73,15 +74,18 @@ private struct MacroItem: View {
 
             Text(name)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
+                .opacity(0.6)
 
             HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(String(format: "%.1f", value))
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
                 Text(unit)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
+                    .opacity(0.5)
             }
         }
         .frame(maxWidth: .infinity)
