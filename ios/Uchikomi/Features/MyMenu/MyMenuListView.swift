@@ -8,7 +8,7 @@ struct MyMenuListView: View {
     @State private var showingCreateSheet = false
 
     var body: some View {
-        List {
+        Group {
             if viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -29,17 +29,19 @@ struct MyMenuListView: View {
                     }
                 }
             } else {
-                ForEach(viewModel.myMenuItems) { item in
-                    NavigationLink {
-                        MyMenuEditView(menuItem: item)
-                    } label: {
-                        MyMenuRow(item: item)
+                List {
+                    ForEach(viewModel.myMenuItems) { item in
+                        NavigationLink {
+                            MyMenuEditView(menuItem: item)
+                        } label: {
+                            MyMenuRow(item: item)
+                        }
                     }
+                    .onDelete(perform: deleteMenus)
                 }
-                .onDelete(perform: deleteMenus)
+                .listStyle(.plain)
             }
         }
-        .listStyle(.plain)
         .navigationTitle("マイメニュー")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -49,21 +51,6 @@ struct MyMenuListView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if viewModel.myMenuItems.isEmpty && !viewModel.isLoading && viewModel.errorMessage == nil {
-                Button {
-                    showingCreateSheet = true
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(Theme.primary)
-                        .background(Color(.systemBackground))
-                        .clipShape(Circle())
-                }
-                .padding(.trailing)
-                .padding(.top, 8)
             }
         }
         .sheet(isPresented: $showingCreateSheet) {
