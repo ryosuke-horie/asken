@@ -548,3 +548,132 @@ func TestProcessRequest_SaveResultError(t *testing.T) {
 	assert.Equal(t, 2, updateStatusCalled)
 	assert.True(t, saveResultCalled)
 }
+
+func TestProcessRequest_UpdateStatusToProcessingError(t *testing.T) {
+	requestID := uuid.New()
+
+	updateStatusError := errors.New("Firestore connection error")
+	mockService := &MockFoodService{}
+
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			if status == repository.StatusProcessing {
+				return updateStatusError
+			}
+			return nil
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
+		ImagePath: "/uploads/test.jpg",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), &request)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update status to processing")
+}
+
+func TestProcessRequest_AnalysisErrorAndUpdateStatusFailed(t *testing.T) {
+	requestID := uuid.New()
+
+	analysisError := errors.New("Gemini API error")
+	updateStatusError := errors.New("Firestore connection error")
+
+	mockService := &MockFoodService{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+			return nil, analysisError
+		},
+	}
+
+	updateStatusCalled := 0
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			if updateStatusCalled == 1 {
+				return nil // First call to processing succeeds
+			}
+			// Second call to failed fails
+			return updateStatusError
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
+		ImagePath: "/uploads/test.jpg",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), &request)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update status after analysis error")
+	assert.Equal(t, 2, updateStatusCalled)
+}
+
+func TestProcessRequest_SaveResultErrorAndUpdateStatusFailed(t *testing.T) {
+	requestID := uuid.New()
+
+	saveResultError := errors.New("Database save error")
+	updateStatusError := errors.New("Firestore connection error")
+
+	mockService := &MockFoodService{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+			return &service.AnalysisResult{
+				Foods: []gemini.NutritionInfo{
+					{
+						Name:            "白米",
+						EstimatedAmount: "150g",
+						Calories:        252,
+					},
+				},
+				TotalCalories: 252,
+			}, nil
+		},
+	}
+
+	updateStatusCalled := 0
+	mockRepo := &MockAnalysisRepository{
+		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
+			updateStatusCalled++
+			// 1回目: processing に更新（成功）
+			// 2回目: SaveResult失敗で failed に更新を試みる → ここで失敗させる
+			if updateStatusCalled == 2 {
+				return updateStatusError
+			}
+			return nil
+		},
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+			return saveResultError
+		},
+	}
+
+	worker := NewAnalysisWorker(mockService, mockRepo, 5*time.Second)
+
+	request := repository.AnalysisRequest{
+		ID:        requestID,
+		Status:    repository.StatusPending,
+		InputType: repository.InputTypeImage,
+		ImagePath: "/uploads/test.jpg",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := worker.processRequest(context.Background(), &request)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update status after save error")
+	assert.Equal(t, 2, updateStatusCalled)
+}
