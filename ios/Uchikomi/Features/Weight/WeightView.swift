@@ -43,7 +43,8 @@ struct WeightView: View {
                                         Task { await viewModel.loadChartData() }
                                     }
                                 ),
-                                isLoading: viewModel.isLoading
+                                isLoading: viewModel.isLoading,
+                                isInitialLoading: viewModel.isInitialLoading
                             )
 
                             // 今日の記録一覧

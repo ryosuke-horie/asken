@@ -12,6 +12,7 @@ final class WeightViewModel {
     var goal: WeightGoal?
     var selectedPeriod: ChartPeriod = .week
     var isLoading = false
+    var isInitialLoading = true
     var errorMessage: String?
 
     private let repository: WeightRepositoryProtocol
@@ -31,6 +32,7 @@ final class WeightViewModel {
 
     func loadData() async {
         isLoading = true
+        isInitialLoading = true
         errorMessage = nil
 
         do {
@@ -40,11 +42,13 @@ final class WeightViewModel {
             logger.error("体重データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             isLoading = false
+            isInitialLoading = false
             return
         } catch {
             logger.error("体重データ取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "体重データの取得に失敗しました"
             isLoading = false
+            isInitialLoading = false
             return
         }
 
@@ -56,6 +60,7 @@ final class WeightViewModel {
         }
 
         isLoading = false
+        isInitialLoading = false
     }
 
     func loadChartData() async {
