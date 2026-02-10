@@ -42,6 +42,10 @@ final class NotificationManager: NotificationSchedulerProtocol {
         for mealSetting in settings.meals where mealSetting.isEnabled {
             await scheduleMealNotification(mealSetting)
         }
+
+        if settings.weight.isEnabled {
+            await scheduleWeightNotification(settings.weight)
+        }
     }
 
     func cancelAllNotifications() async {
@@ -83,6 +87,31 @@ final class NotificationManager: NotificationSchedulerProtocol {
             logger.info("通知スケジュール成功: \(setting.mealType.rawValue) \(setting.hour):\(setting.minute)")
         } catch {
             logger.error("通知スケジュール失敗: \(setting.mealType.rawValue): \(error.localizedDescription)")
+        }
+    }
+
+    private func scheduleWeightNotification(_ setting: WeightNotificationSetting) async {
+        let content = UNMutableNotificationContent()
+        content.title = "ウチコミ"
+        content.body = "今日の体重を記録しませんか？"
+        content.sound = .default
+
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: setting.timeComponents,
+            repeats: true
+        )
+
+        let request = UNNotificationRequest(
+            identifier: "weight_reminder",
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await notificationCenter.add(request)
+            logger.info("通知スケジュール成功: 体重 \(setting.hour):\(setting.minute)")
+        } catch {
+            logger.error("通知スケジュール失敗: 体重: \(error.localizedDescription)")
         }
     }
 

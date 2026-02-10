@@ -97,4 +97,29 @@ final class NotificationSettingsViewModel {
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
     }
+
+    // MARK: - Weight Notification
+
+    func toggleWeightEnabled() async {
+        settings = settings.updatingWeightSetting { setting in
+            var updated = setting
+            updated.isEnabled.toggle()
+            return updated
+        }
+        store.save(settings)
+        await scheduler.scheduleAllNotifications(settings: settings)
+    }
+
+    func updateWeightTime(hour: Int, minute: Int) async {
+        let clampedHour = min(max(hour, 0), 23)
+        let clampedMinute = min(max(minute, 0), 59)
+        settings = settings.updatingWeightSetting { setting in
+            var updated = setting
+            updated.hour = clampedHour
+            updated.minute = clampedMinute
+            return updated
+        }
+        store.save(settings)
+        await scheduler.scheduleAllNotifications(settings: settings)
+    }
 }
