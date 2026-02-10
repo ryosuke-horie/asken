@@ -16,7 +16,7 @@ func NewFirestoreClient(ctx context.Context, credentialsPath string) (*firestore
 	var err error
 
 	if credentialsPath != "" {
-		opt := option.WithCredentialsFile(credentialsPath)
+		opt := option.WithAuthCredentialsFile(option.ServiceAccount, credentialsPath)
 		app, err = firebase.NewApp(ctx, nil, opt)
 	} else {
 		// GOOGLE_APPLICATION_CREDENTIALS 環境変数を使用
