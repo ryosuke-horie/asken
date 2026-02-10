@@ -8,7 +8,7 @@ struct MyMenuListView: View {
     @State private var showingCreateSheet = false
 
     var body: some View {
-        Group {
+        List {
             if viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -29,19 +29,17 @@ struct MyMenuListView: View {
                     }
                 }
             } else {
-                List {
-                    ForEach(viewModel.myMenuItems) { item in
-                        NavigationLink {
-                            MyMenuEditView(menuItem: item)
-                        } label: {
-                            MyMenuRow(item: item)
-                        }
+                ForEach(viewModel.myMenuItems) { item in
+                    NavigationLink {
+                        MyMenuEditView(menuItem: item)
+                    } label: {
+                        MyMenuRow(item: item)
                     }
-                    .onDelete(perform: deleteMenus)
                 }
-                .listStyle(.plain)
+                .onDelete(perform: deleteMenus)
             }
         }
+        .listStyle(.plain)
         .navigationTitle("マイメニュー")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
