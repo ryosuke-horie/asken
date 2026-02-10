@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -183,21 +182,596 @@ func TestGenerateObjectName(t *testing.T) {
 	})
 }
 
-func TestConvertStorageError(t *testing.T) {
-	t.Run("ErrObjectNotExistをErrObjectNotFoundに変換", func(t *testing.T) {
-		result := convertStorageError(storage.ErrObjectNotExist)
-		assert.Equal(t, ErrObjectNotFound, result)
-	})
+// ============================================================================
+// Cloud Storage Repository 単体テスト用モック
+// ============================================================================
 
-	t.Run("他のエラーはそのまま返す", func(t *testing.T) {
-		originalErr := errors.New("some other error")
-		result := convertStorageError(originalErr)
-		assert.Equal(t, originalErr, result)
-	})
+// mockStorageClient は storageClient のモック実装
+type mockStorageClient struct {
+	bucketFunc             func(name string) storageBucket
+	bucketWithSignedURLFunc func(name string) storageBucketWithSignedURL
+}
 
-	t.Run("ラップされたErrObjectNotExistも変換", func(t *testing.T) {
-		wrappedErr := fmt.Errorf("wrapped: %w", storage.ErrObjectNotExist)
-		result := convertStorageError(wrappedErr)
-		assert.Equal(t, ErrObjectNotFound, result)
-	})
+func (m *mockStorageClient) Bucket(name string) storageBucket {
+	if m.bucketFunc != nil {
+		return m.bucketFunc(name)
+	}
+	return &mockStorageBucket{}
+}
+
+func (m *mockStorageClient) BucketWithSignedURL(name string) storageBucketWithSignedURL {
+	if m.bucketWithSignedURLFunc != nil {
+		return m.bucketWithSignedURLFunc(name)
+	}
+	return &mockStorageBucketWithSignedURL{}
+}
+
+// mockStorageBucket は storageBucket のモック実装
+type mockStorageBucket struct {
+	objectFunc func(name string) storageObject
+}
+
+func (m *mockStorageBucket) Object(name string) storageObject {
+	if m.objectFunc != nil {
+		return m.objectFunc(name)
+	}
+	return &mockStorageObject{}
+}
+
+// mockStorageBucketWithSignedURL は storageBucketWithSignedURL のモック実装
+type mockStorageBucketWithSignedURL struct {
+	signedURLFunc func(objectName string, opts *storage.SignedURLOptions) (string, error)
+}
+
+func (m *mockStorageBucketWithSignedURL) SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error) {
+	if m.signedURLFunc != nil {
+		return m.signedURLFunc(objectName, opts)
+	}
+	return "https://storage.example.com/signed-url", nil
+}
+
+// mockStorageObject は storageObject のモック実装
+type mockStorageObject struct {
+	newWriterFunc func(ctx context.Context) storageObjectWriter
+	newReaderFunc func(ctx context.Context) (storageObjectReader, error)
+	attrsFunc     func(ctx context.Context) (*storage.ObjectAttrs, error)
+	deleteFunc    func(ctx context.Context) error
+}
+
+func (m *mockStorageObject) NewWriter(ctx context.Context) storageObjectWriter {
+	if m.newWriterFunc != nil {
+		return m.newWriterFunc(ctx)
+	}
+	return &mockStorageWriter{}
+}
+
+func (m *mockStorageObject) NewReader(ctx context.Context) (storageObjectReader, error) {
+	if m.newReaderFunc != nil {
+		return m.newReaderFunc(ctx)
+	}
+	return &mockStorageReader{data: []byte("test data")}, nil
+}
+
+func (m *mockStorageObject) Attrs(ctx context.Context) (*storage.ObjectAttrs, error) {
+	if m.attrsFunc != nil {
+		return m.attrsFunc(ctx)
+	}
+	return &storage.ObjectAttrs{}, nil
+}
+
+func (m *mockStorageObject) Delete(ctx context.Context) error {
+	if m.deleteFunc != nil {
+		return m.deleteFunc(ctx)
+	}
+	return nil
+}
+
+// mockStorageWriter は storageObjectWriter のモック実装
+type mockStorageWriter struct {
+	writeFunc   func(p []byte) (int, error)
+	closeFunc   func() error
+	contentType string
+}
+
+func (m *mockStorageWriter) Write(p []byte) (int, error) {
+	if m.writeFunc != nil {
+		return m.writeFunc(p)
+	}
+	return len(p), nil
+}
+
+func (m *mockStorageWriter) Close() error {
+	if m.closeFunc != nil {
+		return m.closeFunc()
+	}
+	return nil
+}
+
+func (m *mockStorageWriter) SetContentType(contentType string) {
+	m.contentType = contentType
+}
+
+// mockStorageReader は storageObjectReader のモック実装
+type mockStorageReader struct {
+	data       []byte
+	readPos    int
+	readFunc   func(p []byte) (int, error)
+	closeFunc  func() error
+	closeCalled bool
+}
+
+func (m *mockStorageReader) Read(p []byte) (int, error) {
+	if m.readFunc != nil {
+		return m.readFunc(p)
+	}
+	if m.readPos >= len(m.data) {
+		return 0, io.EOF
+	}
+	n := copy(p, m.data[m.readPos:])
+	m.readPos += n
+	return n, nil
+}
+
+func (m *mockStorageReader) Close() error {
+	m.closeCalled = true
+	if m.closeFunc != nil {
+		return m.closeFunc()
+	}
+	return nil
+}
+
+// ============================================================================
+// CloudStorageRepository Upload メソッドのテスト
+// ============================================================================
+
+func TestCloudStorageRepository_Upload_Success(t *testing.T) {
+	writer := &mockStorageWriter{}
+	object := &mockStorageObject{
+		newWriterFunc: func(ctx context.Context) storageObjectWriter {
+			return writer
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			assert.Equal(t, "test-bucket", name)
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	reader := strings.NewReader("test image data")
+	result, err := repo.Upload(context.Background(), reader, "test.jpg", "image/jpeg")
+
+	assert.NoError(t, err)
+	assert.True(t, strings.HasPrefix(result, "uploads/"))
+	assert.True(t, strings.HasSuffix(result, ".jpg"))
+	assert.Equal(t, "image/jpeg", writer.contentType)
+}
+
+func TestCloudStorageRepository_Upload_CopyError(t *testing.T) {
+	object := &mockStorageObject{
+		newWriterFunc: func(ctx context.Context) storageObjectWriter {
+			return &mockStorageWriter{
+				writeFunc: func(p []byte) (int, error) {
+					return 0, errors.New("write error")
+				},
+			}
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	reader := strings.NewReader("test image data")
+	_, err := repo.Upload(context.Background(), reader, "test.jpg", "image/jpeg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Cloud Storageへのアップロードに失敗")
+}
+
+func TestCloudStorageRepository_Upload_CloseError(t *testing.T) {
+	object := &mockStorageObject{
+		newWriterFunc: func(ctx context.Context) storageObjectWriter {
+			return &mockStorageWriter{
+				closeFunc: func() error {
+					return errors.New("close error")
+				},
+			}
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	reader := strings.NewReader("test image data")
+	_, err := repo.Upload(context.Background(), reader, "test.jpg", "image/jpeg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Cloud Storageへのアップロード完了に失敗")
+}
+
+// ============================================================================
+// CloudStorageRepository Download メソッドのテスト
+// ============================================================================
+
+func TestCloudStorageRepository_Download_Success(t *testing.T) {
+	expectedData := []byte("test image data")
+	object := &mockStorageObject{
+		newReaderFunc: func(ctx context.Context) (storageObjectReader, error) {
+			return &mockStorageReader{data: expectedData}, nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	data, err := repo.Download(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedData, data)
+}
+
+func TestCloudStorageRepository_Download_ObjectNotFound(t *testing.T) {
+	object := &mockStorageObject{
+		newReaderFunc: func(ctx context.Context) (storageObjectReader, error) {
+			return nil, storage.ErrObjectNotExist
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.Download(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.Error(t, err)
+	assert.Equal(t, ErrObjectNotFound, err)
+}
+
+func TestCloudStorageRepository_Download_ReadError(t *testing.T) {
+	object := &mockStorageObject{
+		newReaderFunc: func(ctx context.Context) (storageObjectReader, error) {
+			return &mockStorageReader{
+				readFunc: func(p []byte) (int, error) {
+					return 0, errors.New("read error")
+				},
+			}, nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.Download(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Cloud Storageからのデータ読み取りに失敗")
+}
+
+func TestCloudStorageRepository_Download_SizeLimitExceeded(t *testing.T) {
+	// 15MB + 1 バイトのデータを生成
+	largeData := make([]byte, maxDownloadSize+1)
+	for i := range largeData {
+		largeData[i] = 'x'
+	}
+
+	object := &mockStorageObject{
+		newReaderFunc: func(ctx context.Context) (storageObjectReader, error) {
+			return &mockStorageReader{data: largeData}, nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.Download(context.Background(), "uploads/large-file.jpg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ファイルサイズが上限")
+}
+
+// ============================================================================
+// CloudStorageRepository GetSignedURL メソッドのテスト
+// ============================================================================
+
+func TestCloudStorageRepository_GetSignedURL_Success(t *testing.T) {
+	expectedURL := "https://storage.googleapis.com/bucket/uploads/test-uuid.jpg?signature=xxx"
+
+	object := &mockStorageObject{
+		attrsFunc: func(ctx context.Context) (*storage.ObjectAttrs, error) {
+			return &storage.ObjectAttrs{}, nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	bucketWithSignedURL := &mockStorageBucketWithSignedURL{
+		signedURLFunc: func(objectName string, opts *storage.SignedURLOptions) (string, error) {
+			assert.Equal(t, "uploads/test-uuid.jpg", objectName)
+			assert.Equal(t, "GET", opts.Method)
+			return expectedURL, nil
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+		bucketWithSignedURLFunc: func(name string) storageBucketWithSignedURL {
+			return bucketWithSignedURL
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	url, err := repo.GetSignedURL(context.Background(), "uploads/test-uuid.jpg", 15*time.Minute)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedURL, url)
+}
+
+func TestCloudStorageRepository_GetSignedURL_ObjectNotFound(t *testing.T) {
+	object := &mockStorageObject{
+		attrsFunc: func(ctx context.Context) (*storage.ObjectAttrs, error) {
+			return nil, storage.ErrObjectNotExist
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.GetSignedURL(context.Background(), "uploads/test-uuid.jpg", 15*time.Minute)
+
+	assert.Error(t, err)
+	assert.Equal(t, ErrObjectNotFound, err)
+}
+
+func TestCloudStorageRepository_GetSignedURL_AttrsError(t *testing.T) {
+	object := &mockStorageObject{
+		attrsFunc: func(ctx context.Context) (*storage.ObjectAttrs, error) {
+			return nil, errors.New("attrs error")
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.GetSignedURL(context.Background(), "uploads/test-uuid.jpg", 15*time.Minute)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "オブジェクト情報の取得に失敗")
+}
+
+func TestCloudStorageRepository_GetSignedURL_SignedURLError(t *testing.T) {
+	object := &mockStorageObject{
+		attrsFunc: func(ctx context.Context) (*storage.ObjectAttrs, error) {
+			return &storage.ObjectAttrs{}, nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	bucketWithSignedURL := &mockStorageBucketWithSignedURL{
+		signedURLFunc: func(objectName string, opts *storage.SignedURLOptions) (string, error) {
+			return "", errors.New("signed url error")
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+		bucketWithSignedURLFunc: func(name string) storageBucketWithSignedURL {
+			return bucketWithSignedURL
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	_, err := repo.GetSignedURL(context.Background(), "uploads/test-uuid.jpg", 15*time.Minute)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "署名付きURLの生成に失敗")
+}
+
+// ============================================================================
+// CloudStorageRepository Delete メソッドのテスト
+// ============================================================================
+
+func TestCloudStorageRepository_Delete_Success(t *testing.T) {
+	deleteCalled := false
+	object := &mockStorageObject{
+		deleteFunc: func(ctx context.Context) error {
+			deleteCalled = true
+			return nil
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	err := repo.Delete(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.NoError(t, err)
+	assert.True(t, deleteCalled)
+}
+
+func TestCloudStorageRepository_Delete_AlreadyDeleted(t *testing.T) {
+	object := &mockStorageObject{
+		deleteFunc: func(ctx context.Context) error {
+			return storage.ErrObjectNotExist
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	err := repo.Delete(context.Background(), "uploads/test-uuid.jpg")
+
+	// 既に削除済みの場合はエラーにならない
+	assert.NoError(t, err)
+}
+
+func TestCloudStorageRepository_Delete_Error(t *testing.T) {
+	object := &mockStorageObject{
+		deleteFunc: func(ctx context.Context) error {
+			return errors.New("delete error")
+		},
+	}
+	bucket := &mockStorageBucket{
+		objectFunc: func(name string) storageObject {
+			return object
+		},
+	}
+	client := &mockStorageClient{
+		bucketFunc: func(name string) storageBucket {
+			return bucket
+		},
+	}
+
+	repo := &cloudStorageRepository{
+		client:     client,
+		bucketName: "test-bucket",
+	}
+
+	err := repo.Delete(context.Background(), "uploads/test-uuid.jpg")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Cloud Storageからの削除に失敗")
 }
