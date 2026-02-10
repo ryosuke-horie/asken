@@ -11,7 +11,7 @@ struct WeightView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if viewModel.isLoading {
+                if viewModel.isInitialLoading || viewModel.isLoading {
                     Spacer()
                     ProgressView()
                     Spacer()
