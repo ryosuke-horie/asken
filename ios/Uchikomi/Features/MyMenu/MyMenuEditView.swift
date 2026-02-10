@@ -74,6 +74,10 @@ struct MyMenuEditView: View {
                         }
                         .padding()
                     }
+                    .scrollDismissesKeyboard(.immediately)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 0)
+                    }
                 }
             }
             .navigationTitle(viewModel.isEditMode ? "メニューを編集" : "メニューを登録")
