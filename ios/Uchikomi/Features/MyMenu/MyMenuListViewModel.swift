@@ -7,7 +7,7 @@ final class MyMenuListViewModel {
     var errorMessage: String?
     var isDeleting = false
 
-    private let repository: MyMenuRepositoryProtocol
+    let repository: MyMenuRepositoryProtocol
 
     init(repository: MyMenuRepositoryProtocol = MyMenuRepository()) {
         self.repository = repository
@@ -28,19 +28,20 @@ final class MyMenuListViewModel {
         isLoading = false
     }
 
-    func deleteMyMenu(id: String) async {
+    func deleteMyMenu(id: String) async throws {
         isDeleting = true
         errorMessage = nil
+        defer { isDeleting = false }
 
         do {
             try await repository.deleteMyMenu(id: id)
             myMenuItems.removeAll { $0.id == id }
         } catch let error as APIError {
             errorMessage = error.localizedDescription
+            throw error
         } catch {
             errorMessage = "削除に失敗しました"
+            throw error
         }
-
-        isDeleting = false
     }
 }

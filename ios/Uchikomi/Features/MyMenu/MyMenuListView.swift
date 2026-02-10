@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MyMenuListView: View {
     @State private var viewModel = MyMenuListViewModel()
-    @State private var selectedMenuItem: MyMenuItem?
     @State private var showingCreateSheet = false
 
     var body: some View {
@@ -55,9 +54,9 @@ struct MyMenuListView: View {
             .sheet(isPresented: $showingCreateSheet) {
                 MyMenuEditView()
             }
-            .onChange(of: showingCreateSheet) { oldValue, newValue in
+            .onChange(of: showingCreateSheet) { _, isShowing in
                 // シートが閉じたときにリストを再読み込み
-                if oldValue && !newValue {
+                if !isShowing {
                     Task {
                         await viewModel.loadMyMenuList()
                     }
@@ -71,9 +70,18 @@ struct MyMenuListView: View {
 
     private func deleteMenus(at offsets: IndexSet) {
         Task {
-            for index in offsets {
-                let item = viewModel.myMenuItems[index]
-                await viewModel.deleteMyMenu(id: item.id)
+            // 削除対象のIDを事前に収集
+            let idsToDelete = offsets.map { viewModel.myMenuItems[$0].id }
+
+            for id in idsToDelete {
+                do {
+                    try await viewModel.deleteMyMenu(id: id)
+                } catch {
+                    // エラーは ViewModel で errorMessage に設定済み
+                    // リストを再読み込みして状態を同期
+                    await viewModel.loadMyMenuList()
+                    break  // 1つでも失敗したら中断
+                }
             }
         }
     }

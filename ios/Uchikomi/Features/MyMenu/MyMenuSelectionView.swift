@@ -35,7 +35,8 @@ struct MyMenuSelectionView: View {
                                     item: item,
                                     mealType: selectedMealType,
                                     mealDate: mealDate,
-                                    onRecorded: onRecorded
+                                    onRecorded: onRecorded,
+                                    repository: viewModel.repository
                                 )
                             }
                         }
@@ -66,9 +67,18 @@ struct MyMenuSelectionCard: View {
     let mealType: MealType
     let mealDate: Date
     let onRecorded: () -> Void
+    let repository: MyMenuRepositoryProtocol
 
     @State private var isRecording = false
     @State private var errorMessage: String?
+
+    init(item: MyMenuItem, mealType: MealType, mealDate: Date, onRecorded: @escaping () -> Void, repository: MyMenuRepositoryProtocol = MyMenuRepository()) {
+        self.item = item
+        self.mealType = mealType
+        self.mealDate = mealDate
+        self.onRecorded = onRecorded
+        self.repository = repository
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -126,8 +136,8 @@ struct MyMenuSelectionCard: View {
 
     private func recordFromMyMenu() async {
         isRecording = true
+        defer { isRecording = false }
 
-        let repository = MyMenuRepository()
         do {
             _ = try await repository.recordFromMyMenu(
                 id: item.id,
@@ -135,11 +145,14 @@ struct MyMenuSelectionCard: View {
                 mealDate: mealDate
             )
             onRecorded()
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "記録に失敗しました"
+            #if DEBUG
+            debugPrint("[MyMenuSelectionCard] Unexpected record error: \(error)")
+            #endif
+            errorMessage = "記録に失敗しました。ネットワークを確認してやり直してください。"
         }
-
-        isRecording = false
     }
 }
 
@@ -168,28 +181,7 @@ private struct ErrorView: View {
 // MARK: - Preview
 
 #Preview {
-    let sampleItem = MyMenuItem(
-        id: UUID().uuidString,
-        name: "お気に入り朝食",
-        foods: [
-            NutritionInfo(
-                name: "グラノーラ",
-                estimatedAmount: "100g",
-                caloriesKcal: 350,
-                proteinG: 10,
-                fatG: 5,
-                carbohydratesG: 50
-            )
-        ],
-        totalCalories: 350,
-        totalProtein: 10,
-        totalFat: 5,
-        totalCarbohydrates: 50,
-        createdAt: Date(),
-        updatedAt: Date()
-    )
-
-    return NavigationStack {
+    NavigationStack {
         MyMenuSelectionView(
             selectedMealType: .breakfast,
             mealDate: Date(),
