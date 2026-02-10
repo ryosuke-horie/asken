@@ -51,11 +51,6 @@ func TestCalculateNutrition_EmptyFoods(t *testing.T) {
 	assert.Contains(t, err.Error(), "画像から食材を認識できませんでした")
 }
 
-func TestCalculateNutrition_InvalidResponse(t *testing.T) {
-	// このテストは実際のGemini APIの挙動に依存するためスキップ
-	t.Skip("Gemini APIの挙動に依存するためスキップ")
-}
-
 func TestNutritionCalculator_CalculateNutrition_MockSuccess(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
 		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
