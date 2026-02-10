@@ -78,10 +78,14 @@ final class MyMenuEditViewModel {
     }
 
     func save() async {
-        guard isValid else { return }
+        guard isValid else {
+            errorMessage = "メニュー名と少なくとも1つの食品を入力してください"
+            return
+        }
 
         isSaving = true
         errorMessage = nil
+        defer { isSaving = false }
 
         let foods = foodItems.map { item in
             NutritionInfo(
@@ -106,8 +110,6 @@ final class MyMenuEditViewModel {
         } catch {
             errorMessage = "保存に失敗しました"
         }
-
-        isSaving = false
     }
 
     func delete() async {
@@ -115,6 +117,7 @@ final class MyMenuEditViewModel {
 
         isSaving = true
         errorMessage = nil
+        defer { isSaving = false }
 
         do {
             try await repository.deleteMyMenu(id: item.id)
@@ -124,8 +127,6 @@ final class MyMenuEditViewModel {
         } catch {
             errorMessage = "削除に失敗しました"
         }
-
-        isSaving = false
     }
 
     // MARK: - Manual Food Input
@@ -302,6 +303,7 @@ final class MyMenuEditViewModel {
             #if DEBUG
             assertionFailure("applyAnalysisResult called but analysisResult is nil")
             #endif
+            errorMessage = "分析結果の読み込みに失敗しました。再度分析を行ってください。"
             return
         }
 
