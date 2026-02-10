@@ -33,9 +33,114 @@ type StorageRepository interface {
 	Delete(ctx context.Context, objectName string) error
 }
 
+// ============================================================================
+// Cloud Storage 用インターフェース（テスト可能にするための抽象化）
+// ============================================================================
+
+// storageBucket は Cloud Storage バケットのインターフェース
+type storageBucket interface {
+	Object(name string) storageObject
+}
+
+// storageObject は Cloud Storage オブジェクトのインターフェース
+type storageObject interface {
+	NewWriter(ctx context.Context) storageObjectWriter
+	NewReader(ctx context.Context) (storageObjectReader, error)
+	Attrs(ctx context.Context) (*storage.ObjectAttrs, error)
+	Delete(ctx context.Context) error
+}
+
+// storageObjectWriter は Cloud Storage ライターのインターフェース
+type storageObjectWriter interface {
+	Write(p []byte) (int, error)
+	Close() error
+	SetContentType(contentType string)
+}
+
+// storageObjectReader は Cloud Storage リーダーのインターフェース
+type storageObjectReader interface {
+	Read(p []byte) (int, error)
+	Close() error
+}
+
+// storageBucketWithSignedURL は署名付きURL生成機能を持つバケットのインターフェース
+type storageBucketWithSignedURL interface {
+	SignedURL(objectName string, opts *storage.SignedURLOptions) (string, error)
+}
+
+// storageClient は Cloud Storage クライアントのインターフェース
+type storageClient interface {
+	Bucket(name string) storageBucket
+	BucketWithSignedURL(name string) storageBucketWithSignedURL
+}
+
+// ============================================================================
+// 実装（storage.Client のアダプター）
+// ============================================================================
+
+// gcsStorageClient は storage.Client を storageClient インターフェースに適合させるアダプター
+type gcsStorageClient struct {
+	client *storage.Client
+}
+
+func (a *gcsStorageClient) Bucket(name string) storageBucket {
+	return &gcsBucketAdapter{bucket: a.client.Bucket(name)}
+}
+
+func (a *gcsStorageClient) BucketWithSignedURL(name string) storageBucketWithSignedURL {
+	return a.client.Bucket(name)
+}
+
+// gcsBucketAdapter は storage.BucketHandle を storageBucket インターフェースに適合させるアダプター
+type gcsBucketAdapter struct {
+	bucket *storage.BucketHandle
+}
+
+func (a *gcsBucketAdapter) Object(name string) storageObject {
+	return &gcsObjectAdapter{object: a.bucket.Object(name)}
+}
+
+// gcsObjectAdapter は storage.ObjectHandle を storageObject インターフェースに適合させるアダプター
+type gcsObjectAdapter struct {
+	object *storage.ObjectHandle
+}
+
+func (a *gcsObjectAdapter) NewWriter(ctx context.Context) storageObjectWriter {
+	return &gcsWriterAdapter{writer: a.object.NewWriter(ctx)}
+}
+
+func (a *gcsObjectAdapter) NewReader(ctx context.Context) (storageObjectReader, error) {
+	return a.object.NewReader(ctx)
+}
+
+func (a *gcsObjectAdapter) Attrs(ctx context.Context) (*storage.ObjectAttrs, error) {
+	return a.object.Attrs(ctx)
+}
+
+func (a *gcsObjectAdapter) Delete(ctx context.Context) error {
+	return a.object.Delete(ctx)
+}
+
+// gcsWriterAdapter は storage.Writer を storageObjectWriter インターフェースに適合させるアダプター
+type gcsWriterAdapter struct {
+	writer *storage.Writer
+}
+
+func (a *gcsWriterAdapter) Write(p []byte) (int, error) {
+	return a.writer.Write(p)
+}
+
+func (a *gcsWriterAdapter) Close() error {
+	return a.writer.Close()
+}
+
+func (a *gcsWriterAdapter) SetContentType(contentType string) {
+	a.writer.ContentType = contentType
+}
+
 // cloudStorageRepository はCloud Storageを使用したStorageRepositoryの実装
 type cloudStorageRepository struct {
-	client     *storage.Client
+	client     storageClient
 	bucketName string
 }
 
@@ -48,7 +153,7 @@ func NewStorageRepositoryCloudStorage(client *storage.Client, bucketName string)
 		return nil, fmt.Errorf("bucket name is required")
 	}
 	return &cloudStorageRepository{
-		client:     client,
+		client:     &gcsStorageClient{client: client},
 		bucketName: bucketName,
 	}, nil
 }
@@ -60,13 +165,6 @@ func generateObjectName(filename string) string {
 	return fmt.Sprintf("uploads/%s%s", fileID, ext)
 }
 
-// convertStorageError はCloud Storageのエラーをドメインエラーに変換する
-func convertStorageError(err error) error {
-	if errors.Is(err, storage.ErrObjectNotExist) {
-		return ErrObjectNotFound
-	}
-	return err
-}
 
 // Upload はファイルをCloud Storageにアップロードし、オブジェクト名を返す
 func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
@@ -74,7 +172,7 @@ func (r *cloudStorageRepository) Upload(ctx context.Context, file io.Reader, fil
 
 	obj := r.client.Bucket(r.bucketName).Object(objectName)
 	writer := obj.NewWriter(ctx)
-	writer.ContentType = contentType
+	writer.SetContentType(contentType)
 
 	if _, err := io.Copy(writer, file); err != nil {
 		return "", fmt.Errorf("Cloud Storageへのアップロードに失敗: %w", err)
@@ -132,7 +230,8 @@ func (r *cloudStorageRepository) GetSignedURL(ctx context.Context, objectName st
 		Scheme:  storage.SigningSchemeV4,
 	}
 
-	url, err := r.client.Bucket(r.bucketName).SignedURL(objectName, opts)
+	bucket := r.client.BucketWithSignedURL(r.bucketName)
+	url, err := bucket.SignedURL(objectName, opts)
 	if err != nil {
 		return "", fmt.Errorf("署名付きURLの生成に失敗: %w", err)
 	}
