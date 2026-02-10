@@ -103,6 +103,8 @@ terraform plan
 terraform apply
 ```
 
+検証済み: 上記の方法でローカル環境からTerraformがGoogle Cloudに正常に認証されることを確認しています。
+
 ### Backend設定
 
 - TerraformのstateはGCS (Google Cloud Storage) に保存
