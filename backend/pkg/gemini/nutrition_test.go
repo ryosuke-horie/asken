@@ -56,6 +56,100 @@ func TestCalculateNutrition_InvalidResponse(t *testing.T) {
 	t.Skip("Gemini APIの挙動に依存するためスキップ")
 }
 
+func TestNutritionCalculator_CalculateNutrition_MockSuccess(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{
+				Response: `[{
+					"name": "刺身盛り合わせ",
+					"estimated_amount": "8切れ",
+					"calories_kcal": 200,
+					"protein_g": 20,
+					"fat_g": 5,
+					"carbohydrates_g": 10
+				}]`,
+			}, nil
+		},
+	}
+
+	calculator := NewNutritionCalculatorWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	foods := []FoodItem{
+		{Name: "刺身盛り合わせ", EstimatedAmount: "8切れ"},
+	}
+
+	nutritionList, err := calculator.CalculateNutrition(ctx, foods)
+
+	require.NoError(t, err)
+	assert.Len(t, nutritionList, 1)
+	assert.Equal(t, "刺身盛り合わせ", nutritionList[0].Name)
+	assert.Equal(t, 200.0, nutritionList[0].Calories)
+	assert.Equal(t, 20.0, nutritionList[0].Protein)
+	assert.Equal(t, 5.0, nutritionList[0].Fat)
+	assert.Equal(t, 10.0, nutritionList[0].Carbohydrates)
+}
+
+func TestNutritionCalculator_CalculateNutrition_MockAPIError(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	calculator := NewNutritionCalculatorWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	foods := []FoodItem{
+		{Name: "刺身盛り合わせ", EstimatedAmount: "8切れ"},
+	}
+
+	_, err := calculator.CalculateNutrition(ctx, foods)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Gemini API呼び出しエラー")
+}
+
+func TestNutritionCalculator_CalculateNutrition_MockInvalidJSON(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{Response: `{invalid json}`}, nil
+		},
+	}
+
+	calculator := NewNutritionCalculatorWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	foods := []FoodItem{
+		{Name: "刺身盛り合わせ", EstimatedAmount: "8切れ"},
+	}
+
+	_, err := calculator.CalculateNutrition(ctx, foods)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "パースエラー")
+}
+
+func TestNutritionCalculator_CalculateNutrition_MockEmptyResponse(t *testing.T) {
+	mockHTTPClient := &MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+			return &Response{Response: `[]`}, nil
+		},
+	}
+
+	calculator := NewNutritionCalculatorWithHTTPClient(mockHTTPClient)
+	ctx := context.Background()
+
+	foods := []FoodItem{
+		{Name: "刺身盛り合わせ", EstimatedAmount: "8切れ"},
+	}
+
+	nutritionList, err := calculator.CalculateNutrition(ctx, foods)
+
+	require.NoError(t, err)
+	assert.Empty(t, nutritionList)
+}
+
 func TestCalculateNutrition_Timeout(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
