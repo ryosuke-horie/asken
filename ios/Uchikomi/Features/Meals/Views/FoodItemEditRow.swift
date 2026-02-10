@@ -84,7 +84,7 @@ private struct NutrientLabel: View {
                 .foregroundStyle(.secondary)
             Text(String(format: "%.0f", value))
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .fontWeight(.medium)
         }
         .frame(maxWidth: .infinity)
     }
