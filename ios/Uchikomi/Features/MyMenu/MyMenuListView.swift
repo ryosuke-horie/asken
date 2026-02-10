@@ -55,9 +55,7 @@ struct MyMenuListView: View {
             MyMenuEditView()
         }
         .task {
-            if viewModel.myMenuItems.isEmpty {
-                await viewModel.loadMyMenuList()
-            }
+            await viewModel.loadMyMenuList()
         }
     }
 
