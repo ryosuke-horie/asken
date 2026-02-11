@@ -4,6 +4,7 @@ import Foundation
 // MARK: - AppleSignInManagerProtocol
 
 /// @mockable
+// periphery:ignore:all - Apple Sign-In用（Apple Developer Program登録後に有効化）
 public protocol AppleSignInManagerProtocol {
     func signIn() async throws -> (credential: ASAuthorizationAppleIDCredential, nonce: String)
 }
@@ -46,6 +47,7 @@ public final class AuthManager {
         )
     }
 
+    // periphery:ignore - Apple Sign-In用（Apple Developer Program登録後に有効化）
     @MainActor
     public func signInWithApple() async throws {
         let (credential, nonce) = try await appleSignInManager.signIn()

@@ -70,21 +70,6 @@ final class WeightViewModel {
         }
     }
 
-    func deleteRecord(id: String) async {
-        errorMessage = nil
-
-        do {
-            try await repository.deleteRecord(id: id)
-            await loadData()
-        } catch let error as APIError {
-            logger.error("体重記録削除でAPIエラー: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
-        } catch {
-            logger.error("体重記録削除で予期しないエラー: \(error.localizedDescription)")
-            errorMessage = "削除に失敗しました"
-        }
-    }
-
     private func loadChartRecords() async throws -> [WeightRecord] {
         let to = Date()
         guard let from = Calendar.current.date(byAdding: .day, value: -selectedPeriod.days, to: to) else {

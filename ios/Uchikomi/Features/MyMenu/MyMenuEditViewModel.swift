@@ -8,7 +8,6 @@ final class MyMenuEditViewModel {
     private enum Constants {
         static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
         static let maxPollingAttempts = 60
-        static let pollingTimeoutSeconds = 120
     }
 
     // MARK: - Properties
@@ -67,14 +66,6 @@ final class MyMenuEditViewModel {
 
     var isValid: Bool {
         !menuName.isEmpty && !foodItems.isEmpty
-    }
-
-    func addFoodItem() {
-        foodItems.append(FoodEditItem())
-    }
-
-    func removeFoodItem(at index: Int) {
-        foodItems.remove(at: index)
     }
 
     func save() async {

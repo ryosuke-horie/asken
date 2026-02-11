@@ -18,7 +18,7 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         }
     }
 
-    var currentUser: FirebaseAuthUser? {
+    var currentUser: FirebaseAuthUser? { // periphery:ignore - Apple Sign-In有効化後に使用
         guard let user = Auth.auth().currentUser else { return nil }
         return FirebaseAuthUser(
             uid: user.uid,
@@ -27,7 +27,7 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         )
     }
 
-    var isSignedIn: Bool {
+    var isSignedIn: Bool { // periphery:ignore - Apple Sign-In有効化後に使用
         Auth.auth().currentUser != nil
     }
 
@@ -46,6 +46,7 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         )
     }
 
+    // periphery:ignore - Apple Sign-In用（Apple Developer Program登録後に有効化）
     func signInWithApple(credential: ASAuthorizationAppleIDCredential, nonce: String) async throws -> FirebaseAuthUser {
         guard let appleIDToken = credential.identityToken,
               let idTokenString = String(data: appleIDToken, encoding: .utf8) else {

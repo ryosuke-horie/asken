@@ -1,3 +1,4 @@
+// periphery:ignore:all - DEBUG環境でのモック認証サービス
 #if DEBUG
 import AuthenticationServices
 import Foundation
