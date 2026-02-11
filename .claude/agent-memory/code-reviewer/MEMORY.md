@@ -34,7 +34,6 @@
 - client_test.go: C (重複テスト、ユニットテスト不足)
 - nutrition_test.go: D (ユニットテスト1件のみ)
 - text_parser_test.go: D (ユニットテスト2件のみ)
-- equipment_normalizer.go: テストなし
 - training_menu.go: テストなし
 
 ### 主要な問題パターン
