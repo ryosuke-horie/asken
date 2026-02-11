@@ -155,7 +155,6 @@ Context に firebase_uid を設定
 | classifier.go | 画像から食品分類 |
 | text_parser.go | テキストから食品抽出 |
 | nutrition.go | 栄養素計算 |
-| equipment_normalizer.go | 器具名正規化（未使用） |
 
 ### Worker (internal/worker/)
 
