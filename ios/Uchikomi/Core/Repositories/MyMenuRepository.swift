@@ -6,7 +6,6 @@ import Foundation
 protocol MyMenuRepositoryProtocol {
     func fetchMyMenuList() async throws -> [MyMenuItem]
     func createMyMenu(name: String, foods: [NutritionInfo]) async throws -> MyMenuItem
-    func getMyMenu(id: String) async throws -> MyMenuItem
     func updateMyMenu(id: String, name: String, foods: [NutritionInfo]) async throws -> MyMenuItem
     func deleteMyMenu(id: String) async throws
     func recordFromMyMenu(id: String, mealType: MealType, mealDate: Date) async throws -> String
@@ -62,10 +61,6 @@ final class MyMenuRepository: MyMenuRepositoryProtocol {
     func createMyMenu(name: String, foods: [NutritionInfo]) async throws -> MyMenuItem {
         let request = CreateMyMenuRequest(name: name, foods: foods)
         return try await apiClient.request(endpoint: .createMyMenu, body: request)
-    }
-
-    func getMyMenu(id: String) async throws -> MyMenuItem {
-        try await apiClient.request(endpoint: .myMenuDetail(id: id))
     }
 
     func updateMyMenu(id: String, name: String, foods: [NutritionInfo]) async throws -> MyMenuItem {

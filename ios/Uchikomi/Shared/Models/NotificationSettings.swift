@@ -67,10 +67,6 @@ struct NotificationSettings: Codable, Equatable {
         weight: .default
     )
 
-    func setting(for mealType: MealType) -> MealNotificationSetting? {
-        meals.first { $0.mealType == mealType }
-    }
-
     func updatingSetting(
         for mealType: MealType,
         transform: (MealNotificationSetting) -> MealNotificationSetting

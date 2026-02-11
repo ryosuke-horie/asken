@@ -3,11 +3,10 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		02AA3868F22B4D497DF98C4A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */; };
 		09198218133C2AABFB4A2EE4 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 56C81F160193F22EB94EA0B2 /* FirebaseAuth */; };
 		0A764374EE9687C0474468F5 /* WeightViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */; };
 		0ED646278CAD55B8CBFABAA4 /* WeightInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165353821DFBE63F176DD5EC /* WeightInputViewModel.swift */; };
@@ -70,7 +69,6 @@
 		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
 		F57ECB73B55F60AC68F6610C /* MeasurementUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E2610614116D5AB2DB9B01 /* MeasurementUnit.swift */; };
 		F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */; };
-		FF377433D47D4349EDCB9B32 /* QuantityValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFC80D21D6044F91D9BE6E5E /* QuantityValidator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -125,10 +123,9 @@
 		339AA9044DFFD3CF4742F75A /* WeightRecordRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecordRow.swift; sourceTree = "<group>"; };
 		35059CC7496A739452218269 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
-		3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
 		403F558A61BBFE489C45B03F /* MyMenuEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyMenuEditViewModel.swift; sourceTree = "<group>"; };
-		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		578AB03F8600834E16F8A2C7 /* ImageFilenameValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageFilenameValidator.swift; sourceTree = "<group>"; };
@@ -158,7 +155,6 @@
 		BB9B889F094B7078D80B6774 /* WeightRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecord.swift; sourceTree = "<group>"; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		BFC80D21D6044F91D9BE6E5E /* QuantityValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityValidator.swift; sourceTree = "<group>"; };
 		C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParser.swift; sourceTree = "<group>"; };
 		D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
 		D110691FF801C9B691572637 /* MockFirebaseAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFirebaseAuthService.swift; sourceTree = "<group>"; };
@@ -244,7 +240,6 @@
 			children = (
 				BFA2222E86DCD9A696476C35 /* Theme.swift */,
 				12042A58C9A5CFE1847BA3BC /* Components */,
-				59D09B36A028648E98271E99 /* Extensions */,
 				50CAEDA997D5CCC6543DD20E /* Models */,
 			);
 			path = Shared;
@@ -324,13 +319,6 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		59D09B36A028648E98271E99 /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Extensions;
-			sourceTree = "<group>";
-		};
 		5B9BF1171E6F2B31EFAD1AA2 /* Repositories */ = {
 			isa = PBXGroup;
 			children = (
@@ -339,13 +327,6 @@
 				D263D2BE9A384E6FEE79B283 /* WeightRepository.swift */,
 			);
 			path = Repositories;
-			sourceTree = "<group>";
-		};
-		5D750EAFD57EBCFF7E9F88E7 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		61B0C77EB58EA0A5195F7B58 = {
@@ -407,7 +388,6 @@
 			isa = PBXGroup;
 			children = (
 				D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */,
-				5D750EAFD57EBCFF7E9F88E7 /* Resources */,
 			);
 			path = UchikomiTests;
 			sourceTree = "<group>";
@@ -428,7 +408,6 @@
 				578AB03F8600834E16F8A2C7 /* ImageFilenameValidator.swift */,
 				99E2610614116D5AB2DB9B01 /* MeasurementUnit.swift */,
 				C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */,
-				BFC80D21D6044F91D9BE6E5E /* QuantityValidator.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -458,7 +437,6 @@
 			isa = PBXGroup;
 			children = (
 				73781A308EDE339E10EA5366 /* Assets.xcassets */,
-				3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */,
 				74BA1A7B25B0A786BB8F9486 /* Info.plist */,
 			);
 			path = Resources;
@@ -584,6 +562,7 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					B600300EE7A5CB7D431959E3 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C53720A77BB7F46352985FE6 = {
@@ -611,6 +590,7 @@
 				210E3921DA83E5D403E3D7B7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -627,7 +607,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */,
-				02AA3868F22B4D497DF98C4A /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -699,7 +678,6 @@
 				547CB089B8E479E5C1D0D55A /* NutritionEditorViewModel.swift in Sources */,
 				936552E65ECC1A9F99EE503D /* NutritionSummaryCard.swift in Sources */,
 				DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */,
-				FF377433D47D4349EDCB9B32 /* QuantityValidator.swift in Sources */,
 				E278AC45E79840257F8A1253 /* SettingsView.swift in Sources */,
 				F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */,
 				9AFC5C49FDD964031F30E04C /* Theme.swift in Sources */,
@@ -745,7 +723,6 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -783,7 +760,6 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
