@@ -10,13 +10,16 @@ final class MealsViewModel {
 
     private let repository: MealRepositoryProtocol
     private let nutritionGoalRepository: NutritionGoalRepositoryProtocol
+    private let weightRepository: WeightRepositoryProtocol
 
     init(
         repository: MealRepositoryProtocol = MealRepository(),
-        nutritionGoalRepository: NutritionGoalRepositoryProtocol = NutritionGoalRepository()
+        nutritionGoalRepository: NutritionGoalRepositoryProtocol = NutritionGoalRepository(),
+        weightRepository: WeightRepositoryProtocol = WeightRepository()
     ) {
         self.repository = repository
         self.nutritionGoalRepository = nutritionGoalRepository
+        self.weightRepository = weightRepository
     }
 
     var formattedDate: String {
@@ -34,14 +37,58 @@ final class MealsViewModel {
         isLoading = true
         errorMessage = nil
 
+        // 食事データを取得
         do {
             dailyMeals = try await repository.getDailyMeals(date: selectedDate)
-            // 栄養目標も取得
-            nutritionGoal = try await nutritionGoalRepository.getGoal()
         } catch let error as APIError {
             errorMessage = error.localizedDescription
+            isLoading = false
+            return
         } catch {
             errorMessage = "食事データの取得に失敗しました"
+            isLoading = false
+            return
+        }
+
+        // 体重データと栄養目標を取得（失敗しても食事データは表示）
+        let currentWeight: Double?
+        let goalWeight: Double?
+
+        let calendar = Calendar.current
+        let endDate = selectedDate
+        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
+
+        do {
+            let weightResponse = try await weightRepository.getRecords(
+                from: startDate,
+                to: endDate
+            )
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let todayString = dateFormatter.string(from: selectedDate)
+
+            if let todaySummary = weightResponse.dailySummary[todayString] {
+                currentWeight = todaySummary.latestWeight
+            } else {
+                currentWeight = weightResponse.records.first?.weightKg
+            }
+
+            goalWeight = weightResponse.goal?.targetWeightKg
+        } catch {
+            // 体重取得に失敗した場合はnilを使用（フェーズは維持期になる）
+            // ログは出力できるが、ユーザーへの表示は不要
+            currentWeight = nil
+            goalWeight = nil
+        }
+
+        do {
+            nutritionGoal = try await nutritionGoalRepository.getGoal(
+                currentWeight: currentWeight,
+                goalWeight: goalWeight
+            )
+        } catch {
+            // 栄養目標取得に失敗した場合はnilを使用（目標なし表示になる）
+            nutritionGoal = nil
         }
 
         isLoading = false

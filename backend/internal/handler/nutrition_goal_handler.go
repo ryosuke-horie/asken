@@ -72,12 +72,22 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 			http.Error(w, "current_weightのパースに失敗しました", http.StatusBadRequest)
 			return
 		}
+		// 範囲チェック
+		if err := repository.ValidateWeightKg(currentWeight); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	if targetWeightStr != "" {
 		targetWeight, err = strconv.ParseFloat(targetWeightStr, 64)
 		if err != nil {
 			http.Error(w, "target_weightのパースに失敗しました", http.StatusBadRequest)
+			return
+		}
+		// 範囲チェック
+		if err := repository.ValidateWeightKg(targetWeight); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
