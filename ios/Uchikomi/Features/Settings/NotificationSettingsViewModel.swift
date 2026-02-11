@@ -67,6 +67,9 @@ final class NotificationSettingsViewModel {
             }
         }
 
+        // エラー状態をリセット
+        _ = scheduler.lastSchedulingError
+
         settings.isGlobalEnabled.toggle()
         let previousSettings = settings
         store.save(settings)
@@ -76,9 +79,8 @@ final class NotificationSettingsViewModel {
         if let error = scheduler.lastSchedulingError {
             logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
             settings = previousSettings
-            settings.isGlobalEnabled.toggle()
             store.save(settings)
-            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+            schedulingErrorMessage = errorMessage(from: error)
         }
     }
 
@@ -105,6 +107,9 @@ final class NotificationSettingsViewModel {
         _ mealType: MealType,
         transform: @escaping (MealNotificationSetting) -> MealNotificationSetting
     ) async {
+        // エラー状態をリセット
+        _ = scheduler.lastSchedulingError
+
         let previousSettings = settings
         settings = settings.updatingSetting(for: mealType, transform: transform)
         store.save(settings)
@@ -115,7 +120,7 @@ final class NotificationSettingsViewModel {
             logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
             settings = previousSettings
             store.save(settings)
-            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+            schedulingErrorMessage = errorMessage(from: error)
         }
     }
 
@@ -141,6 +146,9 @@ final class NotificationSettingsViewModel {
     private func updateWeightSetting(
         transform: @escaping (WeightNotificationSetting) -> WeightNotificationSetting
     ) async {
+        // エラー状態をリセット
+        _ = scheduler.lastSchedulingError
+
         let previousSettings = settings
         settings = settings.updatingWeightSetting(transform: transform)
         store.save(settings)
@@ -151,7 +159,7 @@ final class NotificationSettingsViewModel {
             logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
             settings = previousSettings
             store.save(settings)
-            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+            schedulingErrorMessage = errorMessage(from: error)
         }
     }
 
@@ -163,5 +171,25 @@ final class NotificationSettingsViewModel {
 
     private func clampedMinute(_ value: Int) -> Int {
         min(max(value, 0), 59)
+    }
+
+    private func errorMessage(from error: Error) -> String {
+        // システムエラーの場合はより具体的なメッセージを返す
+        if let nsError = error as? NSError {
+            switch nsError.domain {
+            case "UNErrorDomain":
+                switch nsError.code {
+                case 0: // notificationNotAllowed
+                    return "通知が許可されていません。設定アプリで通知を許可してください。"
+                case 1: // notificationLimitExceeded
+                    return "通知の登録数が上限に達しました。"
+                default:
+                    return "通知の登録に失敗しました。iOSの通知設定を確認してください。"
+                }
+            default:
+                break
+            }
+        }
+        return "通知の登録に一時的に失敗しました。もう一度お試しください。"
     }
 }
