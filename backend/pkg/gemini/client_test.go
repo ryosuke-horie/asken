@@ -12,7 +12,8 @@ import (
 func TestExecuteGeminiAPI_Success(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
-	client := NewClient(60 * time.Second)
+	client, err := NewClient(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// 簡単なプロンプトでテスト
@@ -29,13 +30,14 @@ func TestExecuteGeminiAPI_Timeout(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトを設定
-	client := NewClient(1 * time.Millisecond)
+	client, err := NewClient(1 * time.Millisecond)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// 時間がかかりそうなプロンプト
 	prompt := "長い応答を生成してください"
 
-	_, err := client.Execute(ctx, prompt)
+	_, err = client.Execute(ctx, prompt)
 
 	// タイムアウトエラーが発生することを確認
 	assert.Error(t, err)
@@ -45,7 +47,8 @@ func TestExecuteGeminiAPI_Timeout(t *testing.T) {
 func TestExecuteGeminiAPI_JSONParse(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
-	client := NewClient(60 * time.Second)
+	client, err := NewClient(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// JSONレスポンスを期待するプロンプト
@@ -61,20 +64,48 @@ func TestExecuteGeminiAPI_JSONParse(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	timeout := 30 * time.Second
-	client := NewClient(timeout)
+	t.Run("GEMINI_API_KEYが設定されている場合は成功する", func(t *testing.T) {
+		skipIfNoGeminiAPIKey(t)
 
-	assert.NotNil(t, client)
-	assert.NotNil(t, client.httpClient)
+		timeout := 30 * time.Second
+		client, err := NewClient(timeout)
+
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.NotNil(t, client.httpClient)
+	})
+
+	t.Run("GEMINI_API_KEYが未設定の場合はエラーを返す", func(t *testing.T) {
+		t.Setenv("GEMINI_API_KEY", "")
+
+		timeout := 30 * time.Second
+		client, err := NewClient(timeout)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.ErrorIs(t, err, ErrEmptyAPIKey)
+	})
 }
 
 func TestNewClientWithAPIKey(t *testing.T) {
-	timeout := 30 * time.Second
-	apiKey := "test-api-key"
-	client := NewClientWithAPIKey(apiKey, timeout)
+	t.Run("有効なAPIキーで作成できる", func(t *testing.T) {
+		timeout := 30 * time.Second
+		apiKey := "test-api-key"
+		client, err := NewClientWithAPIKey(apiKey, timeout)
 
-	assert.NotNil(t, client)
-	assert.NotNil(t, client.httpClient)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+		assert.NotNil(t, client.httpClient)
+	})
+
+	t.Run("空のAPIキーでエラーを返す", func(t *testing.T) {
+		timeout := 30 * time.Second
+		client, err := NewClientWithAPIKey("", timeout)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.ErrorIs(t, err, ErrEmptyAPIKey)
+	})
 }
 
 func TestClient_Execute_MockSuccess(t *testing.T) {

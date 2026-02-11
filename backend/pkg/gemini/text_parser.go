@@ -14,17 +14,25 @@ type TextParser struct {
 
 // NewTextParser は新しいTextParserを作成
 // 環境変数GEMINI_API_KEYからAPIキーを読み取る
-func NewTextParser(timeout time.Duration) *TextParser {
-	return &TextParser{
-		client: NewClient(timeout),
+func NewTextParser(timeout time.Duration) (*TextParser, error) {
+	client, err := NewClient(timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text parser: %w", err)
 	}
+	return &TextParser{
+		client: client,
+	}, nil
 }
 
 // NewTextParserWithAPIKey はAPIキーを指定してTextParserを作成
-func NewTextParserWithAPIKey(apiKey string, timeout time.Duration) *TextParser {
-	return &TextParser{
-		client: NewClientWithAPIKey(apiKey, timeout),
+func NewTextParserWithAPIKey(apiKey string, timeout time.Duration) (*TextParser, error) {
+	client, err := NewClientWithAPIKey(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text parser: %w", err)
 	}
+	return &TextParser{
+		client: client,
+	}, nil
 }
 
 // NewTextParserWithClient はClientインターフェースを受け取るコンストラクタ（テスト用）

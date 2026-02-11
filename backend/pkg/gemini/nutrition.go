@@ -25,18 +25,26 @@ type NutritionCalculator struct {
 
 // NewNutritionCalculator は新しいNutritionCalculatorを作成
 // 環境変数GEMINI_API_KEYからAPIキーを読み取る
-func NewNutritionCalculator(timeout time.Duration) *NutritionCalculator {
+func NewNutritionCalculator(timeout time.Duration) (*NutritionCalculator, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	return &NutritionCalculator{
-		httpClient: NewHTTPClient(apiKey, timeout),
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create nutrition calculator: %w", err)
 	}
+	return &NutritionCalculator{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewNutritionCalculatorWithAPIKey はAPIキーを指定してNutritionCalculatorを作成
-func NewNutritionCalculatorWithAPIKey(apiKey string, timeout time.Duration) *NutritionCalculator {
-	return &NutritionCalculator{
-		httpClient: NewHTTPClient(apiKey, timeout),
+func NewNutritionCalculatorWithAPIKey(apiKey string, timeout time.Duration) (*NutritionCalculator, error) {
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create nutrition calculator: %w", err)
 	}
+	return &NutritionCalculator{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewNutritionCalculatorWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
