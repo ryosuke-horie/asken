@@ -18,7 +18,7 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         }
     }
 
-    var currentUser: FirebaseAuthUser? { // periphery:ignore - Apple Sign-In有効化後に使用
+    var currentUser: FirebaseAuthUser? { // periphery:ignore - プロトコルのAPI完全性のため保持
         guard let user = Auth.auth().currentUser else { return nil }
         return FirebaseAuthUser(
             uid: user.uid,
@@ -27,7 +27,7 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         )
     }
 
-    var isSignedIn: Bool { // periphery:ignore - Apple Sign-In有効化後に使用
+    var isSignedIn: Bool { // periphery:ignore - プロトコルのAPI完全性のため保持
         Auth.auth().currentUser != nil
     }
 

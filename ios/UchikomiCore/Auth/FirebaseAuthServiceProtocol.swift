@@ -35,8 +35,8 @@ public struct GoogleCredential {
 
 /// @mockable
 public protocol FirebaseAuthServiceProtocol {
-    var currentUser: FirebaseAuthUser? { get } // periphery:ignore - Apple Sign-In有効化後に使用
-    var isSignedIn: Bool { get } // periphery:ignore - Apple Sign-In有効化後に使用
+    var currentUser: FirebaseAuthUser? { get } // periphery:ignore - プロトコルのAPI完全性のため保持
+    var isSignedIn: Bool { get } // periphery:ignore - プロトコルのAPI完全性のため保持
 
     func signInWithGoogle(credential: GoogleCredential) async throws -> FirebaseAuthUser
     // periphery:ignore - Apple Sign-In用（Apple Developer Program登録後に有効化）

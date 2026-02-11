@@ -1,4 +1,4 @@
-// periphery:ignore:all - DEBUG環境でのモック認証サービス
+// periphery:ignore:all - #if DEBUGで囲まれているためPeripheryが参照を検出できない
 #if DEBUG
 import AuthenticationServices
 import Foundation
