@@ -27,6 +27,15 @@ struct NotificationSettingsView: View {
         } message: {
             Text("通知リマインダーを使用するには、設定アプリで通知を許可してください")
         }
+        .alert("通知の登録に失敗しました", isPresented: .constant(viewModel.schedulingErrorMessage != nil)) {
+            Button("OK") {
+                viewModel.schedulingErrorMessage = nil
+            }
+        } message: {
+            if let message = viewModel.schedulingErrorMessage {
+                Text(message)
+            }
+        }
     }
 
     // MARK: - Sections
@@ -78,21 +87,27 @@ struct NotificationSettingsView: View {
     }
 }
 
-// MARK: - MealNotificationRow
+// MARK: - NotificationRow
 
-private struct MealNotificationRow: View {
-    let setting: MealNotificationSetting
+private struct NotificationRow<S: TimedNotificationSetting>: View {
+    let setting: S
+    let icon: String
+    let label: String
     let onToggle: () -> Void
     let onTimeChange: (Int, Int) -> Void
 
     @State private var selectedTime: Date
 
     init(
-        setting: MealNotificationSetting,
+        setting: S,
+        icon: String,
+        label: String,
         onToggle: @escaping () -> Void,
         onTimeChange: @escaping (Int, Int) -> Void
     ) {
         self.setting = setting
+        self.icon = icon
+        self.label = label
         self.onToggle = onToggle
         self.onTimeChange = onTimeChange
 
@@ -104,7 +119,7 @@ private struct MealNotificationRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: setting.mealType.icon)
+            Image(systemName: icon)
                 .foregroundStyle(setting.isEnabled ? Theme.primary : .secondary)
                 .frame(width: 24)
 
@@ -113,7 +128,7 @@ private struct MealNotificationRow: View {
                 set: { _ in onToggle() }
             )) {
                 HStack {
-                    Text(setting.mealType.displayName)
+                    Text(label)
                     Spacer()
                     if setting.isEnabled {
                         DatePicker(
@@ -133,6 +148,24 @@ private struct MealNotificationRow: View {
     }
 }
 
+// MARK: - MealNotificationRow
+
+private struct MealNotificationRow: View {
+    let setting: MealNotificationSetting
+    let onToggle: () -> Void
+    let onTimeChange: (Int, Int) -> Void
+
+    var body: some View {
+        NotificationRow(
+            setting: setting,
+            icon: setting.mealType.icon,
+            label: setting.mealType.displayName,
+            onToggle: onToggle,
+            onTimeChange: onTimeChange
+        )
+    }
+}
+
 // MARK: - WeightNotificationRow
 
 private struct WeightNotificationRow: View {
@@ -140,50 +173,13 @@ private struct WeightNotificationRow: View {
     let onToggle: () -> Void
     let onTimeChange: (Int, Int) -> Void
 
-    @State private var selectedTime: Date
-
-    init(
-        setting: WeightNotificationSetting,
-        onToggle: @escaping () -> Void,
-        onTimeChange: @escaping (Int, Int) -> Void
-    ) {
-        self.setting = setting
-        self.onToggle = onToggle
-        self.onTimeChange = onTimeChange
-
-        var components = DateComponents()
-        components.hour = setting.hour
-        components.minute = setting.minute
-        _selectedTime = State(initialValue: Calendar.current.date(from: components) ?? Date())
-    }
-
     var body: some View {
-        HStack {
-            Image(systemName: "scalemass")
-                .foregroundStyle(setting.isEnabled ? Theme.primary : .secondary)
-                .frame(width: 24)
-
-            Toggle(isOn: Binding(
-                get: { setting.isEnabled },
-                set: { _ in onToggle() }
-            )) {
-                HStack {
-                    Text("体重")
-                    Spacer()
-                    if setting.isEnabled {
-                        DatePicker(
-                            "",
-                            selection: $selectedTime,
-                            displayedComponents: .hourAndMinute
-                        )
-                        .labelsHidden()
-                        .onChange(of: selectedTime) { _, newValue in
-                            let components = Calendar.current.dateComponents([.hour, .minute], from: newValue)
-                            onTimeChange(components.hour ?? 0, components.minute ?? 0)
-                        }
-                    }
-                }
-            }
-        }
+        NotificationRow(
+            setting: setting,
+            icon: "scalemass",
+            label: "体重",
+            onToggle: onToggle,
+            onTimeChange: onTimeChange
+        )
     }
 }

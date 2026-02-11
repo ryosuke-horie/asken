@@ -14,6 +14,7 @@ final class NotificationSettingsViewModel {
     var settings: NotificationSettings
     var systemPermissionGranted = false
     var showPermissionAlert = false
+    var schedulingErrorMessage: String?
 
     private let store: NotificationSettingsStoreProtocol
     private let scheduler: NotificationSchedulerProtocol
@@ -67,59 +68,100 @@ final class NotificationSettingsViewModel {
         }
 
         settings.isGlobalEnabled.toggle()
+        let previousSettings = settings
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
+
+        // スケジュール失敗時にロールバック
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            settings = previousSettings
+            settings.isGlobalEnabled.toggle()
+            store.save(settings)
+            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+        }
     }
 
-    // MARK: - Per-Meal Toggle
+    // MARK: - Meal Notifications
 
     func toggleMealEnabled(for mealType: MealType) async {
-        settings = settings.updatingSetting(for: mealType) { setting in
+        await updateMealSetting(mealType) { setting in
             var updated = setting
             updated.isEnabled.toggle()
             return updated
         }
-        store.save(settings)
-        await scheduler.scheduleAllNotifications(settings: settings)
     }
-
-    // MARK: - Time Update
 
     func updateTime(for mealType: MealType, hour: Int, minute: Int) async {
-        let clampedHour = min(max(hour, 0), 23)
-        let clampedMinute = min(max(minute, 0), 59)
-        settings = settings.updatingSetting(for: mealType) { setting in
+        await updateMealSetting(mealType) { [self] setting in
             var updated = setting
-            updated.hour = clampedHour
-            updated.minute = clampedMinute
+            updated.hour = clampedHour(hour)
+            updated.minute = clampedMinute(minute)
             return updated
         }
-        store.save(settings)
-        await scheduler.scheduleAllNotifications(settings: settings)
     }
 
-    // MARK: - Weight Notification
+    private func updateMealSetting(
+        _ mealType: MealType,
+        transform: @escaping (MealNotificationSetting) -> MealNotificationSetting
+    ) async {
+        let previousSettings = settings
+        settings = settings.updatingSetting(for: mealType, transform: transform)
+        store.save(settings)
+        await scheduler.scheduleAllNotifications(settings: settings)
+
+        // スケジュール失敗時にロールバック
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            settings = previousSettings
+            store.save(settings)
+            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+        }
+    }
+
+    // MARK: - Weight Notifications
 
     func toggleWeightEnabled() async {
-        settings = settings.updatingWeightSetting { setting in
+        await updateWeightSetting { setting in
             var updated = setting
             updated.isEnabled.toggle()
             return updated
         }
-        store.save(settings)
-        await scheduler.scheduleAllNotifications(settings: settings)
     }
 
     func updateWeightTime(hour: Int, minute: Int) async {
-        let clampedHour = min(max(hour, 0), 23)
-        let clampedMinute = min(max(minute, 0), 59)
-        settings = settings.updatingWeightSetting { setting in
+        await updateWeightSetting { [self] setting in
             var updated = setting
-            updated.hour = clampedHour
-            updated.minute = clampedMinute
+            updated.hour = clampedHour(hour)
+            updated.minute = clampedMinute(minute)
             return updated
         }
+    }
+
+    private func updateWeightSetting(
+        transform: @escaping (WeightNotificationSetting) -> WeightNotificationSetting
+    ) async {
+        let previousSettings = settings
+        settings = settings.updatingWeightSetting(transform: transform)
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
+
+        // スケジュール失敗時にロールバック
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            settings = previousSettings
+            store.save(settings)
+            schedulingErrorMessage = "通知の登録に失敗しました。もう一度お試しください。"
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func clampedHour(_ value: Int) -> Int {
+        min(max(value, 0), 23)
+    }
+
+    private func clampedMinute(_ value: Int) -> Int {
+        min(max(value, 0), 59)
     }
 }

@@ -6,14 +6,16 @@ private let logger = Logger(
     category: "NotificationSettingsStore"
 )
 
-// MARK: - MealNotificationSetting
+// MARK: - TimedNotificationSetting
 
-struct MealNotificationSetting: Codable, Equatable {
-    let mealType: MealType
-    var isEnabled: Bool
-    var hour: Int
-    var minute: Int
+/// 時刻指定のある通知設定の共通プロトコル
+protocol TimedNotificationSetting {
+    var isEnabled: Bool { get }
+    var hour: Int { get }
+    var minute: Int { get }
+}
 
+extension TimedNotificationSetting {
     var timeComponents: DateComponents {
         var components = DateComponents()
         components.hour = hour
@@ -22,19 +24,21 @@ struct MealNotificationSetting: Codable, Equatable {
     }
 }
 
-// MARK: - WeightNotificationSetting
+// MARK: - MealNotificationSetting
 
-struct WeightNotificationSetting: Codable, Equatable {
+struct MealNotificationSetting: Codable, Equatable, TimedNotificationSetting {
+    let mealType: MealType
     var isEnabled: Bool
     var hour: Int
     var minute: Int
+}
 
-    var timeComponents: DateComponents {
-        var components = DateComponents()
-        components.hour = hour
-        components.minute = minute
-        return components
-    }
+// MARK: - WeightNotificationSetting
+
+struct WeightNotificationSetting: Codable, Equatable, TimedNotificationSetting {
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
 
     static let `default` = WeightNotificationSetting(
         isEnabled: true,
