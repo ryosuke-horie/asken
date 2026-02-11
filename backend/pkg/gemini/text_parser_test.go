@@ -10,7 +10,9 @@ import (
 )
 
 func TestParseTextToFoods_EmptyInput(t *testing.T) {
-	parser := NewTextParser(30 * time.Second)
+	mockHTTPClient := &MockGeminiHTTPClient{}
+	client := NewClientWithHTTPClient(mockHTTPClient)
+	parser := NewTextParserWithClient(client)
 	ctx := context.Background()
 
 	_, err := parser.ParseTextToFoods(ctx, "")
@@ -22,7 +24,8 @@ func TestParseTextToFoods_EmptyInput(t *testing.T) {
 func TestParseTextToFoods_Success(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
-	parser := NewTextParser(60 * time.Second)
+	parser, err := NewTextParser(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// 一般的な食事テキストでテスト
@@ -41,7 +44,8 @@ func TestParseTextToFoods_Success(t *testing.T) {
 func TestParseTextToFoods_ComplexInput(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
-	parser := NewTextParser(60 * time.Second)
+	parser, err := NewTextParser(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// 複雑な入力テキストでテスト
@@ -58,10 +62,11 @@ func TestParseTextToFoods_Timeout(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトでテスト
-	parser := NewTextParser(1 * time.Millisecond)
+	parser, err := NewTextParser(1 * time.Millisecond)
+	require.NoError(t, err)
 	ctx := context.Background()
 
-	_, err := parser.ParseTextToFoods(ctx, "ご飯")
+	_, err = parser.ParseTextToFoods(ctx, "ご飯")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "タイムアウト")
@@ -150,9 +155,30 @@ func TestNewTextParserWithClient(t *testing.T) {
 }
 
 func TestNewTextParser(t *testing.T) {
-	timeout := 30 * time.Second
-	parser := NewTextParser(timeout)
+	skipIfNoGeminiAPIKey(t)
 
+	timeout := 30 * time.Second
+	parser, err := NewTextParser(timeout)
+
+	require.NoError(t, err)
 	assert.NotNil(t, parser)
 	assert.NotNil(t, parser.client)
+}
+
+func TestNewTextParser_EmptyAPIKey(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+
+	parser, err := NewTextParser(60 * time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, parser)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
+}
+
+func TestNewTextParserWithAPIKey_EmptyAPIKey(t *testing.T) {
+	parser, err := NewTextParserWithAPIKey("", 60*time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, parser)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
 }

@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -23,18 +24,26 @@ type Client struct {
 
 // NewClient は新しいGemini APIクライアントを作成
 // 環境変数GEMINI_API_KEYからAPIキーを読み取る
-func NewClient(timeout time.Duration) *Client {
+func NewClient(timeout time.Duration) (*Client, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	return &Client{
-		httpClient: NewHTTPClient(apiKey, timeout),
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gemini client: %w", err)
 	}
+	return &Client{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewClientWithAPIKey はAPIキーを指定してGemini APIクライアントを作成
-func NewClientWithAPIKey(apiKey string, timeout time.Duration) *Client {
-	return &Client{
-		httpClient: NewHTTPClient(apiKey, timeout),
+func NewClientWithAPIKey(apiKey string, timeout time.Duration) (*Client, error) {
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gemini client: %w", err)
 	}
+	return &Client{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewClientWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）

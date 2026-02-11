@@ -12,7 +12,8 @@ import (
 func TestCalculateNutrition_Success(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
-	calculator := NewNutritionCalculator(60 * time.Second)
+	calculator, err := NewNutritionCalculator(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// テスト用の食材リスト
@@ -39,7 +40,8 @@ func TestCalculateNutrition_Success(t *testing.T) {
 }
 
 func TestCalculateNutrition_EmptyFoods(t *testing.T) {
-	calculator := NewNutritionCalculator(60 * time.Second)
+	mockHTTPClient := &MockGeminiHTTPClient{}
+	calculator := NewNutritionCalculatorWithHTTPClient(mockHTTPClient)
 	ctx := context.Background()
 
 	// 空の食材リスト
@@ -149,15 +151,34 @@ func TestCalculateNutrition_Timeout(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
 	// 非常に短いタイムアウトでテスト
-	calculator := NewNutritionCalculator(1 * time.Millisecond)
+	calculator, err := NewNutritionCalculator(1 * time.Millisecond)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	foods := []FoodItem{
 		{Name: "刺身盛り合わせ", EstimatedAmount: "8切れ"},
 	}
 
-	_, err := calculator.CalculateNutrition(ctx, foods)
+	_, err = calculator.CalculateNutrition(ctx, foods)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "タイムアウト")
+}
+
+func TestNewNutritionCalculator_EmptyAPIKey(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+
+	calculator, err := NewNutritionCalculator(60 * time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, calculator)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
+}
+
+func TestNewNutritionCalculatorWithAPIKey_EmptyAPIKey(t *testing.T) {
+	calculator, err := NewNutritionCalculatorWithAPIKey("", 60*time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, calculator)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
 }

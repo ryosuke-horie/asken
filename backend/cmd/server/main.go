@@ -256,18 +256,20 @@ func run() error {
 		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
 	}
 
-	// Gemini API Keyの確認
-	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
-	if geminiAPIKey == "" {
-		log.Println("WARNING: GEMINI_API_KEY not set. Gemini API calls will fail.")
-	} else {
-		log.Println("Gemini API Key configured")
-	}
-
 	// 依存関係の初期化
-	classifier := gemini.NewClassifier(120 * time.Second)
-	textParser := gemini.NewTextParser(120 * time.Second)
-	calculator := gemini.NewNutritionCalculator(120 * time.Second)
+	classifier, err := gemini.NewClassifier(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini Classifier: %v", err)
+	}
+	textParser, err := gemini.NewTextParser(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini TextParser: %v", err)
+	}
+	calculator, err := gemini.NewNutritionCalculator(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini NutritionCalculator: %v", err)
+	}
+	log.Println("Gemini API clients initialized")
 	geminiClient := &RealGeminiClient{
 		classifier: classifier,
 		textParser: textParser,
