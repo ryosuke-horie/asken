@@ -94,10 +94,10 @@ final class NotificationManager: NotificationSchedulerProtocol {
         )
     }
 
-    private func scheduleNotification<S: TimedNotificationSetting>(
+    private func scheduleNotification(
         identifier: String,
         body: String,
-        setting: S,
+        setting: some TimedNotificationSetting,
         logLabel: String
     ) async {
         let content = UNMutableNotificationContent()
