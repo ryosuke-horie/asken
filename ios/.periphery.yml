@@ -1,7 +1,11 @@
 project: Uchikomi.xcodeproj
 schemes:
   - Uchikomi
+# テストターゲットは一時停止中のため除外（ios-testing-policy.md参照）
 exclude_tests: true
+# @objc/@objcMembers宣言を保持（FirebaseやUIKit連携で必要）
 retain_objc_accessible: true
+# SwiftUI Previewを保持
 retain_swift_ui_previews: true
+# assign-onlyプロパティを保持（@Observableの状態プロパティ等の誤検知防止）
 retain_assign_only_properties: true

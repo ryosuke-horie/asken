@@ -3,9 +3,7 @@ import SwiftUI
 // MARK: - Theme
 
 enum Theme {
-    // MARK: - Primary Colors (from frontend: #f97316)
-
-    static let primary = Color(hex: "f97316")
+    static let primary = Color(hex: "f97316") // frontend: #f97316
 }
 
 extension Color {

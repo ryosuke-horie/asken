@@ -57,6 +57,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
         }
     }
 
+    /// UchikomiAppから直接呼び出すためプロトコルには含めず公開メソッドとして保持
     func cancelDeliveredNotification(for mealType: MealType) async {
         let identifier = notificationIdentifier(for: mealType)
         let delivered = await notificationCenter.deliveredNotifications()
