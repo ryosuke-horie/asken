@@ -12,6 +12,7 @@ protocol NotificationSchedulerProtocol {
     func cancelAllNotifications() async
     func cancelDeliveredNotification(for mealType: MealType) async
     var lastSchedulingError: Error? { get }
+    func resetLastError()
 }
 
 // MARK: - NotificationManager
@@ -26,6 +27,10 @@ final class NotificationManager: NotificationSchedulerProtocol {
 
     init(notificationCenter: UNUserNotificationCenter = .current()) {
         self.notificationCenter = notificationCenter
+    }
+
+    func resetLastError() {
+        lastSchedulingError = nil
     }
 
     func requestAuthorization() async throws -> Bool {

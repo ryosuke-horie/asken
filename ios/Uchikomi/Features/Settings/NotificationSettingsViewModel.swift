@@ -68,18 +68,17 @@ final class NotificationSettingsViewModel {
         }
 
         // エラー状態をリセット
-        _ = scheduler.lastSchedulingError
+        scheduler.resetLastError()
 
         settings.isGlobalEnabled.toggle()
         let previousSettings = settings
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
 
-        // スケジュール失敗時にロールバック
+        // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
-            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
-            store.save(settings)
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -108,18 +107,17 @@ final class NotificationSettingsViewModel {
         transform: @escaping (MealNotificationSetting) -> MealNotificationSetting
     ) async {
         // エラー状態をリセット
-        _ = scheduler.lastSchedulingError
+        scheduler.resetLastError()
 
         let previousSettings = settings
         settings = settings.updatingSetting(for: mealType, transform: transform)
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
 
-        // スケジュール失敗時にロールバック
+        // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
-            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
-            store.save(settings)
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -147,18 +145,17 @@ final class NotificationSettingsViewModel {
         transform: @escaping (WeightNotificationSetting) -> WeightNotificationSetting
     ) async {
         // エラー状態をリセット
-        _ = scheduler.lastSchedulingError
+        scheduler.resetLastError()
 
         let previousSettings = settings
         settings = settings.updatingWeightSetting(transform: transform)
         store.save(settings)
         await scheduler.scheduleAllNotifications(settings: settings)
 
-        // スケジュール失敗時にロールバック
+        // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
-            logger.error("通知スケジュール失敗、設定をロールバック: \(error.localizedDescription)")
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
-            store.save(settings)
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -173,20 +170,19 @@ final class NotificationSettingsViewModel {
         min(max(value, 0), 59)
     }
 
+    private enum UNErrorCode: Int {
+        case notificationNotAllowed = 0
+        case notificationLimitExceeded = 1
+    }
+
     private func errorMessage(from error: Error) -> String {
-        // システムエラーの場合はより具体的なメッセージを返す
-        if let nsError = error as? NSError {
-            switch nsError.domain {
-            case "UNErrorDomain":
-                switch nsError.code {
-                case 0: // notificationNotAllowed
-                    return "通知が許可されていません。設定アプリで通知を許可してください。"
-                case 1: // notificationLimitExceeded
-                    return "通知の登録数が上限に達しました。"
-                default:
-                    return "通知の登録に失敗しました。iOSの通知設定を確認してください。"
-                }
-            default:
+        if let nsError = error as? NSError, nsError.domain == "UNErrorDomain" {
+            switch UNErrorCode(rawValue: nsError.code) {
+            case .notificationNotAllowed:
+                return "通知が許可されていません。設定アプリで通知を許可してください。"
+            case .notificationLimitExceeded:
+                return "通知の登録数が上限に達しました。"
+            case .none:
                 break
             }
         }
