@@ -39,41 +39,52 @@ final class NotificationSettingsViewModel {
 
     func toggleGlobalEnabled() async {
         if !settings.isGlobalEnabled {
-            let status = await scheduler.getAuthorizationStatus()
-
-            switch status {
-            case .notDetermined:
-                do {
-                    let granted = try await scheduler.requestAuthorization()
-                    systemPermissionGranted = granted
-                    if !granted {
-                        showPermissionAlert = true
-                        return
-                    }
-                } catch {
-                    logger.error("通知許可リクエスト失敗: \(error.localizedDescription)")
-                    showPermissionAlert = true
-                    return
-                }
-            case .denied:
-                showPermissionAlert = true
-                return
-            case .authorized, .provisional, .ephemeral:
-                systemPermissionGranted = true
-            @unknown default:
-                logger.warning("未知の通知権限ステータス: \(String(describing: status))")
-                systemPermissionGranted = false
+            let granted = await ensureNotificationPermission()
+            if !granted {
                 return
             }
         }
 
-        // エラー状態をリセット
+        await updateGlobalSetting()
+    }
+
+    private func ensureNotificationPermission() async -> Bool {
+        let status = await scheduler.getAuthorizationStatus()
+
+        switch status {
+        case .notDetermined:
+            do {
+                let granted = try await scheduler.requestAuthorization()
+                systemPermissionGranted = granted
+                if !granted {
+                    showPermissionAlert = true
+                    return false
+                }
+                return true
+            } catch {
+                logger.error("通知許可リクエスト失敗: \(error.localizedDescription)")
+                showPermissionAlert = true
+                return false
+            }
+        case .denied:
+            showPermissionAlert = true
+            return false
+        case .authorized, .provisional, .ephemeral:
+            systemPermissionGranted = true
+            return true
+        @unknown default:
+            logger.warning("未知の通知権限ステータス: \(String(describing: status))")
+            systemPermissionGranted = false
+            return false
+        }
+    }
+
+    private func updateGlobalSetting() async {
         scheduler.resetLastError()
 
-        settings.isGlobalEnabled.toggle()
         let previousSettings = settings
+        settings.isGlobalEnabled.toggle()
 
-        // 保存とスケジュールを実行
         do {
             try store.save(settings)
         } catch {
@@ -85,14 +96,12 @@ final class NotificationSettingsViewModel {
 
         await scheduler.scheduleAllNotifications(settings: settings)
 
-        // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
             logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
             do {
                 try store.save(settings)
             } catch {
-                // 復元失敗は致命的エラーとして扱う
                 logger.error("設定の復元に失敗: \(error.localizedDescription)")
                 schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
                 return
