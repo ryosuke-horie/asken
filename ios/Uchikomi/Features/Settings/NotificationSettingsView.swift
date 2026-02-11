@@ -9,6 +9,7 @@ struct NotificationSettingsView: View {
         List {
             globalToggleSection
             if viewModel.settings.isGlobalEnabled {
+                weightNotificationSection
                 mealNotificationsSection
             }
         }
@@ -26,6 +27,15 @@ struct NotificationSettingsView: View {
         } message: {
             Text("通知リマインダーを使用するには、設定アプリで通知を許可してください")
         }
+        .alert("通知の登録に失敗しました", isPresented: .constant(viewModel.schedulingErrorMessage != nil)) {
+            Button("OK") {
+                viewModel.schedulingErrorMessage = nil
+            }
+        } message: {
+            if let message = viewModel.schedulingErrorMessage {
+                Text(message)
+            }
+        }
     }
 
     // MARK: - Sections
@@ -39,7 +49,7 @@ struct NotificationSettingsView: View {
                 }
             ))
         } footer: {
-            Text("食事の時間帯に記録のリマインドを通知します")
+            Text("食事と体重の時間帯に記録のリマインドを通知します")
         }
     }
 
@@ -61,23 +71,43 @@ struct NotificationSettingsView: View {
             }
         }
     }
+
+    private var weightNotificationSection: some View {
+        Section("体重リマインダー") {
+            WeightNotificationRow(
+                setting: viewModel.settings.weight,
+                onToggle: {
+                    Task { await viewModel.toggleWeightEnabled() }
+                },
+                onTimeChange: { hour, minute in
+                    Task { await viewModel.updateWeightTime(hour: hour, minute: minute) }
+                }
+            )
+        }
+    }
 }
 
-// MARK: - MealNotificationRow
+// MARK: - NotificationRow
 
-private struct MealNotificationRow: View {
-    let setting: MealNotificationSetting
+private struct NotificationRow<S: TimedNotificationSetting>: View {
+    let setting: S
+    let icon: String
+    let label: String
     let onToggle: () -> Void
     let onTimeChange: (Int, Int) -> Void
 
     @State private var selectedTime: Date
 
     init(
-        setting: MealNotificationSetting,
+        setting: S,
+        icon: String,
+        label: String,
         onToggle: @escaping () -> Void,
         onTimeChange: @escaping (Int, Int) -> Void
     ) {
         self.setting = setting
+        self.icon = icon
+        self.label = label
         self.onToggle = onToggle
         self.onTimeChange = onTimeChange
 
@@ -89,7 +119,7 @@ private struct MealNotificationRow: View {
 
     var body: some View {
         HStack {
-            Image(systemName: setting.mealType.icon)
+            Image(systemName: icon)
                 .foregroundStyle(setting.isEnabled ? Theme.primary : .secondary)
                 .frame(width: 24)
 
@@ -98,7 +128,7 @@ private struct MealNotificationRow: View {
                 set: { _ in onToggle() }
             )) {
                 HStack {
-                    Text(setting.mealType.displayName)
+                    Text(label)
                     Spacer()
                     if setting.isEnabled {
                         DatePicker(
@@ -115,5 +145,41 @@ private struct MealNotificationRow: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - MealNotificationRow
+
+private struct MealNotificationRow: View {
+    let setting: MealNotificationSetting
+    let onToggle: () -> Void
+    let onTimeChange: (Int, Int) -> Void
+
+    var body: some View {
+        NotificationRow(
+            setting: setting,
+            icon: setting.mealType.icon,
+            label: setting.mealType.displayName,
+            onToggle: onToggle,
+            onTimeChange: onTimeChange
+        )
+    }
+}
+
+// MARK: - WeightNotificationRow
+
+private struct WeightNotificationRow: View {
+    let setting: WeightNotificationSetting
+    let onToggle: () -> Void
+    let onTimeChange: (Int, Int) -> Void
+
+    var body: some View {
+        NotificationRow(
+            setting: setting,
+            icon: "scalemass",
+            label: "体重",
+            onToggle: onToggle,
+            onTimeChange: onTimeChange
+        )
     }
 }

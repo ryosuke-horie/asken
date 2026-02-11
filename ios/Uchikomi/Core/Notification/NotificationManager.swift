@@ -11,6 +11,8 @@ protocol NotificationSchedulerProtocol {
     func scheduleAllNotifications(settings: NotificationSettings) async
     func cancelAllNotifications() async
     func cancelDeliveredNotification(for mealType: MealType) async
+    var lastSchedulingError: Error? { get }
+    func resetLastError()
 }
 
 // MARK: - NotificationManager
@@ -21,9 +23,14 @@ final class NotificationManager: NotificationSchedulerProtocol {
         subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
         category: "NotificationManager"
     )
+    private(set) var lastSchedulingError: Error?
 
     init(notificationCenter: UNUserNotificationCenter = .current()) {
         self.notificationCenter = notificationCenter
+    }
+
+    func resetLastError() {
+        lastSchedulingError = nil
     }
 
     func requestAuthorization() async throws -> Bool {
@@ -41,6 +48,14 @@ final class NotificationManager: NotificationSchedulerProtocol {
 
         for mealSetting in settings.meals where mealSetting.isEnabled {
             await scheduleMealNotification(mealSetting)
+            // 最初のエラーで中断（エラーがあれば即座に検知）
+            if lastSchedulingError != nil {
+                return
+            }
+        }
+
+        if settings.weight.isEnabled {
+            await scheduleWeightNotification(settings.weight)
         }
     }
 
@@ -62,9 +77,32 @@ final class NotificationManager: NotificationSchedulerProtocol {
     // MARK: - Private
 
     private func scheduleMealNotification(_ setting: MealNotificationSetting) async {
+        await scheduleNotification(
+            identifier: notificationIdentifier(for: setting.mealType),
+            body: "\(setting.mealType.displayName)を記録しませんか？",
+            setting: setting,
+            logLabel: setting.mealType.rawValue
+        )
+    }
+
+    private func scheduleWeightNotification(_ setting: WeightNotificationSetting) async {
+        await scheduleNotification(
+            identifier: "weight_reminder",
+            body: "今日の体重を記録しませんか？",
+            setting: setting,
+            logLabel: "体重"
+        )
+    }
+
+    private func scheduleNotification(
+        identifier: String,
+        body: String,
+        setting: some TimedNotificationSetting,
+        logLabel: String
+    ) async {
         let content = UNMutableNotificationContent()
         content.title = "ウチコミ"
-        content.body = "\(setting.mealType.displayName)を記録しませんか？"
+        content.body = body
         content.sound = .default
 
         let trigger = UNCalendarNotificationTrigger(
@@ -73,16 +111,17 @@ final class NotificationManager: NotificationSchedulerProtocol {
         )
 
         let request = UNNotificationRequest(
-            identifier: notificationIdentifier(for: setting.mealType),
+            identifier: identifier,
             content: content,
             trigger: trigger
         )
 
         do {
             try await notificationCenter.add(request)
-            logger.info("通知スケジュール成功: \(setting.mealType.rawValue) \(setting.hour):\(setting.minute)")
+            logger.info("通知スケジュール成功: \(logLabel) \(setting.hour):\(setting.minute)")
         } catch {
-            logger.error("通知スケジュール失敗: \(setting.mealType.rawValue): \(error.localizedDescription)")
+            lastSchedulingError = error
+            logger.error("通知スケジュール失敗: \(logLabel): \(error.localizedDescription)")
         }
     }
 
