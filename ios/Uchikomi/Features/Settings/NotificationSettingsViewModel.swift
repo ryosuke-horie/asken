@@ -233,11 +233,11 @@ final class NotificationSettingsViewModel {
         min(max(value, 0), 59)
     }
 
-    // UNErrorCode定数 (UNErrorDomain)
-    // https://developer.apple.com/documentation/usernotifications/unerrorcode
+    /// UNErrorCode定数 (UNErrorDomain)
+    /// https://developer.apple.com/documentation/usernotifications/unerrorcode
     private enum UNErrorCode: Int {
-        case notificationNotAllowed = 0  // UNErrorCodeNotificationNotAllowed
-        case notificationLimitExceeded = 1  // UNErrorCodeNotificationLimitExceeded
+        case notificationNotAllowed = 0 // UNErrorCodeNotificationNotAllowed
+        case notificationLimitExceeded = 1 // UNErrorCodeNotificationLimitExceeded
     }
 
     private func errorMessage(from error: Error) -> String {
