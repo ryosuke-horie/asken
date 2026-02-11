@@ -32,14 +32,21 @@ type HTTPClient struct {
 	httpClient *http.Client
 }
 
+// ErrEmptyAPIKey はAPIキーが空の場合に返されるエラー
+var ErrEmptyAPIKey = errors.New("APIキーが指定されていません")
+
 // NewHTTPClient は新しいGemini HTTP APIクライアントを作成
-func NewHTTPClient(apiKey string, timeout time.Duration) *HTTPClient {
+// APIキーが空の場合はエラーを返す
+func NewHTTPClient(apiKey string, timeout time.Duration) (*HTTPClient, error) {
+	if apiKey == "" {
+		return nil, ErrEmptyAPIKey
+	}
 	return &HTTPClient{
 		apiKey:  apiKey,
 		timeout: timeout,
 		baseURL: defaultBaseURL,
 		httpClient: &http.Client{}, // タイムアウトはcontextで制御
-	}
+	}, nil
 }
 
 // GenerateContentRequest はGemini APIのリクエスト構造体

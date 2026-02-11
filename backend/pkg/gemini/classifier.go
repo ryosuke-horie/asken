@@ -22,18 +22,26 @@ type Classifier struct {
 
 // NewClassifier は新しいClassifierを作成
 // 環境変数GEMINI_API_KEYからAPIキーを読み取る
-func NewClassifier(timeout time.Duration) *Classifier {
+func NewClassifier(timeout time.Duration) (*Classifier, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	return &Classifier{
-		httpClient: NewHTTPClient(apiKey, timeout),
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create classifier: %w", err)
 	}
+	return &Classifier{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewClassifierWithAPIKey はAPIキーを指定してClassifierを作成
-func NewClassifierWithAPIKey(apiKey string, timeout time.Duration) *Classifier {
-	return &Classifier{
-		httpClient: NewHTTPClient(apiKey, timeout),
+func NewClassifierWithAPIKey(apiKey string, timeout time.Duration) (*Classifier, error) {
+	httpClient, err := NewHTTPClient(apiKey, timeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create classifier: %w", err)
 	}
+	return &Classifier{
+		httpClient: httpClient,
+	}, nil
 }
 
 // NewClassifierWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
