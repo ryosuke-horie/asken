@@ -105,7 +105,7 @@ struct NotificationSettings: Codable, Equatable {
 /// @mockable
 protocol NotificationSettingsStoreProtocol {
     func load() -> NotificationSettings
-    func save(_ settings: NotificationSettings)
+    func save(_ settings: NotificationSettings) throws
 }
 
 // MARK: - NotificationSettingsStore
@@ -130,12 +130,8 @@ final class NotificationSettingsStore: NotificationSettingsStoreProtocol {
         }
     }
 
-    func save(_ settings: NotificationSettings) {
-        do {
-            let data = try JSONEncoder().encode(settings)
-            userDefaults.set(data, forKey: key)
-        } catch {
-            logger.error("通知設定のエンコード失敗: \(error.localizedDescription)")
-        }
+    func save(_ settings: NotificationSettings) throws {
+        let data = try JSONEncoder().encode(settings)
+        userDefaults.set(data, forKey: key)
     }
 }
