@@ -92,7 +92,10 @@ final class NotificationSettingsViewModel {
             do {
                 try store.save(settings)
             } catch {
+                // 復元失敗は致命的エラーとして扱う
                 logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
             }
             schedulingErrorMessage = errorMessage(from: error)
         }
@@ -146,7 +149,10 @@ final class NotificationSettingsViewModel {
             do {
                 try store.save(settings)
             } catch {
+                // 復元失敗は致命的エラーとして扱う
                 logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
             }
             schedulingErrorMessage = errorMessage(from: error)
         }
@@ -199,7 +205,10 @@ final class NotificationSettingsViewModel {
             do {
                 try store.save(settings)
             } catch {
+                // 復元失敗は致命的エラーとして扱う
                 logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
             }
             schedulingErrorMessage = errorMessage(from: error)
         }
