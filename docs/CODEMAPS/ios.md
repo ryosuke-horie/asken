@@ -201,12 +201,16 @@ APIClientとAuthManagerで同じ認証サービスを共有:
 
 ```swift
 enum AuthServiceProvider {
+    private static var _shared: FirebaseAuthServiceProtocol?
     static var shared: FirebaseAuthServiceProtocol {
+        if let service = _shared { return service }
         #if DEBUG && targetEnvironment(simulator)
-        return MockFirebaseAuthService()
+        let service = MockFirebaseAuthService()
         #else
-        return FirebaseAuthService.shared
+        let service = FirebaseAuthService.shared
         #endif
+        _shared = service
+        return service
     }
 }
 ```
@@ -401,11 +405,10 @@ struct GoogleCredential: Sendable {
     let accessToken: String
 }
 
-enum FirebaseAuthError: Error {
+enum FirebaseAuthError: LocalizedError {
     case notSignedIn
     case tokenRetrievalFailed
-    case signInFailed(Error)
-    case signOutFailed(Error)
+    case configurationError
 }
 ```
 

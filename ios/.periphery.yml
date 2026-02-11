@@ -3,7 +3,7 @@ schemes:
   - Uchikomi
 # テストターゲットは一時停止中のため除外（ios-testing-policy.md参照）
 exclude_tests: true
-# @objc/@objcMembers宣言を保持（FirebaseやUIKit連携で必要）
+# NSObject継承クラスの暗黙的@objcメンバーを保持（AppDelegate, AppleSignInManager等のデリゲートで必要）
 retain_objc_accessible: true
 # SwiftUI Previewを保持
 retain_swift_ui_previews: true

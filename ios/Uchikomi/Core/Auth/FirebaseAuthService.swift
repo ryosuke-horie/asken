@@ -18,7 +18,8 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         }
     }
 
-    var currentUser: FirebaseAuthUser? { // periphery:ignore - プロトコルのAPI完全性のため保持
+    // periphery:ignore - プロトコル準拠（AuthManagerがlistener経由で状態管理するため未使用）
+    var currentUser: FirebaseAuthUser? {
         guard let user = Auth.auth().currentUser else { return nil }
         return FirebaseAuthUser(
             uid: user.uid,
@@ -27,7 +28,8 @@ final class FirebaseAuthService: FirebaseAuthServiceProtocol {
         )
     }
 
-    var isSignedIn: Bool { // periphery:ignore - プロトコルのAPI完全性のため保持
+    // periphery:ignore - プロトコル準拠（AuthManagerがlistener経由で状態管理するため未使用）
+    var isSignedIn: Bool {
         Auth.auth().currentUser != nil
     }
 
