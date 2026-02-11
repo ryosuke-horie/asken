@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-08
+最終更新: 2026-02-10
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -24,6 +24,8 @@ ios/
 │   │   │   ├── APIClient.swift       # AuthServiceProvider含む
 │   │   │   ├── APIEndpoint.swift
 │   │   │   └── APIError.swift
+│   │   ├── Notification/       # 通知機能
+│   │   │   └── NotificationManager.swift
 │   │   └── Repositories/       # データアクセス
 │   │       └── MealRepository.swift
 │   ├── Features/               # 機能モジュール
@@ -55,6 +57,15 @@ ios/
 │   │           ├── WeightGoalCard.swift
 │   │           ├── WeightGoalSheet.swift
 │   │           └── WeightRecordRow.swift
+│   │   └── Settings/           # 設定
+│   │       ├── NotificationSettingsView.swift
+│   │       └── NotificationSettingsViewModel.swift
+│   ├── Shared/
+│   │   ├── Components/
+│   │   │   └── NutritionSummaryCard.swift
+│   │   ├── Models/             # 共通データモデル
+│   │   │   └── NotificationSettings.swift
+│   │   └── Theme.swift
 │   ├── Shared/
 │   │   ├── Components/
 │   │   │   └── NutritionSummaryCard.swift
@@ -248,6 +259,13 @@ enum AuthServiceProvider {
 | WeightGoalSheet.swift | 目標体重設定シート |
 | WeightRecordRow.swift | 体重記録行コンポーネント |
 
+### 設定 (Features/Settings/)
+
+| ファイル | 責務 |
+|:---|:---|
+| NotificationSettingsView.swift | 通知設定UI（食事・体重リマインダー） |
+| NotificationSettingsViewModel.swift | 通知設定ロジック |
+
 ## Core層
 
 ### Models (UchikomiCore/Models/ + Uchikomi/Core/Models/)
@@ -256,6 +274,7 @@ enum AuthServiceProvider {
 |:---|:---|:---|
 | Auth.swift | UchikomiCore | User, FirebaseAuthUser, GoogleCredential, FirebaseAuthError |
 | Meal.swift | Uchikomi | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
+| NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
 
 ### Network (Core/Network/)
 
@@ -264,6 +283,12 @@ enum AuthServiceProvider {
 | APIClient.swift | HTTP通信 (actor)、AuthServiceProvider |
 | APIEndpoint.swift | エンドポイント定義 |
 | APIError.swift | エラー定義 |
+
+### Notification (Core/Notification/)
+
+| ファイル | 責務 |
+|:---|:---|
+| NotificationManager.swift | 通知スケジュール管理（食事・体重リマインダー） |
 
 ### Repositories (Core/Repositories/)
 
@@ -280,6 +305,35 @@ enum AuthServiceProvider {
 | Theme.swift | アプリテーマ定義 |
 
 ## データモデル
+
+### 通知設定関連 (NotificationSettings.swift)
+
+```swift
+struct MealNotificationSetting: Codable, Equatable {
+    let mealType: MealType
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
+}
+
+struct WeightNotificationSetting: Codable, Equatable {
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
+
+    static let `default` = WeightNotificationSetting(
+        isEnabled: true,
+        hour: 7,
+        minute: 0
+    )
+}
+
+struct NotificationSettings: Codable, Equatable {
+    var isGlobalEnabled: Bool
+    var meals: [MealNotificationSetting]
+    var weight: WeightNotificationSetting
+}
+```
 
 ### 食事関連 (Meal.swift)
 
