@@ -154,7 +154,7 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
-| `task lint` | golangci-lintを実行 |
+| `task lint` | golangci-lintを実行（デッドコード検知を含む） |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
 
