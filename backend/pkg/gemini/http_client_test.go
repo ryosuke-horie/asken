@@ -23,15 +23,18 @@ func skipIfNoGeminiAPIKey(t *testing.T) {
 
 func TestNewHTTPClient(t *testing.T) {
 	t.Run("有効なAPI Keyで作成できる", func(t *testing.T) {
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
 
+		require.NoError(t, err)
 		assert.NotNil(t, client)
 	})
 
-	t.Run("空のAPI Keyでもクライアント自体は作成できる", func(t *testing.T) {
-		client := NewHTTPClient("", 30*time.Second)
+	t.Run("空のAPI Keyでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("", 30*time.Second)
 
-		assert.NotNil(t, client)
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.ErrorIs(t, err, ErrEmptyAPIKey)
 	})
 }
 
@@ -61,7 +64,8 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL // テスト用にbaseURLを上書き
 
 		resp, err := client.Execute(context.Background(), "テスト用プロンプト")
@@ -78,10 +82,11 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("invalid-key", 30*time.Second)
+		client, err := NewHTTPClient("invalid-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "APIエラー")
@@ -97,10 +102,11 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンスが空です")
@@ -116,10 +122,11 @@ func TestHTTPClient_Execute_Timeout(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 10*time.Millisecond)
+		client, err := NewHTTPClient("test-api-key", 10*time.Millisecond)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "タイムアウト")
@@ -134,7 +141,8 @@ func TestHTTPClient_Execute_Cancel(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -143,7 +151,7 @@ func TestHTTPClient_Execute_Cancel(t *testing.T) {
 			cancel()
 		}()
 
-		_, err := client.Execute(ctx, "テスト")
+		_, err = client.Execute(ctx, "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "キャンセル")
@@ -179,7 +187,8 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
 		// テスト用の画像データ（小さなダミーデータ）
@@ -193,9 +202,10 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 	})
 
 	t.Run("空の画像データでエラーを返す", func(t *testing.T) {
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 
-		_, err := client.ExecuteWithImage(context.Background(), "テスト", nil, "image/jpeg")
+		_, err = client.ExecuteWithImage(context.Background(), "テスト", nil, "image/jpeg")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "画像データが空です")
@@ -206,7 +216,8 @@ func TestHTTPClient_Execute_Integration(t *testing.T) {
 	skipIfNoGeminiAPIKey(t)
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
-	client := NewHTTPClient(apiKey, 60*time.Second)
+	client, err := NewHTTPClient(apiKey, 60*time.Second)
+	require.NoError(t, err)
 
 	t.Run("実際のAPIでテキストプロンプトを実行できる", func(t *testing.T) {
 		resp, err := client.Execute(context.Background(), "こんにちは。1+1は？")
@@ -256,10 +267,11 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "パースエラー")
@@ -281,10 +293,11 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "コンテンツが空です")
@@ -308,10 +321,11 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンステキストが空です")
@@ -331,10 +345,11 @@ func TestHTTPClient_Execute_OversizedResponse(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンスサイズが上限")
@@ -349,10 +364,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("invalid-key", 30*time.Second)
+		client, err := NewHTTPClient("invalid-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "認証エラー")
@@ -366,10 +382,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レート制限")
@@ -382,10 +399,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")
@@ -398,10 +416,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Invalid request format")
@@ -414,10 +433,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "APIエラー (status 400)")
@@ -430,10 +450,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "アクセス拒否")
@@ -445,10 +466,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")
@@ -460,10 +482,11 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := NewHTTPClient("test-api-key", 30*time.Second)
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err := client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト")
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")

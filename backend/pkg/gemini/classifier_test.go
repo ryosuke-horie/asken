@@ -23,7 +23,8 @@ func TestClassifyFoods_Success(t *testing.T) {
 		t.Skipf("テスト画像が見つかりません: %s", imagePath)
 	}
 
-	classifier := NewClassifier(60 * time.Second)
+	classifier, err := NewClassifier(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	foods, err := classifier.ClassifyFoods(ctx, imagePath)
@@ -39,19 +40,24 @@ func TestClassifyFoods_Success(t *testing.T) {
 }
 
 func TestClassifyFoods_InvalidImagePath(t *testing.T) {
-	classifier := NewClassifier(60 * time.Second)
+	skipIfNoGeminiAPIKey(t)
+
+	classifier, err := NewClassifier(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	// 存在しない画像パス
 	invalidPath := "/path/to/nonexistent/image.jpg"
 
-	_, err := classifier.ClassifyFoods(ctx, invalidPath)
+	_, err = classifier.ClassifyFoods(ctx, invalidPath)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "画像ファイルが見つかりません")
 }
 
 func TestClassifyFoods_UnsupportedImageFormat(t *testing.T) {
+	skipIfNoGeminiAPIKey(t)
+
 	// テスト用の一時ファイルを作成（サポート外の拡張子）
 	tmpFile, err := os.CreateTemp("", "test*.bmp")
 	require.NoError(t, err)
@@ -62,7 +68,8 @@ func TestClassifyFoods_UnsupportedImageFormat(t *testing.T) {
 	require.NoError(t, err)
 	tmpFile.Close()
 
-	classifier := NewClassifier(60 * time.Second)
+	classifier, err := NewClassifier(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	_, err = classifier.ClassifyFoods(ctx, tmpFile.Name())
@@ -82,7 +89,8 @@ func TestClassifyFoods_Timeout(t *testing.T) {
 		t.Skipf("テスト画像が見つかりません: %s", imagePath)
 	}
 
-	classifier := NewClassifier(1 * time.Millisecond)
+	classifier, err := NewClassifier(1 * time.Millisecond)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	_, err = classifier.ClassifyFoods(ctx, imagePath)
@@ -102,7 +110,8 @@ func TestClassifyFoods_RelativePath(t *testing.T) {
 		t.Skipf("テスト画像が見つかりません: %s", imagePath)
 	}
 
-	classifier := NewClassifier(60 * time.Second)
+	classifier, err := NewClassifier(60 * time.Second)
+	require.NoError(t, err)
 	ctx := context.Background()
 
 	foods, err := classifier.ClassifyFoods(ctx, imagePath)
@@ -277,4 +286,22 @@ func TestDetectMimeType(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewClassifier_EmptyAPIKey(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+
+	classifier, err := NewClassifier(60 * time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, classifier)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
+}
+
+func TestNewClassifierWithAPIKey_EmptyAPIKey(t *testing.T) {
+	classifier, err := NewClassifierWithAPIKey("", 60*time.Second)
+
+	require.Error(t, err)
+	assert.Nil(t, classifier)
+	assert.ErrorIs(t, err, ErrEmptyAPIKey)
 }
