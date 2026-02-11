@@ -14,6 +14,7 @@ final class NotificationSettingsViewModel {
     var settings: NotificationSettings
     var systemPermissionGranted = false
     var showPermissionAlert = false
+    var schedulingErrorMessage: String?
 
     private let store: NotificationSettingsStoreProtocol
     private let scheduler: NotificationSchedulerProtocol
@@ -38,63 +39,218 @@ final class NotificationSettingsViewModel {
 
     func toggleGlobalEnabled() async {
         if !settings.isGlobalEnabled {
-            let status = await scheduler.getAuthorizationStatus()
-
-            switch status {
-            case .notDetermined:
-                do {
-                    let granted = try await scheduler.requestAuthorization()
-                    systemPermissionGranted = granted
-                    if !granted {
-                        showPermissionAlert = true
-                        return
-                    }
-                } catch {
-                    logger.error("通知許可リクエスト失敗: \(error.localizedDescription)")
-                    showPermissionAlert = true
-                    return
-                }
-            case .denied:
-                showPermissionAlert = true
-                return
-            case .authorized, .provisional, .ephemeral:
-                systemPermissionGranted = true
-            @unknown default:
-                logger.warning("未知の通知権限ステータス: \(String(describing: status))")
-                systemPermissionGranted = false
+            let granted = await ensureNotificationPermission()
+            if !granted {
                 return
             }
         }
 
-        settings.isGlobalEnabled.toggle()
-        store.save(settings)
-        await scheduler.scheduleAllNotifications(settings: settings)
+        await updateGlobalSetting()
     }
 
-    // MARK: - Per-Meal Toggle
+    private func ensureNotificationPermission() async -> Bool {
+        let status = await scheduler.getAuthorizationStatus()
+
+        switch status {
+        case .notDetermined:
+            do {
+                let granted = try await scheduler.requestAuthorization()
+                systemPermissionGranted = granted
+                if !granted {
+                    showPermissionAlert = true
+                    return false
+                }
+                return true
+            } catch {
+                logger.error("通知許可リクエスト失敗: \(error.localizedDescription)")
+                showPermissionAlert = true
+                return false
+            }
+        case .denied:
+            showPermissionAlert = true
+            return false
+        case .authorized, .provisional, .ephemeral:
+            systemPermissionGranted = true
+            return true
+        @unknown default:
+            logger.warning("未知の通知権限ステータス: \(String(describing: status))")
+            systemPermissionGranted = false
+            return false
+        }
+    }
+
+    private func updateGlobalSetting() async {
+        scheduler.resetLastError()
+
+        let previousSettings = settings
+        settings.isGlobalEnabled.toggle()
+
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
+        await scheduler.scheduleAllNotifications(settings: settings)
+
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
+            settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
+            }
+            schedulingErrorMessage = errorMessage(from: error)
+        }
+    }
+
+    // MARK: - Meal Notifications
 
     func toggleMealEnabled(for mealType: MealType) async {
-        settings = settings.updatingSetting(for: mealType) { setting in
+        await updateMealSetting(mealType) { setting in
             var updated = setting
             updated.isEnabled.toggle()
             return updated
         }
-        store.save(settings)
-        await scheduler.scheduleAllNotifications(settings: settings)
     }
 
-    // MARK: - Time Update
-
     func updateTime(for mealType: MealType, hour: Int, minute: Int) async {
-        let clampedHour = min(max(hour, 0), 23)
-        let clampedMinute = min(max(minute, 0), 59)
-        settings = settings.updatingSetting(for: mealType) { setting in
+        await updateMealSetting(mealType) { [self] setting in
             var updated = setting
-            updated.hour = clampedHour
-            updated.minute = clampedMinute
+            updated.hour = clampedHour(hour)
+            updated.minute = clampedMinute(minute)
             return updated
         }
-        store.save(settings)
+    }
+
+    private func updateMealSetting(
+        _ mealType: MealType,
+        transform: @escaping (MealNotificationSetting) -> MealNotificationSetting
+    ) async {
+        // エラー状態をリセット
+        scheduler.resetLastError()
+
+        let previousSettings = settings
+        settings = settings.updatingSetting(for: mealType, transform: transform)
+
+        // 保存とスケジュールを実行
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
         await scheduler.scheduleAllNotifications(settings: settings)
+
+        // スケジュール失敗時に設定を元に戻す
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
+            settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                // 復元失敗は致命的エラーとして扱う
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
+            }
+            schedulingErrorMessage = errorMessage(from: error)
+        }
+    }
+
+    // MARK: - Weight Notifications
+
+    func toggleWeightEnabled() async {
+        await updateWeightSetting { setting in
+            var updated = setting
+            updated.isEnabled.toggle()
+            return updated
+        }
+    }
+
+    func updateWeightTime(hour: Int, minute: Int) async {
+        await updateWeightSetting { [self] setting in
+            var updated = setting
+            updated.hour = clampedHour(hour)
+            updated.minute = clampedMinute(minute)
+            return updated
+        }
+    }
+
+    private func updateWeightSetting(
+        transform: @escaping (WeightNotificationSetting) -> WeightNotificationSetting
+    ) async {
+        // エラー状態をリセット
+        scheduler.resetLastError()
+
+        let previousSettings = settings
+        settings = settings.updatingWeightSetting(transform: transform)
+
+        // 保存とスケジュールを実行
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
+        await scheduler.scheduleAllNotifications(settings: settings)
+
+        // スケジュール失敗時に設定を元に戻す
+        if let error = scheduler.lastSchedulingError {
+            logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
+            settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                // 復元失敗は致命的エラーとして扱う
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+                schedulingErrorMessage = "通知の登録に失敗しました。設定を元に戻せませんでした。アプリを再起動してください。"
+                return
+            }
+            schedulingErrorMessage = errorMessage(from: error)
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func clampedHour(_ value: Int) -> Int {
+        min(max(value, 0), 23)
+    }
+
+    private func clampedMinute(_ value: Int) -> Int {
+        min(max(value, 0), 59)
+    }
+
+    /// UNErrorCode定数 (UNErrorDomain)
+    /// https://developer.apple.com/documentation/usernotifications/unerrorcode
+    private enum UNErrorCode: Int {
+        case notificationNotAllowed = 0 // UNErrorCodeNotificationNotAllowed
+        case notificationLimitExceeded = 1 // UNErrorCodeNotificationLimitExceeded
+    }
+
+    private func errorMessage(from error: Error) -> String {
+        if let nsError = error as? NSError, nsError.domain == "UNErrorDomain" {
+            switch UNErrorCode(rawValue: nsError.code) {
+            case .notificationNotAllowed:
+                return "通知が許可されていません。設定アプリで通知を許可してください。"
+            case .notificationLimitExceeded:
+                return "通知の登録数が上限に達しました。"
+            case .none:
+                break
+            }
+        }
+        return "通知の登録に一時的に失敗しました。もう一度お試しください。"
     }
 }

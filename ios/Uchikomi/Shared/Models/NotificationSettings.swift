@@ -6,14 +6,16 @@ private let logger = Logger(
     category: "NotificationSettingsStore"
 )
 
-// MARK: - MealNotificationSetting
+// MARK: - TimedNotificationSetting
 
-struct MealNotificationSetting: Codable, Equatable {
-    let mealType: MealType
-    var isEnabled: Bool
-    var hour: Int
-    var minute: Int
+/// 時刻指定のある通知設定の共通プロトコル
+protocol TimedNotificationSetting {
+    var isEnabled: Bool { get }
+    var hour: Int { get }
+    var minute: Int { get }
+}
 
+extension TimedNotificationSetting {
     var timeComponents: DateComponents {
         var components = DateComponents()
         components.hour = hour
@@ -22,11 +24,35 @@ struct MealNotificationSetting: Codable, Equatable {
     }
 }
 
+// MARK: - MealNotificationSetting
+
+struct MealNotificationSetting: Codable, Equatable, TimedNotificationSetting {
+    let mealType: MealType
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
+}
+
+// MARK: - WeightNotificationSetting
+
+struct WeightNotificationSetting: Codable, Equatable, TimedNotificationSetting {
+    var isEnabled: Bool
+    var hour: Int
+    var minute: Int
+
+    static let `default` = WeightNotificationSetting(
+        isEnabled: true,
+        hour: 7,
+        minute: 0
+    )
+}
+
 // MARK: - NotificationSettings
 
 struct NotificationSettings: Codable, Equatable {
     var isGlobalEnabled: Bool
     var meals: [MealNotificationSetting]
+    var weight: WeightNotificationSetting
 
     static let `default` = NotificationSettings(
         isGlobalEnabled: false,
@@ -37,7 +63,8 @@ struct NotificationSettings: Codable, Equatable {
                 hour: defaultHour(for: mealType),
                 minute: 0
             )
-        }
+        },
+        weight: .default
     )
 
     func setting(for mealType: MealType) -> MealNotificationSetting? {
@@ -52,6 +79,14 @@ struct NotificationSettings: Codable, Equatable {
         updated.meals = meals.map { setting in
             setting.mealType == mealType ? transform(setting) : setting
         }
+        return updated
+    }
+
+    func updatingWeightSetting(
+        transform: (WeightNotificationSetting) -> WeightNotificationSetting
+    ) -> NotificationSettings {
+        var updated = self
+        updated.weight = transform(weight)
         return updated
     }
 
@@ -70,7 +105,7 @@ struct NotificationSettings: Codable, Equatable {
 /// @mockable
 protocol NotificationSettingsStoreProtocol {
     func load() -> NotificationSettings
-    func save(_ settings: NotificationSettings)
+    func save(_ settings: NotificationSettings) throws
 }
 
 // MARK: - NotificationSettingsStore
@@ -95,12 +130,8 @@ final class NotificationSettingsStore: NotificationSettingsStoreProtocol {
         }
     }
 
-    func save(_ settings: NotificationSettings) {
-        do {
-            let data = try JSONEncoder().encode(settings)
-            userDefaults.set(data, forKey: key)
-        } catch {
-            logger.error("通知設定のエンコード失敗: \(error.localizedDescription)")
-        }
+    func save(_ settings: NotificationSettings) throws {
+        let data = try JSONEncoder().encode(settings)
+        userDefaults.set(data, forKey: key)
     }
 }
