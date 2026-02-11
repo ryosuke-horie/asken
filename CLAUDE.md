@@ -31,6 +31,8 @@
 | ファイル | 内容 |
 |:---|:---|
 | `ios-testing.md` | iOSテストガイドライン（Swift Testing, Mockolo） |
+| `ios-testing-policy.md` | iOSテスト方針（一時停止中） |
+| `e2e-testing.md` | バックエンドE2Eテストガイドライン |
 | `backend-golang.md` | バックエンド開発規約（Go） |
 | `gemini-api.md` | Gemini API連携のベストプラクティス |
 | `firestore.md` | Firestore規約（インデックス管理） |
