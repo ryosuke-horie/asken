@@ -125,19 +125,19 @@ tasks:
         trap cleanup EXIT
         if [ ! -f "{{.PLIST_PATH}}" ]; then
           echo "GoogleService-Info.plist が見つかりません。ダミーを生成します..."
-          cat > "{{.PLIST_PATH}}" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>API_KEY</key><string>dummy</string>
-  <key>GCM_SENDER_ID</key><string>000000000000</string>
-  <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000000000</string>
-  <key>PROJECT_ID</key><string>dummy-project</string>
-  <key>BUNDLE_ID</key><string>dev.exe.uchikomi</string>
-</dict>
-</plist>
-PLIST
+          sed 's/^          //' > "{{.PLIST_PATH}}" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>dummy</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000000000</string>
+            <key>PROJECT_ID</key><string>dummy-project</string>
+            <key>BUNDLE_ID</key><string>dev.exe.uchikomi</string>
+          </dict>
+          </plist>
+          PLIST
           if [ ! -f "{{.PLIST_PATH}}" ]; then
             echo "ERROR: ダミー GoogleService-Info.plist の生成に失敗しました" >&2
             exit 1
