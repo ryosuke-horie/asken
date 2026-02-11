@@ -6,7 +6,6 @@ final class MealsViewModel {
     var dailyMeals: DailyMeals?
     var isLoading = false
     var errorMessage: String?
-    var isDeleting = false
 
     private let repository: MealRepositoryProtocol
 

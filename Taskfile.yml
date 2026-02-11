@@ -113,6 +113,13 @@ tasks:
       - echo "=== Periphery デッドコード検知 ==="
       - |
         CREATED_DUMMY=false
+        cleanup() {
+          if [ "$CREATED_DUMMY" = true ]; then
+            rm -f "{{.PLIST_PATH}}"
+            echo "ダミー GoogleService-Info.plist を削除しました"
+          fi
+        }
+        trap cleanup EXIT
         if [ ! -f "{{.PLIST_PATH}}" ]; then
           echo "GoogleService-Info.plist が見つかりません。ダミーを生成します..."
           cat > "{{.PLIST_PATH}}" <<'PLIST'
@@ -128,15 +135,13 @@ tasks:
         </dict>
         </plist>
         PLIST
+          if [ ! -f "{{.PLIST_PATH}}" ]; then
+            echo "ERROR: ダミー GoogleService-Info.plist の生成に失敗しました" >&2
+            exit 1
+          fi
           CREATED_DUMMY=true
         fi
         periphery scan
-        EXIT_CODE=$?
-        if [ "$CREATED_DUMMY" = true ]; then
-          rm -f "{{.PLIST_PATH}}"
-          echo "ダミー GoogleService-Info.plist を削除しました"
-        fi
-        exit $EXIT_CODE
 
   ios:format:
     desc: SwiftFormatを実行（コードを整形）
