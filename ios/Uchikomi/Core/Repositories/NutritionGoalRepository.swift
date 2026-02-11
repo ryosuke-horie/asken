@@ -4,7 +4,7 @@ import Foundation
 
 /// @mockable
 protocol NutritionGoalRepositoryProtocol {
-    func getGoal() async throws -> NutritionGoal?
+    func getGoal(currentWeight: Double?, goalWeight: Double?) async throws -> NutritionGoal?
     func setGoal(targetCalories: Double) async throws -> NutritionGoal
 }
 
@@ -13,8 +13,10 @@ protocol NutritionGoalRepositoryProtocol {
 final class NutritionGoalRepository: NutritionGoalRepositoryProtocol {
     private let apiClient = APIClient.shared
 
-    func getGoal() async throws -> NutritionGoal? {
-        let response: NutritionGoalNullableResponse = try await apiClient.request(endpoint: .getNutritionGoal)
+    func getGoal(currentWeight: Double?, goalWeight: Double?) async throws -> NutritionGoal? {
+        let response: NutritionGoalNullableResponse = try await apiClient.request(
+            endpoint: .getNutritionGoal(currentWeight: currentWeight, goalWeight: goalWeight)
+        )
         return response.goal
     }
 

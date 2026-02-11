@@ -14,7 +14,7 @@ struct NutritionGoalSettingView: View {
     // ユーザー属性入力用
     @State private var showUserProfileInput = false
     @State private var selectedGender: Gender = .male
-    @State private var birthDate: Date = Calendar.current.date(byAdding: .year, value: -30, to: Date()) ?? Date()
+    @State private var age: Double = 30
     @State private var heightCm: String = "170"
     @State private var selectedActivityLevel: ActivityLevel = .moderatelyActive
 
@@ -165,12 +165,12 @@ struct NutritionGoalSettingView: View {
                                 .pickerStyle(.segmented)
                             }
 
-                            // 生年月日入力
+                            // 年齢入力
                             HStack {
-                                Text("生年月日")
+                                Text("年齢")
                                     .frame(width: 80, alignment: .leading)
-                                DatePicker("", selection: $birthDate, displayedComponents: .date)
-                                    .datePickerStyle(.compact)
+                                Stepper("\(Int(age)) 歳", value: $age, in: 15...80)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
 
                             // 身長入力
@@ -314,15 +314,12 @@ struct NutritionGoalSettingView: View {
             return
         }
 
-        // 年齢計算
-        let age = RecommendedCaloriesCalculator.calculateAge(from: birthDate)
-
         // Harris-Benedict式で推奨カロリーを計算
         let recommended = RecommendedCaloriesCalculator.calculate(
             gender: selectedGender,
             weightKg: weight,
             heightCm: height,
-            age: age,
+            age: Int(age),
             activityLevel: selectedActivityLevel
         )
 
