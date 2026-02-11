@@ -37,13 +37,16 @@ final class NotificationManager: NotificationSchedulerProtocol {
     }
 
     func scheduleAllNotifications(settings: NotificationSettings) async {
-        lastSchedulingError = nil
         await cancelAllNotifications()
 
         guard settings.isGlobalEnabled else { return }
 
         for mealSetting in settings.meals where mealSetting.isEnabled {
             await scheduleMealNotification(mealSetting)
+            // 最初のエラーで中断（エラーがあれば即座に検知）
+            if lastSchedulingError != nil {
+                return
+            }
         }
 
         if settings.weight.isEnabled {
