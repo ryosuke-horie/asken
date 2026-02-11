@@ -139,6 +139,20 @@ struct APIEndpoint {
         requiresAuth: true
     )
 
+    // MARK: - Nutrition Goal Endpoints
+
+    static let getNutritionGoal = APIEndpoint(
+        path: "nutrition-goal",
+        method: .get,
+        requiresAuth: true
+    )
+
+    static let setNutritionGoal = APIEndpoint(
+        path: "nutrition-goal",
+        method: .put,
+        requiresAuth: true
+    )
+
     // MARK: - MyMenu Endpoints
 
     static let myMenuList = APIEndpoint(
