@@ -4,13 +4,19 @@ import Foundation
 final class MealsViewModel {
     var selectedDate = Date()
     var dailyMeals: DailyMeals?
+    var nutritionGoal: NutritionGoal?
     var isLoading = false
     var errorMessage: String?
 
     private let repository: MealRepositoryProtocol
+    private let nutritionGoalRepository: NutritionGoalRepositoryProtocol
 
-    init(repository: MealRepositoryProtocol = MealRepository()) {
+    init(
+        repository: MealRepositoryProtocol = MealRepository(),
+        nutritionGoalRepository: NutritionGoalRepositoryProtocol = NutritionGoalRepository()
+    ) {
         self.repository = repository
+        self.nutritionGoalRepository = nutritionGoalRepository
     }
 
     var formattedDate: String {
@@ -30,6 +36,8 @@ final class MealsViewModel {
 
         do {
             dailyMeals = try await repository.getDailyMeals(date: selectedDate)
+            // 栄養目標も取得
+            nutritionGoal = try await nutritionGoalRepository.getGoal()
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {

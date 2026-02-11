@@ -42,7 +42,8 @@ struct MealsView: View {
                                 calories: dailyMeals.dailyTotal.totalCalories,
                                 protein: dailyMeals.dailyTotal.totalProtein,
                                 fat: dailyMeals.dailyTotal.totalFat,
-                                carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates
+                                carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates,
+                                goal: viewModel.nutritionGoal
                             )
 
                             ForEach(MealType.allCases, id: \.self) { mealType in
