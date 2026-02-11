@@ -196,6 +196,13 @@ struct NutritionGoalSettingView: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
+
+                                // 現在体重が必要なことを説明
+                                if currentWeight == nil {
+                                    Text("※ 現在の体重が設定されていません。「今日」タブから体重を登録してください")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
                             }
 
                             // 計算ボタン
@@ -213,11 +220,11 @@ struct NutritionGoalSettingView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.accentColor)
+                                .background(isUserProfileValid && currentWeight != nil ? Color.orange : Color.accentColor)
                                 .foregroundStyle(.white)
                                 .cornerRadius(10)
                             }
-                            .disabled(isCalculating || !isUserProfileValid)
+                            .disabled(isCalculating || !isUserProfileValid || currentWeight == nil)
                         }
                         .padding(.vertical, 8)
                     }
@@ -304,15 +311,21 @@ struct NutritionGoalSettingView: View {
 
     private var isUserProfileValid: Bool {
         guard let height = Double(heightCm) else { return false }
-        return height >= 100 && height <= 250
+        return height >= 100 && height <= 250 && age >= 15 && age <= 80
     }
 
     private func calculateRecommendedCalories() {
+        // 前回のエラーをクリア
+        errorMessage = nil
+
         guard let height = Double(heightCm),
               let weight = currentWeight else {
-            errorMessage = "身長と現在の体重が必要です"
+            errorMessage = "身長と現在の体重が必要です。「今日」タブから体重を登録してください"
             return
         }
+
+        isCalculating = true
+        defer { isCalculating = false }
 
         // Harris-Benedict式で推奨カロリーを計算
         let recommended = RecommendedCaloriesCalculator.calculate(
@@ -324,7 +337,8 @@ struct NutritionGoalSettingView: View {
         )
 
         recommendedCalories = recommended
-        errorMessage = nil
+
+        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weight)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
     }
 }
 
@@ -370,6 +384,15 @@ private struct PFCBreakdownRow: View {
             carbohydrates: 250
         ),
         currentWeight: 68.0,
+        goalWeight: 65.0,
+        onSaved: {}
+    )
+}
+
+#Preview("体重なし") {
+    NutritionGoalSettingView(
+        currentGoal: nil,
+        currentWeight: nil,
         goalWeight: 65.0,
         onSaved: {}
     )
