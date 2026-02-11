@@ -72,13 +72,28 @@ final class NotificationSettingsViewModel {
 
         settings.isGlobalEnabled.toggle()
         let previousSettings = settings
-        store.save(settings)
+
+        // 保存とスケジュールを実行
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
         await scheduler.scheduleAllNotifications(settings: settings)
 
         // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
             logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+            }
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -111,13 +126,28 @@ final class NotificationSettingsViewModel {
 
         let previousSettings = settings
         settings = settings.updatingSetting(for: mealType, transform: transform)
-        store.save(settings)
+
+        // 保存とスケジュールを実行
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
         await scheduler.scheduleAllNotifications(settings: settings)
 
         // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
             logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+            }
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -149,13 +179,28 @@ final class NotificationSettingsViewModel {
 
         let previousSettings = settings
         settings = settings.updatingWeightSetting(transform: transform)
-        store.save(settings)
+
+        // 保存とスケジュールを実行
+        do {
+            try store.save(settings)
+        } catch {
+            logger.error("通知設定の保存に失敗: \(error.localizedDescription)")
+            settings = previousSettings
+            schedulingErrorMessage = "設定の保存に失敗しました。もう一度お試しください。"
+            return
+        }
+
         await scheduler.scheduleAllNotifications(settings: settings)
 
         // スケジュール失敗時に設定を元に戻す
         if let error = scheduler.lastSchedulingError {
             logger.error("通知スケジュール失敗、設定を元に戻す: \(error.localizedDescription)")
             settings = previousSettings
+            do {
+                try store.save(settings)
+            } catch {
+                logger.error("設定の復元に失敗: \(error.localizedDescription)")
+            }
             schedulingErrorMessage = errorMessage(from: error)
         }
     }
@@ -170,9 +215,11 @@ final class NotificationSettingsViewModel {
         min(max(value, 0), 59)
     }
 
+    // UNErrorCode定数 (UNErrorDomain)
+    // https://developer.apple.com/documentation/usernotifications/unerrorcode
     private enum UNErrorCode: Int {
-        case notificationNotAllowed = 0
-        case notificationLimitExceeded = 1
+        case notificationNotAllowed = 0  // UNErrorCodeNotificationNotAllowed
+        case notificationLimitExceeded = 1  // UNErrorCodeNotificationLimitExceeded
     }
 
     private func errorMessage(from error: Error) -> String {
