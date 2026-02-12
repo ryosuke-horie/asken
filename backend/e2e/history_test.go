@@ -99,6 +99,7 @@ func TestHistory_Detail_Success(t *testing.T) {
 
 // TestHistory_Detail_NotFound は存在しないIDで404が返ることを確認する
 func TestHistory_Detail_NotFound(t *testing.T) {
+	waitForGeminiRateLimit()
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// 存在しないUUIDで詳細を取得
@@ -156,6 +157,7 @@ func TestHistory_Update_Success(t *testing.T) {
 
 // TestHistory_Update_NotFound は存在しないIDで404が返ることを確認する
 func TestHistory_Update_NotFound(t *testing.T) {
+	waitForGeminiRateLimit()
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// 更新リクエストボディ
@@ -287,6 +289,7 @@ func TestHistory_Delete_Success(t *testing.T) {
 
 // TestHistory_Delete_NotFound は存在しないIDで404が返ることを確認する
 func TestHistory_Delete_NotFound(t *testing.T) {
+	waitForGeminiRateLimit()
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// 存在しないUUIDで削除
