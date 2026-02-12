@@ -385,14 +385,20 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 
 		// 完了したらhistoryIDを返す
 		if status == "completed" {
-			historyID, err := uuid.Parse(statusBody["history_id"].(string))
+			historyIDStr, ok := statusBody["history_id"].(string)
+			require.True(t, ok, "Response should contain history_id field")
+			historyID, err := uuid.Parse(historyIDStr)
 			require.NoError(t, err)
 			return historyID
 		}
 
 		// 失敗した場合はエラー
 		if status == "failed" {
-			require.Fail(t, "Analysis failed: "+statusBody["error"].(string))
+			errorMsg := "unknown error"
+			if err, ok := statusBody["error"].(string); ok && err != "" {
+				errorMsg = err
+			}
+			require.Fail(t, "Analysis failed: "+errorMsg)
 		}
 
 		// 処理中なら待機
