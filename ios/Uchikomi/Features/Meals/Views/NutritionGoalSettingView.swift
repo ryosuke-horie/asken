@@ -10,9 +10,9 @@ struct NutritionGoalSettingView: View {
     @State private var targetCaloriesText: String
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showUserProfileInput = false
 
     // ユーザー属性入力用
-    @State private var showUserProfileInput = false
     @State private var selectedGender: Gender = .male
     @State private var age: Double = 30
     @State private var heightCm: String = "170"
@@ -51,8 +51,9 @@ struct NutritionGoalSettingView: View {
     }
 
     private var currentPhase: NutritionPhase {
+        // 体重がない場合は維持期として表示
         NutritionGoalCalculator.calculatePhase(
-            currentWeight: currentWeight,
+            currentWeight: currentWeight ?? Double(weightKg) ?? 0,
             goalWeight: goalWeight
         )
     }
@@ -75,69 +76,6 @@ struct NutritionGoalSettingView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("現在のフェーズ") {
-                    HStack {
-                        Text("フェーズ")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(currentPhase.displayName)
-                            .fontWeight(.semibold)
-                    }
-
-                    Text(currentPhaseDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                // 推奨カロリー表示（計算済みの場合）
-                if let recommended = recommendedCalories {
-                    Section("推奨カロリー") {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("あなたの推奨値")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text("\(Int(recommended)) kcal")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                            }
-                            Spacer()
-                            Button("採用") {
-                                targetCaloriesText = String(format: "%.0f", recommended)
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
-                }
-
-                // プリセットクイック選択（選手層向け）
-                if let presets = selectedActivityLevel.athletePresetCalories {
-                    Section("クイック選択") {
-                        ForEach(presets, id: \.self) { preset in
-                            Button {
-                                targetCaloriesText = String(format: "%.0f", preset)
-                            } label: {
-                                HStack {
-                                    Text("\(Int(preset)) kcal")
-                                    Spacer()
-                                }
-                                .contentShape(Rectangle())
-                            }
-                        }
-                    }
-                }
-
-                Section("目標カロリー") {
-                    HStack {
-                        TextField("2000", text: $targetCaloriesText)
-                            .keyboardType(.numberPad)
-                            .font(.title2)
-
-                        Text("kcal")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
                 // ユーザー属性入力（推奨値計算用）
                 Section {
                     Button {
@@ -147,6 +85,7 @@ struct NutritionGoalSettingView: View {
                     } label: {
                         HStack {
                             Text("推奨値を計算")
+                                .fontWeight(.medium)
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .rotationEffect(.degrees(showUserProfileInput ? 90 : 0))
@@ -238,6 +177,54 @@ struct NutritionGoalSettingView: View {
                         }
                         .padding(.vertical, 8)
                     }
+                }
+
+                // 推奨カロリー表示（計算済みの場合）
+                if let recommended = recommendedCalories {
+                    Section("推奨カロリー") {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("あなたの推奨値")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("\(Int(recommended)) kcal")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                            }
+                            Spacer()
+                            Button("採用") {
+                                targetCaloriesText = String(format: "%.0f", recommended)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+
+                // 目標カロリー入力
+                Section("目標カロリー") {
+                    HStack {
+                        TextField("2000", text: $targetCaloriesText)
+                            .keyboardType(.numberPad)
+                            .font(.title2)
+
+                        Text("kcal")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // 現在のフェーズ
+                Section("現在のフェーズ") {
+                    HStack {
+                        Text("フェーズ")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(currentPhase.displayName)
+                            .fontWeight(.semibold)
+                    }
+
+                    Text(currentPhaseDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 if isValid {
@@ -335,8 +322,8 @@ struct NutritionGoalSettingView: View {
             return
         }
 
-        // 引数で渡されたcurrentWeightがある場合はそちらを優先
-        let weightForCalculation = currentWeight ?? weight
+        // 入力した体重を使用
+        let weightForCalculation = weight
 
         isCalculating = true
         defer { isCalculating = false }
@@ -352,8 +339,7 @@ struct NutritionGoalSettingView: View {
 
         recommendedCalories = recommended
 
-        let weightSource = currentWeight != nil ? "登録済み" : "入力値"
-        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg(\(weightSource)), height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
+        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
     }
 }
 
