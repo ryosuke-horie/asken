@@ -24,6 +24,7 @@ utikomi/
 │   │   ├── service/           # ビジネスロジック
 │   │   ├── repository/        # データアクセス
 │   │   ├── worker/            # バックグラウンドワーカー
+│   │   ├── testutil/          # テストユーティリティ
 │   │   └── util/              # ユーティリティ
 │   └── pkg/                   # 共有パッケージ
 │       ├── gemini/            # Gemini API クライアント
@@ -31,6 +32,12 @@ utikomi/
 │       └── storage/           # Cloud Storage クライアント
 ├── ios/                        # iOSアプリ
 │   ├── Uchikomi/              # メインアプリ（SwiftUI）
+│   │   └── Features/          # 機能モジュール
+│   │       ├── Auth/          # 認証
+│   │       ├── Meals/         # 食事記録
+│   │       ├── Weight/        # 体重記録
+│   │       ├── MyMenu/        # マイメニュー
+│   │       └── Settings/      # 設定
 │   ├── UchikomiCore/          # コアフレームワーク
 │   └── UchikomiTests/         # ユニットテスト
 ├── infrastructure/             # Terraform（GCPインフラ管理）
@@ -124,6 +131,34 @@ cd backend && go test ./... -cover
 
 ## API仕様
 
+### エンドポイント一覧
+
+| メソッド | パス | 説明 |
+|:---|:---|:---|
+| GET | /api/health | ヘルスチェック |
+| POST | /api/analyze | 食事画像分析 |
+| GET | /api/analyze/:id/status | 分析ステータス確認 |
+| POST | /api/upload-image | 画像アップロード |
+| GET | /api/images/:path | 画像取得 |
+| GET | /api/history | 分析履歴一覧 |
+| GET | /api/history/:id | 分析履歴詳細 |
+| PUT | /api/history/:id | 分析履歴更新 |
+| DELETE | /api/history/:id | 分析履歴削除 |
+| GET | /api/meals/daily | 日別食事取得 |
+| POST | /api/meals/skip | 食事スキップ |
+| GET | /api/weight/records | 体重記録一覧 |
+| POST | /api/weight/records | 体重記録作成 |
+| GET | /api/weight/records/:id | 体重記録詳細 |
+| PUT | /api/weight/records/:id | 体重記録更新 |
+| DELETE | /api/weight/records/:id | 体重記録削除 |
+| GET | /api/weight/goal | 体重目標取得 |
+| PUT | /api/weight/goal | 体重目標更新 |
+| GET | /api/my-menu | マイメニュー一覧 |
+| POST | /api/my-menu | マイメニュー作成 |
+| GET | /api/my-menu/:id | マイメニュー詳細 |
+| PUT | /api/my-menu/:id | マイメニュー更新 |
+| DELETE | /api/my-menu/:id | マイメニュー削除 |
+
 ### POST /api/analyze
 
 食事画像を分析し、カロリーと栄養素を返却します。
@@ -177,6 +212,8 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 - [x] 食事履歴保存
 - [ ] 栄養バランス分析
 - [x] 体重記録・推移グラフ
+- [x] マイメニュー機能
+- [ ] AIエージェントによる減量サポート
 
 ## 開発者
 
