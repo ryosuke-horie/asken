@@ -57,7 +57,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
         }
     }
 
-    /// UchikomiApp.refreshTodayNotificationsから具象型で直接呼び出されるためプロトコルには含めない
+    /// 配信済み通知を削除する（通知センターに表示済みの通知を除去）
     func cancelDeliveredNotification(for mealType: MealType) async {
         let identifier = notificationIdentifier(for: mealType)
         let delivered = await notificationCenter.deliveredNotifications()
@@ -69,19 +69,89 @@ final class NotificationManager: NotificationSchedulerProtocol {
         }
     }
 
+    /// 食事が記録された時に呼び出し、該当の通知をキャンセルして翌日に再スケジュールする
+    func handleMealRecorded(mealType: MealType, settings: NotificationSettings) async {
+        cancelPendingNotification(for: mealType)
+        await cancelDeliveredNotification(for: mealType)
+        if let setting = settings.meals.first(where: { $0.mealType == mealType && $0.isEnabled }) {
+            await scheduleMealNotificationFromTomorrow(setting)
+        }
+    }
+
+    /// 記録済みの食事タイプを考慮して食事通知を再スケジュールする
+    ///
+    /// - 記録済みの食事: 今日の pending 通知をキャンセルし、翌日に非リピートで再スケジュール
+    /// - 未記録の食事: repeating 通知として再スケジュール（通常通り）
+    func refreshMealNotifications(
+        settings: NotificationSettings,
+        recordedMealTypes: Set<MealType>
+    ) async {
+        for mealType in MealType.reminderTargets {
+            cancelPendingNotification(for: mealType)
+        }
+
+        for setting in settings.meals where setting.isEnabled {
+            if recordedMealTypes.contains(setting.mealType) {
+                await scheduleMealNotificationFromTomorrow(setting)
+            } else {
+                await scheduleMealNotification(setting)
+            }
+        }
+    }
+
     // MARK: - Private
+
+    private func cancelPendingNotification(for mealType: MealType) {
+        let identifier = notificationIdentifier(for: mealType)
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
+    private func scheduleMealNotificationFromTomorrow(_ setting: MealNotificationSetting) async {
+        guard let tomorrow = Calendar.current.date(
+            byAdding: .day,
+            value: 1,
+            to: Calendar.current.startOfDay(for: Date())
+        ) else { return }
+
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: tomorrow)
+        components.hour = setting.hour
+        components.minute = setting.minute
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        await scheduleMealNotificationRequest(setting, trigger: trigger, logLabel: "翌日再スケジュール")
+    }
 
     private func cancelAllNotifications() async {
         notificationCenter.removeAllPendingNotificationRequests()
     }
 
     private func scheduleMealNotification(_ setting: MealNotificationSetting) async {
-        await scheduleNotification(
-            identifier: notificationIdentifier(for: setting.mealType),
-            body: "\(setting.mealType.displayName)を記録しませんか？",
-            setting: setting,
-            logLabel: setting.mealType.rawValue
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: setting.timeComponents,
+            repeats: true
         )
+        await scheduleMealNotificationRequest(setting, trigger: trigger, logLabel: setting.mealType.rawValue)
+    }
+
+    private func scheduleMealNotificationRequest(
+        _ setting: MealNotificationSetting,
+        trigger: UNCalendarNotificationTrigger,
+        logLabel: String
+    ) async {
+        let identifier = notificationIdentifier(for: setting.mealType)
+        let content = UNMutableNotificationContent()
+        content.title = "ウチコミ"
+        content.body = "\(setting.mealType.displayName)を記録しませんか？"
+        content.sound = .default
+
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+
+        do {
+            try await notificationCenter.add(request)
+            logger.info("通知スケジュール成功(\(logLabel)): \(setting.mealType.rawValue) \(setting.hour):\(setting.minute)")
+        } catch {
+            logger.error("通知スケジュール失敗(\(logLabel)): \(setting.mealType.rawValue): \(error.localizedDescription)")
+        }
     }
 
     private func scheduleWeightNotification(_ setting: WeightNotificationSetting) async {
