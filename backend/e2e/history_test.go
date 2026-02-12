@@ -385,8 +385,11 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 
 		// 完了したらhistoryIDを返す
 		if status == "completed" {
-			historyIDStr, ok := statusBody["history_id"].(string)
-			require.True(t, ok, "Response should contain history_id field")
+			result, ok := statusBody["result"].(map[string]any)
+			require.True(t, ok, "Response should contain result field")
+
+			historyIDStr, ok := result["history_id"].(string)
+			require.True(t, ok, "Result should contain history_id field")
 			historyID, err := uuid.Parse(historyIDStr)
 			require.NoError(t, err)
 			return historyID
