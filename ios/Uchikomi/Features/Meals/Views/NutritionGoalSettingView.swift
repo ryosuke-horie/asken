@@ -16,6 +16,7 @@ struct NutritionGoalSettingView: View {
     @State private var selectedGender: Gender = .male
     @State private var age: Double = 30
     @State private var heightCm: String = "170"
+    @State private var weightKg: String = "70"
     @State private var selectedActivityLevel: ActivityLevel = .moderatelyActive
 
     // 推奨カロリー計算結果
@@ -42,6 +43,10 @@ struct NutritionGoalSettingView: View {
         self.onSaved = onSaved
         _targetCaloriesText = State(
             initialValue: currentGoal.map { String(format: "%.0f", $0.targetCalories) } ?? ""
+        )
+        // 体重の初期値を設定
+        _weightKg = State(
+            initialValue: currentWeight.map { String(format: "%.1f", $0) } ?? "70"
         )
     }
 
@@ -185,6 +190,18 @@ struct NutritionGoalSettingView: View {
                                     .foregroundStyle(.secondary)
                             }
 
+                            // 体重入力
+                            HStack {
+                                Text("体重")
+                                    .frame(width: 80, alignment: .leading)
+                                TextField("70", text: $weightKg)
+                                    .keyboardType(.numberPad)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 80)
+                                Text("kg")
+                                    .foregroundStyle(.secondary)
+                            }
+
                             // 活動レベル選択
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("活動レベル")
@@ -196,13 +213,6 @@ struct NutritionGoalSettingView: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-
-                                // 現在体重が必要なことを説明
-                                if currentWeight == nil {
-                                    Text("※ 現在の体重が設定されていません。「今日」タブから体重を登録してください")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                }
                             }
 
                             // 計算ボタン
@@ -220,11 +230,11 @@ struct NutritionGoalSettingView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(isUserProfileValid && currentWeight != nil ? Color.orange : Color.accentColor)
+                                .background(isUserProfileValid ? Color.accentColor : Color(.systemGray5))
                                 .foregroundStyle(.white)
                                 .cornerRadius(10)
                             }
-                            .disabled(isCalculating || !isUserProfileValid || currentWeight == nil)
+                            .disabled(isCalculating || !isUserProfileValid)
                         }
                         .padding(.vertical, 8)
                     }
@@ -310,8 +320,9 @@ struct NutritionGoalSettingView: View {
     // MARK: - 推奨カロリー計算
 
     private var isUserProfileValid: Bool {
-        guard let height = Double(heightCm) else { return false }
-        return height >= 100 && height <= 250 && age >= 15 && age <= 80
+        guard let height = Double(heightCm),
+              let weight = Double(weightKg) else { return false }
+        return height >= 100 && height <= 250 && age >= 15 && age <= 80 && weight >= 30 && weight <= 200
     }
 
     private func calculateRecommendedCalories() {
@@ -319,10 +330,13 @@ struct NutritionGoalSettingView: View {
         errorMessage = nil
 
         guard let height = Double(heightCm),
-              let weight = currentWeight else {
-            errorMessage = "身長と現在の体重が必要です。「今日」タブから体重を登録してください"
+              let weight = Double(weightKg) else {
+            errorMessage = "身長と体重を入力してください"
             return
         }
+
+        // 引数で渡されたcurrentWeightがある場合はそちらを優先
+        let weightForCalculation = currentWeight ?? weight
 
         isCalculating = true
         defer { isCalculating = false }
@@ -330,7 +344,7 @@ struct NutritionGoalSettingView: View {
         // Harris-Benedict式で推奨カロリーを計算
         let recommended = RecommendedCaloriesCalculator.calculate(
             gender: selectedGender,
-            weightKg: weight,
+            weightKg: weightForCalculation,
             heightCm: height,
             age: Int(age),
             activityLevel: selectedActivityLevel
@@ -338,7 +352,8 @@ struct NutritionGoalSettingView: View {
 
         recommendedCalories = recommended
 
-        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weight)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
+        let weightSource = currentWeight != nil ? "登録済み" : "入力値"
+        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg(\(weightSource)), height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
     }
 }
 
