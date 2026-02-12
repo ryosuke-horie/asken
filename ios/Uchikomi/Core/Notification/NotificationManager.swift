@@ -60,13 +60,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
     /// 配信済み通知を削除する（通知センターに表示済みの通知を除去）
     func cancelDeliveredNotification(for mealType: MealType) async {
         let identifier = notificationIdentifier(for: mealType)
-        let delivered = await notificationCenter.deliveredNotifications()
-        let toRemove = delivered
-            .filter { $0.request.identifier == identifier }
-            .map(\.request.identifier)
-        if !toRemove.isEmpty {
-            notificationCenter.removeDeliveredNotifications(withIdentifiers: toRemove)
-        }
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
 
     /// 食事が記録された時に呼び出し、該当の通知をキャンセルして翌日に再スケジュールする
@@ -80,7 +74,8 @@ final class NotificationManager: NotificationSchedulerProtocol {
 
     /// 記録済みの食事タイプを考慮して食事通知を再スケジュールする
     ///
-    /// - 記録済みの食事: 今日の pending 通知をキャンセルし、翌日に非リピートで再スケジュール
+    /// まず全リマインダー対象の pending 通知をキャンセルし、その後：
+    /// - 記録済みの食事: 翌日に非リピートで再スケジュール
     /// - 未記録の食事: repeating 通知として再スケジュール（通常通り）
     func refreshMealNotifications(
         settings: NotificationSettings,
@@ -111,7 +106,10 @@ final class NotificationManager: NotificationSchedulerProtocol {
             byAdding: .day,
             value: 1,
             to: Calendar.current.startOfDay(for: Date())
-        ) else { return }
+        ) else {
+            logger.warning("翌日の日付計算に失敗: \(setting.mealType.rawValue)")
+            return
+        }
 
         var components = Calendar.current.dateComponents([.year, .month, .day], from: tomorrow)
         components.hour = setting.hour
@@ -150,6 +148,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
             try await notificationCenter.add(request)
             logger.info("通知スケジュール成功(\(logLabel)): \(setting.mealType.rawValue) \(setting.hour):\(setting.minute)")
         } catch {
+            lastSchedulingError = error
             logger.error("通知スケジュール失敗(\(logLabel)): \(setting.mealType.rawValue): \(error.localizedDescription)")
         }
     }
