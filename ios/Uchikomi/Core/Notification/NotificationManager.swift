@@ -137,11 +137,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
         logLabel: String
     ) async {
         let identifier = notificationIdentifier(for: setting.mealType)
-        let content = UNMutableNotificationContent()
-        content.title = "ウチコミ"
-        content.body = "\(setting.mealType.displayName)を記録しませんか？"
-        content.sound = .default
-
+        let content = createNotificationContent(body: "\(setting.mealType.displayName)を記録しませんか？")
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
         do {
@@ -168,21 +164,12 @@ final class NotificationManager: NotificationSchedulerProtocol {
         setting: some TimedNotificationSetting,
         logLabel: String
     ) async {
-        let content = UNMutableNotificationContent()
-        content.title = "ウチコミ"
-        content.body = body
-        content.sound = .default
-
+        let content = createNotificationContent(body: body)
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: setting.timeComponents,
             repeats: true
         )
-
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
         do {
             try await notificationCenter.add(request)
@@ -191,6 +178,14 @@ final class NotificationManager: NotificationSchedulerProtocol {
             lastSchedulingError = error
             logger.error("通知スケジュール失敗: \(logLabel): \(error.localizedDescription)")
         }
+    }
+
+    private func createNotificationContent(body: String) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "ウチコミ"
+        content.body = body
+        content.sound = .default
+        return content
     }
 
     private func notificationIdentifier(for mealType: MealType) -> String {
