@@ -20,8 +20,8 @@ func TestMeals_Daily_Success(t *testing.T) {
 	resp, err := client.Get(ctx, "/api/meals/daily?date="+today+"&tz=Asia/Tokyo")
 	require.NoError(t, err)
 
-	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status OK, got %d with body: %s", resp.StatusCode, string(resp.Body))
-	require.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
 
 	var body map[string]any
 	err = resp.JSON(&body)
@@ -53,8 +53,8 @@ func TestMeals_Skip_Success(t *testing.T) {
 	resp, err := client.Post(ctx, "/api/meals/skip", reqBody)
 	require.NoError(t, err)
 
-	require.Equal(t, http.StatusCreated, resp.StatusCode, "Expected status Created, got %d with body: %s", resp.StatusCode, string(resp.Body))
-	require.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
 
 	var body map[string]string
 	err = resp.JSON(&body)
@@ -94,7 +94,7 @@ func TestMeals_Skip_InvalidMealType(t *testing.T) {
 	var body map[string]any
 	err = resp.JSON(&body)
 	require.NoError(t, err)
-	require.Contains(t, body, "error", "Error response should contain error message")
+	assert.Contains(t, body, "error", "Error response should contain error message")
 }
 
 func TestMeals_Skip_MissingMealType(t *testing.T) {
@@ -112,5 +112,5 @@ func TestMeals_Skip_MissingMealType(t *testing.T) {
 	var body map[string]any
 	err = resp.JSON(&body)
 	require.NoError(t, err)
-	require.Contains(t, body, "error", "Error response should contain error message")
+	assert.Contains(t, body, "error", "Error response should contain error message")
 }
