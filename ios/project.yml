@@ -44,6 +44,10 @@ targets:
       - path: Uchikomi
         excludes:
           - "**/.DS_Store"
+    resources:
+      - path: Uchikomi/Resources
+        includes:
+          - "GoogleService-Info.plist"
     settings:
       base:
         INFOPLIST_FILE: Uchikomi/Resources/Info.plist

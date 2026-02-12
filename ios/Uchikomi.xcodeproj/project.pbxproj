@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02AA3868F22B4D497DF98C4A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */; };
 		09198218133C2AABFB4A2EE4 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 56C81F160193F22EB94EA0B2 /* FirebaseAuth */; };
 		0A764374EE9687C0474468F5 /* WeightViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */; };
 		0ED646278CAD55B8CBFABAA4 /* WeightInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165353821DFBE63F176DD5EC /* WeightInputViewModel.swift */; };
@@ -123,6 +124,7 @@
 		339AA9044DFFD3CF4742F75A /* WeightRecordRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecordRow.swift; sourceTree = "<group>"; };
 		35059CC7496A739452218269 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
+		3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		3E4D95F83E8D7B930C133A00 /* Meal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Meal.swift; sourceTree = "<group>"; };
 		403F558A61BBFE489C45B03F /* MyMenuEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyMenuEditViewModel.swift; sourceTree = "<group>"; };
 		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -437,6 +439,7 @@
 			isa = PBXGroup;
 			children = (
 				73781A308EDE339E10EA5366 /* Assets.xcassets */,
+				3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */,
 				74BA1A7B25B0A786BB8F9486 /* Info.plist */,
 			);
 			path = Resources;
@@ -607,6 +610,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				56551A592DA89C0E19B257FF /* Assets.xcassets in Resources */,
+				02AA3868F22B4D497DF98C4A /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
