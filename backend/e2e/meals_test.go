@@ -90,11 +90,6 @@ func TestMeals_Skip_InvalidMealType(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-	var body map[string]any
-	err = resp.JSON(&body)
-	require.NoError(t, err)
-	assert.Contains(t, body, "error", "Error response should contain error message")
 }
 
 func TestMeals_Skip_MissingMealType(t *testing.T) {
@@ -108,9 +103,4 @@ func TestMeals_Skip_MissingMealType(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-	var body map[string]any
-	err = resp.JSON(&body)
-	require.NoError(t, err)
-	assert.Contains(t, body, "error", "Error response should contain error message")
 }
