@@ -16,11 +16,29 @@ import (
 
 // TestHistory_List_Success は認証済みで履歴一覧取得が成功することを確認する
 func TestHistory_List_Success(t *testing.T) {
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
 	historyID := createTestHistory(t, ctx, client)
+
+	// 履歴を確定（PUT /api/history/{id}でconfirmed=trueにする）
+	// 履歴一覧はconfirmed==trueのレコードのみ返すため、確定が必要
+	confirmReq := map[string]any{
+		"foods": []map[string]any{
+			{
+				"name":             "テスト食品",
+				"estimated_amount": "100g",
+				"calories_kcal":    150.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
+			},
+		},
+	}
+	confirmResp, err := client.Request(ctx, http.MethodPut, "/api/history/"+historyID.String(), confirmReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, confirmResp.StatusCode, "Confirm history should succeed")
 
 	// 履歴一覧を取得
 	resp, err := client.Get(ctx, "/api/history")
