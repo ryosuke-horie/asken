@@ -55,6 +55,7 @@ final class LoginViewModel {
         isLoading = false
     }
 
+    // periphery:ignore - Apple Sign-In用（Apple Developer Program登録後に有効化）
     @MainActor
     func signInWithApple() async {
         isLoading = true

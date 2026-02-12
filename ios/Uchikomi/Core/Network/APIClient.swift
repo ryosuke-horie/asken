@@ -19,11 +19,6 @@ enum AuthServiceProvider {
         _shared = service
         return service
     }
-
-    /// テスト用: サービスを設定する
-    static func setShared(_ service: FirebaseAuthServiceProtocol) {
-        _shared = service
-    }
 }
 
 // MARK: - APIClient

@@ -52,6 +52,7 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task ios:test` | iOSのテストを実行 |
 | `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
 | `task ios:lint` | SwiftLintを実行 |
+| `task ios:deadcode` | Swiftデッドコード検知（Periphery）を実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
 | `task ios:format-check` | SwiftFormatチェック（CI用） |
 | `task ios:clean` | DerivedDataを削除 |

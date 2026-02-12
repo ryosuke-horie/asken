@@ -104,6 +104,48 @@ tasks:
       - echo "=== SwiftLint実行 ==="
       - swiftlint lint --strict
 
+  ios:deadcode:
+    desc: Swiftデッドコード検知（Periphery）を実行
+    dir: ios
+    preconditions:
+      - sh: command -v periphery
+        msg: "Periphery がインストールされていません。`brew install peripheryapp/periphery/periphery` を実行してください。"
+    vars:
+      PLIST_PATH: Uchikomi/Resources/GoogleService-Info.plist
+    cmds:
+      - echo "=== Periphery デッドコード検知 ==="
+      - |
+        CREATED_DUMMY=false
+        cleanup() {
+          if [ "$CREATED_DUMMY" = true ]; then
+            rm -f "{{.PLIST_PATH}}"
+            echo "ダミー GoogleService-Info.plist を削除しました"
+          fi
+        }
+        trap cleanup EXIT
+        if [ ! -f "{{.PLIST_PATH}}" ]; then
+          echo "GoogleService-Info.plist が見つかりません。ダミーを生成します..."
+          sed 's/^          //' > "{{.PLIST_PATH}}" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>dummy</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000000000</string>
+            <key>PROJECT_ID</key><string>dummy-project</string>
+            <key>BUNDLE_ID</key><string>dev.exe.uchikomi</string>
+          </dict>
+          </plist>
+          PLIST
+          if [ ! -f "{{.PLIST_PATH}}" ]; then
+            echo "ERROR: ダミー GoogleService-Info.plist の生成に失敗しました" >&2
+            exit 1
+          fi
+          CREATED_DUMMY=true
+        fi
+        periphery scan
+
   ios:format:
     desc: SwiftFormatを実行（コードを整形）
     dir: ios

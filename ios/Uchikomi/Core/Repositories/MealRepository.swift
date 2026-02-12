@@ -134,7 +134,3 @@ final class MealRepository: MealRepositoryProtocol {
         try await apiClient.requestWithoutResponse(endpoint: .skipMeal, body: request)
     }
 }
-
-// MARK: - EmptyResponse
-
-struct EmptyResponse: Decodable {}

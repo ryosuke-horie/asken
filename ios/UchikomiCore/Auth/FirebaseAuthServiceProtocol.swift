@@ -35,10 +35,13 @@ public struct GoogleCredential {
 
 /// @mockable
 public protocol FirebaseAuthServiceProtocol {
+    // periphery:ignore - AuthManagerがlistener経由で状態管理するため外部から未使用だがAPI契約として保持
     var currentUser: FirebaseAuthUser? { get }
+    // periphery:ignore - AuthManagerがlistener経由で状態管理するため外部から未使用だがAPI契約として保持
     var isSignedIn: Bool { get }
 
     func signInWithGoogle(credential: GoogleCredential) async throws -> FirebaseAuthUser
+    // periphery:ignore - Apple Sign-In用（Apple Developer Program登録後に有効化）
     func signInWithApple(credential: ASAuthorizationAppleIDCredential, nonce: String) async throws -> FirebaseAuthUser
     func signOut() throws
     func getIDToken() async throws -> String

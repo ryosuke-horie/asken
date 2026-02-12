@@ -153,14 +153,6 @@ struct APIEndpoint {
         requiresAuth: true
     )
 
-    static func myMenuDetail(id: String) -> APIEndpoint {
-        APIEndpoint(
-            path: "my-menu/\(id)",
-            method: .get,
-            requiresAuth: true
-        )
-    }
-
     static func updateMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
             path: "my-menu/\(id)",
