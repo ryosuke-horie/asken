@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -121,12 +122,12 @@ func TestHistory_Update_Success(t *testing.T) {
 	updateReq := map[string]any{
 		"foods": []map[string]any{
 			{
-				"name":              "更新されたテスト食品",
-				"estimated_amount":   "100g",
-				"calories_kcal":     150.0,
-				"protein_g":         10.0,
-				"fat_g":             5.0,
-				"carbohydrates_g":   20.0,
+				"name":             "更新されたテスト食品",
+				"estimated_amount": "100g",
+				"calories_kcal":    150.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
 			},
 		},
 	}
@@ -164,12 +165,12 @@ func TestHistory_Update_NotFound(t *testing.T) {
 	updateReq := map[string]any{
 		"foods": []map[string]any{
 			{
-				"name":              "テスト食品",
-				"estimated_amount":   "100g",
-				"calories_kcal":     150.0,
-				"protein_g":         10.0,
-				"fat_g":             5.0,
-				"carbohydrates_g":   20.0,
+				"name":             "テスト食品",
+				"estimated_amount": "100g",
+				"calories_kcal":    150.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
 			},
 		},
 	}
@@ -190,12 +191,12 @@ func TestHistory_Update_Unauthorized(t *testing.T) {
 	updateReq := map[string]any{
 		"foods": []map[string]any{
 			{
-				"name":              "テスト食品",
-				"estimated_amount":   "100g",
-				"calories_kcal":     150.0,
-				"protein_g":         10.0,
-				"fat_g":             5.0,
-				"carbohydrates_g":   20.0,
+				"name":             "テスト食品",
+				"estimated_amount": "100g",
+				"calories_kcal":    150.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
 			},
 		},
 	}
@@ -239,12 +240,12 @@ func TestHistory_Update_InvalidRequest_NegativeCalories(t *testing.T) {
 	updateReq := map[string]any{
 		"foods": []map[string]any{
 			{
-				"name":              "テスト食品",
-				"estimated_amount":   "100g",
-				"calories_kcal":     -10.0,
-				"protein_g":         10.0,
-				"fat_g":             5.0,
-				"carbohydrates_g":   20.0,
+				"name":             "テスト食品",
+				"estimated_amount": "100g",
+				"calories_kcal":    -10.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
 			},
 		},
 	}
@@ -268,12 +269,12 @@ func TestHistory_Update_InvalidRequest_EmptyName(t *testing.T) {
 	updateReq := map[string]any{
 		"foods": []map[string]any{
 			{
-				"name":              "",
-				"estimated_amount":   "100g",
-				"calories_kcal":     150.0,
-				"protein_g":         10.0,
-				"fat_g":             5.0,
-				"carbohydrates_g":   20.0,
+				"name":             "",
+				"estimated_amount": "100g",
+				"calories_kcal":    150.0,
+				"protein_g":        10.0,
+				"fat_g":            5.0,
+				"carbohydrates_g":  20.0,
 			},
 		},
 	}
@@ -329,6 +330,8 @@ func TestHistory_Delete_Unauthorized(t *testing.T) {
 }
 
 // createTestHistory はanalyze API経由でテスト用の履歴データを作成するヘルパー関数
+//
+// 解析が完了するまでポーリングし、完了したhistoryIDを返す
 func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.UUID {
 	t.Helper()
 
@@ -338,18 +341,65 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 		"meal_date":  time.Now().Format("2006-01-02"),
 	}
 
+	// 1. analyze APIでリクエストを作成
 	resp, err := client.Post(ctx, "/api/analyze", reqBody)
 	require.NoError(t, err)
-
-	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+	require.Equal(t, http.StatusAccepted, resp.StatusCode, "analyze API should return 202 Accepted")
 
 	var body map[string]string
 	err = resp.JSON(&body)
 	require.NoError(t, err)
 
-	historyID, err := uuid.Parse(body["id"])
+	analysisID, err := uuid.Parse(body["id"])
 	require.NoError(t, err)
-	require.NotEmpty(t, historyID, "Response should contain analysis ID")
+	require.NotEmpty(t, analysisID, "Response should contain analysis ID")
 
-	return historyID
+	// 2. 解析完了までポーリング（最大30秒）
+	const (
+		pollInterval = 2 * time.Second
+		maxPollTime  = 30 * time.Second
+	)
+	start := time.Now()
+
+	for time.Since(start) < maxPollTime {
+		// ステータスを取得
+		statusResp, err := client.Get(ctx, "/api/analyze/"+analysisID.String())
+		require.NoError(t, err)
+
+		// 404はまだ処理中、次のポーリングへ
+		if statusResp.StatusCode == http.StatusNotFound {
+			time.Sleep(pollInterval)
+			continue
+		}
+		// 200以外は予期しないエラー
+		if statusResp.StatusCode != http.StatusOK {
+			require.Fail(t, fmt.Sprintf("Unexpected status code during polling: %d", statusResp.StatusCode))
+		}
+
+		var statusBody map[string]any
+		err = statusResp.JSON(&statusBody)
+		require.NoError(t, err)
+
+		status, ok := statusBody["status"].(string)
+		require.True(t, ok, "Response should contain status field")
+
+		// 完了したらhistoryIDを返す
+		if status == "completed" {
+			historyID, err := uuid.Parse(statusBody["history_id"].(string))
+			require.NoError(t, err)
+			return historyID
+		}
+
+		// 失敗した場合はエラー
+		if status == "failed" {
+			require.Fail(t, "Analysis failed: "+statusBody["error"].(string))
+		}
+
+		// 処理中なら待機
+		time.Sleep(pollInterval)
+	}
+
+	// タイムアウト
+	require.Fail(t, fmt.Sprintf("Analysis did not complete within %v (analysisID: %s)", maxPollTime, analysisID))
+	return uuid.UUID{}
 }
