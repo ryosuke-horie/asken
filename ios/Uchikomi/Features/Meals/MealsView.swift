@@ -1,4 +1,10 @@
+import os
 import SwiftUI
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
+    category: "MealsView"
+)
 
 // MARK: - MealsView
 
@@ -68,6 +74,7 @@ struct MealsView: View {
                 ) {
                     Task {
                         await viewModel.loadMeals()
+                        await cancelNotificationIfToday(for: mealType)
                     }
                 }
             }
@@ -75,6 +82,19 @@ struct MealsView: View {
         .task {
             await viewModel.loadMeals()
         }
+    }
+
+    private func cancelNotificationIfToday(for mealType: MealType) async {
+        guard Calendar.current.isDateInToday(viewModel.selectedDate),
+              MealType.reminderTargets.contains(mealType) else { return }
+
+        let store = NotificationSettingsStore()
+        let settings = store.load()
+        guard settings.isGlobalEnabled else { return }
+
+        let manager = NotificationManager()
+        await manager.handleMealRecorded(mealType: mealType, settings: settings)
+        logger.info("食事記録後に通知をキャンセル: \(mealType.rawValue)")
     }
 }
 
