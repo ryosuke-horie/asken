@@ -355,6 +355,7 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 	require.NotEmpty(t, analysisID, "Response should contain analysis ID")
 
 	// 2. 解析完了までポーリング（最大30秒）
+	// 現在のアーキテクチャでは analysis ID = history ID（統合コレクション）
 	const (
 		pollInterval = 2 * time.Second
 		maxPollTime  = 30 * time.Second
@@ -362,16 +363,13 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 	start := time.Now()
 
 	for time.Since(start) < maxPollTime {
-		// ステータスを取得
 		statusResp, err := client.Get(ctx, "/api/analyze/"+analysisID.String())
 		require.NoError(t, err)
 
-		// 404はまだ処理中、次のポーリングへ
 		if statusResp.StatusCode == http.StatusNotFound {
 			time.Sleep(pollInterval)
 			continue
 		}
-		// 200以外は予期しないエラー
 		if statusResp.StatusCode != http.StatusOK {
 			require.Fail(t, fmt.Sprintf("Unexpected status code during polling: %d", statusResp.StatusCode))
 		}
@@ -383,32 +381,21 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 		status, ok := statusBody["status"].(string)
 		require.True(t, ok, "Response should contain status field")
 
-		// 完了したらhistoryIDを返す
 		if status == "completed" {
-			result, ok := statusBody["result"].(map[string]any)
-			require.True(t, ok, "Response should contain result field")
-
-			historyIDStr, ok := result["history_id"].(string)
-			require.True(t, ok, "Result should contain history_id field")
-			historyID, err := uuid.Parse(historyIDStr)
-			require.NoError(t, err)
-			return historyID
+			return analysisID
 		}
 
-		// 失敗した場合はエラー
 		if status == "failed" {
 			errorMsg := "unknown error"
-			if err, ok := statusBody["error"].(string); ok && err != "" {
-				errorMsg = err
+			if errMsg, ok := statusBody["error"].(string); ok && errMsg != "" {
+				errorMsg = errMsg
 			}
 			require.Fail(t, "Analysis failed: "+errorMsg)
 		}
 
-		// 処理中なら待機
 		time.Sleep(pollInterval)
 	}
 
-	// タイムアウト
 	require.Fail(t, fmt.Sprintf("Analysis did not complete within %v (analysisID: %s)", maxPollTime, analysisID))
 	return uuid.UUID{}
 }
