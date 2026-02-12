@@ -182,18 +182,6 @@ final class MealInputViewModel {
         throw APIError.serverError("分析がタイムアウトしました（\(Constants.pollingTimeoutSeconds)秒経過）")
     }
 
-    func reset() {
-        selectedImage = nil
-        inputText = ""
-        manualFoods = [FoodEditItem()]
-        analysisResult = nil
-        analysisId = nil
-        errorMessage = nil
-        isCompleted = false
-        showEditor = false
-        isSkipping = false
-    }
-
     func markCompleted() {
         isCompleted = true
     }

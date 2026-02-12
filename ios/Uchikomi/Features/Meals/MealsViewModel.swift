@@ -6,7 +6,6 @@ final class MealsViewModel {
     var dailyMeals: DailyMeals?
     var isLoading = false
     var errorMessage: String?
-    var isDeleting = false
 
     private let repository: MealRepositoryProtocol
 
@@ -60,21 +59,5 @@ final class MealsViewModel {
         Task {
             await loadMeals()
         }
-    }
-
-    func deleteHistory(id: String) async {
-        isDeleting = true
-        errorMessage = nil
-
-        do {
-            try await repository.deleteHistory(historyId: id)
-            await loadMeals()
-        } catch let error as APIError {
-            errorMessage = error.localizedDescription
-        } catch {
-            errorMessage = "削除に失敗しました"
-        }
-
-        isDeleting = false
     }
 }

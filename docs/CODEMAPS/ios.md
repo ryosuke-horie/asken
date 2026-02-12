@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-10
+最終更新: 2026-02-11
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -33,31 +33,42 @@ ios/
 │   │   │   ├── LoginView.swift
 │   │   │   └── LoginViewModel.swift
 │   │   ├── Meals/              # 食事
-│   │       ├── MealsView.swift
-│   │       ├── MealsViewModel.swift
-│   │       ├── MealInputView.swift
-│   │       ├── MealInputViewModel.swift
-│   │       ├── Models/
-│   │       │   ├── FoodEditItem.swift
-│   │       │   └── QuantityParser.swift
-│   │       ├── ViewModels/
-│   │       │   └── NutritionEditorViewModel.swift
-│   │       └── Views/
-│   │           ├── NutritionEditorView.swift
-│   │           └── FoodItemEditRow.swift
-│   │   └── Weight/             # 体重
-│   │       ├── WeightView.swift
-│   │       ├── WeightViewModel.swift
-│   │       ├── WeightInputView.swift
-│   │       ├── WeightInputViewModel.swift
-│   │       ├── Models/
-│   │       │   └── WeightRecord.swift
-│   │       └── Views/
-│   │           ├── WeightChartView.swift
-│   │           ├── WeightGoalCard.swift
-│   │           ├── WeightGoalSheet.swift
-│   │           └── WeightRecordRow.swift
+│   │   │   ├── CameraView.swift
+│   │   │   ├── MealsView.swift
+│   │   │   ├── MealsViewModel.swift
+│   │   │   ├── MealInputView.swift
+│   │   │   ├── MealInputViewModel.swift
+│   │   │   ├── Models/
+│   │   │   │   ├── FoodEditItem.swift
+│   │   │   │   ├── ImageFilenameValidator.swift
+│   │   │   │   ├── MeasurementUnit.swift
+│   │   │   │   └── QuantityParser.swift
+│   │   │   ├── ViewModels/
+│   │   │   │   └── NutritionEditorViewModel.swift
+│   │   │   └── Views/
+│   │   │       ├── NutritionEditorView.swift
+│   │   │       └── FoodItemEditRow.swift
+│   │   ├── MyMenu/             # マイメニュー
+│   │   │   ├── MyMenuEditView.swift
+│   │   │   ├── MyMenuEditViewModel.swift
+│   │   │   ├── MyMenuListView.swift
+│   │   │   ├── MyMenuListViewModel.swift
+│   │   │   └── MyMenuSelectionView.swift
+│   │   ├── Weight/             # 体重
+│   │   │   ├── WeightView.swift
+│   │   │   ├── WeightViewModel.swift
+│   │   │   ├── WeightInputView.swift
+│   │   │   ├── WeightInputViewModel.swift
+│   │   │   ├── Models/
+│   │   │   │   └── WeightRecord.swift
+│   │   │   └── Views/
+│   │   │       ├── WeightChartView.swift
+│   │   │       ├── WeightGoalCard.swift
+│   │   │       ├── WeightGoalSheet.swift
+│   │   │       └── WeightRecordRow.swift
 │   │   └── Settings/           # 設定
+│   │       ├── SettingsView.swift
+│   │       ├── SettingsViewModel.swift
 │   │       ├── NotificationSettingsView.swift
 │   │       └── NotificationSettingsViewModel.swift
 │   ├── Shared/
@@ -65,10 +76,6 @@ ios/
 │   │   │   └── NutritionSummaryCard.swift
 │   │   ├── Models/             # 共通データモデル
 │   │   │   └── NotificationSettings.swift
-│   │   └── Theme.swift
-│   ├── Shared/
-│   │   ├── Components/
-│   │   │   └── NutritionSummaryCard.swift
 │   │   └── Theme.swift
 │   └── Resources/
 │       └── Info.plist          # URL Schemes (Google Sign-In)
@@ -194,12 +201,16 @@ APIClientとAuthManagerで同じ認証サービスを共有:
 
 ```swift
 enum AuthServiceProvider {
+    private static var _shared: FirebaseAuthServiceProtocol?
     static var shared: FirebaseAuthServiceProtocol {
+        if let service = _shared { return service }
         #if DEBUG && targetEnvironment(simulator)
-        return MockFirebaseAuthService()
+        let service = MockFirebaseAuthService()
         #else
-        return FirebaseAuthService.shared
+        let service = FirebaseAuthService.shared
         #endif
+        _shared = service
+        return service
     }
 }
 ```
@@ -241,10 +252,23 @@ enum AuthServiceProvider {
 | NutritionEditorViewModel.swift | 栄養素編集ロジック |
 | MealsView.swift | 食事一覧UI |
 | MealInputView.swift | 食事入力UI |
+| CameraView.swift | カメラ撮影UI |
 | NutritionEditorView.swift | 栄養素編集UI |
 | FoodItemEditRow.swift | 食品アイテム行 |
 | FoodEditItem.swift | 編集用食品モデル（量変更時の栄養素再計算ロジック含む） |
+| ImageFilenameValidator.swift | 画像ファイル名バリデーション |
+| MeasurementUnit.swift | 計量単位定義 |
 | QuantityParser.swift | 量の文字列パーサー（数値と単位の抽出） |
+
+### マイメニュー (Features/MyMenu/)
+
+| ファイル | 責務 |
+|:---|:---|
+| MyMenuListView.swift | マイメニュー一覧UI |
+| MyMenuListViewModel.swift | マイメニュー一覧ロジック |
+| MyMenuEditView.swift | マイメニュー編集UI |
+| MyMenuEditViewModel.swift | マイメニュー編集ロジック |
+| MyMenuSelectionView.swift | マイメニュー選択UI |
 
 ### 体重 (Features/Weight/)
 
@@ -263,6 +287,8 @@ enum AuthServiceProvider {
 
 | ファイル | 責務 |
 |:---|:---|
+| SettingsView.swift | 設定画面UI |
+| SettingsViewModel.swift | 設定画面ロジック |
 | NotificationSettingsView.swift | 通知設定UI（食事・体重リマインダー） |
 | NotificationSettingsViewModel.swift | 通知設定ロジック |
 
@@ -295,6 +321,7 @@ enum AuthServiceProvider {
 | ファイル | 責務 |
 |:---|:---|
 | MealRepository.swift | 食事データアクセス |
+| MyMenuRepository.swift | マイメニューデータアクセス |
 | WeightRepository.swift | 体重記録・目標データアクセス |
 
 ## 共通コンポーネント (Shared/)
@@ -378,11 +405,10 @@ struct GoogleCredential: Sendable {
     let accessToken: String
 }
 
-enum FirebaseAuthError: Error {
+enum FirebaseAuthError: LocalizedError {
     case notSignedIn
     case tokenRetrievalFailed
-    case signInFailed(Error)
-    case signOutFailed(Error)
+    case configurationError
 }
 ```
 
@@ -446,7 +472,7 @@ actor APIClient {
 ```swift
 enum APIEndpoint {
     // 食事
-    case dailyMeals(date: String)
+    case dailyMeals(date: String, timezone: String)
     case analyze
     case analysisStatus(id: String)
     case analysisResult(id: String)

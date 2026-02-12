@@ -1,3 +1,4 @@
+// periphery:ignore:all - Apple Sign-In用（Apple Developer Program登録後に有効化）
 import AuthenticationServices
 import CryptoKit
 import Foundation

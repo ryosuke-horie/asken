@@ -188,6 +188,7 @@ firebase deploy --only firestore:indexes --project utikomi-dev
 | `task ios:test` | iOSのテストを実行 |
 | `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
 | `task ios:lint` | SwiftLintを実行 |
+| `task ios:deadcode` | Swiftデッドコード検知（Periphery）を実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
 | `task ios:format-check` | SwiftFormatチェック（CI用） |
 | `task ios:clean` | DerivedDataを削除 |

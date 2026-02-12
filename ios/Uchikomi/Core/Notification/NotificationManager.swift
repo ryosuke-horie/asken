@@ -9,8 +9,6 @@ protocol NotificationSchedulerProtocol {
     func requestAuthorization() async throws -> Bool
     func getAuthorizationStatus() async -> UNAuthorizationStatus
     func scheduleAllNotifications(settings: NotificationSettings) async
-    func cancelAllNotifications() async
-    func cancelDeliveredNotification(for mealType: MealType) async
     var lastSchedulingError: Error? { get }
     func resetLastError()
 }
@@ -59,10 +57,7 @@ final class NotificationManager: NotificationSchedulerProtocol {
         }
     }
 
-    func cancelAllNotifications() async {
-        notificationCenter.removeAllPendingNotificationRequests()
-    }
-
+    /// UchikomiApp.refreshTodayNotificationsから具象型で直接呼び出されるためプロトコルには含めない
     func cancelDeliveredNotification(for mealType: MealType) async {
         let identifier = notificationIdentifier(for: mealType)
         let delivered = await notificationCenter.deliveredNotifications()
@@ -75,6 +70,10 @@ final class NotificationManager: NotificationSchedulerProtocol {
     }
 
     // MARK: - Private
+
+    private func cancelAllNotifications() async {
+        notificationCenter.removeAllPendingNotificationRequests()
+    }
 
     private func scheduleMealNotification(_ setting: MealNotificationSetting) async {
         await scheduleNotification(
