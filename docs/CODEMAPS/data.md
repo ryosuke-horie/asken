@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-08
+最終更新: 2026-02-12
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -10,6 +10,7 @@
 users/{userId}/analysisRequests/{requestId}
 users/{userId}/weightRecords/{recordId}
 users/{userId}/weightGoal/current
+users/{userId}/myMenu/{menuId}
 ```
 
 ## ドキュメント定義
@@ -84,6 +85,22 @@ confirmedフィールドの動作:
 | フィールド | 型 | 説明 |
 |:---|:---|:---|
 | targetWeightKg | number | 目標体重 (kg) |
+| updatedAt | timestamp | 更新日時 |
+
+### myMenu/{menuId}
+
+マイメニュー（よく食べるメニューの登録）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| id | string | メニューID |
+| name | string | メニュー名 |
+| foods | array | 食品リスト（NutritionInfo配列） |
+| totalCalories | number | 総カロリー |
+| totalProtein | number | 総タンパク質 (g) |
+| totalFat | number | 総脂質 (g) |
+| totalCarbohydrates | number | 総炭水化物 (g) |
+| createdAt | timestamp | 作成日時 |
 | updatedAt | timestamp | 更新日時 |
 
 ## インデックス

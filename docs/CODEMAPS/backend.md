@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-08
+最終更新: 2026-02-12
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -98,6 +98,16 @@ Context に firebase_uid を設定
 | GET | /api/weight/goal | WeightGoalHandler | 目標体重取得 |
 | PUT | /api/weight/goal | WeightGoalHandler | 目標体重設定 |
 
+### マイメニュー (認証必要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| GET | /api/my-menu | MyMenuHandler | マイメニュー一覧 |
+| POST | /api/my-menu | MyMenuHandler | マイメニュー作成 |
+| GET | /api/my-menu/{id} | MyMenuHandler | マイメニュー詳細 |
+| PUT | /api/my-menu/{id} | MyMenuHandler | マイメニュー更新 |
+| DELETE | /api/my-menu/{id} | MyMenuHandler | マイメニュー削除 |
+
 ### 画像配信 (認証不要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -120,6 +130,7 @@ Context に firebase_uid を設定
 | image_handler.go | 画像配信 |
 | weight_record_handler.go | 体重記録CRUD |
 | weight_goal_handler.go | 目標体重取得・設定 |
+| my_menu_handler.go | マイメニューCRUD |
 
 ### Repositories (internal/repository/)
 
@@ -130,6 +141,8 @@ Context に firebase_uid を設定
 | storage_repository.go | 画像ストレージ操作（Cloud Storage） |
 | weight_models.go | 体重関連の型定義・インターフェース |
 | weight_repository_firestore.go | 体重記録・目標（Firestore実装） |
+| my_menu_repository.go | マイメニュー型定義・インターフェース |
+| my_menu_repository_firestore.go | マイメニュー（Firestore実装） |
 
 ### Middleware (internal/middleware/)
 
@@ -137,6 +150,8 @@ Context に firebase_uid を設定
 |:---|:---|
 | auth.go | Firebase Auth認証ミドルウェア、Authenticatorインターフェース |
 | dev_auth.go | 開発用モック認証ミドルウェア |
+| rate_limit.go | レート制限ミドルウェア（Gemini API用） |
+| rate_limit_config.go | レート制限設定 |
 | security_headers.go | セキュリティヘッダー設定ミドルウェア |
 
 ### Services (internal/service/)
@@ -184,6 +199,8 @@ Context に firebase_uid を設定
 | auth.go | テスト用認証ヘルパー |
 | helpers.go | テスト用共通ヘルパー |
 | cleanup.go | テストデータクリーンアップ |
+| history_test.go | 履歴API E2Eテスト |
+| meals_test.go | 食事API E2Eテスト |
 
 ## 依存関係図
 
@@ -210,7 +227,9 @@ cmd/server/main.go
 └── internal/repository/
     ├── storage_repository.go
     │   └── pkg/storage/client.go
-    └── weight_repository_firestore.go
+    ├── weight_repository_firestore.go
+    │   └── pkg/database/firestore.go
+    └── my_menu_repository_firestore.go
         └── pkg/database/firestore.go
 ```
 
