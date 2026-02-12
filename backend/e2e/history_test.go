@@ -207,64 +207,81 @@ func TestHistory_Update_Unauthorized(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 }
 
-// TestHistory_Update_InvalidRequest はバリデーションエラーで400が返ることを確認する
-func TestHistory_Update_InvalidRequest(t *testing.T) {
+// TestHistory_Update_InvalidRequest_EmptyFoods は空のfoods配列で400が返ることを確認する
+func TestHistory_Update_InvalidRequest_EmptyFoods(t *testing.T) {
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
 	historyID := createTestHistory(t, ctx, client)
 
-	tests := []struct {
-		name    string
-		request map[string]any
-	}{
-		{
-			name: "空のfoods配列",
-			request: map[string]any{
-				"foods": []any{},
-			},
-		},
-		{
-			name: "負のカロリー値",
-			request: map[string]any{
-				"foods": []map[string]any{
-					{
-						"name":              "テスト食品",
-						"estimated_amount":   "100g",
-						"calories_kcal":     -10.0,
-						"protein_g":         10.0,
-						"fat_g":             5.0,
-						"carbohydrates_g":   20.0,
-					},
-				},
-			},
-		},
-		{
-			name: "空の食品名",
-			request: map[string]any{
-				"foods": []map[string]any{
-					{
-						"name":              "",
-						"estimated_amount":   "100g",
-						"calories_kcal":     150.0,
-						"protein_g":         10.0,
-						"fat_g":             5.0,
-						"carbohydrates_g":   20.0,
-					},
-				},
+	// 空のfoods配列でリクエスト
+	updateReq := map[string]any{
+		"foods": []any{},
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/history/"+historyID.String(), updateReq)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestHistory_Update_InvalidRequest_NegativeCalories は負のカロリー値で400が返ることを確認する
+func TestHistory_Update_InvalidRequest_NegativeCalories(t *testing.T) {
+	waitForGeminiRateLimit()
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// テストデータを作成（analyze API経由）
+	waitForGeminiRateLimit()
+	historyID := createTestHistory(t, ctx, client)
+
+	// 負のカロリー値でリクエスト
+	updateReq := map[string]any{
+		"foods": []map[string]any{
+			{
+				"name":              "テスト食品",
+				"estimated_amount":   "100g",
+				"calories_kcal":     -10.0,
+				"protein_g":         10.0,
+				"fat_g":             5.0,
+				"carbohydrates_g":   20.0,
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resp, err := client.Request(ctx, http.MethodPut, "/api/history/"+historyID.String(), tt.request)
-			require.NoError(t, err)
+	resp, err := client.Request(ctx, http.MethodPut, "/api/history/"+historyID.String(), updateReq)
+	require.NoError(t, err)
 
-			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-		})
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestHistory_Update_InvalidRequest_EmptyName は空の食品名で400が返ることを確認する
+func TestHistory_Update_InvalidRequest_EmptyName(t *testing.T) {
+	waitForGeminiRateLimit()
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// テストデータを作成（analyze API経由）
+	waitForGeminiRateLimit()
+	historyID := createTestHistory(t, ctx, client)
+
+	// 空の食品名でリクエスト
+	updateReq := map[string]any{
+		"foods": []map[string]any{
+			{
+				"name":              "",
+				"estimated_amount":   "100g",
+				"calories_kcal":     150.0,
+				"protein_g":         10.0,
+				"fat_g":             5.0,
+				"carbohydrates_g":   20.0,
+			},
+		},
 	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/history/"+historyID.String(), updateReq)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 // TestHistory_Delete_Success は認証済みで履歴削除が成功することを確認する
