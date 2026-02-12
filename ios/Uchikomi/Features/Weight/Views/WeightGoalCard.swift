@@ -39,44 +39,48 @@ struct WeightGoalCard: View {
                     }
                 }
 
-                if let goal {
-                    Divider()
-                        .frame(height: 40)
+                Divider()
+                    .frame(height: 40)
 
-                    // 目標体重
-                    VStack(spacing: 4) {
-                        Text("目標")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                // 目標体重
+                VStack(spacing: 4) {
+                    Text("目標")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let goal {
                         Text(String(format: "%.1f", goal.targetWeightKg))
                             .font(.title2)
                             .fontWeight(.semibold)
                             + Text(" kg")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    }
-
-                    Divider()
-                        .frame(height: 40)
-
-                    // 差分
-                    VStack(spacing: 4) {
-                        Text("あと")
-                            .font(.caption)
+                    } else {
+                        Text("- kg")
+                            .font(.title2)
                             .foregroundStyle(.secondary)
-                        if let diff = difference {
-                            Text(String(format: "%+.1f", diff))
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(diff <= 0 ? .green : Theme.primary)
-                                + Text(" kg")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        } else {
-                            Text("-- kg")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                        }
+                    }
+                }
+
+                Divider()
+                    .frame(height: 40)
+
+                // 差分
+                VStack(spacing: 4) {
+                    Text("あと")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let diff = difference {
+                        Text(String(format: "%+.1f", diff))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(diff <= 0 ? .green : Theme.primary)
+                            + Text(" kg")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("- kg")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
