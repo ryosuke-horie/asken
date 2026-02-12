@@ -29,16 +29,12 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     }
 
     var inputType: QuantityInputType {
-        switch self {
-        case .gram: .decimal
-        default: .integer
-        }
+        .decimal
     }
 }
 
 // MARK: - QuantityInputType
 
 enum QuantityInputType {
-    case integer
     case decimal
 }
