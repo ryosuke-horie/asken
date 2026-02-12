@@ -222,6 +222,8 @@ enum AuthServiceProvider {
 - 認証済み: MainTabView
   - タブ1: MealsView（食事記録画面）
   - タブ2: WeightView（体重記録画面）
+  - タブ3: MyMenuListView（マイメニュー画面）
+  - タブ4: SettingsView（設定画面）
 
 ## 機能モジュール
 
@@ -434,13 +436,20 @@ UchikomiApp.swift
         │   └── MealInputView
         │       └── MealInputViewModel
         │           └── MealRepository
-        └── WeightView (タブ2)
-            ├── WeightViewModel
-            │   └── WeightRepository
-            │       └── APIClient
-            └── WeightInputView
-                └── WeightInputViewModel
-                    └── WeightRepository
+        ├── WeightView (タブ2)
+        │   ├── WeightViewModel
+        │   │   └── WeightRepository
+        │   │       └── APIClient
+        │   └── WeightInputView
+        │       └── WeightInputViewModel
+        │           └── WeightRepository
+        ├── MyMenuListView (タブ3)
+        │   └── MyMenuListViewModel
+        │       └── MyMenuRepository
+        │           └── APIClient
+        └── SettingsView (タブ4)
+            └── SettingsViewModel
+                └── NotificationSettingsStore
 ```
 
 ## API通信 (APIClient)
