@@ -36,6 +36,22 @@ func TestNewHTTPClient(t *testing.T) {
 		assert.Nil(t, client)
 		assert.ErrorIs(t, err, ErrEmptyAPIKey)
 	})
+
+	t.Run("タイムアウトが0でエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 0)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.ErrorIs(t, err, ErrInvalidTimeout)
+	})
+
+	t.Run("負のタイムアウトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", -5*time.Second)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.ErrorIs(t, err, ErrInvalidTimeout)
+	})
 }
 
 func TestHTTPClient_Execute_TextOnly(t *testing.T) {
@@ -209,6 +225,77 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "画像データが空です")
+	})
+
+	t.Run("画像サイズが20MBを超えるとエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		// 21MBの画像データを作成
+		largeImage := make([]byte, 21<<20)
+
+		_, err = client.ExecuteWithImage(context.Background(), "テスト", largeImage, "image/jpeg")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrImageTooLarge)
+	})
+}
+
+func TestHTTPClient_Execute_EmptyPrompt(t *testing.T) {
+	t.Run("空文字列のプロンプトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		_, err = client.Execute(context.Background(), "")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrEmptyPrompt)
+	})
+
+	t.Run("空白のみのプロンプトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		_, err = client.Execute(context.Background(), "   ")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrEmptyPrompt)
+	})
+
+	t.Run("タブと改行のみのプロンプトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		_, err = client.Execute(context.Background(), "\t\n")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrEmptyPrompt)
+	})
+}
+
+func TestHTTPClient_ExecuteWithImage_EmptyPrompt(t *testing.T) {
+	t.Run("空文字列のプロンプトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+
+		_, err = client.ExecuteWithImage(context.Background(), "", imageData, "image/jpeg")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrEmptyPrompt)
+	})
+
+	t.Run("空白のみのプロンプトでエラーを返す", func(t *testing.T) {
+		client, err := NewHTTPClient("test-api-key", 30*time.Second)
+		require.NoError(t, err)
+
+		imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+
+		_, err = client.ExecuteWithImage(context.Background(), "   ", imageData, "image/jpeg")
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrEmptyPrompt)
 	})
 }
 

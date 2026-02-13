@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -48,6 +49,8 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 		return nil, fmt.Errorf("入力テキストが空です")
 	}
 
+	log.Printf("TextParser: テキスト解析を開始 (入力長: %d文字)", len(inputText))
+
 	prompt := fmt.Sprintf(`以下のテキストから料理やメニューを特定し、各料理の名前と推定量をJSON形式で出力してください。
 
 入力テキスト: %s
@@ -70,6 +73,7 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 
 	response, err := tp.client.Execute(ctx, prompt)
 	if err != nil {
+		log.Printf("TextParser: Gemini API呼び出しエラー: %v", err)
 		return nil, fmt.Errorf("Gemini APIコールエラー: %w", err)
 	}
 
@@ -77,8 +81,10 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 
 	var foods []FoodItem
 	if err := json.Unmarshal([]byte(foodListJSON), &foods); err != nil {
+		log.Printf("TextParser: 食材リストのJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("食材リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
 	}
 
+	log.Printf("TextParser: テキスト解析完了 (%d品を検出)", len(foods))
 	return foods, nil
 }
