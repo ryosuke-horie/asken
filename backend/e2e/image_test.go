@@ -65,11 +65,8 @@ func TestGetImage_Success(t *testing.T) {
 	imagePath := uploadBody["image_path"]
 	require.NotEmpty(t, imagePath)
 
-	// アップロードした画像を取得（認証不要）
-	ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	getResp, err := testClient.Get(ctx2, "/api/images/"+imagePath)
+	// アップロードした画像を取得（認証必須）
+	getResp, err := client.Get(ctx, "/api/images/"+imagePath)
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, getResp.StatusCode)
@@ -89,14 +86,46 @@ func TestGetImage_NotFound(t *testing.T) {
 }
 
 func TestGetImage_PathTraversal(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	client, ctx := authenticatedClient(t, 10*time.Second)
 
 	// パストラバーサル攻撃を試行
-	resp, err := testClient.Get(ctx, "/api/images/../../../etc/passwd")
+	resp, err := client.Get(ctx, "/api/images/../../../etc/passwd")
 	require.NoError(t, err)
 
 	// サーバーは403 Forbiddenまたは400 Bad Requestを返すべき
 	assert.True(t, resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadRequest,
 		"Expected 403 Forbidden or 400 Bad Request for path traversal, got %d", resp.StatusCode)
+}
+
+func TestUploadImage_FileSizeTooLarge(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 11MBの画像データを作成（10MB制限を超える）
+	largeImageData := make([]byte, 11<<20) // 11MB
+	copy(largeImageData, testImageData)    // 先頭に有効なPNGヘッダをコピー
+
+	resp, err := client.UploadImage(ctx, "/api/upload-image", largeImageData, "large.png")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Contains(t, string(resp.Body), "ファイルサイズが大きすぎます")
+}
+
+func TestUploadImage_UnsupportedFileType(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// GIF形式の画像データ（サポート外）
+	gifData := []byte{
+		0x47, 0x49, 0x46, 0x38, 0x39, 0x61, // GIF89a header
+		0x01, 0x00, 0x01, 0x00, 0x00, 0x00, // width=1, height=1
+		0x00, 0x2C, 0x00, 0x00, 0x00, 0x00, // image descriptor
+		0x01, 0x00, 0x01, 0x00, 0x00, 0x02, // more descriptor
+		0x02, 0x44, 0x01, 0x00, 0x3B,       // image data + trailer
+	}
+
+	resp, err := client.UploadImage(ctx, "/api/upload-image", gifData, "test.gif")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Contains(t, string(resp.Body), "サポートされていないファイル形式")
 }
