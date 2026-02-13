@@ -100,7 +100,7 @@ struct MainTabView: View {
                 recordedMealTypes: recordedMealTypes
             )
             if let error = notificationManager.lastSchedulingError {
-                logger.error("通知の再スケジュールに失敗: \(error.localizedDescription)")
+                logger.error("一部の通知の再スケジュールに失敗: \(error.localizedDescription)")
             }
         } catch {
             logger.error("当日の食事記録取得に失敗（通知はそのまま維持）: \(error.localizedDescription)")
