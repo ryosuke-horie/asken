@@ -4,7 +4,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"testing"
@@ -32,7 +31,7 @@ func assertFloat64Equal(t *testing.T, expected float64, actual interface{}, msgA
 		}
 	case string:
 		// 文字列からfloat64に変換
-		if f, err := strconv.ParseFloat(v); err == nil {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			actualFloat = f
 		}
 	}
