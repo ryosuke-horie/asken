@@ -33,11 +33,11 @@ enum Gender: String, Codable, CaseIterable {
 // MARK: - ActivityLevel
 
 enum ActivityLevel: String, Codable, CaseIterable {
-    case sedentary       // 座業的（ほと運動しない）
-    case lightlyActive    // 軽い活動（軽い運動週1-3日）
+    case sedentary // 座業的（ほと運動しない）
+    case lightlyActive // 軽い活動（軽い運動週1-3日）
     case moderatelyActive // 中程度活動（中等度の運動週3-5日）
-    case veryActive       // 高活動（激しい運動週6-7日）
-    case athlete          // 選手層（毎日の高強度トレーニング）
+    case veryActive // 高活動（激しい運動週6-7日）
+    case athlete // 選手層（毎日の高強度トレーニング）
 
     var displayName: String {
         switch self {
@@ -52,11 +52,11 @@ enum ActivityLevel: String, Codable, CaseIterable {
     /// 活動係数を返す（Harris-Benedict式で使用）
     var activityMultiplier: Double {
         switch self {
-        case .sedentary: return 1.2
-        case .lightlyActive: return 1.375
-        case .moderatelyActive: return 1.55
-        case .veryActive: return 1.725
-        case .athlete: return 1.9
+        case .sedentary: 1.2
+        case .lightlyActive: 1.375
+        case .moderatelyActive: 1.55
+        case .veryActive: 1.725
+        case .athlete: 1.9
         }
     }
 
@@ -64,19 +64,18 @@ enum ActivityLevel: String, Codable, CaseIterable {
     var athletePresetCalories: [Double]? {
         switch self {
         case .athlete:
-            return [3000.0, 3500.0, 4000.0, 4500.0]
+            [3_000.0, 3_500.0, 4_000.0, 4_500.0]
         case .veryActive:
-            return [2500.0, 3000.0, 3500.0, 4000.0]
+            [2_500.0, 3_000.0, 3_500.0, 4_000.0]
         default:
-            return nil
+            nil
         }
     }
 }
 
 // MARK: - RecommendedCaloriesCalculator
 
-struct RecommendedCaloriesCalculator {
-
+enum RecommendedCaloriesCalculator {
     /// Harris-Benedict式で推奨カロリーを計算
     static func calculate(
         gender: Gender,
@@ -85,22 +84,18 @@ struct RecommendedCaloriesCalculator {
         age: Int,
         activityLevel: ActivityLevel
     ) -> Double {
-
         // 基礎代謝（BMR）
-        let bmr: Double
-        switch gender {
+        let bmr = switch gender {
         case .male:
             // 男性: 13.397 × 体重(kg) + 4.799 × 身長 - 年齢 × 0.694 - 55
-            bmr = 13.397 * weightKg + 4.799 * heightCm - Double(age) * 0.694 - 55
+            13.397 * weightKg + 4.799 * heightCm - Double(age) * 0.694 - 55
         case .female:
             // 女性: 9.247 × 体重(kg) + 3.098 × 身長 - 年齢 × 0.428 - 161
-            bmr = 9.247 * weightKg + 3.098 * heightCm - Double(age) * 0.428 - 161
+            9.247 * weightKg + 3.098 * heightCm - Double(age) * 0.428 - 161
         }
 
         // 活動レベルで補正
-        let tdee = bmr * activityLevel.activityMultiplier
-
-        return tdee
+        return bmr * activityLevel.activityMultiplier
     }
 
     /// 年齢を計算
