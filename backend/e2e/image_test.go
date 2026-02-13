@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -66,7 +67,10 @@ func TestGetImage_Success(t *testing.T) {
 	require.NotEmpty(t, imagePath)
 
 	// アップロードした画像を取得（認証必須）
-	getResp, err := client.Get(ctx, "/api/images/"+imagePath)
+	// Upload APIはCloud Storageオブジェクト名（"uploads/uuid.png"）を返すが、
+	// GET /api/images/ はファイル名のみを受け付けるため、"uploads/"プレフィックスを除去
+	filename := strings.TrimPrefix(imagePath, "uploads/")
+	getResp, err := client.Get(ctx, "/api/images/"+filename)
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusOK, getResp.StatusCode)
