@@ -84,6 +84,8 @@ struct MealsView: View {
         }
     }
 
+    /// 当日の食事記録に対して、該当する通知をキャンセルし翌日に再スケジュールする。
+    /// リマインダー対象外の食事タイプや、当日以外の日付の場合は何もしない。
     private func cancelNotificationIfToday(for mealType: MealType) async {
         guard Calendar.current.isDateInToday(viewModel.selectedDate),
               MealType.reminderTargets.contains(mealType) else { return }
@@ -94,7 +96,12 @@ struct MealsView: View {
 
         let manager = NotificationManager()
         await manager.handleMealRecorded(mealType: mealType, settings: settings)
-        logger.info("食事記録後に通知をキャンセル: \(mealType.rawValue)")
+
+        if let error = manager.lastSchedulingError {
+            logger.error("食事記録後の通知再スケジュールに失敗: \(mealType.rawValue): \(error.localizedDescription)")
+        } else {
+            logger.info("食事記録後に通知をキャンセルし翌日に再スケジュール: \(mealType.rawValue)")
+        }
     }
 }
 
