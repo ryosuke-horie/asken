@@ -1,4 +1,10 @@
+import os
 import SwiftUI
+
+private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
+    category: "MealsView"
+)
 
 // MARK: - MealsView
 
@@ -68,12 +74,33 @@ struct MealsView: View {
                 ) {
                     Task {
                         await viewModel.loadMeals()
+                        await cancelNotificationIfToday(for: mealType)
                     }
                 }
             }
         }
         .task {
             await viewModel.loadMeals()
+        }
+    }
+
+    /// 当日の食事記録に対して、該当する通知をキャンセルし翌日に再スケジュールする。
+    /// リマインダー対象外の食事タイプ、当日以外の日付、または通知がグローバル無効の場合は何もしない。
+    private func cancelNotificationIfToday(for mealType: MealType) async {
+        guard Calendar.current.isDateInToday(viewModel.selectedDate),
+              MealType.reminderTargets.contains(mealType) else { return }
+
+        let store = NotificationSettingsStore()
+        let settings = store.load()
+        guard settings.isGlobalEnabled else { return }
+
+        let manager = NotificationManager()
+        await manager.handleMealRecorded(mealType: mealType, settings: settings)
+
+        if let error = manager.lastSchedulingError {
+            logger.error("食事記録後の通知再スケジュールに失敗: \(mealType.rawValue): \(error.localizedDescription)")
+        } else {
+            logger.info("食事記録後に通知をキャンセルし翌日に再スケジュール: \(mealType.rawValue)")
         }
     }
 }

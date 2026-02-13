@@ -85,11 +85,22 @@ struct MainTabView: View {
         let notificationManager = NotificationManager()
         do {
             let dailyMeals = try await repository.getDailyMeals(date: Date())
-            for mealType in MealType.reminderTargets {
-                let meals = dailyMeals.meals.meals(for: mealType)
-                if !meals.isEmpty {
-                    await notificationManager.cancelDeliveredNotification(for: mealType)
-                }
+            let recordedMealTypes = Set(
+                MealType.reminderTargets.filter { !dailyMeals.meals.meals(for: $0).isEmpty }
+            )
+
+            guard !recordedMealTypes.isEmpty else { return }
+
+            for mealType in recordedMealTypes {
+                notificationManager.cancelDeliveredNotification(for: mealType)
+            }
+
+            await notificationManager.refreshMealNotifications(
+                settings: settings,
+                recordedMealTypes: recordedMealTypes
+            )
+            if let error = notificationManager.lastSchedulingError {
+                logger.error("一部の通知の再スケジュールに失敗: \(error.localizedDescription)")
             }
         } catch {
             logger.error("当日の食事記録取得に失敗（通知はそのまま維持）: \(error.localizedDescription)")
