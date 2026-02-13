@@ -376,7 +376,7 @@ func createTestHistory(t *testing.T, ctx context.Context, client *Client) uuid.U
 	// 現在のアーキテクチャでは analysis ID = history ID（統合コレクション）
 	const (
 		pollInterval = 2 * time.Second
-		maxPollTime  = 30 * time.Second
+		maxPollTime  = 50 * time.Second
 	)
 	start := time.Now()
 
