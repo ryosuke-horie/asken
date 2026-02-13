@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-11
+最終更新: 2026-02-13
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -259,7 +259,7 @@ enum AuthServiceProvider {
 | FoodItemEditRow.swift | 食品アイテム行 |
 | FoodEditItem.swift | 編集用食品モデル（量変更時の栄養素再計算ロジック含む） |
 | ImageFilenameValidator.swift | 画像ファイル名バリデーション |
-| MeasurementUnit.swift | 計量単位定義 |
+| MeasurementUnit.swift | 計量単位定義（g, ml, 杯, 人前, 個, 枚, 本, 切, 匹, 尾, パック, 袋, 束, 丁, 缶, 合, 玉, 粒） |
 | QuantityParser.swift | 量の文字列パーサー（数値と単位の抽出） |
 
 ### マイメニュー (Features/MyMenu/)
@@ -316,7 +316,13 @@ enum AuthServiceProvider {
 
 | ファイル | 責務 |
 |:---|:---|
-| NotificationManager.swift | 通知スケジュール管理（食事・体重リマインダー） |
+| NotificationManager.swift | 通知スケジュール管理（食事・体重リマインダー、食事記録時の通知キャンセル・翌日再スケジュール） |
+
+NotificationSchedulerProtocolの主要メソッド:
+- `scheduleAllNotifications(settings:)` - 全通知のスケジュール
+- `cancelDeliveredNotification(for:)` - 配信済み通知の削除
+- `handleMealRecorded(mealType:settings:)` - 食事記録時の通知キャンセルと翌日再スケジュール
+- `refreshMealNotifications(settings:recordedMealTypes:)` - 記録済み食事を考慮した通知再スケジュール
 
 ### Repositories (Core/Repositories/)
 

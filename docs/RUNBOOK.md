@@ -1,6 +1,6 @@
 # 運用手順書（RUNBOOK）
 
-最終更新: 2026-02-08
+最終更新: 2026-02-13
 
 GCPサーバレス環境の運用手順、監視、トラブルシューティングを説明します。
 
@@ -34,10 +34,12 @@ GCPサーバレス環境の運用手順、監視、トラブルシューティ�
 mainブランチにpushすると、GitHub Actionsが自動的にCloud Runにデプロイします。
 
 ```
-Push to main → Build Docker → Push to Artifact Registry → Deploy to Cloud Run
+Push to main → Build Docker → Push to Artifact Registry → Deploy to Cloud Run → E2Eテスト
 ```
 
 ワークフロー: `.github/workflows/deploy.yml`
+
+同時実行制御: デプロイは`concurrency`設定により直列化されています。新しいデプロイが開始されると、実行中のデプロイはキャンセルされます（E2Eテストのレート制限競合を防止）。
 
 ### デプロイの確認
 
