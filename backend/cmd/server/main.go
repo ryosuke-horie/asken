@@ -383,6 +383,7 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 			}
 		}
 
+		w.Header().Set("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -397,15 +398,14 @@ func enableCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Hand
 }
 
 func parseAllowedOrigins(raw string) map[string]struct{} {
-	origins := map[string]struct{}{
-		"http://localhost:3000":        {},
-		"http://localhost:3001":        {},
-		"http://localhost:3002":        {},
-		"https://utikomi.exe.xyz:3000": {},
-	}
+	origins := make(map[string]struct{})
 
-	if raw == "" {
-		return origins
+	// 開発環境の場合のみlocalhostオリジンを許可
+	if middleware.IsDevMode() {
+		origins["http://localhost:3000"] = struct{}{}
+		origins["http://localhost:3001"] = struct{}{}
+		origins["http://localhost:3002"] = struct{}{}
+		origins["https://utikomi.exe.xyz:3000"] = struct{}{}
 	}
 
 	for _, origin := range strings.Split(raw, ",") {

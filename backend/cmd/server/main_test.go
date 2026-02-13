@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -143,4 +144,84 @@ func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Contains(t, w.Body.String(), "認証が必要です")
+}
+
+func TestEnableCORS_VaryHeader(t *testing.T) {
+	origins := map[string]struct{}{
+		"https://example.com": {},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := enableCORS(next, origins)
+
+	t.Run("Varyヘッダーが設定されるべき", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+		req.Header.Set("Origin", "https://example.com")
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, "Origin", w.Header().Get("Vary"))
+		assert.Equal(t, "https://example.com", w.Header().Get("Access-Control-Allow-Origin"))
+	})
+
+	t.Run("Origin無しでもVaryヘッダーが設定されるべき", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, "Origin", w.Header().Get("Vary"))
+		assert.Empty(t, w.Header().Get("Access-Control-Allow-Origin"))
+	})
+
+	t.Run("許可されていないオリジンではAccess-Control-Allow-Originが設定されないべき", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/test", nil)
+		req.Header.Set("Origin", "https://evil.com")
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		assert.Equal(t, "Origin", w.Header().Get("Vary"))
+		assert.Empty(t, w.Header().Get("Access-Control-Allow-Origin"))
+	})
+}
+
+func TestParseAllowedOrigins(t *testing.T) {
+	t.Run("開発環境ではlocalhostオリジンが含まれるべき", func(t *testing.T) {
+		originalEnv := os.Getenv("APP_ENV")
+		defer os.Setenv("APP_ENV", originalEnv)
+
+		os.Setenv("APP_ENV", "development")
+		origins := parseAllowedOrigins("")
+
+		assert.Contains(t, origins, "http://localhost:3000")
+		assert.Contains(t, origins, "http://localhost:3001")
+		assert.Contains(t, origins, "http://localhost:3002")
+	})
+
+	t.Run("本番環境ではlocalhostオリジンが含まれないべき", func(t *testing.T) {
+		originalEnv := os.Getenv("APP_ENV")
+		defer os.Setenv("APP_ENV", originalEnv)
+
+		os.Setenv("APP_ENV", "production")
+		origins := parseAllowedOrigins("")
+
+		_, hasLocalhost := origins["http://localhost:3000"]
+		assert.False(t, hasLocalhost)
+	})
+
+	t.Run("環境変数のオリジンが追加されるべき", func(t *testing.T) {
+		originalEnv := os.Getenv("APP_ENV")
+		defer os.Setenv("APP_ENV", originalEnv)
+
+		os.Setenv("APP_ENV", "production")
+		origins := parseAllowedOrigins("https://app.example.com,https://api.example.com")
+
+		assert.Contains(t, origins, "https://app.example.com")
+		assert.Contains(t, origins, "https://api.example.com")
+	})
 }
