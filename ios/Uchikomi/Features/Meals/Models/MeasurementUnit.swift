@@ -4,6 +4,7 @@ import Foundation
 
 enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     case gram = "g"
+    case milliliter = "ml"
     case cup = "杯"
     case serving = "人前"
     case piece = "個"
@@ -19,6 +20,7 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     case can = "缶"
     case go = "合"
     case ball = "玉"
+    case grain = "粒"
 
     var id: String {
         rawValue
