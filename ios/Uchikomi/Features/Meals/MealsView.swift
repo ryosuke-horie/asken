@@ -85,7 +85,7 @@ struct MealsView: View {
     }
 
     /// 当日の食事記録に対して、該当する通知をキャンセルし翌日に再スケジュールする。
-    /// リマインダー対象外の食事タイプや、当日以外の日付の場合は何もしない。
+    /// リマインダー対象外の食事タイプ、当日以外の日付、または通知がグローバル無効の場合は何もしない。
     private func cancelNotificationIfToday(for mealType: MealType) async {
         guard Calendar.current.isDateInToday(viewModel.selectedDate),
               MealType.reminderTargets.contains(mealType) else { return }
