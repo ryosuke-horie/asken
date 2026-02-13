@@ -24,16 +24,22 @@ func assertFloat64Equal(t *testing.T, expected float64, actual interface{}, msgA
 	case float64:
 		actualFloat = v
 	case map[string]any:
-		if weightKg, ok := v["weight_kg"]; ok {
-			if f, ok := weightKg.(float64); ok {
-				actualFloat = f
-			}
+		weightKg, ok := v["weight_kg"]
+		if !ok {
+			t.Fatalf("assertFloat64Equal: map does not contain 'weight_kg' key: %+v", v)
 		}
+		f, ok := weightKg.(float64)
+		if !ok {
+			t.Fatalf("assertFloat64Equal: weight_kg is not float64, got %T: %v", weightKg, weightKg)
+		}
+		actualFloat = f
 	case string:
 		// 文字列からfloat64に変換
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			actualFloat = f
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			t.Fatalf("assertFloat64Equal: failed to parse string as float64: %q (error: %v)", v, err)
 		}
+		actualFloat = f
 	default:
 		t.Fatalf("assertFloat64Equal: unexpected type %T for actual value", actual)
 	}
