@@ -13,6 +13,8 @@ import (
 )
 
 func TestMeals_Daily_Success(t *testing.T) {
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// 今日の日付を指定

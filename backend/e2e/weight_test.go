@@ -13,15 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// waitForUserRateLimit はユーザーレート制限のリセットを待つ
-//
-// レート制限設定: UserRateLimit=2 (2 RPS), UserBurstSize=5
-// 全認証済みエンドポイントで共有されるため、前のテストファイル群で
-// バケットが枯渇する場合がある。3秒待機でバケットを回復させる。
-func waitForUserRateLimit() {
-	time.Sleep(3 * time.Second)
-}
-
 // assertFloat64Equal はfloat64の等値比較を文字列表現で行うヘルパー関数
 // JSON数値はfloat64としてデコードされるため、小数点以下の誤差を許容
 func assertFloat64Equal(t *testing.T, expected float64, actual interface{}, msgAndArgs ...interface{}) {

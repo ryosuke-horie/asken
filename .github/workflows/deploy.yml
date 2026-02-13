@@ -14,6 +14,12 @@ on:
   workflow_dispatch:
     # 手動デプロイ用（GitHub Actions UIから実行可能）
 
+# 同時実行制御: デプロイは直列化し、新しい実行が来たら古い実行をキャンセル
+# E2Eテストが同一ユーザーのレート制限を共有するため、並行実行を防止
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

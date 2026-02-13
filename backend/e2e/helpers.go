@@ -16,6 +16,23 @@ import (
 
 const defaultTestUID = "e2e-test-user"
 
+// waitForUserRateLimit はユーザーレート制限のリセットを待つ
+//
+// レート制限設定: UserRateLimit=2 (2 RPS), UserBurstSize=5
+// 全認証済みエンドポイントで共有されるため、前のテストでバケットが
+// 枯渇する場合がある。3秒待機でバケットを回復させる。
+func waitForUserRateLimit() {
+	time.Sleep(3 * time.Second)
+}
+
+// waitForGeminiRateLimit はGemini APIのレート制限リセットを待つ
+//
+// レート制限設定: GeminiRateLimit=0.2 (5秒に1回), GeminiBurstSize=2
+// バーストを使い切った後は10秒待つ（余裕を持たせるため5秒→10秒に増量）
+func waitForGeminiRateLimit() {
+	time.Sleep(10 * time.Second)
+}
+
 // testUID はE2Eテスト用のユーザーIDを返す
 func testUID() string {
 	if uid := os.Getenv("E2E_TEST_UID"); uid != "" {

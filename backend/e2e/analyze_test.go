@@ -12,15 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// waitForGeminiRateLimit はGemini APIのレート制限リセットを待つ
-//
-// レート制限設定: GeminiRateLimit=0.2 (5秒に1回), GeminiBurstSize=2
-// バーストを使い切った後は10秒待つ（余裕を持たせるため5秒→10秒に増量）
-func waitForGeminiRateLimit() {
-	time.Sleep(10 * time.Second)
-}
-
 func TestAnalyze_TextInput_Success(t *testing.T) {
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	reqBody := map[string]string{
