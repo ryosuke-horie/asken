@@ -8,14 +8,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
 const (
-	defaultBaseURL     = "https://generativelanguage.googleapis.com"
-	modelName          = "gemini-3-flash-preview"
-	maxResponseSize    = 10 << 20 // 10MB: JSONレスポンスの上限（通常100KB未満）
+	defaultBaseURL  = "https://generativelanguage.googleapis.com"
+	modelName       = "gemini-3-flash-preview"
+	maxResponseSize = 10 << 20 // 10MB: JSONレスポンスの上限（通常100KB未満）
+	maxImageSize    = 20 << 20 // 20MB: 画像ファイルサイズの上限
 )
 
 // GeminiHTTPClient はGemini APIのHTTPクライアントを表すインターフェース
@@ -35,16 +38,28 @@ type HTTPClient struct {
 // ErrEmptyAPIKey はAPIキーが空の場合に返されるエラー
 var ErrEmptyAPIKey = errors.New("APIキーが指定されていません")
 
+// ErrEmptyPrompt はプロンプトが空の場合に返されるエラー
+var ErrEmptyPrompt = errors.New("プロンプトが空です")
+
+// ErrInvalidTimeout はタイムアウト値が正でない場合に返されるエラー
+var ErrInvalidTimeout = errors.New("タイムアウトは正の値を指定してください")
+
+// ErrImageTooLarge は画像サイズが上限を超えた場合に返されるエラー
+var ErrImageTooLarge = errors.New("画像サイズが上限(20MB)を超えています")
+
 // NewHTTPClient は新しいGemini HTTP APIクライアントを作成
-// APIキーが空の場合はエラーを返す
+// APIキーが空の場合、またはタイムアウトが正でない場合はエラーを返す
 func NewHTTPClient(apiKey string, timeout time.Duration) (*HTTPClient, error) {
 	if apiKey == "" {
 		return nil, ErrEmptyAPIKey
 	}
+	if timeout <= 0 {
+		return nil, ErrInvalidTimeout
+	}
 	return &HTTPClient{
-		apiKey:  apiKey,
-		timeout: timeout,
-		baseURL: defaultBaseURL,
+		apiKey:     apiKey,
+		timeout:    timeout,
+		baseURL:    defaultBaseURL,
 		httpClient: &http.Client{}, // タイムアウトはcontextで制御
 	}, nil
 }
@@ -99,6 +114,12 @@ type PartResponse struct {
 
 // Execute はテキストプロンプトを実行してレスポンスを返す
 func (c *HTTPClient) Execute(ctx context.Context, prompt string) (*Response, error) {
+	if strings.TrimSpace(prompt) == "" {
+		return nil, ErrEmptyPrompt
+	}
+
+	log.Printf("Gemini API呼び出し開始: テキストプロンプト (長さ: %d文字)", len(prompt))
+
 	req := GenerateContentRequest{
 		Contents: []Content{
 			{
@@ -112,14 +133,29 @@ func (c *HTTPClient) Execute(ctx context.Context, prompt string) (*Response, err
 		},
 	}
 
-	return c.doRequest(ctx, req)
+	resp, err := c.doRequest(ctx, req)
+	if err != nil {
+		log.Printf("Gemini API呼び出しエラー: テキストプロンプト: %v", err)
+		return nil, err
+	}
+
+	log.Printf("Gemini API呼び出し完了: テキストプロンプト (レスポンス長: %d文字)", len(resp.Response))
+	return resp, nil
 }
 
 // ExecuteWithImage は画像付きプロンプトを実行してレスポンスを返す
 func (c *HTTPClient) ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+	if strings.TrimSpace(prompt) == "" {
+		return nil, ErrEmptyPrompt
+	}
 	if len(imageData) == 0 {
 		return nil, fmt.Errorf("画像データが空です")
 	}
+	if len(imageData) > maxImageSize {
+		return nil, ErrImageTooLarge
+	}
+
+	log.Printf("Gemini API呼び出し開始: 画像付きプロンプト (画像サイズ: %d bytes, MIME: %s)", len(imageData), mimeType)
 
 	// 画像をbase64エンコード
 	encodedImage := base64.StdEncoding.EncodeToString(imageData)
@@ -143,7 +179,14 @@ func (c *HTTPClient) ExecuteWithImage(ctx context.Context, prompt string, imageD
 		},
 	}
 
-	return c.doRequest(ctx, req)
+	resp, err := c.doRequest(ctx, req)
+	if err != nil {
+		log.Printf("Gemini API呼び出しエラー: 画像付きプロンプト: %v", err)
+		return nil, err
+	}
+
+	log.Printf("Gemini API呼び出し完了: 画像付きプロンプト (レスポンス長: %d文字)", len(resp.Response))
+	return resp, nil
 }
 
 // doRequest は実際のHTTPリクエストを実行する
@@ -201,6 +244,7 @@ func (c *HTTPClient) doRequest(ctx context.Context, reqBody GenerateContentReque
 	// レスポンスをパース
 	var apiResp GenerateContentResponse
 	if err := json.Unmarshal(body, &apiResp); err != nil {
+		log.Printf("Gemini APIレスポンスのJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("レスポンスのパースエラー: %w\n生データ: %s", err, string(body))
 	}
 
@@ -234,21 +278,29 @@ func (c *HTTPClient) handleAPIError(statusCode int, body []byte) error {
 			Message string `json:"message"`
 		} `json:"error"`
 	}
-	_ = json.Unmarshal(body, &apiErr)
+	if err := json.Unmarshal(body, &apiErr); err != nil {
+		log.Printf("Gemini APIエラーレスポンスのJSONパース失敗 (status %d): %v", statusCode, err)
+	}
 
 	switch statusCode {
 	case http.StatusUnauthorized:
+		log.Printf("Gemini API認証エラー: APIキーが無効です")
 		return fmt.Errorf("認証エラー: APIキーが無効です")
 	case http.StatusForbidden:
+		log.Printf("Gemini APIアクセス拒否: 権限がありません")
 		return fmt.Errorf("アクセス拒否: APIへのアクセス権限がありません")
 	case http.StatusTooManyRequests:
+		log.Printf("Gemini APIレート制限に到達")
 		return fmt.Errorf("レート制限: しばらく待ってから再試行してください")
 	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable:
+		log.Printf("Gemini APIサービスエラー (status %d)", statusCode)
 		return fmt.Errorf("Geminiサービスエラー: サービスが一時的に利用できません")
 	default:
 		if apiErr.Error.Message != "" {
+			log.Printf("Gemini APIエラー (status %d): %s", statusCode, apiErr.Error.Message)
 			return fmt.Errorf("APIエラー (status %d): %s", statusCode, apiErr.Error.Message)
 		}
+		log.Printf("Gemini APIエラー (status %d): メッセージなし", statusCode)
 		return fmt.Errorf("APIエラー (status %d)", statusCode)
 	}
 }

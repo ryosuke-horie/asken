@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -75,6 +76,8 @@ func (c *Classifier) ClassifyFoods(ctx context.Context, imagePath string) ([]Foo
 
 // ClassifyFoodsFromData はバイトデータから料理を分類する（Cloud Storage等からダウンロードした画像用）
 func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte, mimeType string) ([]FoodItem, error) {
+	log.Printf("Classifier: 料理分類を開始 (画像サイズ: %d bytes, MIME: %s)", len(imageData), mimeType)
+
 	// プロンプトを構築（料理名の分類に集中）
 	prompt := `この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
 
@@ -97,6 +100,7 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 	// Gemini APIを呼び出す（画像付き）
 	response, err := c.httpClient.ExecuteWithImage(ctx, prompt, imageData, mimeType)
 	if err != nil {
+		log.Printf("Classifier: Gemini API呼び出しエラー: %v", err)
 		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
 	}
 
@@ -106,9 +110,11 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 	// 料理リストをパース
 	var foods []FoodItem
 	if err := json.Unmarshal([]byte(foodListJSON), &foods); err != nil {
+		log.Printf("Classifier: 料理リストのJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("料理リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
 	}
 
+	log.Printf("Classifier: 料理分類完了 (%d品を検出)", len(foods))
 	return foods, nil
 }
 

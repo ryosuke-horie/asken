@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -61,6 +62,8 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 		return nil, fmt.Errorf("画像から食材を認識できませんでした。食べ物が写っている鮮明な画像を使用してください")
 	}
 
+	log.Printf("NutritionCalculator: 栄養素計算を開始 (%d品)", len(foods))
+
 	// 食材リストをJSON形式に変換
 	foodListJSON, err := json.MarshalIndent(foods, "", "  ")
 	if err != nil {
@@ -90,6 +93,7 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 	// Gemini APIを呼び出す
 	response, err := nc.httpClient.Execute(ctx, prompt)
 	if err != nil {
+		log.Printf("NutritionCalculator: Gemini API呼び出しエラー: %v", err)
 		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
 	}
 
@@ -99,8 +103,10 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 	// 栄養素情報をパース
 	var nutritionList []NutritionInfo
 	if err := json.Unmarshal([]byte(nutritionJSON), &nutritionList); err != nil {
+		log.Printf("NutritionCalculator: 栄養素情報のJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("栄養素情報のパースエラー: %w\nデータ: %s", err, nutritionJSON)
 	}
 
+	log.Printf("NutritionCalculator: 栄養素計算完了 (%d品)", len(nutritionList))
 	return nutritionList, nil
 }
