@@ -17,7 +17,10 @@ enum QuantityParser {
     private static let mlPattern = #/(\d+(?:\.\d+)?)\s*(?:ml|ML|mL|ミリリットル)/#
 
     /// 日本語単位（キャプチャグループで単位も取得）
-    private static let japaneseUnits = ["杯", "人前", "個", "枚", "本", "切れ", "食", "皿", "膳", "丁", "束", "袋", "缶", "合", "玉", "粒"]
+    private static let japaneseUnits = [
+        "杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
+        "膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
+    ]
 
     private static let japanesePattern: NSRegularExpression = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
