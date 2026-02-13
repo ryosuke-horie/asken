@@ -34,6 +34,8 @@ func assertFloat64Equal(t *testing.T, expected float64, actual interface{}, msgA
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			actualFloat = f
 		}
+	default:
+		t.Fatalf("assertFloat64Equal: unexpected type %T for actual value", actual)
 	}
 
 	// 小数点第3位までの誤差を許容（JSON数値の精度問題対応）
