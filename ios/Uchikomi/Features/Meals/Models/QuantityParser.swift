@@ -13,8 +13,14 @@ enum QuantityParser {
     // グラム表記のパターン: "100g", "100G", "100グラム", "100 g"
     private static let gramPattern = #/(\d+(?:\.\d+)?)\s*(?:g|G|グラム)/#
 
+    // ミリリットル表記のパターン: "200ml", "200ML", "200mL", "200ミリリットル", "200 ml"
+    private static let mlPattern = #/(\d+(?:\.\d+)?)\s*(?:ml|ML|mL|ミリリットル)/#
+
     /// 日本語単位（キャプチャグループで単位も取得）
-    private static let japaneseUnits = ["杯", "人前", "個", "枚", "本", "切れ", "食", "皿", "膳", "丁", "束", "袋", "缶", "合", "玉"]
+    private static let japaneseUnits = [
+        "杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
+        "膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
+    ]
 
     private static let japanesePattern: NSRegularExpression = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
@@ -30,6 +36,12 @@ enum QuantityParser {
         if let match = trimmed.wholeMatch(of: gramPattern) {
             guard let value = Double(match.1) else { return nil }
             return ParsedQuantity(value: value, unit: "g")
+        }
+
+        // ミリリットル表記を試行
+        if let match = trimmed.wholeMatch(of: mlPattern) {
+            guard let value = Double(match.1) else { return nil }
+            return ParsedQuantity(value: value, unit: "ml")
         }
 
         // 日本語単位を試行（キャッシュ済み正規表現を使用）
