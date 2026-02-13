@@ -113,7 +113,7 @@ struct NutritionGoalSettingView: View {
                             HStack {
                                 Text("年齢")
                                     .frame(width: 80, alignment: .leading)
-                                Stepper("\(Int(age)) 歳", value: $age, in: 15...80)
+                                Stepper("\(Int(age)) 歳", value: $age, in: 15 ... 80)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
 
@@ -272,8 +272,12 @@ struct NutritionGoalSettingView: View {
             }
         }
     }
+}
 
-    private var currentPhaseDescription: String {
+// MARK: - NutritionGoalSettingView Private Methods
+
+extension NutritionGoalSettingView {
+    var currentPhaseDescription: String {
         switch currentPhase {
         case .weightLoss:
             "減量中です。高たんぱく質・低脂質のバランスで筋肉を維持しながら体重を減らします。"
@@ -284,7 +288,7 @@ struct NutritionGoalSettingView: View {
         }
     }
 
-    private func save() async {
+    func save() async {
         guard let calories = Double(targetCaloriesText) else { return }
 
         isSaving = true
@@ -304,16 +308,15 @@ struct NutritionGoalSettingView: View {
         }
     }
 
-    // MARK: - 推奨カロリー計算
-
-    private var isUserProfileValid: Bool {
+    var isUserProfileValid: Bool {
         guard let height = Double(heightCm),
               let weight = Double(weightKg) else { return false }
-        return height >= 100 && height <= 250 && age >= 15 && age <= 80 && weight >= 30 && weight <= 200
+        return height >= 100 && height <= 250
+            && age >= 15 && age <= 80
+            && weight >= 30 && weight <= 200
     }
 
-    private func calculateRecommendedCalories() {
-        // 前回のエラーをクリア
+    func calculateRecommendedCalories() {
         errorMessage = nil
 
         guard let height = Double(heightCm),
@@ -322,13 +325,11 @@ struct NutritionGoalSettingView: View {
             return
         }
 
-        // 入力した体重を使用
         let weightForCalculation = weight
 
         isCalculating = true
         defer { isCalculating = false }
 
-        // Harris-Benedict式で推奨カロリーを計算
         let recommended = RecommendedCaloriesCalculator.calculate(
             gender: selectedGender,
             weightKg: weightForCalculation,
@@ -339,7 +340,12 @@ struct NutritionGoalSettingView: View {
 
         recommendedCalories = recommended
 
-        logger.debug("推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal")
+        logger.debug(
+            "推奨カロリー計算: gender=\(selectedGender.displayName), " +
+                "weight=\(weightForCalculation)kg, height=\(height)cm, " +
+                "age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) " +
+                "-> \(Int(recommended))kcal"
+        )
     }
 }
 
