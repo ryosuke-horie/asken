@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -129,25 +130,27 @@ func (r *Response) JSON(v any) error {
 func (c *Client) UploadImage(ctx context.Context, path string, imageData []byte, filename string) (*Response, error) {
 	body := &bytes.Buffer{}
 
-	// multipart writerは使わず、手動でmultipart/form-dataを構築
-	boundary := "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+	// mime/multipart.Writerを使用して安全にmultipart/form-dataを構築
+	mw := multipart.NewWriter(body)
+	part, err := mw.CreateFormFile("image", filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create form file: %w", err)
+	}
 
-	// ファイルパート
-	body.WriteString("--" + boundary + "\r\n")
-	body.WriteString(fmt.Sprintf("Content-Disposition: form-data; name=\"image\"; filename=\"%s\"\r\n", filename))
-	body.WriteString("Content-Type: image/png\r\n\r\n")
-	body.Write(imageData)
-	body.WriteString("\r\n")
+	if _, err := part.Write(imageData); err != nil {
+		return nil, fmt.Errorf("failed to write image data: %w", err)
+	}
 
-	// 終端
-	body.WriteString("--" + boundary + "--\r\n")
+	if err := mw.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
 	if c.authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.authToken)
 	}

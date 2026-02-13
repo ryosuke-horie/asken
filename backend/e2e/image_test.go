@@ -38,10 +38,6 @@ func TestUploadImage_Success(t *testing.T) {
 	err = resp.JSON(&body)
 	require.NoError(t, err)
 	assert.NotEmpty(t, body["image_path"], "Response should contain image_path")
-
-	// 画像パスを保存（後続のテストで使用）
-	imagePath := body["image_path"]
-	assert.NotEmpty(t, imagePath)
 }
 
 func TestUploadImage_Unauthorized(t *testing.T) {
@@ -90,4 +86,17 @@ func TestGetImage_NotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestGetImage_PathTraversal(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// パストラバーサル攻撃を試行
+	resp, err := testClient.Get(ctx, "/api/images/../../../etc/passwd")
+	require.NoError(t, err)
+
+	// サーバーは403 Forbiddenまたは400 Bad Requestを返すべき
+	assert.True(t, resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusBadRequest,
+		"Expected 403 Forbidden or 400 Bad Request for path traversal, got %d", resp.StatusCode)
 }
