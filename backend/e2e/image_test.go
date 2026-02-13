@@ -27,6 +27,9 @@ var testImageData = []byte{
 }
 
 func TestUploadImage_Success(t *testing.T) {
+	// 前のテストファイル群でユーザーレート制限バケットが枯渇している可能性があるため待機
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	resp, err := client.UploadImage(ctx, "/api/upload-image", testImageData, "test.png")
@@ -53,6 +56,8 @@ func TestUploadImage_Unauthorized(t *testing.T) {
 }
 
 func TestGetImage_Success(t *testing.T) {
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	// まず画像をアップロード
