@@ -641,6 +641,28 @@ func TestAnalyzeHandler_TextInput_OversizedBody(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "リクエストボディが大きすぎます")
 }
 
+func TestTruncateForLog(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		maxRunes int
+		expected string
+	}{
+		{"短いテキスト", "hello", 50, "hello"},
+		{"ちょうど上限", "12345", 5, "12345"},
+		{"上限超え", "123456", 5, "12345..."},
+		{"日本語テキスト", "あいうえおかきくけこ", 5, "あいうえお..."},
+		{"空文字列", "", 50, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateForLog(tt.input, tt.maxRunes)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}

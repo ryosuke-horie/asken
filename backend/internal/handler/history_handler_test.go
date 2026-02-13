@@ -1677,6 +1677,54 @@ func TestHistoryHandler_HandleUpdate_FirestoreRetrySuccess(t *testing.T) {
 	}
 }
 
+func TestHistoryHandler_HandleUpdate_TooManyFoods(t *testing.T) {
+	historyID := uuid.New()
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewHistoryHandler(mockRepo, nil)
+
+	// 51個の食材を持つリクエストを作成
+	foods := make([]map[string]interface{}, 51)
+	for i := 0; i < 51; i++ {
+		foods[i] = map[string]interface{}{
+			"name":             fmt.Sprintf("食材%d", i+1),
+			"estimated_amount": "100g",
+			"calories_kcal":    100.0,
+			"protein_g":        10.0,
+			"fat_g":            5.0,
+			"carbohydrates_g":  20.0,
+		}
+	}
+	reqBody := map[string]interface{}{"foods": foods}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req, w := newUpdateRequest(historyID, testUserID, string(body))
+
+	handler.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "too many food items")
+}
+
+func TestUpdateHistoryRequest_Validate_ExactlyMaxFoods(t *testing.T) {
+	// ちょうど50個（上限値）の食材はバリデーションを通過する
+	foods := make([]UpdateFoodItem, 50)
+	for i := 0; i < 50; i++ {
+		foods[i] = UpdateFoodItem{
+			Name:            fmt.Sprintf("食材%d", i+1),
+			EstimatedAmount: "100g",
+			Calories:        100.0,
+			Protein:         10.0,
+			Fat:             5.0,
+			Carbohydrates:   20.0,
+		}
+	}
+	req := UpdateHistoryRequest{Foods: foods}
+	assert.NoError(t, req.Validate())
+}
+
 func TestHistoryHandler_HandleUpdate_FoodCountChangeSkipsRecalculation(t *testing.T) {
 	historyID := uuid.New()
 	createdAt := time.Now()
