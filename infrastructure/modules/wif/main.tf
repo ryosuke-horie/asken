@@ -8,7 +8,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "5.45.2"
     }
   }
 }
@@ -45,8 +45,8 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository" = "assertion.repository"
   }
 
-  # 特定リポジトリのみに制限（セキュリティ強化）
-  attribute_condition = "assertion.repository == '${var.github_owner}/${var.github_repo}'"
+  # 特定リポジトリ＆mainブランチのみに制限（セキュリティ強化）
+  attribute_condition = "assertion.repository == '${var.github_owner}/${var.github_repo}' && assertion.ref == 'refs/heads/main'"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
