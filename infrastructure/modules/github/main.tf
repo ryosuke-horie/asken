@@ -54,6 +54,11 @@ resource "github_actions_secret" "gcp_sa_key" {
 resource "github_repository_environment" "env" {
   repository  = data.github_repository.main.name
   environment = var.environment
+
+  deployment_branch_policy {
+    protected_branches     = true
+    custom_branch_policies = false
+  }
 }
 
 # =============================================================================
