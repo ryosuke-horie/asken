@@ -4,8 +4,9 @@ package e2e
 
 import (
 	"context"
-	"math"
+	"fmt"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -13,12 +14,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// assertFloat64Equal はfloat64の等値比較を行うヘルパー関数
-// JSON数値はfloat64としてデコードされるため、小数点誤差を許容する
-func assertFloat64Equal(t *testing.T, expected, actual float64, msgAndArgs ...interface{}) {
+// assertFloat64Equal はfloat64の等値比較を文字列表現で行うヘルパー関数
+// JSON数値はfloat64としてデコードされるため、小数点以下の誤差を許容
+func assertFloat64Equal(t *testing.T, expected float64, actual interface{}, msgAndArgs ...interface{}) {
 	t.Helper()
-	delta := 0.001 // 小数点以下の誤差は許容
-	assert.InDelta(t, expected, actual, delta, msgAndArgs...)
+
+	// actual が float64 または float64 を含む any 型であることを確認
+	var actualFloat float64
+	switch v := actual.(type) {
+	case float64:
+		actualFloat = v
+	case map[string]any:
+		if weightKg, ok := v["weight_kg"]; ok {
+			if f, ok := weightKg.(float64); ok {
+				actualFloat = f
+			}
+		}
+	case string:
+		// 文字列からfloat64に変換
+		if f, err := strconv.ParseFloat(v); err == nil {
+			actualFloat = f
+		}
+	}
+
+	// 小数点第3位までの誤差を許容（JSON数値の精度問題対応）
+	delta := 0.001
+	assert.InDelta(t, expected, actualFloat, delta, msgAndArgs...)
 }
 
 func TestWeightRecords_Create_Success(t *testing.T) {
