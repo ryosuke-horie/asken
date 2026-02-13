@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"testing"
 	"time"
@@ -11,6 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// assertFloat64Equal はfloat64の等値比較を行うヘルパー関数
+// JSON数値はfloat64としてデコードされるため、小数点誤差を許容する
+func assertFloat64Equal(t *testing.T, expected, actual float64, msgAndArgs ...interface{}) {
+	t.Helper()
+	delta := 0.001 // 小数点以下の誤差は許容
+	assert.InDelta(t, expected, actual, delta, msgAndArgs...)
+}
 
 func TestWeightRecords_Create_Success(t *testing.T) {
 	client, ctx := authenticatedClient(t, 30*time.Second)
@@ -32,7 +41,11 @@ func TestWeightRecords_Create_Success(t *testing.T) {
 	err = resp.JSON(&body)
 	require.NoError(t, err)
 	assert.NotEmpty(t, body["id"], "Response should contain record ID")
-	assert.Equal(t, 70.5, body["weight_kg"])
+
+	// weight_kg はJSON数値としてfloat64でデコードされるため、型アサーションが必要
+	weightKg, ok := body["weight_kg"].(float64)
+	require.True(t, ok, "weight_kg should be a float64")
+	assertFloat64Equal(t, 70.5, weightKg, "weight_kg should match")
 	assert.Equal(t, "テスト用記録", body["note"])
 }
 
@@ -142,7 +155,11 @@ func TestWeightRecords_Get_Success(t *testing.T) {
 	err = getResp.JSON(&getBody)
 	require.NoError(t, err)
 	assert.Equal(t, recordID, getBody["id"])
-	assert.Equal(t, 68.0, getBody["weight_kg"])
+
+	// weight_kg はJSON数値としてfloat64でデコードされるため、型アサーションが必要
+	weightKg, ok := getBody["weight_kg"].(float64)
+	require.True(t, ok, "weight_kg should be a float64")
+	assertFloat64Equal(t, 68.0, weightKg, "weight_kg should match")
 }
 
 func TestWeightRecords_Get_Unauthorized(t *testing.T) {
@@ -190,8 +207,10 @@ func TestWeightRecords_Update_Success(t *testing.T) {
 	var updateBody map[string]any
 	err = updateResp.JSON(&updateBody)
 	require.NoError(t, err)
-	assert.Equal(t, recordID, updateBody["id"])
-	assert.Equal(t, 69.5, updateBody["weight_kg"])
+	// weight_kg はJSON数値としてfloat64でデコードされるため、型アサーションが必要
+	weightKg, ok := updateBody["weight_kg"].(float64)
+	require.True(t, ok, "weight_kg should be a float64")
+	assertFloat64Equal(t, 69.5, weightKg, "weight_kg should match")
 	assert.Equal(t, "更新後のメモ", updateBody["note"])
 }
 
@@ -396,7 +415,11 @@ func TestWeightGoal_Set_Success(t *testing.T) {
 	var body map[string]any
 	err = resp.JSON(&body)
 	require.NoError(t, err)
-	assert.Equal(t, 65.0, body["target_weight_kg"])
+
+	// target_weight_kg はJSON数値としてfloat64でデコードされるため、型アサーションが必要
+	targetWeightKg, ok := body["target_weight_kg"].(float64)
+	require.True(t, ok, "target_weight_kg should be a float64")
+	assertFloat64Equal(t, 65.0, targetWeightKg, "target_weight_kg should match")
 	assert.NotEmpty(t, body["updated_at"])
 }
 
@@ -462,7 +485,11 @@ func TestWeightGoal_Get_Success(t *testing.T) {
 
 	goal, ok := getBody["goal"].(map[string]any)
 	require.True(t, ok, "Response should contain goal object")
-	assert.Equal(t, 66.0, goal["target_weight_kg"])
+
+	// target_weight_kg はJSON数値としてfloat64でデコードされるため、型アサーションが必要
+	targetWeightKg, ok := goal["target_weight_kg"].(float64)
+	require.True(t, ok, "target_weight_kg should be a float64")
+	assertFloat64Equal(t, 66.0, targetWeightKg, "target_weight_kg should match")
 	assert.NotEmpty(t, goal["updated_at"])
 }
 
