@@ -27,7 +27,19 @@ func CleanupTestData(ctx context.Context) error {
 	}
 	defer client.Close()
 
-	return deleteCollection(ctx, client, fmt.Sprintf("users/%s/analysisRequests", testUID()))
+	// テストデータのコレクションをクリーンアップ
+	collections := []string{
+		fmt.Sprintf("users/%s/analysisRequests", testUID()),
+		fmt.Sprintf("users/%s/weightRecords", testUID()),
+		fmt.Sprintf("users/%s/weightGoal", testUID()),
+	}
+
+	for _, collPath := range collections {
+		if err := deleteCollection(ctx, client, collPath); err != nil {
+			return fmt.Errorf("failed to cleanup %s: %w", collPath, err)
+		}
+	}
+	return nil
 }
 
 // deleteCollection は指定コレクション内の全ドキュメントを削除する
