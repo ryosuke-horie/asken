@@ -49,9 +49,9 @@ updates:
         patterns:
           - "swift-syntax"
 
-  # Docker (root)
+  # Docker (backend)
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/backend"
     schedule:
       interval: "weekly"
       day: "monday"
