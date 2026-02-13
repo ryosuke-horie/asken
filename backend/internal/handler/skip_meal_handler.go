@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
@@ -57,6 +58,11 @@ func (h *SkipMealHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	if req.MealDate == "" {
 		http.Error(w, "meal_dateは必須です", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := time.Parse("2006-01-02", req.MealDate); err != nil {
+		http.Error(w, "meal_dateはYYYY-MM-DD形式で指定してください", http.StatusBadRequest)
 		return
 	}
 

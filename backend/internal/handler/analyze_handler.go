@@ -97,9 +97,12 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// meal_date が空の場合は今日の日付
+	// meal_date が空の場合は今日の日付、指定時はフォーマット検証
 	if req.MealDate == "" {
 		req.MealDate = time.Now().Format("2006-01-02")
+	} else if _, err := time.Parse("2006-01-02", req.MealDate); err != nil {
+		http.Error(w, "meal_dateはYYYY-MM-DD形式で指定してください", http.StatusBadRequest)
+		return
 	}
 
 	// contextからユーザーIDを取得
@@ -166,7 +169,7 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// meal_date が空の場合は指定タイムゾーンでの今日の日付
+	// meal_date が空の場合は指定タイムゾーンでの今日の日付、指定時はフォーマット検証
 	if mealDate == "" {
 		loc := time.UTC
 		if tz != "" {
@@ -175,6 +178,9 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 			}
 		}
 		mealDate = time.Now().In(loc).Format("2006-01-02")
+	} else if _, err := time.Parse("2006-01-02", mealDate); err != nil {
+		http.Error(w, "meal_dateはYYYY-MM-DD形式で指定してください", http.StatusBadRequest)
+		return
 	}
 
 	// 4. Cloud Storageにアップロード

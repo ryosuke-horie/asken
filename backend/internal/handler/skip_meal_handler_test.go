@@ -115,6 +115,43 @@ func TestSkipMealHandler_Handle_MissingMealDate(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestSkipMealHandler_Handle_InvalidMealDateFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		mealDate string
+	}{
+		{"スラッシュ区切り", "2026/01/24"},
+		{"存在しない日付", "2026-13-01"},
+		{"テキスト", "today"},
+		{"区切りなし", "20260124"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := &MockAnalysisRepository{}
+			handler := NewSkipMealHandler(mockRepo)
+
+			reqBody := SkipMealRequest{
+				MealType: "lunch",
+				MealDate: tt.mealDate,
+			}
+			body, _ := json.Marshal(reqBody)
+			req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			userID := "test-firebase-uid"
+			ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
+			req = req.WithContext(ctx)
+
+			w := httptest.NewRecorder()
+			handler.Handle(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			assert.Contains(t, w.Body.String(), "YYYY-MM-DD")
+		})
+	}
+}
+
 func TestSkipMealHandler_Handle_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewSkipMealHandler(mockRepo)
