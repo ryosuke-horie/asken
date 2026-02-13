@@ -478,6 +478,44 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestAnalyzeHandler_TextInput_InvalidMealDate(t *testing.T) {
+	tests := []struct {
+		name     string
+		mealDate string
+	}{
+		{"不正なフォーマット", "2024/01/15"},
+		{"日付のみ不正", "2024-13-01"},
+		{"テキスト", "yesterday"},
+		{"日付区切り不正", "20240115"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockFoodService{}
+			mockRepo := &MockAnalysisRepository{}
+			mockStorageRepo := &testutil.MockStorageRepository{}
+			handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+			reqBody := map[string]string{
+				"input_text": "ご飯",
+				"meal_type":  "lunch",
+				"meal_date":  tt.mealDate,
+			}
+			body, err := json.Marshal(reqBody)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			handler.Handle(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			assert.Contains(t, w.Body.String(), "YYYY-MM-DD")
+		})
+	}
+}
+
 func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
