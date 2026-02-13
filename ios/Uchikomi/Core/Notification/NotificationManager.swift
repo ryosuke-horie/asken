@@ -9,6 +9,9 @@ protocol NotificationSchedulerProtocol {
     func requestAuthorization() async throws -> Bool
     func getAuthorizationStatus() async -> UNAuthorizationStatus
     func scheduleAllNotifications(settings: NotificationSettings) async
+    func cancelDeliveredNotification(for mealType: MealType)
+    func handleMealRecorded(mealType: MealType, settings: NotificationSettings) async
+    func refreshMealNotifications(settings: NotificationSettings, recordedMealTypes: Set<MealType>) async
     var lastSchedulingError: Error? { get }
     func resetLastError()
 }
@@ -57,16 +60,18 @@ final class NotificationManager: NotificationSchedulerProtocol {
         }
     }
 
-    /// 配信済み通知を削除する（通知センターに表示済みの通知を除去）
-    func cancelDeliveredNotification(for mealType: MealType) async {
+    /// 配信済み通知を削除する（通知センターから同期的に除去）
+    func cancelDeliveredNotification(for mealType: MealType) {
         let identifier = notificationIdentifier(for: mealType)
         notificationCenter.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
 
-    /// 食事が記録された時に呼び出し、該当の通知をキャンセルして翌日に再スケジュールする
+    /// 食事が記録された時に呼び出し、該当の通知をキャンセルする。
+    /// 対象の通知設定が有効な場合のみ、翌日に非リピートで再スケジュールする。
     func handleMealRecorded(mealType: MealType, settings: NotificationSettings) async {
+        lastSchedulingError = nil
         cancelPendingNotification(for: mealType)
-        await cancelDeliveredNotification(for: mealType)
+        cancelDeliveredNotification(for: mealType)
         if let setting = settings.meals.first(where: { $0.mealType == mealType && $0.isEnabled }) {
             await scheduleMealNotificationFromTomorrow(setting)
         }
@@ -74,13 +79,16 @@ final class NotificationManager: NotificationSchedulerProtocol {
 
     /// 記録済みの食事タイプを考慮して食事通知を再スケジュールする
     ///
-    /// まず全リマインダー対象の pending 通知をキャンセルし、その後：
+    /// まず reminderTargets（朝食・昼食・夕食）の pending 通知を全てキャンセルし、
+    /// 有効な設定についてのみ再スケジュールする：
     /// - 記録済みの食事: 翌日に非リピートで再スケジュール
     /// - 未記録の食事: repeating 通知として再スケジュール（通常通り）
     func refreshMealNotifications(
         settings: NotificationSettings,
         recordedMealTypes: Set<MealType>
     ) async {
+        lastSchedulingError = nil
+
         for mealType in MealType.reminderTargets {
             cancelPendingNotification(for: mealType)
         }
@@ -90,6 +98,9 @@ final class NotificationManager: NotificationSchedulerProtocol {
                 await scheduleMealNotificationFromTomorrow(setting)
             } else {
                 await scheduleMealNotification(setting)
+            }
+            if lastSchedulingError != nil {
+                return
             }
         }
     }
@@ -107,7 +118,12 @@ final class NotificationManager: NotificationSchedulerProtocol {
             value: 1,
             to: Calendar.current.startOfDay(for: Date())
         ) else {
-            logger.warning("翌日の日付計算に失敗: \(setting.mealType.rawValue)")
+            lastSchedulingError = NSError(
+                domain: "NotificationManager",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "翌日の日付計算に失敗"]
+            )
+            logger.error("翌日の日付計算に失敗: \(setting.mealType.rawValue)")
             return
         }
 
