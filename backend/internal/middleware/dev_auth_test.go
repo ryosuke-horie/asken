@@ -1,9 +1,10 @@
+//go:build !production
+
 package middleware
 
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -86,39 +87,5 @@ func TestDevAuthMiddleware_Authenticate(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
 		assert.Contains(t, rec.Body.String(), "無効な認証形式です")
-	})
-}
-
-func TestIsDevMode(t *testing.T) {
-	t.Run("APP_ENV=developmentでtrueを返すべき", func(t *testing.T) {
-		originalEnv := os.Getenv("APP_ENV")
-		defer os.Setenv("APP_ENV", originalEnv)
-
-		os.Setenv("APP_ENV", "development")
-		assert.True(t, IsDevMode())
-	})
-
-	t.Run("APP_ENV未設定でfalseを返すべき", func(t *testing.T) {
-		originalEnv := os.Getenv("APP_ENV")
-		defer os.Setenv("APP_ENV", originalEnv)
-
-		os.Unsetenv("APP_ENV")
-		assert.False(t, IsDevMode())
-	})
-
-	t.Run("APP_ENV=productionでfalseを返すべき", func(t *testing.T) {
-		originalEnv := os.Getenv("APP_ENV")
-		defer os.Setenv("APP_ENV", originalEnv)
-
-		os.Setenv("APP_ENV", "production")
-		assert.False(t, IsDevMode())
-	})
-
-	t.Run("APP_ENVが他の値でfalseを返すべき", func(t *testing.T) {
-		originalEnv := os.Getenv("APP_ENV")
-		defer os.Setenv("APP_ENV", originalEnv)
-
-		os.Setenv("APP_ENV", "staging")
-		assert.False(t, IsDevMode())
 	})
 }

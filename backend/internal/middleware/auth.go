@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -71,4 +72,9 @@ func GetFirebaseUIDFromContext(ctx context.Context) string {
 // SetFirebaseUIDToContext はテスト用に Firebase UID をコンテキストに設定する
 func SetFirebaseUIDToContext(ctx context.Context, uid string) context.Context {
 	return context.WithValue(ctx, firebaseUIDContextKey, uid)
+}
+
+// IsDevMode は開発モードかどうかを判定する
+func IsDevMode() bool {
+	return os.Getenv("APP_ENV") == "development"
 }

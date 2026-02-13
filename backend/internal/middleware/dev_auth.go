@@ -1,10 +1,11 @@
+//go:build !production
+
 package middleware
 
 import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -52,9 +53,4 @@ func (m *DevAuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), firebaseUIDContextKey, DevMockUserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-// IsDevMode は開発モードかどうかを判定する
-func IsDevMode() bool {
-	return os.Getenv("APP_ENV") == "development"
 }
