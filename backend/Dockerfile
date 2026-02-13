@@ -21,6 +21,7 @@ COPY . .
 
 # 静的リンクでバイナリをビルド
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -tags=production \
     -ldflags="-w -s" \
     -o /app/server \
     ./cmd/server
