@@ -124,3 +124,48 @@ func (r *Response) JSON(v any) error {
 	}
 	return nil
 }
+
+// UploadImage は画像ファイルをアップロードする（multipart/form-data）
+func (c *Client) UploadImage(ctx context.Context, path string, imageData []byte, filename string) (*Response, error) {
+	body := &bytes.Buffer{}
+
+	// multipart writerは使わず、手動でmultipart/form-dataを構築
+	boundary := "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+
+	// ファイルパート
+	body.WriteString("--" + boundary + "\r\n")
+	body.WriteString(fmt.Sprintf("Content-Disposition: form-data; name=\"image\"; filename=\"%s\"\r\n", filename))
+	body.WriteString("Content-Type: image/png\r\n\r\n")
+	body.Write(imageData)
+	body.WriteString("\r\n")
+
+	// 終端
+	body.WriteString("--" + boundary + "--\r\n")
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "multipart/form-data; boundary="+boundary)
+	if c.authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.authToken)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return &Response{
+		StatusCode: resp.StatusCode,
+		Body:       respBody,
+		Headers:    resp.Header,
+	}, nil
+}
