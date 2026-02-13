@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-12
+最終更新: 2026-02-13
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -58,6 +58,7 @@ Context に firebase_uid を設定
 `APP_ENV=development`の場合、DevAuthMiddlewareが有効:
 - トークン`dev-mock-token`で固定UID`dev-mock-user`として認証
 - Firebase Admin SDKを初期化しない
+- ビルドタグ`!production`で制御（`production`タグ付きビルドではDevAuthMiddlewareが無効化される）
 
 ## APIエンドポイント
 
@@ -148,8 +149,9 @@ Context に firebase_uid を設定
 
 | ファイル | 責務 |
 |:---|:---|
-| auth.go | Firebase Auth認証ミドルウェア、Authenticatorインターフェース |
-| dev_auth.go | 開発用モック認証ミドルウェア |
+| auth.go | Firebase Auth認証ミドルウェア、Authenticatorインターフェース、IsDevMode() |
+| dev_auth.go | 開発用モック認証ミドルウェア（`!production`ビルドタグ） |
+| dev_auth_prod.go | 本番用DevAuthMiddlewareスタブ（`production`ビルドタグ、常に拒否） |
 | rate_limit.go | レート制限ミドルウェア（Gemini API用） |
 | rate_limit_config.go | レート制限設定 |
 | security_headers.go | セキュリティヘッダー設定ミドルウェア |
@@ -201,6 +203,8 @@ Context に firebase_uid を設定
 | cleanup.go | テストデータクリーンアップ |
 | history_test.go | 履歴API E2Eテスト |
 | meals_test.go | 食事API E2Eテスト |
+| weight_test.go | 体重API E2Eテスト（記録CRUD、目標設定） |
+| image_test.go | 画像配信API E2Eテスト |
 
 ## 依存関係図
 
@@ -210,8 +214,10 @@ cmd/server/main.go
 │   ├── auth.go (Authenticator interface)
 │   │   └── AuthMiddleware (Firebase本番)
 │   │       └── internal/service/firebase_auth_service.go
-│   ├── dev_auth.go
+│   ├── dev_auth.go (!production ビルドタグ)
 │   │   └── DevAuthMiddleware (開発モック)
+│   ├── dev_auth_prod.go (production ビルドタグ)
+│   │   └── DevAuthMiddleware (常に拒否)
 │   └── security_headers.go
 │       └── SecurityHeaders (全ルート適用)
 ├── internal/handler/*
@@ -265,7 +271,7 @@ Stage 2: runtime (distroless/static-debian12:nonroot)
 | GCS_BUCKET_NAME | Cloud Storageバケット名 | ローカル: 手動設定 / Cloud Run: 環境変数 |
 | GCP_PROJECT_ID | GCPプロジェクトID | Cloud Run環境変数 |
 | APP_ENV | 環境 (development/production) | Cloud Run環境変数 |
-| ALLOWED_ORIGINS | CORSオリジン | Cloud Run環境変数 |
+| ALLOWED_ORIGINS | CORSオリジン（カンマ区切り） | Cloud Run環境変数 |
 
 Secret Manager管理のシークレット:
 
