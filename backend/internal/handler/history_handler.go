@@ -197,6 +197,9 @@ func (f UpdateFoodItem) Validate() error {
 	return nil
 }
 
+// maxFoodsPerUpdate は1回の更新で許可される食材の最大数
+const maxFoodsPerUpdate = 50
+
 // UpdateHistoryRequest は履歴更新リクエストの構造体
 type UpdateHistoryRequest struct {
 	Foods []UpdateFoodItem `json:"foods"`
@@ -206,6 +209,9 @@ type UpdateHistoryRequest struct {
 func (r UpdateHistoryRequest) Validate() error {
 	if len(r.Foods) == 0 {
 		return fmt.Errorf("at least one food item is required")
+	}
+	if len(r.Foods) > maxFoodsPerUpdate {
+		return fmt.Errorf("too many food items: maximum %d allowed", maxFoodsPerUpdate)
 	}
 	for i, f := range r.Foods {
 		if err := f.Validate(); err != nil {

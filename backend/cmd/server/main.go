@@ -338,11 +338,12 @@ func run() error {
 
 	// HTTPサーバー設定
 	server := &http.Server{
-		Addr:         ":8080",
-		Handler:      secureHandler,
-		ReadTimeout:  150 * time.Second,
-		WriteTimeout: 150 * time.Second,
-		IdleTimeout:  150 * time.Second,
+		Addr:              ":8080",
+		Handler:           secureHandler,
+		ReadTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      150 * time.Second, // Gemini API処理（最大120秒）を考慮
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown
