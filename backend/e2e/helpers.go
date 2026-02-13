@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -123,4 +124,51 @@ func (r *Response) JSON(v any) error {
 		return fmt.Errorf("failed to decode response (status=%d, body=%s): %w", r.StatusCode, bodyPreview, err)
 	}
 	return nil
+}
+
+// UploadImage は画像ファイルをアップロードする（multipart/form-data）
+func (c *Client) UploadImage(ctx context.Context, path string, imageData []byte, filename string) (*Response, error) {
+	body := &bytes.Buffer{}
+
+	// mime/multipart.Writerを使用して安全にmultipart/form-dataを構築
+	mw := multipart.NewWriter(body)
+	part, err := mw.CreateFormFile("image", filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	if _, err := part.Write(imageData); err != nil {
+		return nil, fmt.Errorf("failed to write image data: %w", err)
+	}
+
+	if err := mw.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	if c.authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.authToken)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return &Response{
+		StatusCode: resp.StatusCode,
+		Body:       respBody,
+		Headers:    resp.Header,
+	}, nil
 }
