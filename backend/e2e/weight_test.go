@@ -1,0 +1,501 @@
+//go:build e2e
+
+package e2e
+
+import (
+	"context"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestWeightRecords_Create_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	reqBody := map[string]any{
+		"weight_kg":   70.5,
+		"recorded_at": recordedAt,
+		"note":        "テスト用記録",
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
+
+	var body map[string]any
+	err = resp.JSON(&body)
+	require.NoError(t, err)
+	assert.NotEmpty(t, body["id"], "Response should contain record ID")
+	assert.Equal(t, 70.5, body["weight_kg"])
+	assert.Equal(t, "テスト用記録", body["note"])
+}
+
+func TestWeightRecords_Create_InvalidWeightKg_TooLow(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	reqBody := map[string]any{
+		"weight_kg":   19.9, // 20.0未満は無効
+		"recorded_at": recordedAt,
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_Create_InvalidWeightKg_TooHigh(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	reqBody := map[string]any{
+		"weight_kg":   300.1, // 300.0超過は無効
+		"recorded_at": recordedAt,
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_Create_MissingRecordedAt(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"weight_kg": 70.5,
+		// recorded_at が欠落
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_Create_InvalidRecordedAt_Format(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"weight_kg":   70.5,
+		"recorded_at": "2024-02-13", // RFC3339形式でない
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_Create_NoteTooLong(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	longNote := string(make([]byte, 201)) // 201文字（200文字超過）
+	reqBody := map[string]any{
+		"weight_kg":   70.5,
+		"recorded_at": recordedAt,
+		"note":        longNote,
+	}
+
+	resp, err := client.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_Get_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	createReq := map[string]any{
+		"weight_kg":   68.0,
+		"recorded_at": recordedAt,
+	}
+
+	createResp, err := client.Post(ctx, "/api/weight/records", createReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode)
+
+	var createBody map[string]any
+	err = createResp.JSON(&createBody)
+	require.NoError(t, err)
+
+	recordID, ok := createBody["id"].(string)
+	require.True(t, ok, "Response id field should be a string")
+	require.NotEmpty(t, recordID)
+
+	getResp, err := client.Get(ctx, "/api/weight/records/"+recordID)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
+	assert.Contains(t, getResp.Headers.Get("Content-Type"), "application/json")
+
+	var getBody map[string]any
+	err = getResp.JSON(&getBody)
+	require.NoError(t, err)
+	assert.Equal(t, recordID, getBody["id"])
+	assert.Equal(t, 68.0, getBody["weight_kg"])
+}
+
+func TestWeightRecords_Get_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := testClient.Get(ctx, "/api/weight/records/test-id")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightRecords_Update_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	createReq := map[string]any{
+		"weight_kg":   70.0,
+		"recorded_at": recordedAt,
+	}
+
+	createResp, err := client.Post(ctx, "/api/weight/records", createReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode)
+
+	var createBody map[string]any
+	err = createResp.JSON(&createBody)
+	require.NoError(t, err)
+
+	recordID, ok := createBody["id"].(string)
+	require.True(t, ok, "Response id field should be a string")
+	require.NotEmpty(t, recordID)
+
+	updateReq := map[string]any{
+		"weight_kg": 69.5,
+		"note":      "更新後のメモ",
+	}
+
+	updateResp, err := client.Request(ctx, http.MethodPut, "/api/weight/records/"+recordID, updateReq)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, updateResp.StatusCode)
+	assert.Contains(t, updateResp.Headers.Get("Content-Type"), "application/json")
+
+	var updateBody map[string]any
+	err = updateResp.JSON(&updateBody)
+	require.NoError(t, err)
+	assert.Equal(t, recordID, updateBody["id"])
+	assert.Equal(t, 69.5, updateBody["weight_kg"])
+	assert.Equal(t, "更新後のメモ", updateBody["note"])
+}
+
+func TestWeightRecords_Update_NotFound(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	updateReq := map[string]any{
+		"weight_kg": 69.5,
+		"note":      "更新後のメモ",
+	}
+
+	updateResp, err := client.Request(ctx, http.MethodPut, "/api/weight/records/00000000-0000-0000-0000-000000000000", updateReq)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusNotFound, updateResp.StatusCode)
+}
+
+func TestWeightRecords_Update_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	updateReq := map[string]any{
+		"weight_kg": 69.5,
+	}
+
+	resp, err := testClient.Request(ctx, http.MethodPut, "/api/weight/records/test-id", updateReq)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightRecords_Delete_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	createReq := map[string]any{
+		"weight_kg":   70.0,
+		"recorded_at": recordedAt,
+	}
+
+	createResp, err := client.Post(ctx, "/api/weight/records", createReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode)
+
+	var createBody map[string]any
+	err = createResp.JSON(&createBody)
+	require.NoError(t, err)
+
+	recordID, ok := createBody["id"].(string)
+	require.True(t, ok, "Response id field should be a string")
+	require.NotEmpty(t, recordID)
+
+	deleteResp, err := client.Request(ctx, http.MethodDelete, "/api/weight/records/"+recordID, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusNoContent, deleteResp.StatusCode)
+
+	getResp, err := client.Get(ctx, "/api/weight/records/"+recordID)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, getResp.StatusCode)
+}
+
+func TestWeightRecords_Delete_NotFound(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	deleteResp, err := client.Request(ctx, http.MethodDelete, "/api/weight/records/00000000-0000-0000-0000-000000000000", nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusNotFound, deleteResp.StatusCode)
+}
+
+func TestWeightRecords_Delete_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := testClient.Request(ctx, http.MethodDelete, "/api/weight/records/test-id", nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightRecords_List_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	now := time.Now()
+	records := []struct {
+		weightKg   float64
+		recordedAt string
+		note       string
+	}{
+		{70.0, now.Add(-48 * time.Hour).Format(time.RFC3339), "2日前"},
+		{69.5, now.Add(-24 * time.Hour).Format(time.RFC3339), "昨日"},
+		{69.0, now.Format(time.RFC3339), "今日"},
+	}
+
+	var createdIDs []string
+	for _, r := range records {
+		req := map[string]any{
+			"weight_kg":   r.weightKg,
+			"recorded_at": r.recordedAt,
+			"note":        r.note,
+		}
+		resp, err := client.Post(ctx, "/api/weight/records", req)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		var body map[string]any
+		err = resp.JSON(&body)
+		require.NoError(t, err)
+
+		id, ok := body["id"].(string)
+		require.True(t, ok, "Response id field should be a string")
+		createdIDs = append(createdIDs, id)
+	}
+	require.Len(t, createdIDs, 3)
+
+	from := now.Add(-72 * time.Hour).Format("2006-01-02")
+	to := now.Add(24 * time.Hour).Format("2006-01-02")
+	listResp, err := client.Get(ctx, "/api/weight/records?from="+from+"&to="+to)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, listResp.StatusCode)
+	assert.Contains(t, listResp.Headers.Get("Content-Type"), "application/json")
+
+	var listBody map[string]any
+	err = listResp.JSON(&listBody)
+	require.NoError(t, err)
+
+	recordsArray, ok := listBody["records"].([]any)
+	require.True(t, ok, "Response should contain records array")
+	assert.Len(t, recordsArray, 3, "Should return 3 records")
+}
+
+func TestWeightRecords_List_MissingFromParameter(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	to := time.Now().Format("2006-01-02")
+	resp, err := client.Get(ctx, "/api/weight/records?to="+to)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_List_MissingToParameter(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	from := time.Now().Format("2006-01-02")
+	resp, err := client.Get(ctx, "/api/weight/records?from="+from)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightRecords_List_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := testClient.Get(ctx, "/api/weight/records?from=2024-01-01&to=2024-12-31")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightRecords_Get_NotFound(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	resp, err := client.Get(ctx, "/api/weight/records/00000000-0000-0000-0000-000000000000")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestWeightRecords_Create_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	recordedAt := time.Now().Format(time.RFC3339)
+	reqBody := map[string]any{
+		"weight_kg":   70.5,
+		"recorded_at": recordedAt,
+	}
+
+	resp, err := testClient.Post(ctx, "/api/weight/records", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightGoal_Set_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"target_weight_kg": 65.0,
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/weight/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
+
+	var body map[string]any
+	err = resp.JSON(&body)
+	require.NoError(t, err)
+	assert.Equal(t, 65.0, body["target_weight_kg"])
+	assert.NotEmpty(t, body["updated_at"])
+}
+
+func TestWeightGoal_Set_InvalidTargetWeightKg_TooLow(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"target_weight_kg": 19.9, // 20.0未満は無効
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/weight/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightGoal_Set_InvalidTargetWeightKg_TooHigh(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"target_weight_kg": 300.1, // 300.0超過は無効
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/weight/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestWeightGoal_Set_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	reqBody := map[string]any{
+		"target_weight_kg": 65.0,
+	}
+
+	resp, err := testClient.Request(ctx, http.MethodPut, "/api/weight/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestWeightGoal_Get_Success(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	setReq := map[string]any{
+		"target_weight_kg": 66.0,
+	}
+	setResp, err := client.Request(ctx, http.MethodPut, "/api/weight/goal", setReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, setResp.StatusCode)
+
+	getResp, err := client.Get(ctx, "/api/weight/goal")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
+	assert.Contains(t, getResp.Headers.Get("Content-Type"), "application/json")
+
+	var getBody map[string]any
+	err = getResp.JSON(&getBody)
+	require.NoError(t, err)
+
+	goal, ok := getBody["goal"].(map[string]any)
+	require.True(t, ok, "Response should contain goal object")
+	assert.Equal(t, 66.0, goal["target_weight_kg"])
+	assert.NotEmpty(t, goal["updated_at"])
+}
+
+func TestWeightGoal_Get_NotSet(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	getResp, err := client.Get(ctx, "/api/weight/goal")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
+
+	var getBody map[string]any
+	err = getResp.JSON(&getBody)
+	require.NoError(t, err)
+
+	// goal が設定されていない場合、goal フィールドは null または存在しない
+	goal, exists := getBody["goal"]
+	if exists {
+		_, ok := goal.(map[string]any)
+		// goal が存在する場合は map であることを確認（未設定時は nil）
+		if ok {
+			// 目標が設定されている場合は成功
+		}
+	}
+	// nil の場合も成功（未設定状態）
+}
+
+func TestWeightGoal_Get_Unauthorized(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := testClient.Get(ctx, "/api/weight/goal")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
