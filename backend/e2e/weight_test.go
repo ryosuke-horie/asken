@@ -380,7 +380,21 @@ func TestWeightRecords_List_Success(t *testing.T) {
 
 	recordsArray, ok := listBody["records"].([]any)
 	require.True(t, ok, "Response should contain records array")
-	assert.Len(t, recordsArray, 3, "Should return 3 records")
+	// 過去のE2Eテスト実行でレコードが蓄積するため、件数ではなく作成したIDの存在を検証
+	assert.GreaterOrEqual(t, len(recordsArray), 3, "Should return at least 3 records")
+
+	// 作成した3件のIDが一覧に含まれていることを確認
+	foundIDs := make(map[string]bool)
+	for _, record := range recordsArray {
+		recordMap, ok := record.(map[string]any)
+		require.True(t, ok)
+		if id, ok := recordMap["id"].(string); ok {
+			foundIDs[id] = true
+		}
+	}
+	for _, id := range createdIDs {
+		assert.True(t, foundIDs[id], "Created record %s should be in the list", id)
+	}
 }
 
 func TestWeightRecords_List_MissingFromParameter(t *testing.T) {
