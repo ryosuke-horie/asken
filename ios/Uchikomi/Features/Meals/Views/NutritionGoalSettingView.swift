@@ -70,7 +70,7 @@ struct NutritionGoalSettingView: View {
 
     private var isValid: Bool {
         guard let calories = Double(targetCaloriesText) else { return false }
-        return calories >= 1_000 && calories <= 5_000
+        return calories >= 800 && calories <= 5_000
     }
 
     var body: some View {
