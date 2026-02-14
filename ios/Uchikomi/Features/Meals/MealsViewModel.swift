@@ -44,10 +44,12 @@ final class MealsViewModel {
         do {
             dailyMeals = try await repository.getDailyMeals(date: selectedDate)
         } catch let error as APIError {
+            logger.error("食事データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             isLoading = false
             return
         } catch {
+            logger.error("食事データ取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "食事データの取得に失敗しました"
             isLoading = false
             return

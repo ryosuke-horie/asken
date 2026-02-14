@@ -102,15 +102,17 @@ func TestDeterminePhase(t *testing.T) {
 	tests := []struct {
 		name          string
 		currentWeight *float64
-		targetWeight  float64
+		targetWeight  *float64
 		want          NutritionPhase
 	}{
-		{"nilの場合は維持期", nil, 70.0, NutritionPhaseMaintenance},
-		{"差が1kg以内は維持期", floatPtr(70.0), 70.5, NutritionPhaseMaintenance},
-		{"現在>目標で1kg超は減量期", floatPtr(75.0), 70.0, NutritionPhaseWeightLoss},
-		{"目標>現在で1kg超は増量期", floatPtr(60.0), 70.0, NutritionPhaseWeightGain},
-		{"ちょうど1kgの差は維持期", floatPtr(71.0), 70.0, NutritionPhaseMaintenance},
-		{"1.01kgの差は減量期", floatPtr(71.01), 70.0, NutritionPhaseWeightLoss},
+		{"currentWeightがnilの場合は維持期", nil, floatPtr(70.0), NutritionPhaseMaintenance},
+		{"targetWeightがnilの場合は維持期", floatPtr(70.0), nil, NutritionPhaseMaintenance},
+		{"両方nilの場合は維持期", nil, nil, NutritionPhaseMaintenance},
+		{"差が1kg以内は維持期", floatPtr(70.0), floatPtr(70.5), NutritionPhaseMaintenance},
+		{"現在>目標で1kg超は減量期", floatPtr(75.0), floatPtr(70.0), NutritionPhaseWeightLoss},
+		{"目標>現在で1kg超は増量期", floatPtr(60.0), floatPtr(70.0), NutritionPhaseWeightGain},
+		{"ちょうど1kgの差は維持期", floatPtr(71.0), floatPtr(70.0), NutritionPhaseMaintenance},
+		{"1.01kgの差は減量期", floatPtr(71.01), floatPtr(70.0), NutritionPhaseWeightLoss},
 	}
 
 	for _, tt := range tests {

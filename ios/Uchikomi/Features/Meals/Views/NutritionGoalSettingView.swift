@@ -51,9 +51,9 @@ struct NutritionGoalSettingView: View {
     }
 
     private var currentPhase: NutritionPhase {
-        // 体重がない場合は維持期として表示
-        NutritionGoalCalculator.calculatePhase(
-            currentWeight: currentWeight ?? Double(weightKg) ?? 0,
+        let weight = currentWeight ?? Double(weightKg)
+        return NutritionGoalCalculator.calculatePhase(
+            currentWeight: weight,
             goalWeight: goalWeight
         )
     }
