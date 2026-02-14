@@ -75,7 +75,7 @@ variable "max_concurrent_requests" {
 variable "request_timeout_seconds" {
   description = "リクエストタイムアウト（秒）"
   type        = number
-  default     = 300
+  default     = 60
 }
 
 # -----------------------------------------------------------------------------
