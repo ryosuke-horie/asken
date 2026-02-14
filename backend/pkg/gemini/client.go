@@ -54,8 +54,9 @@ func NewClientWithHTTPClient(httpClient GeminiHTTPClient) *Client {
 }
 
 // Execute はGemini APIを呼び出し、レスポンスを返す
-func (c *Client) Execute(ctx context.Context, prompt string) (*Response, error) {
-	return c.httpClient.Execute(ctx, prompt)
+// schemaがnilでない場合、responseSchemaを設定してモデル出力を制約する
+func (c *Client) Execute(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
+	return c.httpClient.Execute(ctx, prompt, schema)
 }
 
 // removeCodeBlock はMarkdownコードブロック（```json```）を除去する

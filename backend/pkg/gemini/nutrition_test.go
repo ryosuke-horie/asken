@@ -55,11 +55,12 @@ func TestCalculateNutrition_EmptyFoods(t *testing.T) {
 
 func TestNutritionCalculator_CalculateNutrition_MockSuccess(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return &Response{
 				Response: `[{
 					"name": "刺身盛り合わせ",
-					"estimated_amount": "8切れ",
+					"quantity_value": 8,
+					"quantity_unit": "切れ",
 					"calories_kcal": 200,
 					"protein_g": 20,
 					"fat_g": 5,
@@ -81,6 +82,7 @@ func TestNutritionCalculator_CalculateNutrition_MockSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, nutritionList, 1)
 	assert.Equal(t, "刺身盛り合わせ", nutritionList[0].Name)
+	assert.Equal(t, "8切れ", nutritionList[0].EstimatedAmount)
 	assert.Equal(t, 200.0, nutritionList[0].Calories)
 	assert.Equal(t, 20.0, nutritionList[0].Protein)
 	assert.Equal(t, 5.0, nutritionList[0].Fat)
@@ -89,7 +91,7 @@ func TestNutritionCalculator_CalculateNutrition_MockSuccess(t *testing.T) {
 
 func TestNutritionCalculator_CalculateNutrition_MockAPIError(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -109,7 +111,7 @@ func TestNutritionCalculator_CalculateNutrition_MockAPIError(t *testing.T) {
 
 func TestNutritionCalculator_CalculateNutrition_MockInvalidJSON(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return &Response{Response: `{invalid json}`}, nil
 		},
 	}
@@ -129,7 +131,7 @@ func TestNutritionCalculator_CalculateNutrition_MockInvalidJSON(t *testing.T) {
 
 func TestNutritionCalculator_CalculateNutrition_MockEmptyResponse(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return &Response{Response: `[]`}, nil
 		},
 	}

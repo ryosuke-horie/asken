@@ -84,7 +84,7 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL // テスト用にbaseURLを上書き
 
-		resp, err := client.Execute(context.Background(), "テスト用プロンプト")
+		resp, err := client.Execute(context.Background(), "テスト用プロンプト", nil)
 
 		require.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -102,7 +102,7 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "APIエラー")
@@ -122,7 +122,7 @@ func TestHTTPClient_Execute_TextOnly(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンスが空です")
@@ -142,7 +142,7 @@ func TestHTTPClient_Execute_Timeout(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "タイムアウト")
@@ -167,7 +167,7 @@ func TestHTTPClient_Execute_Cancel(t *testing.T) {
 			cancel()
 		}()
 
-		_, err = client.Execute(ctx, "テスト")
+		_, err = client.Execute(ctx, "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "キャンセル")
@@ -210,7 +210,7 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 		// テスト用の画像データ（小さなダミーデータ）
 		imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0} // JPEG magic bytes
 
-		resp, err := client.ExecuteWithImage(context.Background(), "テスト用プロンプト", imageData, "image/jpeg")
+		resp, err := client.ExecuteWithImage(context.Background(), "テスト用プロンプト", imageData, "image/jpeg", nil)
 
 		require.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -221,7 +221,7 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 		client, err := NewHTTPClient("test-api-key", 30*time.Second)
 		require.NoError(t, err)
 
-		_, err = client.ExecuteWithImage(context.Background(), "テスト", nil, "image/jpeg")
+		_, err = client.ExecuteWithImage(context.Background(), "テスト", nil, "image/jpeg", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "画像データが空です")
@@ -234,7 +234,7 @@ func TestHTTPClient_ExecuteWithImage(t *testing.T) {
 		// 21MBの画像データを作成
 		largeImage := make([]byte, 21<<20)
 
-		_, err = client.ExecuteWithImage(context.Background(), "テスト", largeImage, "image/jpeg")
+		_, err = client.ExecuteWithImage(context.Background(), "テスト", largeImage, "image/jpeg", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrImageTooLarge)
@@ -246,7 +246,7 @@ func TestHTTPClient_Execute_EmptyPrompt(t *testing.T) {
 		client, err := NewHTTPClient("test-api-key", 30*time.Second)
 		require.NoError(t, err)
 
-		_, err = client.Execute(context.Background(), "")
+		_, err = client.Execute(context.Background(), "", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrEmptyPrompt)
@@ -256,7 +256,7 @@ func TestHTTPClient_Execute_EmptyPrompt(t *testing.T) {
 		client, err := NewHTTPClient("test-api-key", 30*time.Second)
 		require.NoError(t, err)
 
-		_, err = client.Execute(context.Background(), "   ")
+		_, err = client.Execute(context.Background(), "   ", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrEmptyPrompt)
@@ -266,7 +266,7 @@ func TestHTTPClient_Execute_EmptyPrompt(t *testing.T) {
 		client, err := NewHTTPClient("test-api-key", 30*time.Second)
 		require.NoError(t, err)
 
-		_, err = client.Execute(context.Background(), "\t\n")
+		_, err = client.Execute(context.Background(), "\t\n", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrEmptyPrompt)
@@ -280,7 +280,7 @@ func TestHTTPClient_ExecuteWithImage_EmptyPrompt(t *testing.T) {
 
 		imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 
-		_, err = client.ExecuteWithImage(context.Background(), "", imageData, "image/jpeg")
+		_, err = client.ExecuteWithImage(context.Background(), "", imageData, "image/jpeg", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrEmptyPrompt)
@@ -292,7 +292,7 @@ func TestHTTPClient_ExecuteWithImage_EmptyPrompt(t *testing.T) {
 
 		imageData := []byte{0xFF, 0xD8, 0xFF, 0xE0}
 
-		_, err = client.ExecuteWithImage(context.Background(), "   ", imageData, "image/jpeg")
+		_, err = client.ExecuteWithImage(context.Background(), "   ", imageData, "image/jpeg", nil)
 
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrEmptyPrompt)
@@ -307,7 +307,7 @@ func TestHTTPClient_Execute_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("実際のAPIでテキストプロンプトを実行できる", func(t *testing.T) {
-		resp, err := client.Execute(context.Background(), "こんにちは。1+1は？")
+		resp, err := client.Execute(context.Background(), "こんにちは。1+1は？", nil)
 
 		require.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -358,7 +358,7 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "パースエラー")
@@ -384,7 +384,7 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "コンテンツが空です")
@@ -412,7 +412,7 @@ func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンステキストが空です")
@@ -436,7 +436,7 @@ func TestHTTPClient_Execute_OversizedResponse(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レスポンスサイズが上限")
@@ -455,7 +455,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "認証エラー")
@@ -473,7 +473,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "レート制限")
@@ -490,7 +490,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")
@@ -507,7 +507,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Invalid request format")
@@ -524,7 +524,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "APIエラー (status 400)")
@@ -541,7 +541,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "アクセス拒否")
@@ -557,7 +557,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")
@@ -573,7 +573,7 @@ func TestHTTPClient_HandleAPIError(t *testing.T) {
 		require.NoError(t, err)
 		client.baseURL = server.URL
 
-		_, err = client.Execute(context.Background(), "テスト")
+		_, err = client.Execute(context.Background(), "テスト", nil)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "Geminiサービスエラー")
