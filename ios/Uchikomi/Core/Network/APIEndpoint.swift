@@ -143,7 +143,7 @@ struct APIEndpoint {
 
     static func getNutritionGoal(currentWeight: Double?, goalWeight: Double?) -> APIEndpoint {
         var components = URLComponents()
-        components.path = "nutrition-goal"
+        components.path = "nutrition/goal"
 
         var queryItems: [URLQueryItem] = []
         if let current = currentWeight {
@@ -158,9 +158,9 @@ struct APIEndpoint {
         }
 
         let path = if let queryString = components.percentEncodedQuery {
-            "nutrition-goal?\(queryString)"
+            "nutrition/goal?\(queryString)"
         } else {
-            "nutrition-goal"
+            "nutrition/goal"
         }
 
         return APIEndpoint(
@@ -171,7 +171,7 @@ struct APIEndpoint {
     }
 
     static let setNutritionGoal = APIEndpoint(
-        path: "nutrition-goal",
+        path: "nutrition/goal",
         method: .put,
         requiresAuth: true
     )

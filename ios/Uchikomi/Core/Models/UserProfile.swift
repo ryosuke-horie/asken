@@ -84,14 +84,14 @@ enum RecommendedCaloriesCalculator {
         age: Int,
         activityLevel: ActivityLevel
     ) -> Double {
-        // 基礎代謝（BMR）
+        // 基礎代謝（BMR）- 改訂Harris-Benedict式
         let bmr = switch gender {
         case .male:
-            // 男性: 13.397 × 体重(kg) + 4.799 × 身長 - 年齢 × 0.694 - 55
-            13.397 * weightKg + 4.799 * heightCm - Double(age) * 0.694 - 55
+            // 男性: 88.362 + 13.397 × 体重(kg) + 4.799 × 身長(cm) - 5.677 × 年齢
+            88.362 + 13.397 * weightKg + 4.799 * heightCm - 5.677 * Double(age)
         case .female:
-            // 女性: 9.247 × 体重(kg) + 3.098 × 身長 - 年齢 × 0.428 - 161
-            9.247 * weightKg + 3.098 * heightCm - Double(age) * 0.428 - 161
+            // 女性: 447.593 + 9.247 × 体重(kg) + 3.098 × 身長(cm) - 4.330 × 年齢
+            447.593 + 9.247 * weightKg + 3.098 * heightCm - 4.330 * Double(age)
         }
 
         // 活動レベルで補正
