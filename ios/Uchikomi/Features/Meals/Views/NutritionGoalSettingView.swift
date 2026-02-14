@@ -76,6 +76,14 @@ struct NutritionGoalSettingView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundStyle(.red)
+                            .font(.caption)
+                    }
+                }
+
                 // ユーザー属性入力（推奨値計算用）
                 Section {
                     Button {
@@ -249,13 +257,6 @@ struct NutritionGoalSettingView: View {
                     }
                 }
 
-                if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundStyle(.red)
-                            .font(.caption)
-                    }
-                }
             }
             .navigationTitle("栄養目標の設定")
             .navigationBarTitleDisplayMode(.inline)
@@ -341,10 +342,7 @@ extension NutritionGoalSettingView {
         recommendedCalories = recommended
 
         logger.debug(
-            "推奨カロリー計算: gender=\(selectedGender.displayName), " +
-                "weight=\(weightForCalculation)kg, height=\(height)cm, " +
-                "age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) " +
-                "-> \(Int(recommended))kcal"
+            "推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal"
         )
     }
 }

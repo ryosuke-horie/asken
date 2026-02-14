@@ -10,15 +10,6 @@ struct NutritionGoal: Codable {
     let phase: NutritionPhase
     let updatedAt: String
 
-    enum CodingKeys: String, CodingKey {
-        case targetCalories = "target_calories"
-        case targetProtein = "target_protein"
-        case targetFat = "target_fat"
-        case targetCarbohydrates = "target_carbohydrates"
-        case phase
-        case updatedAt = "updated_at"
-    }
-
     /// NutritionSummaryCardとの互換性のためのエイリアス
     var calories: Double {
         targetCalories
@@ -99,10 +90,6 @@ enum NutritionPhase: String, Codable {
 
 struct SetNutritionGoalRequest: Encodable {
     let targetCalories: Double
-
-    enum CodingKeys: String, CodingKey {
-        case targetCalories = "target_calories"
-    }
 }
 
 // MARK: - NutritionGoalCalculator
