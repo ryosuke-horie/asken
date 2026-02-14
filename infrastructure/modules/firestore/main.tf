@@ -3,16 +3,16 @@
 # =============================================================================
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = "~> 1.10"
 
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "5.45.2"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 5.0"
+      version = "5.45.2"
     }
   }
 }
