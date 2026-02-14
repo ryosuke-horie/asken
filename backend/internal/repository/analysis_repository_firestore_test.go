@@ -257,13 +257,13 @@ func TestGetPendingRequests(t *testing.T) {
 		_, err = repo.CreateRequest(ctx, "/test2.jpg", "lunch", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		// 少し待機（Firestoreの書き込み反映）
-		time.Sleep(100 * time.Millisecond)
-
-		// pendingリクエストを取得
-		requests, err := repo.GetPendingRequests(ctx, 10)
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, len(requests), 2)
+		// Firestoreの書き込み反映をポーリングで待機
+		var requests []AnalysisRequest
+		require.Eventually(t, func() bool {
+			var err error
+			requests, err = repo.GetPendingRequests(ctx, 10)
+			return err == nil && len(requests) >= 2
+		}, 5*time.Second, 100*time.Millisecond)
 
 		for _, req := range requests {
 			assert.Equal(t, StatusPending, req.Status)
@@ -299,14 +299,14 @@ func TestGetHistoryListAndDetail(t *testing.T) {
 		err = repo.SaveResult(ctx, id, result)
 		require.NoError(t, err)
 
-		// 少し待機
-		time.Sleep(100 * time.Millisecond)
-
-		// 履歴一覧を取得（userIDでスコープ）
-		items, total, err := repo.GetHistoryList(ctx, userID, 1, 10)
-		require.NoError(t, err)
-		assert.GreaterOrEqual(t, total, 1)
-		assert.GreaterOrEqual(t, len(items), 1)
+		// Firestoreの書き込み反映をポーリングで待機
+		var items []HistoryItem
+		var total int
+		require.Eventually(t, func() bool {
+			var err error
+			items, total, err = repo.GetHistoryList(ctx, userID, 1, 10)
+			return err == nil && total >= 1 && len(items) >= 1
+		}, 5*time.Second, 100*time.Millisecond)
 
 		// 履歴詳細を取得（userIDでスコープ）
 		detail, err := repo.GetHistoryDetail(ctx, userID, id)
@@ -420,15 +420,16 @@ func TestGetDailyMeals(t *testing.T) {
 		err = repo.SaveResult(ctx, id, result)
 		require.NoError(t, err)
 
-		// 少し待機
-		time.Sleep(100 * time.Millisecond)
+		// Firestoreの書き込み反映をポーリングで待機
+		var meals map[string][]HistoryDetail
+		var dailyTotal DailyTotal
+		require.Eventually(t, func() bool {
+			var err error
+			meals, dailyTotal, err = repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
+			return err == nil && len(meals["breakfast"]) >= 1
+		}, 5*time.Second, 100*time.Millisecond)
 
-		// 日次データを取得（userIDでスコープ）
-		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
-		require.NoError(t, err)
-
-		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
-		assert.Equal(t, 300.0, total.TotalCalories)
+		assert.Equal(t, 300.0, dailyTotal.TotalCalories)
 	})
 }
 
@@ -448,14 +449,16 @@ func TestCreateSkippedMeal(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, uuid.Nil, id)
 
-		// 少し待機
-		time.Sleep(100 * time.Millisecond)
+		// Firestoreの書き込み反映をポーリングで待機
+		var meals map[string][]HistoryDetail
+		var skipTotal DailyTotal
+		require.Eventually(t, func() bool {
+			var err error
+			meals, skipTotal, err = repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
+			return err == nil && len(meals["breakfast"]) >= 1
+		}, 5*time.Second, 100*time.Millisecond)
 
-		// 日次データで確認（userIDでスコープ）
-		meals, total, err := repo.GetDailyMeals(ctx, userID, "2024-01-15", "UTC")
-		require.NoError(t, err)
-		assert.Equal(t, 0.0, total.TotalCalories)
-		assert.GreaterOrEqual(t, len(meals["breakfast"]), 1)
+		assert.Equal(t, 0.0, skipTotal.TotalCalories)
 	})
 
 	t.Run("正常系: スキップ記録は既存記録を置き換える", func(t *testing.T) {
@@ -475,12 +478,11 @@ func TestCreateSkippedMeal(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEqual(t, id1, id2)
 
-		// 少し待機
-		time.Sleep(100 * time.Millisecond)
-
-		// 元の記録は削除されている（userIDでスコープ）
-		_, err = repo.GetRequest(ctx, userID, id1)
-		assert.Error(t, err)
+		// Firestoreの書き込み反映をポーリングで待機
+		require.Eventually(t, func() bool {
+			_, err := repo.GetRequest(ctx, userID, id1)
+			return err != nil
+		}, 5*time.Second, 100*time.Millisecond)
 	})
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // MockFoodService はテスト用のモックFoodService
@@ -306,15 +307,12 @@ func TestWorkerStart_StopsOnContextCancel(t *testing.T) {
 	// ワーカーを別ゴルーチンで起動
 	go worker.Start(ctx)
 
-	// 少し待機してから停止
-	time.Sleep(250 * time.Millisecond)
+	// 少なくとも1回はポーリングされることをポーリングで待機
+	require.Eventually(t, func() bool {
+		return callCount >= 1
+	}, 5*time.Second, 50*time.Millisecond)
+
 	cancel()
-
-	// 停止後、少し待機
-	time.Sleep(100 * time.Millisecond)
-
-	// 少なくとも1回は呼ばれているはず（100msごとにポーリング）
-	assert.GreaterOrEqual(t, callCount, 1)
 }
 
 func TestProcessRequest_TextInput_Success(t *testing.T) {
