@@ -17,6 +17,7 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 )
 
 // FoodService は食品分析サービスのインターフェース
@@ -112,7 +113,7 @@ func (h *AnalyzeHandler) handleTextInput(w http.ResponseWriter, r *http.Request)
 		userIDPtr = &userID
 	}
 
-	log.Printf("Text input: %s, Meal type: %s, Meal date: %s, UserID: %v", truncateForLog(req.InputText, 50), req.MealType, req.MealDate, userID)
+	log.Printf("Text input: %s, Meal type: %s, Meal date: %s, UserID: %v", util.TruncateForLog(req.InputText, 50), req.MealType, req.MealDate, userID)
 
 	// リポジトリにテキスト分析リクエストを登録
 	analysisID, err := h.repository.CreateRequestWithText(r.Context(), req.InputText, req.MealType, req.MealDate, userIDPtr)
@@ -348,16 +349,6 @@ func getContentType(header *multipart.FileHeader) string {
 	default:
 		return "application/octet-stream"
 	}
-}
-
-// truncateForLog はログ出力用にテキストをトランケートする。
-// ユーザー入力がログに直接出力されることを防ぐ。
-func truncateForLog(s string, maxRunes int) string {
-	runes := []rune(s)
-	if len(runes) > maxRunes {
-		return string(runes[:maxRunes]) + "..."
-	}
-	return s
 }
 
 // validMealTypes は有効な食事タイプの集合（パッケージ初期化時に一度だけ作成）
