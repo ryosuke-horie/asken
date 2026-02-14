@@ -139,6 +139,43 @@ struct APIEndpoint {
         requiresAuth: true
     )
 
+    // MARK: - Nutrition Goal Endpoints
+
+    static func getNutritionGoal(currentWeight: Double?, goalWeight: Double?) -> APIEndpoint {
+        var components = URLComponents()
+        components.path = "nutrition/goal"
+
+        var queryItems: [URLQueryItem] = []
+        if let current = currentWeight {
+            queryItems.append(URLQueryItem(name: "current_weight", value: String(format: "%.1f", current)))
+        }
+        if let goal = goalWeight {
+            queryItems.append(URLQueryItem(name: "target_weight", value: String(format: "%.1f", goal)))
+        }
+
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+
+        let path = if let queryString = components.percentEncodedQuery {
+            "nutrition/goal?\(queryString)"
+        } else {
+            "nutrition/goal"
+        }
+
+        return APIEndpoint(
+            path: path,
+            method: .get,
+            requiresAuth: true
+        )
+    }
+
+    static let setNutritionGoal = APIEndpoint(
+        path: "nutrition/goal",
+        method: .put,
+        requiresAuth: true
+    )
+
     // MARK: - MyMenu Endpoints
 
     static let myMenuList = APIEndpoint(

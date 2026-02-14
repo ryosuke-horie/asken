@@ -12,6 +12,7 @@ struct SettingsView: View {
             List {
                 if let viewModel {
                     accountSection(viewModel: viewModel)
+                    nutritionSection
                     notificationSection
                     logoutSection(viewModel: viewModel)
                 }
@@ -51,6 +52,14 @@ struct SettingsView: View {
         Section {
             NavigationLink("通知設定") {
                 NotificationSettingsView()
+            }
+        }
+    }
+
+    private var nutritionSection: some View {
+        Section {
+            NavigationLink("栄養目標設定") {
+                NutritionGoalSettingView()
             }
         }
     }

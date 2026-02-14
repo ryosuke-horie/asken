@@ -50,17 +50,18 @@ func main() {
 }
 
 type handlers struct {
-	health        *handler.HealthHandler
-	analyze       *handler.AnalyzeHandler
-	status        *handler.StatusHandler
-	history       *handler.HistoryHandler
-	historyDelete *handler.HistoryDeleteHandler
-	image         *handler.ImageHandler
-	dailyMeals    *handler.DailyMealsHandler
-	skipMeal      *handler.SkipMealHandler
-	weightRecord  *handler.WeightRecordHandler
-	weightGoal    *handler.WeightGoalHandler
-	myMenu        *handler.MyMenuHandler
+	health          *handler.HealthHandler
+	analyze         *handler.AnalyzeHandler
+	status          *handler.StatusHandler
+	history         *handler.HistoryHandler
+	historyDelete   *handler.HistoryDeleteHandler
+	image           *handler.ImageHandler
+	dailyMeals      *handler.DailyMealsHandler
+	skipMeal        *handler.SkipMealHandler
+	weightRecord    *handler.WeightRecordHandler
+	weightGoal      *handler.WeightGoalHandler
+	nutritionGoal   *handler.NutritionGoalHandler
+	myMenu          *handler.MyMenuHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -75,6 +76,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupHistoryRoutes(mux, h, authMiddleware, rl)
 	setupMealsRoutes(mux, h, authMiddleware, rl)
 	setupWeightRoutes(mux, h, authMiddleware, rl)
+	setupNutritionRoutes(mux, h, authMiddleware, rl)
 	setupMyMenuRoutes(mux, h, authMiddleware, rl)
 }
 
@@ -175,6 +177,20 @@ func setupWeightRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/weight/goal", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(weightGoalRouteHandler))))
 }
 
+func setupNutritionRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	nutritionGoalRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.nutritionGoal.HandleGet(w, r)
+		case http.MethodPut:
+			h.nutritionGoal.HandleSet(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/nutrition/goal", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(nutritionGoalRouteHandler))))
+}
+
 func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	myMenuListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -251,6 +267,11 @@ func run() error {
 		log.Fatalf("Failed to initialize WeightRepositories: %v", err)
 	}
 
+	nutritionGoalRepo, err := repository.NewNutritionGoalRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize NutritionGoalRepository: %v", err)
+	}
+
 	myMenuRepo, err := repository.NewMyMenuRepository(firestoreClient)
 	if err != nil {
 		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
@@ -294,17 +315,18 @@ func run() error {
 
 	// ハンドラーの初期化
 	h := handlers{
-		health:        handler.NewHealthHandler(),
-		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
-		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo, geminiClient),
-		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
-		image:         handler.NewImageHandler(storageRepo),
-		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
-		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
-		weightRecord:  handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
-		weightGoal:    handler.NewWeightGoalHandler(weightGoalRepo),
-		myMenu:        handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
+		health:          handler.NewHealthHandler(),
+		analyze:         handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
+		status:          handler.NewStatusHandler(analysisRepo),
+		history:         handler.NewHistoryHandler(analysisRepo, geminiClient),
+		historyDelete:   handler.NewHistoryDeleteHandler(analysisRepo),
+		image:           handler.NewImageHandler(storageRepo),
+		dailyMeals:      handler.NewDailyMealsHandler(analysisRepo),
+		skipMeal:        handler.NewSkipMealHandler(analysisRepo),
+		weightRecord:    handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
+		weightGoal:      handler.NewWeightGoalHandler(weightGoalRepo),
+		nutritionGoal:   handler.NewNutritionGoalHandler(nutritionGoalRepo, weightGoalRepo),
+		myMenu:          handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
 	}
 
 	// ワーカーの初期化

@@ -8,6 +8,8 @@ struct NutritionSummaryCard: View {
     let fat: Double
     let carbohydrates: Double
 
+    var goal: NutritionGoal?
+
     var body: some View {
         VStack(spacing: 12) {
             // Calories (main)
@@ -25,30 +27,57 @@ struct NutritionSummaryCard: View {
                     .opacity(0.5)
             }
 
+            // カロリープログレスバー（目標がある場合）
+            if let goal {
+                CalorieProgressView(current: calories, goal: goal.calories)
+            }
+
             Divider()
 
-            // Macros
-            HStack(spacing: 16) {
-                MacroItem(
-                    name: "たんぱく質",
-                    value: protein,
-                    unit: "g",
-                    color: .red
-                )
+            // PFC円グラフとプログレスバー
+            if let goal {
+                VStack(spacing: 16) {
+                    // 円グラフ
+                    PFCPieChart(
+                        protein: protein,
+                        fat: fat,
+                        carbohydrates: carbohydrates
+                    )
 
-                MacroItem(
-                    name: "脂質",
-                    value: fat,
-                    unit: "g",
-                    color: .yellow
-                )
+                    // PFCプログレスバー
+                    PFCProgressRow(
+                        currentProtein: protein,
+                        currentFat: fat,
+                        currentCarbs: carbohydrates,
+                        goalProtein: goal.protein,
+                        goalFat: goal.fat,
+                        goalCarbs: goal.carbohydrates
+                    )
+                }
+            } else {
+                // 目標がない場合は従来の表示
+                HStack(spacing: 16) {
+                    MacroItem(
+                        name: "たんぱく質",
+                        value: protein,
+                        unit: "g",
+                        color: .red
+                    )
 
-                MacroItem(
-                    name: "炭水化物",
-                    value: carbohydrates,
-                    unit: "g",
-                    color: .blue
-                )
+                    MacroItem(
+                        name: "脂質",
+                        value: fat,
+                        unit: "g",
+                        color: .yellow
+                    )
+
+                    MacroItem(
+                        name: "炭水化物",
+                        value: carbohydrates,
+                        unit: "g",
+                        color: .blue
+                    )
+                }
             }
         }
         .padding()
@@ -92,12 +121,29 @@ private struct MacroItem: View {
     }
 }
 
-#Preview {
+#Preview("目標なし") {
     NutritionSummaryCard(
         calories: 650,
         protein: 25.5,
         fat: 22.3,
         carbohydrates: 78.0
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("目標あり") {
+    NutritionSummaryCard(
+        calories: 1_450,
+        protein: 85.5,
+        fat: 52.3,
+        carbohydrates: 178.0,
+        goal: NutritionGoal(
+            calories: 2_000,
+            protein: 100,
+            fat: 60,
+            carbohydrates: 250
+        )
     )
     .padding()
     .background(Color(.systemGroupedBackground))
