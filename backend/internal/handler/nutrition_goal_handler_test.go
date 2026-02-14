@@ -18,11 +18,11 @@ import (
 
 // MockNutritionGoalRepository はNutritionGoalRepository用テストモック
 type MockNutritionGoalRepository struct {
-	GetGoalFunc func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error)
+	GetGoalFunc func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error)
 	SetGoalFunc func(ctx context.Context, userID string, targetCalories float64) (*repository.NutritionGoal, error)
 }
 
-func (m *MockNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+func (m *MockNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 	if m.GetGoalFunc != nil {
 		return m.GetGoalFunc(ctx, userID, currentWeightKg, targetWeightKg)
 	}
@@ -45,7 +45,7 @@ func TestNutritionGoalHandler_HandleGet_WithGoal(t *testing.T) {
 	now := time.Now()
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 			assert.Equal(t, testUserID, userID)
 			return &repository.NutritionGoal{
 				TargetCalories:      2000.0,
@@ -83,7 +83,7 @@ func TestNutritionGoalHandler_HandleGet_NoGoal(t *testing.T) {
 	testUserID := "test-user-123"
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 			return nil, nil
 		},
 	}
@@ -124,10 +124,11 @@ func TestNutritionGoalHandler_HandleGet_WithCurrentWeight(t *testing.T) {
 	now := time.Now()
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 			require.NotNil(t, currentWeightKg, "currentWeightKgはnilでないべき")
 			assert.Equal(t, 75.0, *currentWeightKg)
-			assert.Equal(t, 65.0, targetWeightKg)
+			require.NotNil(t, targetWeightKg, "targetWeightKgはnilでないべき")
+			assert.Equal(t, 65.0, *targetWeightKg)
 			return &repository.NutritionGoal{
 				TargetCalories:      2000.0,
 				TargetProtein:       150.0,
@@ -163,7 +164,7 @@ func TestNutritionGoalHandler_HandleGet_WithoutCurrentWeight(t *testing.T) {
 	now := time.Now()
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 			assert.Nil(t, currentWeightKg, "currentWeightKgはnilであるべき")
 			return &repository.NutritionGoal{
 				TargetCalories:      2000.0,
@@ -209,7 +210,7 @@ func TestNutritionGoalHandler_HandleGet_RepositoryError(t *testing.T) {
 	testUserID := "test-user-123"
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
 			return nil, fmt.Errorf("database error")
 		},
 	}
@@ -232,8 +233,9 @@ func TestNutritionGoalHandler_HandleGet_WeightGoalFallback(t *testing.T) {
 	now := time.Now()
 
 	nutritionRepo := &MockNutritionGoalRepository{
-		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*repository.NutritionGoal, error) {
-			assert.Equal(t, 65.0, targetWeightKg, "体重目標リポジトリから取得した値が使用されるべき")
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
+			require.NotNil(t, targetWeightKg, "targetWeightKgはnilでないべき")
+			assert.Equal(t, 65.0, *targetWeightKg, "体重目標リポジトリから取得した値が使用されるべき")
 			return &repository.NutritionGoal{
 				TargetCalories:      2000.0,
 				TargetProtein:       100.0,

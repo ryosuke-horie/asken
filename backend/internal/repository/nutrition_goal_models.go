@@ -92,7 +92,7 @@ type NutritionGoal struct {
 type NutritionGoalRepository interface {
 	// GetGoal は栄養目標を取得します
 	// 目標が未設定の場合は (nil, nil) を返します
-	GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*NutritionGoal, error)
+	GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*NutritionGoal, error)
 
 	// SetGoal は目標カロリーを設定・更新します
 	// PFC値は現在体重と目標体重から自動計算されます
@@ -121,12 +121,12 @@ func CalculateNutritionGoal(targetCalories float64, phase NutritionPhase) *Nutri
 }
 
 // DeterminePhase は現在体重と目標体重からフェーズを判定します
-// currentWeightKg が nil の場合は維持期を返します
-func DeterminePhase(currentWeightKg *float64, targetWeightKg float64) NutritionPhase {
-	if currentWeightKg == nil {
+// currentWeightKg または targetWeightKg が nil の場合は維持期を返します
+func DeterminePhase(currentWeightKg *float64, targetWeightKg *float64) NutritionPhase {
+	if currentWeightKg == nil || targetWeightKg == nil {
 		return NutritionPhaseMaintenance
 	}
-	diff := *currentWeightKg - targetWeightKg
+	diff := *currentWeightKg - *targetWeightKg
 	// 1kg以上の差分があれば減量期または増量期と判定
 	if diff > 1.0 {
 		return NutritionPhaseWeightLoss

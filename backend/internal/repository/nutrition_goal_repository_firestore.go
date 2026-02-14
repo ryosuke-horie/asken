@@ -34,7 +34,7 @@ func (r *firestoreNutritionGoalRepository) getUserNutritionGoalDoc(userID string
 	return r.client.Collection("users").Doc(userID).Collection("nutritionGoal").Doc("current")
 }
 
-func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*NutritionGoal, error) {
+func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*NutritionGoal, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
 	}

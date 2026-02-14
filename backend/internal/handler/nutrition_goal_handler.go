@@ -106,12 +106,7 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	var targetWeightValue float64
-	if targetWeight != nil {
-		targetWeightValue = *targetWeight
-	}
-
-	goal, getGoalErr := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeightValue)
+	goal, getGoalErr := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeight)
 	if getGoalErr != nil {
 		log.Printf("Error getting nutrition goal: userID=%s, error=%v", userID, getGoalErr)
 		http.Error(w, "栄養目標の取得に失敗しました", http.StatusInternalServerError)
