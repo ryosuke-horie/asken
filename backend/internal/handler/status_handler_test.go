@@ -185,6 +185,80 @@ func TestStatusHandler_Failed(t *testing.T) {
 	assert.Equal(t, "Gemini API タイムアウト", response["error"])
 }
 
+func TestStatusHandler_Completed_GetResultError(t *testing.T) {
+	requestID := uuid.New()
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			return &repository.AnalysisRequest{
+				ID:        requestID,
+				Status:    repository.StatusCompleted,
+				ImagePath: "/uploads/test.jpg",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}, nil
+		},
+		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	handler := NewStatusHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestStatusHandler_UnknownStatus(t *testing.T) {
+	requestID := uuid.New()
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{
+		GetRequestFunc: func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error) {
+			return &repository.AnalysisRequest{
+				ID:        requestID,
+				Status:    repository.AnalysisStatus("unknown"),
+				ImagePath: "/uploads/test.jpg",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}, nil
+		},
+	}
+
+	handler := NewStatusHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/analyze/"+requestID.String(), nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestStatusHandler_InvalidURLPath(t *testing.T) {
+	testUserID := "test-user-123"
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewStatusHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/analyze", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestStatusHandler_NotFound(t *testing.T) {
 	requestID := uuid.New()
 	testUserID := "test-user-123"

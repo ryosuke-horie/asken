@@ -51,6 +51,23 @@ func TestSkipMealHandler_Handle_Success(t *testing.T) {
 	assert.Equal(t, expectedID.String(), response.ID)
 }
 
+func TestSkipMealHandler_Handle_MalformedJSON(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewSkipMealHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/meals/skip", bytes.NewReader([]byte("{invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+
+	userID := "test-firebase-uid"
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), userID)
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestSkipMealHandler_Handle_MissingMealType(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewSkipMealHandler(mockRepo)
