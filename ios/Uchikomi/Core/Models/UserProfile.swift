@@ -1,21 +1,5 @@
 import Foundation
 
-// MARK: - UserProfile
-
-struct UserProfile: Codable, Equatable {
-    let gender: Gender
-    let birthDate: Date
-    let heightCm: Double
-    let activityLevel: ActivityLevel
-
-    enum CodingKeys: String, CodingKey {
-        case gender
-        case birthDate
-        case heightCm = "height_cm"
-        case activityLevel
-    }
-}
-
 // MARK: - Gender
 
 enum Gender: String, Codable, CaseIterable {
@@ -33,7 +17,7 @@ enum Gender: String, Codable, CaseIterable {
 // MARK: - ActivityLevel
 
 enum ActivityLevel: String, Codable, CaseIterable {
-    case sedentary // 座業的（ほと運動しない）
+    case sedentary // 座業的（ほとんど運動しない）
     case lightlyActive // 軽い活動（軽い運動週1-3日）
     case moderatelyActive // 中程度活動（中等度の運動週3-5日）
     case veryActive // 高活動（激しい運動週6-7日）
@@ -41,7 +25,7 @@ enum ActivityLevel: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .sedentary: "ほと運動しない"
+        case .sedentary: "ほとんど運動しない"
         case .lightlyActive: "軽い運動（週1-3日）"
         case .moderatelyActive: "中程度の運動（週3-5日）"
         case .veryActive: "激しい運動（週6-7日）"
@@ -60,17 +44,6 @@ enum ActivityLevel: String, Codable, CaseIterable {
         }
     }
 
-    /// 選手層向けのプリセットカロリーを返す
-    var athletePresetCalories: [Double]? {
-        switch self {
-        case .athlete:
-            [3_000.0, 3_500.0, 4_000.0, 4_500.0]
-        case .veryActive:
-            [2_500.0, 3_000.0, 3_500.0, 4_000.0]
-        default:
-            nil
-        }
-    }
 }
 
 // MARK: - RecommendedCaloriesCalculator
@@ -98,11 +71,4 @@ enum RecommendedCaloriesCalculator {
         return bmr * activityLevel.activityMultiplier
     }
 
-    /// 年齢を計算
-    static func calculateAge(from birthDate: Date) -> Int {
-        let calendar = Calendar.current
-        let now = Date()
-        let ageComponents = calendar.dateComponents([.year], from: birthDate, to: now)
-        return ageComponents.year ?? 0
-    }
 }

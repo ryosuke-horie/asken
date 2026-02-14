@@ -8,23 +8,32 @@ struct PFCPieChart: View {
     let fat: Double
     let carbohydrates: Double
 
-    private var total: Double {
+    // カロリー換算: たんぱく質1g=4kcal, 脂質1g=9kcal, 炭水化物1g=4kcal
+    private var proteinCalories: Double { protein * 4 }
+    private var fatCalories: Double { fat * 9 }
+    private var carbsCalories: Double { carbohydrates * 4 }
+
+    private var totalCalories: Double {
+        proteinCalories + fatCalories + carbsCalories
+    }
+
+    private var totalGrams: Double {
         protein + fat + carbohydrates
     }
 
     private var proteinRatio: Double {
-        guard total > 0 else { return 0 }
-        return protein / total
+        guard totalCalories > 0 else { return 0 }
+        return proteinCalories / totalCalories
     }
 
     private var fatRatio: Double {
-        guard total > 0 else { return 0 }
-        return fat / total
+        guard totalCalories > 0 else { return 0 }
+        return fatCalories / totalCalories
     }
 
     private var carbsRatio: Double {
-        guard total > 0 else { return 0 }
-        return carbohydrates / total
+        guard totalCalories > 0 else { return 0 }
+        return carbsCalories / totalCalories
     }
 
     var body: some View {
@@ -58,9 +67,8 @@ struct PFCPieChart: View {
                 }
                 .frame(width: 120, height: 120)
 
-                // 中心のテキスト（全カロリーまたは合計g）
                 VStack(spacing: 2) {
-                    Text("\(Int(total))")
+                    Text("\(Int(totalGrams))")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundStyle(.primary)

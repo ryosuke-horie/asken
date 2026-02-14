@@ -290,7 +290,10 @@ extension NutritionGoalSettingView {
     }
 
     func save() async {
-        guard let calories = Double(targetCaloriesText) else { return }
+        guard let calories = Double(targetCaloriesText) else {
+            errorMessage = "有効なカロリー値を入力してください"
+            return
+        }
 
         isSaving = true
         errorMessage = nil
