@@ -315,37 +315,6 @@ func TestHTTPClient_Execute_Integration(t *testing.T) {
 	})
 }
 
-func TestRemoveCodeBlock_HTTPClient(t *testing.T) {
-	testCases := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "JSONコードブロック",
-			input:    "```json\n[{\"name\":\"test\"}]\n```",
-			expected: `[{"name":"test"}]`,
-		},
-		{
-			name:     "コードブロックなし",
-			input:    `[{"name":"test"}]`,
-			expected: `[{"name":"test"}]`,
-		},
-		{
-			name:     "大文字JSON",
-			input:    "```JSON\n[{\"name\":\"test\"}]\n```",
-			expected: `[{"name":"test"}]`,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := removeCodeBlock(tc.input)
-			assert.Equal(t, tc.expected, result)
-		})
-	}
-}
-
 func TestHTTPClient_Execute_ErrorCases(t *testing.T) {
 	t.Run("不正なJSONレスポンスでエラーを返す", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
