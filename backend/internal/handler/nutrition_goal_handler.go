@@ -51,7 +51,7 @@ type NutritionGoalNullableResponse struct {
 	Goal *NutritionGoalResponse `json:"goal"`
 }
 
-// HandleGet はGET /api/nutrition-goalリクエストを処理
+// HandleGet はGET /api/nutrition/goalリクエストを処理
 func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
@@ -60,24 +60,25 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 	}
 
 	// クエリパラメータから現在体重と目標体重を取得
-	currentWeightStr := r.URL.Query().Get("current_weight")
 	targetWeightStr := r.URL.Query().Get("target_weight")
 
-	var currentWeight, targetWeight float64
-	var err error
-
-	if currentWeightStr != "" {
-		currentWeight, err = strconv.ParseFloat(currentWeightStr, 64)
+	var currentWeight *float64
+	if currentWeightStr := r.URL.Query().Get("current_weight"); currentWeightStr != "" {
+		parsed, err := strconv.ParseFloat(currentWeightStr, 64)
 		if err != nil {
 			http.Error(w, "current_weightのパースに失敗しました", http.StatusBadRequest)
 			return
 		}
 		// 範囲チェック
-		if err := repository.ValidateWeightKg(currentWeight); err != nil {
+		if err := repository.ValidateWeightKg(parsed); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		currentWeight = &parsed
 	}
+
+	var targetWeight float64
+	var err error
 
 	if targetWeightStr != "" {
 		targetWeight, err = strconv.ParseFloat(targetWeightStr, 64)
@@ -131,7 +132,7 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// HandleSet はPUT /api/nutrition-goalリクエストを処理
+// HandleSet はPUT /api/nutrition/goalリクエストを処理
 func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
