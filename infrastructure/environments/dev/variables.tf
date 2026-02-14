@@ -75,6 +75,7 @@ variable "google_oauth_client_id" {
   description = "Google OAuth Client ID（手動作成が必要）"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 variable "google_oauth_client_secret" {
