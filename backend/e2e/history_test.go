@@ -87,7 +87,7 @@ func TestHistory_List_Unauthorized(t *testing.T) {
 
 // TestHistory_Detail_Success は認証済みで履歴詳細取得が成功することを確認する
 func TestHistory_Detail_Success(t *testing.T) {
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
@@ -130,7 +130,7 @@ func TestHistory_Detail_NotFound(t *testing.T) {
 
 // TestHistory_Update_Success は認証済みで履歴更新が成功することを確認する
 func TestHistory_Update_Success(t *testing.T) {
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
@@ -228,7 +228,8 @@ func TestHistory_Update_Unauthorized(t *testing.T) {
 
 // TestHistory_Update_InvalidRequest_EmptyFoods は空のfoods配列で400が返ることを確認する
 func TestHistory_Update_InvalidRequest_EmptyFoods(t *testing.T) {
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	waitForGeminiRateLimit()
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
@@ -248,7 +249,7 @@ func TestHistory_Update_InvalidRequest_EmptyFoods(t *testing.T) {
 // TestHistory_Update_InvalidRequest_NegativeCalories は負のカロリー値で400が返ることを確認する
 func TestHistory_Update_InvalidRequest_NegativeCalories(t *testing.T) {
 	waitForGeminiRateLimit()
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
@@ -277,7 +278,7 @@ func TestHistory_Update_InvalidRequest_NegativeCalories(t *testing.T) {
 // TestHistory_Update_InvalidRequest_EmptyName は空の食品名で400が返ることを確認する
 func TestHistory_Update_InvalidRequest_EmptyName(t *testing.T) {
 	waitForGeminiRateLimit()
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
@@ -305,7 +306,7 @@ func TestHistory_Update_InvalidRequest_EmptyName(t *testing.T) {
 
 // TestHistory_Delete_Success は認証済みで履歴削除が成功することを確認する
 func TestHistory_Delete_Success(t *testing.T) {
-	client, ctx := authenticatedClient(t, 30*time.Second)
+	client, ctx := authenticatedClient(t, 60*time.Second)
 
 	// テストデータを作成（analyze API経由）
 	waitForGeminiRateLimit()
