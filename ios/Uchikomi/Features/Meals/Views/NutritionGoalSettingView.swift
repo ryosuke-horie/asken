@@ -248,7 +248,6 @@ struct NutritionGoalSettingView: View {
                         )
                     }
                 }
-
             }
             .navigationTitle("栄養目標の設定")
             .navigationBarTitleDisplayMode(.inline)
@@ -332,7 +331,12 @@ private extension NutritionGoalSettingView {
         recommendedCalories = recommended
 
         logger.debug(
-            "推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weight)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal"
+            """
+            推奨カロリー計算: gender=\(selectedGender.displayName), \
+            weight=\(weight)kg, height=\(height)cm, \
+            age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) \
+            -> \(Int(recommended))kcal
+            """
         )
     }
 }
