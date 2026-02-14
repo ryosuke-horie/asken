@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "MealsViewModel")
 
 @Observable
 final class MealsViewModel {
@@ -76,7 +79,7 @@ final class MealsViewModel {
             goalWeight = weightResponse.goal?.targetWeightKg
         } catch {
             // 体重取得に失敗した場合はnilを使用（フェーズは維持期になる）
-            // ログは出力できるが、ユーザーへの表示は不要
+            logger.warning("体重データ取得に失敗（維持期にフォールバック）: \(error.localizedDescription)")
             currentWeight = nil
             goalWeight = nil
         }
@@ -88,6 +91,7 @@ final class MealsViewModel {
             )
         } catch {
             // 栄養目標取得に失敗した場合はnilを使用（目標なし表示になる）
+            logger.warning("栄養目標取得に失敗（目標なし表示にフォールバック）: \(error.localizedDescription)")
             nutritionGoal = nil
         }
 

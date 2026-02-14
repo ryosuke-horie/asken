@@ -77,24 +77,24 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 		currentWeight = &parsed
 	}
 
-	var targetWeight float64
-	var err error
+	var targetWeight *float64
 
 	if targetWeightStr != "" {
-		targetWeight, err = strconv.ParseFloat(targetWeightStr, 64)
+		parsed, err := strconv.ParseFloat(targetWeightStr, 64)
 		if err != nil {
 			http.Error(w, "target_weightのパースに失敗しました", http.StatusBadRequest)
 			return
 		}
 		// 範囲チェック
-		if err := repository.ValidateWeightKg(targetWeight); err != nil {
+		if err := repository.ValidateWeightKg(parsed); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		targetWeight = &parsed
 	}
 
 	// 目標体重が指定されていない場合はリポジトリから取得
-	if targetWeight == 0 {
+	if targetWeight == nil {
 		weightGoal, err := h.weightGoalRepo.GetGoal(r.Context(), userID)
 		if err != nil {
 			log.Printf("Error getting weight goal: userID=%s, error=%v", userID, err)
@@ -102,13 +102,18 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		if weightGoal != nil {
-			targetWeight = weightGoal.TargetWeightKg
+			targetWeight = &weightGoal.TargetWeightKg
 		}
 	}
 
-	goal, err := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeight)
-	if err != nil {
-		log.Printf("Error getting nutrition goal: userID=%s, error=%v", userID, err)
+	var targetWeightValue float64
+	if targetWeight != nil {
+		targetWeightValue = *targetWeight
+	}
+
+	goal, getGoalErr := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeightValue)
+	if getGoalErr != nil {
+		log.Printf("Error getting nutrition goal: userID=%s, error=%v", userID, getGoalErr)
 		http.Error(w, "栄養目標の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
