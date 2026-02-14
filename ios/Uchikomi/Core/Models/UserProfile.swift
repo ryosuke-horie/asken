@@ -43,7 +43,6 @@ enum ActivityLevel: String, Codable, CaseIterable {
         case .athlete: 1.9
         }
     }
-
 }
 
 // MARK: - RecommendedCaloriesCalculator
@@ -70,5 +69,4 @@ enum RecommendedCaloriesCalculator {
         // 活動レベルで補正
         return bmr * activityLevel.activityMultiplier
     }
-
 }
