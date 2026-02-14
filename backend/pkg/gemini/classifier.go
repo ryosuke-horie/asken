@@ -87,18 +87,21 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 - カレー → 「カレーライス」「キーマカレー」「バターチキンカレー」など
 - 丼物 → 「牛丼」「親子丼」「海鮮丼」など
 
-出力フォーマット:
-[
-  {
-    "name": "料理名",
-    "estimated_amount": "推定量（例: 1人前, 1杯, 1皿）"
-  }
-]
+推定量のルール:
+- quantity_valueは数値で指定してください（例: 1, 2, 150, 200）
+- quantity_unitは以下のいずれかを使用してください:
+  g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒
+- 重量がわかる食材はgを使用してください（例: ご飯 → 200g）
+- 飲み物やスープはmlを使用してください（例: 味噌汁 → 200ml）
+- 料理は適切な助数詞を選択してください（例: ラーメン → 1杯, カレー → 1皿）
 
 カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。`
 
+	// responseSchemaで出力形式を強制
+	schema := FoodItemSchema()
+
 	// Gemini APIを呼び出す（画像付き）
-	response, err := c.httpClient.ExecuteWithImage(ctx, prompt, imageData, mimeType)
+	response, err := c.httpClient.ExecuteWithImage(ctx, prompt, imageData, mimeType, schema)
 	if err != nil {
 		log.Printf("Classifier: Gemini API呼び出しエラー: %v", err)
 		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
@@ -107,11 +110,17 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 	// レスポンス内のJSONコードブロックを抽出（Geminiが```json```で囲んでいる場合）
 	foodListJSON := removeCodeBlock(response.Response)
 
-	// 料理リストをパース
-	var foods []FoodItem
-	if err := json.Unmarshal([]byte(foodListJSON), &foods); err != nil {
+	// スキーマ制約付きレスポンスをパース
+	var items []classifierResponseItem
+	if err := json.Unmarshal([]byte(foodListJSON), &items); err != nil {
 		log.Printf("Classifier: 料理リストのJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("料理リストのパースエラー: %w\nデータ: %s", err, foodListJSON)
+	}
+
+	// FoodItemに変換（quantity_value + quantity_unit → estimated_amount）
+	foods := make([]FoodItem, len(items))
+	for i, item := range items {
+		foods[i] = item.toFoodItem()
 	}
 
 	log.Printf("Classifier: 料理分類完了 (%d品を検出)", len(foods))

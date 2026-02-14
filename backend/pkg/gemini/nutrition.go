@@ -76,22 +76,19 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 食材リスト:
 %s
 
-出力フォーマット:
-[
-  {
-    "name": "食材名",
-    "estimated_amount": "推定量",
-    "calories_kcal": カロリー数値,
-    "protein_g": タンパク質グラム数,
-    "fat_g": 脂質グラム数,
-    "carbohydrates_g": 炭水化物グラム数
-  }
-]
+推定量のルール:
+- quantity_valueは数値で指定してください（入力の推定量をそのまま数値に変換）
+- quantity_unitは以下のいずれかを使用してください:
+  g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒
+- 入力の推定量に含まれる単位をそのまま使用してください
 
 一般的な食品成分表に基づいて、妥当な値を推定してください。`, string(foodListJSON))
 
+	// responseSchemaで出力形式を強制
+	schema := NutritionInfoSchema()
+
 	// Gemini APIを呼び出す
-	response, err := nc.httpClient.Execute(ctx, prompt)
+	response, err := nc.httpClient.Execute(ctx, prompt, schema)
 	if err != nil {
 		log.Printf("NutritionCalculator: Gemini API呼び出しエラー: %v", err)
 		return nil, fmt.Errorf("Gemini API呼び出しエラー: %w", err)
@@ -100,11 +97,17 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 	// レスポンス内のJSONコードブロックを抽出
 	nutritionJSON := removeCodeBlock(response.Response)
 
-	// 栄養素情報をパース
-	var nutritionList []NutritionInfo
-	if err := json.Unmarshal([]byte(nutritionJSON), &nutritionList); err != nil {
+	// スキーマ制約付きレスポンスをパース
+	var items []nutritionResponseItem
+	if err := json.Unmarshal([]byte(nutritionJSON), &items); err != nil {
 		log.Printf("NutritionCalculator: 栄養素情報のJSONパースエラー: %v", err)
 		return nil, fmt.Errorf("栄養素情報のパースエラー: %w\nデータ: %s", err, nutritionJSON)
+	}
+
+	// NutritionInfoに変換（quantity_value + quantity_unit → estimated_amount）
+	nutritionList := make([]NutritionInfo, len(items))
+	for i, item := range items {
+		nutritionList[i] = item.toNutritionInfo()
 	}
 
 	log.Printf("NutritionCalculator: 栄養素計算完了 (%d品)", len(nutritionList))

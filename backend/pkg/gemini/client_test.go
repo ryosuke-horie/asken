@@ -19,7 +19,7 @@ func TestExecuteGeminiAPI_Success(t *testing.T) {
 	// 簡単なプロンプトでテスト
 	prompt := "こんにちは"
 
-	response, err := client.Execute(ctx, prompt)
+	response, err := client.Execute(ctx, prompt, nil)
 
 	require.NoError(t, err)
 	assert.NotNil(t, response)
@@ -37,7 +37,7 @@ func TestExecuteGeminiAPI_Timeout(t *testing.T) {
 	// 時間がかかりそうなプロンプト
 	prompt := "長い応答を生成してください"
 
-	_, err = client.Execute(ctx, prompt)
+	_, err = client.Execute(ctx, prompt, nil)
 
 	// タイムアウトエラーが発生することを確認
 	assert.Error(t, err)
@@ -54,7 +54,7 @@ func TestExecuteGeminiAPI_JSONParse(t *testing.T) {
 	// JSONレスポンスを期待するプロンプト
 	prompt := "こんにちは"
 
-	response, err := client.Execute(ctx, prompt)
+	response, err := client.Execute(ctx, prompt, nil)
 
 	require.NoError(t, err)
 	assert.NotNil(t, response)
@@ -110,7 +110,7 @@ func TestNewClientWithAPIKey(t *testing.T) {
 
 func TestClient_Execute_MockSuccess(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return &Response{Response: `{"result": "success"}`}, nil
 		},
 	}
@@ -118,7 +118,7 @@ func TestClient_Execute_MockSuccess(t *testing.T) {
 	client := NewClientWithHTTPClient(mockHTTPClient)
 	ctx := context.Background()
 
-	resp, err := client.Execute(ctx, "テストプロンプト")
+	resp, err := client.Execute(ctx, "テストプロンプト", nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, `{"result": "success"}`, resp.Response)
@@ -126,7 +126,7 @@ func TestClient_Execute_MockSuccess(t *testing.T) {
 
 func TestClient_Execute_MockError(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteFunc: func(ctx context.Context, prompt string) (*Response, error) {
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -134,14 +134,14 @@ func TestClient_Execute_MockError(t *testing.T) {
 	client := NewClientWithHTTPClient(mockHTTPClient)
 	ctx := context.Background()
 
-	_, err := client.Execute(ctx, "テストプロンプト")
+	_, err := client.Execute(ctx, "テストプロンプト", nil)
 
 	assert.Error(t, err)
 }
 
 func TestClient_ExecuteWithImage_MockSuccess(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
 			return &Response{Response: `[{"name": "テスト料理"}]`}, nil
 		},
 	}

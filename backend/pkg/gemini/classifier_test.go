@@ -122,9 +122,9 @@ func TestClassifyFoods_RelativePath(t *testing.T) {
 
 func TestClassifier_ClassifyFoodsFromData_MockSuccess(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
 			return &Response{
-				Response: `[{"name": "味噌ラーメン", "estimated_amount": "1杯"}]`,
+				Response: `[{"name": "味噌ラーメン", "quantity_value": 1, "quantity_unit": "杯"}]`,
 			}, nil
 		},
 	}
@@ -143,7 +143,7 @@ func TestClassifier_ClassifyFoodsFromData_MockSuccess(t *testing.T) {
 
 func TestClassifier_ClassifyFoodsFromData_MockAPIError(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
 			return nil, assert.AnError
 		},
 	}
@@ -160,7 +160,7 @@ func TestClassifier_ClassifyFoodsFromData_MockAPIError(t *testing.T) {
 
 func TestClassifier_ClassifyFoodsFromData_MockInvalidJSON(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
 			return &Response{Response: `{invalid json}`}, nil
 		},
 	}
@@ -177,8 +177,8 @@ func TestClassifier_ClassifyFoodsFromData_MockInvalidJSON(t *testing.T) {
 
 func TestClassifier_ClassifyFoodsFromData_MockCodeBlock(t *testing.T) {
 	mockHTTPClient := &MockGeminiHTTPClient{
-		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
-			return &Response{Response: "```json\n[{\"name\": \"カレーライス\", \"estimated_amount\": \"1皿\"}]\n```"}, nil
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
+			return &Response{Response: "```json\n[{\"name\": \"カレーライス\", \"quantity_value\": 1, \"quantity_unit\": \"皿\"}]\n```"}, nil
 		},
 	}
 
@@ -191,6 +191,7 @@ func TestClassifier_ClassifyFoodsFromData_MockCodeBlock(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, foods, 1)
 	assert.Equal(t, "カレーライス", foods[0].Name)
+	assert.Equal(t, "1皿", foods[0].EstimatedAmount)
 }
 
 func TestDetectMimeType(t *testing.T) {
