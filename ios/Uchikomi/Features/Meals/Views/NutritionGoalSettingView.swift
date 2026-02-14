@@ -21,7 +21,6 @@ struct NutritionGoalSettingView: View {
 
     // 推奨カロリー計算結果
     @State private var recommendedCalories: Double?
-    @State private var isCalculating = false
 
     let currentGoal: NutritionGoal?
     let currentWeight: Double?
@@ -166,22 +165,15 @@ struct NutritionGoalSettingView: View {
                             Button {
                                 calculateRecommendedCalories()
                             } label: {
-                                HStack {
-                                    if isCalculating {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Text("推奨カロリーを計算")
-                                            .fontWeight(.semibold)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isUserProfileValid ? Color.accentColor : Color(.systemGray5))
-                                .foregroundStyle(.white)
-                                .cornerRadius(10)
+                                Text("推奨カロリーを計算")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(isUserProfileValid ? Color.accentColor : Color(.systemGray5))
+                                    .foregroundStyle(.white)
+                                    .cornerRadius(10)
                             }
-                            .disabled(isCalculating || !isUserProfileValid)
+                            .disabled(!isUserProfileValid)
                         }
                         .padding(.vertical, 8)
                     }
@@ -277,7 +269,7 @@ struct NutritionGoalSettingView: View {
 
 // MARK: - NutritionGoalSettingView Private Methods
 
-extension NutritionGoalSettingView {
+private extension NutritionGoalSettingView {
     var currentPhaseDescription: String {
         switch currentPhase {
         case .weightLoss:
@@ -329,14 +321,9 @@ extension NutritionGoalSettingView {
             return
         }
 
-        let weightForCalculation = weight
-
-        isCalculating = true
-        defer { isCalculating = false }
-
         let recommended = RecommendedCaloriesCalculator.calculate(
             gender: selectedGender,
-            weightKg: weightForCalculation,
+            weightKg: weight,
             heightCm: height,
             age: Int(age),
             activityLevel: selectedActivityLevel
@@ -345,7 +332,7 @@ extension NutritionGoalSettingView {
         recommendedCalories = recommended
 
         logger.debug(
-            "推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weightForCalculation)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal"
+            "推奨カロリー計算: gender=\(selectedGender.displayName), weight=\(weight)kg, height=\(height)cm, age=\(Int(age))歳, activity=\(selectedActivityLevel.displayName) -> \(Int(recommended))kcal"
         )
     }
 }

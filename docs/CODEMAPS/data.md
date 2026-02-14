@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-13
+最終更新: 2026-02-15
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -10,6 +10,7 @@
 users/{userId}/analysisRequests/{requestId}
 users/{userId}/weightRecords/{recordId}
 users/{userId}/weightGoal/current
+users/{userId}/nutritionGoal/current
 users/{userId}/myMenu/{menuId}
 ```
 
@@ -86,6 +87,17 @@ confirmedフィールドの動作:
 |:---|:---|:---|
 | targetWeightKg | number | 目標体重 (kg) |
 | updatedAt | timestamp | 更新日時 |
+
+### nutritionGoal/current
+
+栄養目標（ユーザーごとに1ドキュメント）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| targetCalories | number | 目標カロリー (kcal, 800-5000) |
+| updatedAt | timestamp | 更新日時 |
+
+PFC値（たんぱく質・脂質・炭水化物の目標グラム数）はリクエスト時に現在体重・目標体重から動的に計算される。
 
 ### myMenu/{menuId}
 

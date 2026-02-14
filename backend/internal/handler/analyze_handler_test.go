@@ -619,6 +619,7 @@ func TestAnalyzeHandler_HandleUploadImage_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedObjectName, response["image_path"])
 }
+
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
