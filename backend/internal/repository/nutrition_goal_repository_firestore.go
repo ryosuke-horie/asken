@@ -34,30 +34,7 @@ func (r *firestoreNutritionGoalRepository) getUserNutritionGoalDoc(userID string
 	return r.client.Collection("users").Doc(userID).Collection("nutritionGoal").Doc("current")
 }
 
-// calculatePFCFromCalories はカロリーとPFC比率からグラム数を計算
-func calculatePFCFromCalories(calories float64, ratio PFCRatio) (protein, fat, carbs float64) {
-	// たんぱく質: 4kcal/g
-	protein = (calories * ratio.Protein) / 4.0
-	// 脂質: 9kcal/g
-	fat = (calories * ratio.Fat) / 9.0
-	// 炭水化物: 4kcal/g
-	carbs = (calories * ratio.Carbohydrates) / 4.0
-	return
-}
-
-// determineNutritionPhase は現在体重と目標体重から栄養フェーズを判定
-func determineNutritionPhase(currentWeightKg, targetWeightKg float64) NutritionPhase {
-	const threshold = 1.0 // 1kgの差
-
-	if currentWeightKg-targetWeightKg > threshold {
-		return NutritionPhaseWeightLoss
-	} else if targetWeightKg-currentWeightKg > threshold {
-		return NutritionPhaseWeightGain
-	}
-	return NutritionPhaseMaintenance
-}
-
-func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg float64, targetWeightKg float64) (*NutritionGoal, error) {
+func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg float64) (*NutritionGoal, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
 	}
@@ -75,20 +52,10 @@ func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID s
 		return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
 	}
 
-	// フェーズ判定とPFC比率の計算
-	phase := determineNutritionPhase(currentWeightKg, targetWeightKg)
-	ratio := GetDefaultPFCRatio(phase)
-
-	protein, fat, carbs := calculatePFCFromCalories(fsDoc.TargetCalories, ratio)
-
-	return &NutritionGoal{
-		TargetCalories:      fsDoc.TargetCalories,
-		TargetProtein:       roundToOneDecimal(protein),
-		TargetFat:           roundToOneDecimal(fat),
-		TargetCarbohydrates: roundToOneDecimal(carbs),
-		Phase:               phase,
-		UpdatedAt:           fsDoc.UpdatedAt,
-	}, nil
+	phase := DeterminePhase(currentWeightKg, targetWeightKg)
+	calculated := CalculateNutritionGoal(fsDoc.TargetCalories, phase)
+	calculated.UpdatedAt = fsDoc.UpdatedAt
+	return calculated, nil
 }
 
 func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID string, targetCalories float64) (*NutritionGoal, error) {
@@ -114,16 +81,7 @@ func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID s
 
 	// デフォルトは維持期で返す（現在体重が不明なため）
 	phase := NutritionPhaseMaintenance
-	ratio := GetDefaultPFCRatio(phase)
-
-	protein, fat, carbs := calculatePFCFromCalories(targetCalories, ratio)
-
-	return &NutritionGoal{
-		TargetCalories:      targetCalories,
-		TargetProtein:       roundToOneDecimal(protein),
-		TargetFat:           roundToOneDecimal(fat),
-		TargetCarbohydrates: roundToOneDecimal(carbs),
-		Phase:               phase,
-		UpdatedAt:           now,
-	}, nil
+	calculated := CalculateNutritionGoal(targetCalories, phase)
+	calculated.UpdatedAt = now
+	return calculated, nil
 }
