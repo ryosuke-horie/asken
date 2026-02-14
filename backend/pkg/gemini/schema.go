@@ -1,13 +1,23 @@
 package gemini
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
-// SupportedUnits はiOS側のQuantityParserがパース可能な単位の一覧
+// supportedUnits はiOS側のQuantityParserがパース可能な単位の一覧
 // MeasurementUnit (iOS) と完全に一致させること
-var SupportedUnits = []string{
+var supportedUnits = []string{
 	"g", "ml",
 	"杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
 	"膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
+}
+
+// SupportedUnits はサポート単位のコピーを返す
+func SupportedUnits() []string {
+	result := make([]string, len(supportedUnits))
+	copy(result, supportedUnits)
+	return result
 }
 
 // classifierResponseItem はGemini Classifier/TextParserのレスポンス構造体
@@ -53,6 +63,9 @@ func (r nutritionResponseItem) toNutritionInfo() NutritionInfo {
 // FormatQuantity は数値と単位から "{値}{単位}" 形式の文字列を生成する
 // 整数の場合は小数点を省略する（例: 1.0 → "1個", 1.5 → "1.5個"）
 func FormatQuantity(value float64, unit string) string {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return fmt.Sprintf("0%s", unit)
+	}
 	if value == float64(int64(value)) {
 		return fmt.Sprintf("%d%s", int64(value), unit)
 	}
@@ -74,7 +87,7 @@ func FoodItemSchema() *Schema {
 				},
 				"quantity_unit": {
 					Type: SchemaTypeString,
-					Enum: SupportedUnits,
+					Enum: SupportedUnits(),
 				},
 			},
 			Required: []string{"name", "quantity_value", "quantity_unit"},
@@ -97,7 +110,7 @@ func NutritionInfoSchema() *Schema {
 				},
 				"quantity_unit": {
 					Type: SchemaTypeString,
-					Enum: SupportedUnits,
+					Enum: SupportedUnits(),
 				},
 				"calories_kcal": {
 					Type: SchemaTypeNumber,

@@ -1,6 +1,7 @@
 package gemini
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,9 @@ func TestFormatQuantity(t *testing.T) {
 		{"整数相当の浮動小数点", 1.0, "皿", "1皿"},
 		{"整数相当の浮動小数点_大きい値", 200.0, "ml", "200ml"},
 		{"ゼロ", 0, "g", "0g"},
+		{"NaN", math.NaN(), "g", "0g"},
+		{"正の無限大", math.Inf(1), "ml", "0ml"},
+		{"負の無限大", math.Inf(-1), "杯", "0杯"},
 	}
 
 	for _, tt := range tests {
