@@ -9,9 +9,17 @@ struct PFCPieChart: View {
     let carbohydrates: Double
 
     // カロリー換算: たんぱく質1g=4kcal, 脂質1g=9kcal, 炭水化物1g=4kcal
-    private var proteinCalories: Double { protein * 4 }
-    private var fatCalories: Double { fat * 9 }
-    private var carbsCalories: Double { carbohydrates * 4 }
+    private var proteinCalories: Double {
+        protein * 4
+    }
+
+    private var fatCalories: Double {
+        fat * 9
+    }
+
+    private var carbsCalories: Double {
+        carbohydrates * 4
+    }
 
     private var totalCalories: Double {
         proteinCalories + fatCalories + carbsCalories

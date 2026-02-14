@@ -19,7 +19,7 @@ struct NutritionGoalSettingView: View {
     @State private var weightKg: String = "70"
     @State private var selectedActivityLevel: ActivityLevel = .moderatelyActive
 
-    // 推奨カロリー計算結果
+    /// 推奨カロリー計算結果
     @State private var recommendedCalories: Double?
 
     let currentGoal: NutritionGoal?
