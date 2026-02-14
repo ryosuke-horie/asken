@@ -1,44 +1,49 @@
 # コードマップ更新レポート
-生成日時: 2026-02-08
 
-## 更新概要
+更新日時: 2026-02-10
 
-PR #153（食材編集・栄養素再計算）、PR #152（テスト改善）、PR #154（セキュリティ強化）の反映に伴い、コードマップを更新しました。
+## 変更サマリー
 
-## 変更ファイル
+| ファイル | 変更内容 | 差分率 |
+|:---|:---|:---|
+| ios.md | 体重リマインダー通知機能の追加を反映 | ~5% |
 
-### backend.md
-- history_handler.goの説明を更新（NutritionRecalculator依存、非同期再計算）
-- security_headers.goをMiddlewareセクションに追加
-- training_menu.goを削除（ファイル不存在）
-- E2Eテストセクションを追加（e2e/ディレクトリ）
-- 依存関係図を更新（SecurityHeaders、NutritionRecalculator）
+## ios.md の詳細変更
 
-### ios.md
-- QuantityParser.swiftをFeatures/Meals/Models/に追加
-- FoodEditItem.swiftの説明を更新（栄養素再計算ロジック含む）
-- テストファイル4件を追加（FoodEditItemTests, QuantityParserTests, WeightViewModelTests, WeightInputViewModelTests）
+### 1. 最終更新日時
+- 2026-02-08 → 2026-02-10
 
-### architecture.md
-- 変更なし
+### 2. ディレクトリ構造の追加
+- `Core/Notification/` - 通知機能モジュール
+- `Features/Settings/` - 設定UIモジュール
+- `Shared/Models/NotificationSettings.swift` - 通知設定モデル
 
-### data.md
-- 変更なし
+### 3. 機能モジュールの追加
+- `Settings` セクションを追加
+  - NotificationSettingsView.swift
+  - NotificationSettingsViewModel.swift
 
-## 差分率
+### 4. Core層の追加
+- `Notification (Core/Notification/)` セクションを追加
+  - NotificationManager.swift
 
-| ファイル | 変更率 |
+### 5. データモデルの追加
+- `通知設定関連 (NotificationSettings.swift)` セクションを追加
+  - MealNotificationSetting
+  - WeightNotificationSetting
+  - NotificationSettings
+
+## 更新理由
+
+EDG-699: 体重記録のリマインダーPush通知を実装
+- 食事リマインダーと同じUI/UXパターンで体重リマインダーを追加
+- 通知設定画面に体重リマインダーの設定項目を追加
+- ユーザーが時間をカスタマイズ可能
+
+## 未変更ファイル
+
+| ファイル | 状態 |
 |:---|:---|
-| architecture.md | 0% |
-| backend.md | 約12% |
-| ios.md | 約8% |
-| data.md | 0% |
-
-総合変更率: 約5% (変更率30%未満のため自動承認)
-
-## 鮮度タイムスタンプ
-
-- architecture.md: 2026-02-08 (更新不要)
-- backend.md: 2026-02-08 (本日更新)
-- data.md: 2026-02-08 (更新不要)
-- ios.md: 2026-02-08 (本日更新)
+| architecture.md | 変更なし（全体構造に変更なし） |
+| backend.md | 変更なし（バックエンドに変更なし） |
+| data.md | 変更なし（Firestoreスキーマに変更なし） |

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
+	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 )
 
 // FoodService は食品分析サービスのインターフェース
@@ -89,16 +90,6 @@ func (w *AnalysisWorker) processPendingRequests(ctx context.Context) error {
 	return nil
 }
 
-// truncateForLog はログ出力用にテキストをトランケートする。
-// ユーザー入力がログに直接出力されることを防ぐ。
-func truncateForLog(s string, maxRunes int) string {
-	runes := []rune(s)
-	if len(runes) > maxRunes {
-		return string(runes[:maxRunes]) + "..."
-	}
-	return s
-}
-
 // processRequest は個別のリクエストを処理
 func (w *AnalysisWorker) processRequest(ctx context.Context, request *repository.AnalysisRequest) error {
 	log.Printf("Processing request: %s (input_type: %s)", request.ID, request.InputType)
@@ -119,7 +110,7 @@ func (w *AnalysisWorker) processRequest(ctx context.Context, request *repository
 		log.Printf("Analyzing image: %s", request.ImagePath)
 		result, err = w.foodService.AnalyzeFoodImage(ctx, request.ImagePath)
 	case repository.InputTypeText:
-		log.Printf("Analyzing text: %s", truncateForLog(request.InputText, 50))
+		log.Printf("Analyzing text: %s", util.TruncateForLog(request.InputText, 50))
 		result, err = w.foodService.AnalyzeFoodText(ctx, request.InputText)
 	default:
 		err = fmt.Errorf("不明な入力タイプ: %s", request.InputType)
