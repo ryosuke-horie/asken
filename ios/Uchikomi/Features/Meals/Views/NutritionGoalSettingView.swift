@@ -141,7 +141,7 @@ struct NutritionGoalSettingView: View {
                                 Text("体重")
                                     .frame(width: 80, alignment: .leading)
                                 TextField("70", text: $weightKg)
-                                    .keyboardType(.numberPad)
+                                    .keyboardType(.decimalPad)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(width: 80)
                                 Text("kg")
