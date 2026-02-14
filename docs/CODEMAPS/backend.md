@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-13
+最終更新: 2026-02-15
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -99,6 +99,13 @@ Context に firebase_uid を設定
 | GET | /api/weight/goal | WeightGoalHandler | 目標体重取得 |
 | PUT | /api/weight/goal | WeightGoalHandler | 目標体重設定 |
 
+### 栄養目標 (認証必要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| GET | /api/nutrition/goal | NutritionGoalHandler | 栄養目標取得 |
+| PUT | /api/nutrition/goal | NutritionGoalHandler | 栄養目標設定 |
+
 ### マイメニュー (認証必要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -131,6 +138,7 @@ Context に firebase_uid を設定
 | image_handler.go | 画像配信 |
 | weight_record_handler.go | 体重記録CRUD |
 | weight_goal_handler.go | 目標体重取得・設定 |
+| nutrition_goal_handler.go | 栄養目標取得・設定 |
 | my_menu_handler.go | マイメニューCRUD |
 
 ### Repositories (internal/repository/)
@@ -142,6 +150,8 @@ Context に firebase_uid を設定
 | storage_repository.go | 画像ストレージ操作（Cloud Storage） |
 | weight_models.go | 体重関連の型定義・インターフェース |
 | weight_repository_firestore.go | 体重記録・目標（Firestore実装） |
+| nutrition_goal_models.go | 栄養目標の型定義・インターフェース・PFC計算 |
+| nutrition_goal_repository_firestore.go | 栄養目標（Firestore実装） |
 | my_menu_repository.go | マイメニュー型定義・インターフェース |
 | my_menu_repository_firestore.go | マイメニュー（Firestore実装） |
 
@@ -162,6 +172,13 @@ Context に firebase_uid を設定
 |:---|:---|
 | firebase_auth_service.go | Firebase Admin SDKラッパー |
 | food_service.go | 食品分析ロジック |
+
+### Utility (internal/util/)
+
+| ファイル | 責務 |
+|:---|:---|
+| log.go | ログ用文字列切り詰めユーティリティ |
+| timezone.go | タイムゾーンユーティリティ |
 
 ### Gemini連携 (pkg/gemini/)
 
@@ -234,6 +251,8 @@ cmd/server/main.go
     ├── storage_repository.go
     │   └── pkg/storage/client.go
     ├── weight_repository_firestore.go
+    │   └── pkg/database/firestore.go
+    ├── nutrition_goal_repository_firestore.go
     │   └── pkg/database/firestore.go
     └── my_menu_repository_firestore.go
         └── pkg/database/firestore.go

@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-13
+最終更新: 2026-02-15
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -19,7 +19,9 @@ ios/
 │   │   │   ├── AppleSignInManager.swift     # Apple Sign-In
 │   │   │   └── MockFirebaseAuthService.swift # 開発用モック (#if DEBUG)
 │   │   ├── Models/             # データモデル
-│   │   │   └── Meal.swift
+│   │   │   ├── Meal.swift
+│   │   │   ├── NutritionGoal.swift
+│   │   │   └── UserProfile.swift
 │   │   ├── Network/            # API通信
 │   │   │   ├── APIClient.swift       # AuthServiceProvider含む
 │   │   │   ├── APIEndpoint.swift
@@ -27,7 +29,8 @@ ios/
 │   │   ├── Notification/       # 通知機能
 │   │   │   └── NotificationManager.swift
 │   │   └── Repositories/       # データアクセス
-│   │       └── MealRepository.swift
+│   │       ├── MealRepository.swift
+│   │       └── NutritionGoalRepository.swift
 │   ├── Features/               # 機能モジュール
 │   │   ├── Auth/               # 認証UI
 │   │   │   ├── LoginView.swift
@@ -47,6 +50,7 @@ ios/
 │   │   │   │   └── NutritionEditorViewModel.swift
 │   │   │   └── Views/
 │   │   │       ├── NutritionEditorView.swift
+│   │   │       ├── NutritionGoalSettingView.swift
 │   │   │       └── FoodItemEditRow.swift
 │   │   ├── MyMenu/             # マイメニュー
 │   │   │   ├── MyMenuEditView.swift
@@ -73,7 +77,10 @@ ios/
 │   │       └── NotificationSettingsViewModel.swift
 │   ├── Shared/
 │   │   ├── Components/
-│   │   │   └── NutritionSummaryCard.swift
+│   │   │   ├── CalorieProgressView.swift
+│   │   │   ├── NutritionSummaryCard.swift
+│   │   │   ├── PFCPieChart.swift
+│   │   │   └── PFCProgressBar.swift
 │   │   ├── Models/             # 共通データモデル
 │   │   │   └── NotificationSettings.swift
 │   │   └── Theme.swift
@@ -256,6 +263,7 @@ enum AuthServiceProvider {
 | MealInputView.swift | 食事入力UI |
 | CameraView.swift | カメラ撮影UI |
 | NutritionEditorView.swift | 栄養素編集UI |
+| NutritionGoalSettingView.swift | 栄養目標設定UI（推奨カロリー計算機能付き） |
 | FoodItemEditRow.swift | 食品アイテム行 |
 | FoodEditItem.swift | 編集用食品モデル（量変更時の栄養素再計算ロジック含む） |
 | ImageFilenameValidator.swift | 画像ファイル名バリデーション |
@@ -302,6 +310,8 @@ enum AuthServiceProvider {
 |:---|:---|:---|
 | Auth.swift | UchikomiCore | User, FirebaseAuthUser, GoogleCredential, FirebaseAuthError |
 | Meal.swift | Uchikomi | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
+| NutritionGoal.swift | Uchikomi | 栄養目標モデル (NutritionGoal, NutritionPhase, PFCRatios, NutritionGoalCalculator) |
+| UserProfile.swift | Uchikomi | ユーザー属性モデル (Gender, ActivityLevel, RecommendedCaloriesCalculator) |
 | NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
 
 ### Network (Core/Network/)
@@ -329,6 +339,7 @@ NotificationSchedulerProtocolの主要メソッド:
 | ファイル | 責務 |
 |:---|:---|
 | MealRepository.swift | 食事データアクセス |
+| NutritionGoalRepository.swift | 栄養目標取得・設定 |
 | MyMenuRepository.swift | マイメニューデータアクセス |
 | WeightRepository.swift | 体重記録・目標データアクセス |
 
@@ -336,7 +347,10 @@ NotificationSchedulerProtocolの主要メソッド:
 
 | ファイル | 用途 |
 |:---|:---|
+| CalorieProgressView.swift | カロリー進捗バー |
 | NutritionSummaryCard.swift | 栄養素サマリーカード |
+| PFCPieChart.swift | PFCバランス円グラフ |
+| PFCProgressBar.swift | PFC進捗バー |
 | Theme.swift | アプリテーマ定義 |
 
 ## データモデル
@@ -436,9 +450,15 @@ UchikomiApp.swift
     └── MainTabView (認証済み)
         ├── MealsView (タブ1)
         │   ├── MealsViewModel
-        │   │   └── MealRepository
+        │   │   ├── MealRepository
+        │   │   │   └── APIClient
+        │   │   ├── NutritionGoalRepository
+        │   │   │   └── APIClient
+        │   │   └── WeightRepository
         │   │       └── APIClient
         │   │           └── AuthServiceProvider.shared.getIDToken()
+        │   ├── NutritionGoalSettingView
+        │   │   └── NutritionGoalRepository
         │   └── MealInputView
         │       └── MealInputViewModel
         │           └── MealRepository
@@ -496,6 +516,9 @@ enum APIEndpoint {
     case createWeightRecord
     case weightRecord(id: String)
     case weightGoal
+    // 栄養目標
+    case nutritionGoal(currentWeight: Double?, goalWeight: Double?)
+    case setNutritionGoal
     // ...
 }
 ```

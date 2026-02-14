@@ -40,9 +40,17 @@ final class MealsViewModel {
         isLoading = true
         errorMessage = nil
 
-        // 食事データを取得
+        let calendar = Calendar.current
+        let endDate = selectedDate
+        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
+
+        // 食事データと体重データを並列取得
+        async let mealsResult = repository.getDailyMeals(date: selectedDate)
+        async let weightResult = weightRepository.getRecords(from: startDate, to: endDate)
+
+        // 食事データを取得（必須）
         do {
-            dailyMeals = try await repository.getDailyMeals(date: selectedDate)
+            dailyMeals = try await mealsResult
         } catch let error as APIError {
             logger.error("食事データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
@@ -55,19 +63,12 @@ final class MealsViewModel {
             return
         }
 
-        // 体重データと栄養目標を取得（失敗しても食事データは表示）
+        // 体重データを処理（失敗しても食事データは表示）
         let currentWeight: Double?
         let goalWeight: Double?
 
-        let calendar = Calendar.current
-        let endDate = selectedDate
-        let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
-
         do {
-            let weightResponse = try await weightRepository.getRecords(
-                from: startDate,
-                to: endDate
-            )
+            let weightResponse = try await weightResult
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyy-MM-dd"
             let todayString = dateFormatter.string(from: selectedDate)
