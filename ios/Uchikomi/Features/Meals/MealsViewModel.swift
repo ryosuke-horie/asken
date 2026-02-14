@@ -3,6 +3,8 @@ import os
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "MealsViewModel")
 
+// MARK: - MealsViewModel
+
 @Observable
 final class MealsViewModel {
     var selectedDate = Date()
