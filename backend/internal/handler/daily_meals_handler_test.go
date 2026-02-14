@@ -178,6 +178,98 @@ func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
 	assert.Len(t, response.Meals["snack"], 0)
 }
 
+func TestDailyMealsHandler_Handle_WithTimezone(t *testing.T) {
+	testUserID := "test-user-123"
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "2026-01-21", date)
+			assert.Equal(t, "Asia/Tokyo", tz)
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21&tz=Asia/Tokyo", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DailyMealsResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Equal(t, "2026-01-21", response.Date)
+}
+
+func TestDailyMealsHandler_Handle_DefaultDateWithTimezone(t *testing.T) {
+	testUserID := "test-user-123"
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "Asia/Tokyo", tz)
+			loc, _ := time.LoadLocation("Asia/Tokyo")
+			expectedDate := time.Now().In(loc).Format("2006-01-02")
+			assert.Equal(t, expectedDate, date)
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?tz=Asia/Tokyo", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestDailyMealsHandler_Handle_InvalidTimezone(t *testing.T) {
+	testUserID := "test-user-123"
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "Invalid/Zone", tz)
+			expectedDate := time.Now().UTC().Format("2006-01-02")
+			assert.Equal(t, expectedDate, date)
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?tz=Invalid/Zone", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 func TestDailyMealsHandler_Handle_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewDailyMealsHandler(mockRepo)
