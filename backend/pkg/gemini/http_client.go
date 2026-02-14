@@ -23,8 +23,8 @@ const (
 
 // GeminiHTTPClient はGemini APIのHTTPクライアントを表すインターフェース
 type GeminiHTTPClient interface {
-	Execute(ctx context.Context, prompt string) (*Response, error)
-	ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error)
+	Execute(ctx context.Context, prompt string, schema *Schema) (*Response, error)
+	ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error)
 }
 
 // HTTPClient はGemini HTTP APIクライアント
@@ -89,8 +89,31 @@ type InlineData struct {
 
 // GenerationConfig は生成設定
 type GenerationConfig struct {
-	ResponseMimeType string `json:"responseMimeType,omitempty"`
+	ResponseMimeType string  `json:"responseMimeType,omitempty"`
+	ResponseSchema   *Schema `json:"responseSchema,omitempty"`
 }
+
+// Schema はGemini APIのレスポンススキーマ定義
+// responseSchemaを指定すると、モデルの出力が指定したJSON Schemaに準拠することが保証される
+type Schema struct {
+	Type       SchemaType         `json:"type"`
+	Items      *Schema            `json:"items,omitempty"`
+	Properties map[string]*Schema `json:"properties,omitempty"`
+	Required   []string           `json:"required,omitempty"`
+	Enum       []string           `json:"enum,omitempty"`
+}
+
+// SchemaType はGemini APIのスキーマタイプ
+type SchemaType string
+
+const (
+	SchemaTypeString  SchemaType = "STRING"
+	SchemaTypeNumber  SchemaType = "NUMBER"
+	SchemaTypeInteger SchemaType = "INTEGER"
+	SchemaTypeBoolean SchemaType = "BOOLEAN"
+	SchemaTypeArray   SchemaType = "ARRAY"
+	SchemaTypeObject  SchemaType = "OBJECT"
+)
 
 // GenerateContentResponse はGemini APIのレスポンス構造体
 type GenerateContentResponse struct {
@@ -113,7 +136,8 @@ type PartResponse struct {
 }
 
 // Execute はテキストプロンプトを実行してレスポンスを返す
-func (c *HTTPClient) Execute(ctx context.Context, prompt string) (*Response, error) {
+// schemaがnilでない場合、responseSchemaを設定してモデル出力を制約する
+func (c *HTTPClient) Execute(ctx context.Context, prompt string, schema *Schema) (*Response, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return nil, ErrEmptyPrompt
 	}
@@ -130,6 +154,7 @@ func (c *HTTPClient) Execute(ctx context.Context, prompt string) (*Response, err
 		},
 		GenerationConfig: GenerationConfig{
 			ResponseMimeType: "application/json",
+			ResponseSchema:   schema,
 		},
 	}
 
@@ -144,7 +169,8 @@ func (c *HTTPClient) Execute(ctx context.Context, prompt string) (*Response, err
 }
 
 // ExecuteWithImage は画像付きプロンプトを実行してレスポンスを返す
-func (c *HTTPClient) ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string) (*Response, error) {
+// schemaがnilでない場合、responseSchemaを設定してモデル出力を制約する
+func (c *HTTPClient) ExecuteWithImage(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return nil, ErrEmptyPrompt
 	}
@@ -176,6 +202,7 @@ func (c *HTTPClient) ExecuteWithImage(ctx context.Context, prompt string, imageD
 		},
 		GenerationConfig: GenerationConfig{
 			ResponseMimeType: "application/json",
+			ResponseSchema:   schema,
 		},
 	}
 

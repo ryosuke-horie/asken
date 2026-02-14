@@ -31,8 +31,7 @@ final class NutritionEditorViewModel {
     var canSave: Bool {
         !foods.isEmpty && foods.allSatisfy { food in
             !food.name.isEmpty &&
-                !food.quantityValue.isEmpty &&
-                food.quantityUnit != nil
+                !food.quantityValue.isEmpty
         }
     }
 
