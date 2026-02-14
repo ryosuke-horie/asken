@@ -39,12 +39,14 @@ final class MealsViewModel {
     func loadMeals() async {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
 
         let calendar = Calendar.current
         let endDate = selectedDate
         let startDate = calendar.date(byAdding: .day, value: -7, to: endDate) ?? endDate
 
         // 食事データと体重データを並列取得
+        // 注: async letはStructured Concurrencyにより、早期リターン時も自動でキャンセル・awaitされる
         async let mealsResult = repository.getDailyMeals(date: selectedDate)
         async let weightResult = weightRepository.getRecords(from: startDate, to: endDate)
 
@@ -54,12 +56,10 @@ final class MealsViewModel {
         } catch let error as APIError {
             logger.error("食事データ取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
-            isLoading = false
             return
         } catch {
             logger.error("食事データ取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "食事データの取得に失敗しました"
-            isLoading = false
             return
         }
 
@@ -97,8 +97,6 @@ final class MealsViewModel {
             logger.warning("栄養目標取得に失敗（目標なし表示にフォールバック）: \(error.localizedDescription)")
             nutritionGoal = nil
         }
-
-        isLoading = false
     }
 
     func goToPreviousDay() {

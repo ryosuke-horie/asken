@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -125,11 +126,14 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
 		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(buf.Bytes())
 }
 
 // HandleSet はPUT /api/nutrition/goalリクエストを処理
@@ -170,9 +174,12 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 		UpdatedAt:           goal.UpdatedAt.Format(time.RFC3339),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
 		log.Printf("Error encoding response: userID=%s, error=%v", userID, err)
 		http.Error(w, "レスポンスの生成に失敗しました", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(buf.Bytes())
 }
