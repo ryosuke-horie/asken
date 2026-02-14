@@ -22,6 +22,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// createTestJPEGData はテスト用のJPEGマジックナンバーを含むバイト列を返す
+func createTestJPEGData() []byte {
+	data := make([]byte, 512)
+	data[0] = 0xFF
+	data[1] = 0xD8
+	data[2] = 0xFF
+	return data
+}
+
+// createTestPNGData はテスト用のPNGマジックナンバーを含むバイト列を返す
+func createTestPNGData() []byte {
+	data := make([]byte, 512)
+	copy(data, []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
+	return data
+}
+
+// multipartImageRequest はJPEG画像付きのmultipartリクエストを生成する
+type multipartImageRequest struct {
+	body        *bytes.Buffer
+	contentType string
+}
+
+// createMultipartImageRequest はテスト用JPEG画像とフォームフィールドを含むmultipartリクエストボディを生成する
+func createMultipartImageRequest(t *testing.T, fields map[string]string) multipartImageRequest {
+	t.Helper()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("image", "test.jpg")
+	require.NoError(t, err)
+	_, err = part.Write(createTestJPEGData())
+	require.NoError(t, err)
+	for k, v := range fields {
+		require.NoError(t, writer.WriteField(k, v))
+	}
+	writer.Close()
+	return multipartImageRequest{body: body, contentType: writer.FormDataContentType()}
+}
+
 // MockFoodService はテスト用のモックFoodService
 type MockFoodService struct {
 	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
@@ -159,13 +197,11 @@ func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string
 }
 
 func TestAnalyzeHandler_Success(t *testing.T) {
-	// 非同期処理のため、FoodServiceは呼ばれない
 	mockService := &MockFoodService{}
 
 	expectedID := uuid.New()
 	mockRepo := &MockAnalysisRepository{
 		CreateRequestFunc: func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
-			// Cloud Storageのオブジェクト名が渡されることを確認
 			assert.Contains(t, imagePath, "uploads/")
 			return expectedID, nil
 		},
@@ -177,41 +213,21 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 	}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// テスト用の画像ファイルを作成（JPEGマジックナンバーを含む）
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	// JPEG magic number + 512バイト以上のダミーデータ
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	_, err = part.Write(jpegData)
-	require.NoError(t, err)
-	// meal_typeフィールドを追加
-	require.NoError(t, writer.WriteField("meal_type", "lunch"))
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	mp := createMultipartImageRequest(t, map[string]string{"meal_type": "lunch"})
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
 
-	// 202 Accepted レスポンスを確認
 	assert.Equal(t, http.StatusAccepted, w.Code)
 
-	// レスポンス形式を確認
 	var response struct {
 		ID string `json:"id"`
 	}
-	err = json.NewDecoder(w.Body).Decode(&response)
+	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
 	assert.Equal(t, expectedID.String(), response.ID)
-
-	// ファイルが削除されていないことを確認（永続化のため）
-	// Note: テスト後のクリーンアップは別途必要
 }
 
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
@@ -234,7 +250,6 @@ func TestAnalyzeHandler_InvalidFileType(t *testing.T) {
 	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// テキストファイルをアップロード
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("image", "test.txt")
@@ -266,23 +281,9 @@ func TestAnalyzeHandler_RepositoryError(t *testing.T) {
 	}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	// JPEG magic number + 512バイト以上のダミーデータ
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	_, err = part.Write(jpegData)
-	require.NoError(t, err)
-	// meal_typeフィールドを追加
-	require.NoError(t, writer.WriteField("meal_type", "lunch"))
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	mp := createMultipartImageRequest(t, map[string]string{"meal_type": "lunch"})
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -298,32 +299,15 @@ func TestValidateImageFile(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name:     "JPEG画像",
-			filename: "test.jpg",
-			content: func() []byte {
-				data := make([]byte, 512)
-				data[0] = 0xFF
-				data[1] = 0xD8
-				data[2] = 0xFF
-				return data
-			}(),
+			name:      "JPEG画像",
+			filename:  "test.jpg",
+			content:   createTestJPEGData(),
 			expectErr: false,
 		},
 		{
-			name:     "PNG画像",
-			filename: "test.png",
-			content: func() []byte {
-				data := make([]byte, 512)
-				data[0] = 0x89
-				data[1] = 0x50
-				data[2] = 0x4E
-				data[3] = 0x47
-				data[4] = 0x0D
-				data[5] = 0x0A
-				data[6] = 0x1A
-				data[7] = 0x0A
-				return data
-			}(),
+			name:      "PNG画像",
+			filename:  "test.png",
+			content:   createTestPNGData(),
 			expectErr: false,
 		},
 		{
@@ -336,18 +320,15 @@ func TestValidateImageFile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// 一時ファイルを作成
 			tmpDir := t.TempDir()
 			tmpFile := filepath.Join(tmpDir, tc.filename)
 			err := os.WriteFile(tmpFile, tc.content, 0644)
 			require.NoError(t, err)
 
-			// ファイルを開く
 			file, err := os.Open(tmpFile)
 			require.NoError(t, err)
 			defer file.Close()
 
-			// ファイルヘッダーを作成
 			header := &multipart.FileHeader{
 				Filename: tc.filename,
 				Size:     int64(len(tc.content)),
@@ -378,7 +359,6 @@ func TestAnalyzeHandler_TextInput_Success(t *testing.T) {
 	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// JSONリクエストボディを作成
 	reqBody := map[string]string{
 		"input_text": "ご飯二杯, 焼肉",
 		"meal_type":  "lunch",
@@ -455,7 +435,6 @@ func TestAnalyzeHandler_TextInput_TooLong(t *testing.T) {
 	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// 1001文字のテキストを作成
 	longText := make([]byte, 1001)
 	for i := range longText {
 		longText[i] = 'a'
@@ -522,7 +501,6 @@ func TestAnalyzeHandler_TextInput_MalformedJSON(t *testing.T) {
 	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// 不正なJSONを送信
 	req := httptest.NewRequest(http.MethodPost, "/api/analyze", bytes.NewReader([]byte("{invalid json")))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -542,22 +520,9 @@ func TestAnalyzeHandler_StorageUploadError(t *testing.T) {
 	}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	// JPEG magic number + 512バイト以上のダミーデータ
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	_, err = part.Write(jpegData)
-	require.NoError(t, err)
-	require.NoError(t, writer.WriteField("meal_type", "lunch"))
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	mp := createMultipartImageRequest(t, map[string]string{"meal_type": "lunch"})
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -589,21 +554,9 @@ func TestAnalyzeHandler_CleanupOnRepositoryFailure(t *testing.T) {
 	}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	_, err = part.Write(jpegData)
-	require.NoError(t, err)
-	require.NoError(t, writer.WriteField("meal_type", "lunch"))
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/analyze", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	mp := createMultipartImageRequest(t, map[string]string{"meal_type": "lunch"})
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
 	w := httptest.NewRecorder()
 
 	handler.Handle(w, req)
@@ -618,7 +571,6 @@ func TestAnalyzeHandler_TextInput_OversizedBody(t *testing.T) {
 	mockStorageRepo := &testutil.MockStorageRepository{}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	// 4KBを超えるJSONボディを作成
 	largeBody := make([]byte, 5000)
 	for i := range largeBody {
 		largeBody[i] = 'a'
@@ -663,6 +615,33 @@ func TestTruncateForLog(t *testing.T) {
 	}
 }
 
+func TestAnalyzeHandler_HandleUploadImage_Success(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	expectedObjectName := "uploads/test-uuid.jpg"
+	mockStorageRepo := &testutil.MockStorageRepository{
+		UploadFunc: func(ctx context.Context, file io.Reader, filename string, contentType string) (string, error) {
+			assert.Equal(t, "image/jpeg", contentType)
+			return expectedObjectName, nil
+		},
+	}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	mp := createMultipartImageRequest(t, nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/upload-image", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
+	w := httptest.NewRecorder()
+
+	handler.HandleUploadImage(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]string
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Equal(t, expectedObjectName, response["image_path"])
+}
+
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
@@ -673,20 +652,9 @@ func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {
 	}
 	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("image", "test.jpg")
-	require.NoError(t, err)
-	jpegData := make([]byte, 512)
-	jpegData[0] = 0xFF
-	jpegData[1] = 0xD8
-	jpegData[2] = 0xFF
-	_, err = part.Write(jpegData)
-	require.NoError(t, err)
-	writer.Close()
-
-	req := httptest.NewRequest(http.MethodPost, "/api/upload-image", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	mp := createMultipartImageRequest(t, nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/upload-image", mp.body)
+	req.Header.Set("Content-Type", mp.contentType)
 	w := httptest.NewRecorder()
 
 	handler.HandleUploadImage(w, req)
