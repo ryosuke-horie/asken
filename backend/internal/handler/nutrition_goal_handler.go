@@ -133,7 +133,9 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(buf.Bytes())
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
+	}
 }
 
 // HandleSet はPUT /api/nutrition/goalリクエストを処理
@@ -181,5 +183,7 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(buf.Bytes())
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
+	}
 }
