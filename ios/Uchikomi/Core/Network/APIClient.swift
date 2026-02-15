@@ -95,8 +95,9 @@ actor APIClient {
         }
 
         // Add image data
+        let safeFilename = sanitizeFilename(filename)
         body.append(Data("--\(boundary)\r\n".utf8))
-        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(safeFilename)\"\r\n".utf8))
         body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
         body.append(imageData)
         body.append(Data("\r\n".utf8))
@@ -158,6 +159,16 @@ actor APIClient {
         }
     }
     #endif
+
+    // MARK: - Sanitization
+
+    private func sanitizeFilename(_ filename: String) -> String {
+        var sanitized = filename
+        for char in ["\"", "\r", "\n", "\0"] {
+            sanitized = sanitized.replacingOccurrences(of: char, with: "")
+        }
+        return sanitized
+    }
 
     // MARK: - Private Helpers
 
