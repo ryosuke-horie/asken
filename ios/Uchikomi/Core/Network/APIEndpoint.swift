@@ -28,7 +28,10 @@ struct APIEndpoint {
     /// URLパスに埋め込むIDをサニタイズする（英数字とハイフンのみ許可）
     private static func sanitizedPathID(_ id: String) -> String {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-"))
-        return id.unicodeScalars.filter { allowed.contains($0) }.map { String($0) }.joined()
+        let sanitized = id.unicodeScalars.filter { allowed.contains($0) }.map { String($0) }.joined()
+        precondition(!sanitized.isEmpty, "Path ID is empty after sanitization: original=\(id)")
+        assert(sanitized == id, "Path ID contained unexpected characters: \(id)")
+        return sanitized
     }
 
     // MARK: - Meals Endpoints
