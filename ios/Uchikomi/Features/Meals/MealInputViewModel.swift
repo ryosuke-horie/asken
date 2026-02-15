@@ -10,6 +10,7 @@ final class MealInputViewModel {
         static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
         static let maxPollingAttempts = 60
         static let pollingTimeoutSeconds = 120
+        static let maxImageSizeBytes = 10 * 1024 * 1024 // 10MB
     }
 
     // MARK: - Properties
@@ -78,6 +79,11 @@ final class MealInputViewModel {
         guard let image = selectedImage,
               let imageData = image.jpegData(compressionQuality: 0.8) else {
             errorMessage = "画像を選択してください"
+            return
+        }
+
+        guard imageData.count <= Constants.maxImageSizeBytes else {
+            errorMessage = "画像サイズが大きすぎます。10MB以下の画像を選択してください"
             return
         }
 
