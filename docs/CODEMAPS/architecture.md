@@ -18,8 +18,8 @@
 | シークレット | Secret Manager |
 | 認証 | Firebase Auth |
 | AI | Gemini API |
-| CI/CD | GitHub Actions |
-| CI/CD認証 | Workload Identity Federation |
+| 品質ゲート | Lefthook (Git hooks) |
+| デプロイ | Shell Script (`tools/deploy/deploy-dev.sh`) |
 | インフラ管理 | Terraform |
 
 ## システム構成図
@@ -116,7 +116,7 @@ utikomi/
 └── docs/              # ドキュメント
     ├── CODEMAPS/     # コードマップ
     ├── adr/          # アーキテクチャ決定記録
-    └── plan/         # 実装計画
+    └── specs/        # 仕様書
 ```
 
 ## 外部依存関係
@@ -130,7 +130,7 @@ utikomi/
 | Secret Manager | APIキー等のシークレット管理 |
 | Firebase Auth | ユーザー認証 |
 | Gemini API | AI画像分析・栄養素計算 |
-| Workload Identity Federation | GitHub Actions→GCP認証（キーレス） |
+| Workload Identity Federation | Terraform管理（既存構成） |
 
 ## インフラ構成（Terraform）
 
@@ -163,26 +163,28 @@ infrastructure/
 | Cloud Storage Bucket | 画像保存 |
 | Secret Manager | APIキー等のシークレット保存 |
 | Firebase Auth | ユーザー認証 |
-| Workload Identity Pool/Provider | GitHub Actions認証 |
-| GitHub Secrets | CI/CD用シークレット |
-| GitHub Variables | CI/CD用環境変数 |
+| Workload Identity Pool/Provider | Terraform管理（既存構成） |
+| GitHub Secrets | Terraform管理（既存構成） |
+| GitHub Variables | Terraform管理（既存構成） |
 
-## CI/CDパイプライン
+## 品質ゲート・デプロイ/E2Eフロー
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     GitHub Actions                              │
+│                    Local Development Flow                        │
 ├─────────────────────────────────────────────────────────────────┤
-│  1. Push to main (backend/**)                                   │
-│  2. WIF認証 (キーレス)                                           │
+│  1. Git hooks (Lefthook): lint / format / backend test          │
+│  2. 手動デプロイスクリプト実行（deploy）                         │
 │  3. Docker Build (multi-stage)                                  │
 │  4. Push to Artifact Registry                                   │
 │  5. Deploy to Cloud Run                                         │
+│  6. E2Eスクリプト実行（e2e）                                     │
 └─────────────────────────────────────────────────────────────────┘
-
-ワークフロー: .github/workflows/deploy.yml
-同時実行制御: concurrencyでデプロイを直列化（E2Eテストのレート制限競合を防止）
 ```
+
+フック設定: `lefthook.yml`（iOSテストは一時停止中）
+デプロイスクリプト: `tools/deploy/deploy-dev.sh`
+E2Eスクリプト: `tools/e2e/run-backend-e2e-dev.sh`
 
 ## 関連コードマップ
 
