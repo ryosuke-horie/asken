@@ -14,7 +14,7 @@ variable "location" {
 }
 
 variable "delete_protection" {
-  description = "削除保護の有効化"
+  description = "削除保護の有効化（本番環境では必ずtrueにすること）"
   type        = bool
-  default     = false
+  default     = true
 }
