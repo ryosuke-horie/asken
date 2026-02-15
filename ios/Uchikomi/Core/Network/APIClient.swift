@@ -183,11 +183,21 @@ actor APIClient {
             do {
                 let token = try await AuthServiceProvider.shared.getIDToken()
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } catch let authError as FirebaseAuthError {
+                #if DEBUG
+                debugPrint("[APIClient] Token retrieval failed: \(authError)")
+                #endif
+                switch authError {
+                case .notSignedIn:
+                    throw APIError.unauthorized
+                case .tokenRetrievalFailed, .configurationError:
+                    throw APIError.networkError(authError)
+                }
             } catch {
                 #if DEBUG
                 debugPrint("[APIClient] Token retrieval failed: \(error)")
                 #endif
-                throw APIError.unauthorized
+                throw APIError.networkError(error)
             }
         }
 
