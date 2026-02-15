@@ -30,6 +30,12 @@ actor APIClient {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
+    // MARK: - Constants
+
+    private enum Constants {
+        static let logMaxLength = 500
+    }
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -58,7 +64,7 @@ actor APIClient {
             #if DEBUG
             debugPrint("[APIClient] Request URL: \(endpoint.url)")
             if let jsonString = String(data: bodyData, encoding: .utf8) {
-                debugPrint("[APIClient] Request Body: \(jsonString)")
+                truncatedLog("[APIClient] Request Body", jsonString)
             }
             #endif
         }
@@ -124,7 +130,7 @@ actor APIClient {
         #if DEBUG
         debugPrint("[APIClient] Response Status: \(httpResponse.statusCode)")
         if let responseString = String(data: data, encoding: .utf8) {
-            debugPrint("[APIClient] Response Body: \(responseString)")
+            truncatedLog("[APIClient] Response Body", responseString)
         }
         #endif
 
@@ -140,6 +146,18 @@ actor APIClient {
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: message)
         }
     }
+
+    // MARK: - Logging
+
+    #if DEBUG
+    private func truncatedLog(_ label: String, _ value: String) {
+        if value.count > Constants.logMaxLength {
+            debugPrint("\(label): \(value.prefix(Constants.logMaxLength))... (truncated, total \(value.count) chars)")
+        } else {
+            debugPrint("\(label): \(value)")
+        }
+    }
+    #endif
 
     // MARK: - Private Helpers
 
@@ -172,7 +190,7 @@ actor APIClient {
         #if DEBUG
         debugPrint("[APIClient] Response Status: \(httpResponse.statusCode)")
         if let responseString = String(data: data, encoding: .utf8) {
-            debugPrint("[APIClient] Response Body: \(responseString)")
+            truncatedLog("[APIClient] Response Body", responseString)
         }
         #endif
 
@@ -184,7 +202,7 @@ actor APIClient {
                 #if DEBUG
                 debugPrint("[APIClient] Decoding Error: \(error)")
                 if let jsonString = String(data: data, encoding: .utf8) {
-                    debugPrint("[APIClient] Raw Response: \(jsonString)")
+                    truncatedLog("[APIClient] Raw Response", jsonString)
                 }
                 #endif
                 throw APIError.decodingError(error)
