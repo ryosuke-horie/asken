@@ -230,6 +230,20 @@ func TestAnalyzeHandler_Success(t *testing.T) {
 	assert.Equal(t, expectedID.String(), response.ID)
 }
 
+func TestAnalyzeHandler_HandlerGuard_MethodNotAllowed(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/analyze", nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestAnalyzeHandler_NoImageFile(t *testing.T) {
 	mockService := &MockFoodService{}
 	mockRepo := &MockAnalysisRepository{}
@@ -618,6 +632,20 @@ func TestAnalyzeHandler_HandleUploadImage_Success(t *testing.T) {
 	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
 	assert.Equal(t, expectedObjectName, response["image_path"])
+}
+
+func TestAnalyzeHandler_HandleUploadImage_MethodNotAllowed(t *testing.T) {
+	mockService := &MockFoodService{}
+	mockRepo := &MockAnalysisRepository{}
+	mockStorageRepo := &testutil.MockStorageRepository{}
+	handler := NewAnalyzeHandler(mockService, mockRepo, mockStorageRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/upload-image", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleUploadImage(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestAnalyzeHandler_HandleUploadImage_StorageError(t *testing.T) {

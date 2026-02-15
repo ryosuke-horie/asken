@@ -88,6 +88,18 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 	assert.Len(t, response.Meals["breakfast"], 0)
 }
 
+func TestDailyMealsHandler_Handle_MethodNotAllowed(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewDailyMealsHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/meals/daily", nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 	testUserID := "test-user-123"
 	mockRepo := &MockAnalysisRepository{

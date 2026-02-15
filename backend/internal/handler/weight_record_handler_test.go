@@ -122,6 +122,59 @@ func TestWeightRecordHandler_HandleCreate_Unauthorized(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestWeightRecordHandler_MethodNotAllowed(t *testing.T) {
+	handler := NewWeightRecordHandler(&MockWeightRecordRepository{}, &MockWeightGoalRepository{})
+
+	tests := []struct {
+		name   string
+		method string
+		url    string
+		handle func(http.ResponseWriter, *http.Request)
+	}{
+		{
+			name:   "HandleList",
+			method: http.MethodPost,
+			url:    "/api/weight/records",
+			handle: handler.HandleList,
+		},
+		{
+			name:   "HandleCreate",
+			method: http.MethodGet,
+			url:    "/api/weight/records",
+			handle: handler.HandleCreate,
+		},
+		{
+			name:   "HandleGet",
+			method: http.MethodPost,
+			url:    "/api/weight/records/" + testRecordUUID,
+			handle: handler.HandleGet,
+		},
+		{
+			name:   "HandleUpdate",
+			method: http.MethodGet,
+			url:    "/api/weight/records/" + testRecordUUID,
+			handle: handler.HandleUpdate,
+		},
+		{
+			name:   "HandleDelete",
+			method: http.MethodGet,
+			url:    "/api/weight/records/" + testRecordUUID,
+			handle: handler.HandleDelete,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, tt.url, nil)
+			w := httptest.NewRecorder()
+
+			tt.handle(w, req)
+
+			assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+		})
+	}
+}
+
 func TestWeightRecordHandler_HandleList_Success(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
