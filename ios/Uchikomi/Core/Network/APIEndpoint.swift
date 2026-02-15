@@ -20,9 +20,18 @@ struct APIEndpoint {
         let baseURLString = AppEnvironment.current.apiBaseURL.absoluteString
         let urlString = baseURLString.hasSuffix("/") ? baseURLString + path : baseURLString + "/" + path
         guard let url = URL(string: urlString) else {
-            fatalError("Invalid URL configuration: \(urlString)")
+            preconditionFailure("Invalid URL configuration for path: \(path)")
         }
         return url
+    }
+
+    /// URLパスに埋め込むIDをサニタイズする（英数字とハイフンのみ許可）
+    private static func sanitizedPathID(_ id: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-"))
+        let sanitized = id.unicodeScalars.filter { allowed.contains($0) }.map { String($0) }.joined()
+        precondition(!sanitized.isEmpty, "Path ID is empty after sanitization: original=\(id)")
+        precondition(sanitized == id, "Path ID contained unexpected characters: \(id)")
+        return sanitized
     }
 
     // MARK: - Meals Endpoints
@@ -52,7 +61,7 @@ struct APIEndpoint {
 
     static func analysisStatus(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "analyze/\(id)/status",
+            path: "analyze/\(Self.sanitizedPathID(id))/status",
             method: .get,
             requiresAuth: true
         )
@@ -60,7 +69,7 @@ struct APIEndpoint {
 
     static func analysisResult(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "analyze/\(id)/result",
+            path: "analyze/\(Self.sanitizedPathID(id))/result",
             method: .get,
             requiresAuth: true
         )
@@ -70,7 +79,7 @@ struct APIEndpoint {
 
     static func historyDetail(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(id)",
+            path: "history/\(Self.sanitizedPathID(id))",
             method: .get,
             requiresAuth: true
         )
@@ -78,7 +87,7 @@ struct APIEndpoint {
 
     static func updateHistory(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(id)",
+            path: "history/\(Self.sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -86,7 +95,7 @@ struct APIEndpoint {
 
     static func deleteHistory(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(id)",
+            path: "history/\(Self.sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -113,7 +122,7 @@ struct APIEndpoint {
 
     static func updateWeightRecord(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "weight/records/\(id)",
+            path: "weight/records/\(Self.sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -121,7 +130,7 @@ struct APIEndpoint {
 
     static func deleteWeightRecord(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "weight/records/\(id)",
+            path: "weight/records/\(Self.sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -192,7 +201,7 @@ struct APIEndpoint {
 
     static func updateMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(id)",
+            path: "my-menu/\(Self.sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -200,7 +209,7 @@ struct APIEndpoint {
 
     static func deleteMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(id)",
+            path: "my-menu/\(Self.sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -208,7 +217,7 @@ struct APIEndpoint {
 
     static func recordMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(id)/record",
+            path: "my-menu/\(Self.sanitizedPathID(id))/record",
             method: .post,
             requiresAuth: true
         )
