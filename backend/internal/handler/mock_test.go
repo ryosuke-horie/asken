@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_ FoodService                    = (*MockFoodService)(nil)
+	_ FoodService                   = (*MockFoodService)(nil)
 	_ repository.AnalysisRepository = (*MockAnalysisRepository)(nil)
 )
 
