@@ -223,18 +223,19 @@ infrastructure/
 
 ## デプロイフロー
 
-mainブランチにpushすると、GitHub Actionsが自動的にバックエンドをCloud Runにデプロイします。
+GitHub Actionsは使用せず、ローカルでデプロイスクリプトを実行してCloud Runへデプロイします。
 
 ```
-Push to main → Build Docker image → Push to Artifact Registry → Deploy to Cloud Run
+Local Execute → Build Docker image → Push to Artifact Registry → Deploy to Cloud Run
 ```
 
-デプロイワークフロー: `.github/workflows/deploy.yml`
+デプロイスクリプト: `tools/deploy/deploy-dev.sh`
+Task経由の実行: `task deploy:dev`
 
 ### Workload Identity Federation（WIF）
 
-GitHub ActionsからGCPへの認証にはWorkload Identity Federationを使用しています。
-これによりサービスアカウントキーの管理が不要になり、セキュリティが向上します。
+WIFリソースはTerraformで引き続き管理されていますが、現在のデプロイフロー（ローカルスクリプト）では必須ではありません。
+必要に応じて将来の自動化用途で再利用できます。
 
 WIF構成:
 - Workload Identity Pool: `github-pool`
@@ -243,7 +244,7 @@ WIF構成:
 
 > Note: Pool名、Provider名、認証条件の詳細は `infrastructure/modules/wif/` を参照してください。
 
-GitHub Actions環境変数（Terraformで自動設定）:
+GitHub変数（Terraformで管理）:
 - `WORKLOAD_IDENTITY_PROVIDER`: WIFプロバイダーのフルパス
 - `SERVICE_ACCOUNT_EMAIL`: Cloud RunサービスアカウントのEmail
 

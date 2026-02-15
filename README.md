@@ -53,13 +53,17 @@ utikomi/
 
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
+| mise | 最新 | ツール管理（Go/Terraform/Lefthook） |
 | Go | 1.25以上 | バックエンド開発 |
 | Xcode | 16以上 | iOS開発 |
 | Task | 3.x | タスクランナー |
+| Lefthook | 2.x | Gitフック（lint/test/format） |
 
 ### バックエンドのセットアップ
 
 ```bash
+mise trust
+mise install
 task setup
 ```
 
@@ -93,8 +97,9 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 ### デプロイ
 
-- 自動デプロイ: `backend/**` への変更がmainブランチにマージされると自動デプロイ
-- 手動デプロイ: GitHub Actions の「Deploy」ワークフローから手動実行可能
+- 手動デプロイ（推奨）: `task deploy:dev`
+- スクリプト直接実行: `./tools/deploy/deploy-dev.sh`
+- E2E込みで実行: `./tools/deploy/deploy-dev.sh --run-e2e`
 
 詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
@@ -110,6 +115,13 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 6. 結果が表示され、食事として保存可能
 
 ## テスト実行
+
+通常の開発では、Lefthookにより `pre-commit` / `pre-push` で lint・format・test が実行されます。
+初回のみ以下を実行してください:
+
+```bash
+task hooks:install
+```
 
 ### バックエンドテスト
 
