@@ -99,7 +99,11 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 - 手動デプロイ（推奨）: `task deploy:dev`
 - スクリプト直接実行: `./tools/deploy/deploy-dev.sh`
-- E2E込みで実行: `./tools/deploy/deploy-dev.sh --run-e2e`
+
+### E2E
+
+- 開発環境E2E実行: `task e2e:dev`
+- スクリプト直接実行: `./tools/e2e/run-backend-e2e-dev.sh`
 
 詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 

@@ -167,22 +167,24 @@ infrastructure/
 | GitHub Secrets | Terraform管理（既存構成） |
 | GitHub Variables | Terraform管理（既存構成） |
 
-## 品質ゲート・デプロイフロー
+## 品質ゲート・デプロイ/E2Eフロー
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Local Development Flow                        │
 ├─────────────────────────────────────────────────────────────────┤
 │  1. Git hooks (Lefthook): lint / format / backend test          │
-│  2. 手動デプロイスクリプト実行                                   │
+│  2. 手動デプロイスクリプト実行（deploy）                         │
 │  3. Docker Build (multi-stage)                                  │
 │  4. Push to Artifact Registry                                   │
 │  5. Deploy to Cloud Run                                         │
+│  6. E2Eスクリプト実行（e2e）                                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 フック設定: `lefthook.yml`（iOSテストは一時停止中）
 デプロイスクリプト: `tools/deploy/deploy-dev.sh`
+E2Eスクリプト: `tools/e2e/run-backend-e2e-dev.sh`
 
 ## 関連コードマップ
 

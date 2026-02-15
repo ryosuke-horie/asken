@@ -163,6 +163,7 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `task help` | 利用可能なコマンド一覧を表示 |
 | `task hooks:install` | Lefthookフックをインストール |
 | `task hooks:run` | pre-commitフックを手動実行 |
+| `task e2e:dev` | 開発環境のバックエンドE2Eテストを実行 |
 
 ### バックエンド
 
@@ -221,12 +222,21 @@ firebase deploy --only firestore:indexes --project utikomi-dev
 ```bash
 # 開発環境へデプロイ
 task deploy:dev
-
-# E2Eテスト込みでデプロイ
-./tools/deploy/deploy-dev.sh --run-e2e
 ```
 
 詳細は[RUNBOOK.md](./RUNBOOK.md#デプロイ)を参照してください。
+
+### E2Eテスト（開発環境）
+
+デプロイとは分離して、E2E専用スクリプトを使用します。
+
+```bash
+# 開発環境のバックエンドE2Eテストを実行
+task e2e:dev
+
+# スクリプトを直接実行
+./tools/e2e/run-backend-e2e-dev.sh
+```
 
 ## テスト手順
 

@@ -39,9 +39,6 @@ task deploy:dev
 
 # スクリプトを直接実行
 ./tools/deploy/deploy-dev.sh
-
-# デプロイ後にE2Eテストも実行
-./tools/deploy/deploy-dev.sh --run-e2e
 ```
 
 実行フロー:
@@ -52,6 +49,21 @@ Local Execute → Build Docker → Push to Artifact Registry → Deploy to Cloud
 
 スクリプト: `tools/deploy/deploy-dev.sh`
 オプション/環境変数の詳細: `tools/deploy/README.md`
+
+### E2Eテスト（分離実行）
+
+E2Eテストはデプロイと分離して実行します。
+
+```bash
+# 推奨: Task経由で実行
+task e2e:dev
+
+# スクリプトを直接実行
+./tools/e2e/run-backend-e2e-dev.sh
+```
+
+スクリプト: `tools/e2e/run-backend-e2e-dev.sh`
+オプション/環境変数の詳細: `tools/e2e/README.md`
 
 ### デプロイの確認
 
