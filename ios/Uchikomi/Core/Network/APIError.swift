@@ -20,10 +20,15 @@ enum APIError: LocalizedError {
         case .invalidResponse:
             return "無効なレスポンスです"
         case let .httpError(statusCode, message):
+            #if DEBUG
             if let message {
-                return message
+                return "HTTPエラー(\(statusCode)): \(message)"
             }
             return "HTTPエラー: \(statusCode)"
+            #else
+            _ = message
+            return "サーバーとの通信に失敗しました（コード: \(statusCode)）"
+            #endif
         case .decodingError:
             return "レスポンスの解析に失敗しました"
         case .encodingError:
@@ -33,7 +38,12 @@ enum APIError: LocalizedError {
         case .notFound:
             return "データが見つかりません"
         case let .serverError(message):
+            #if DEBUG
             return "サーバーエラー: \(message)"
+            #else
+            _ = message
+            return "サーバーエラーが発生しました。しばらくしてから再度お試しください"
+            #endif
         }
     }
 }
