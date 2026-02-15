@@ -1,0 +1,31 @@
+pre-commit:
+  parallel: true
+  commands:
+    backend-format:
+      glob: "backend/**/*.go"
+      run: gofmt -w {staged_files} && git add {staged_files}
+
+    backend-lint:
+      glob: "backend/**/*.go"
+      run: task lint
+
+    ios-format-check:
+      glob: "ios/**/*.swift"
+      run: task ios:format-check
+
+    ios-lint:
+      glob: "ios/**/*.swift"
+      run: task ios:lint
+
+pre-push:
+  parallel: true
+  commands:
+    backend-test:
+      run: |
+        if git rev-parse --verify @{upstream} >/dev/null 2>&1; then
+          if ! git diff --name-only @{upstream}...HEAD | rg -q '^backend/'; then
+            echo "No backend changes. Skip backend tests."
+            exit 0
+          fi
+        fi
+        task test

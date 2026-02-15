@@ -1,6 +1,6 @@
 # 運用手順書（RUNBOOK）
 
-最終更新: 2026-02-13
+最終更新: 2026-02-15
 
 GCPサーバレス環境の運用手順、監視、トラブルシューティングを説明します。
 
@@ -23,23 +23,47 @@ GCPサーバレス環境の運用手順、監視、トラブルシューティ�
 | 認証 | Firebase Auth | ユーザー認証 |
 | シークレット | Secret Manager | APIキー等の安全な保存 |
 | AI | Gemini API | 画像認識・栄養素分析 |
-| CI/CD認証 | Workload Identity Federation | キーレス認証 |
+| デプロイ方式 | Shell Script | `tools/deploy/deploy-dev.sh` をローカル実行 |
 
 インフラはTerraformで管理: [infrastructure/README.md](../infrastructure/README.md)
 
 ## デプロイ
 
-### 自動デプロイ（推奨）
+### 手動デプロイ（推奨）
 
-mainブランチにpushすると、GitHub Actionsが自動的にCloud Runにデプロイします。
+GitHub Actionsは使用せず、ローカル実行のシェルスクリプトでCloud Runにデプロイします。
+
+```bash
+# 推奨: Task経由で実行
+task deploy:dev
+
+# スクリプトを直接実行
+./tools/deploy/deploy-dev.sh
+```
+
+実行フロー:
 
 ```
-Push to main → Build Docker → Push to Artifact Registry → Deploy to Cloud Run → E2Eテスト
+Local Execute → Build Docker → Push to Artifact Registry → Deploy to Cloud Run
 ```
 
-ワークフロー: `.github/workflows/deploy.yml`
+スクリプト: `tools/deploy/deploy-dev.sh`
+オプション/環境変数の詳細: `tools/deploy/README.md`
 
-同時実行制御: デプロイは`concurrency`設定により直列化されています。新しいデプロイが開始されると、実行中のデプロイはキャンセルされます（E2Eテストのレート制限競合を防止）。
+### E2Eテスト（分離実行）
+
+E2Eテストはデプロイと分離して実行します。
+
+```bash
+# 推奨: Task経由で実行
+task e2e:dev
+
+# スクリプトを直接実行
+./tools/e2e/run-backend-e2e-dev.sh
+```
+
+スクリプト: `tools/e2e/run-backend-e2e-dev.sh`
+オプション/環境変数の詳細: `tools/e2e/README.md`
 
 ### デプロイの確認
 
@@ -184,21 +208,17 @@ Artifact Registryへの認証が切れている可能性があります:
 gcloud auth configure-docker asia-northeast1-docker.pkg.dev
 ```
 
-#### GitHub Actions WIF認証エラー
+#### gcloud認証エラー
 
 ```
-Error: google-github-actions/auth failed with: unable to generate credentials
+ERROR: no active gcloud account. Run: gcloud auth login
 ```
 
-WIF設定を確認:
+gcloud認証を設定:
 
 ```bash
-# Workload Identity Poolの確認
-gcloud iam workload-identity-pools list --location=global
-
-# Providerの確認
-gcloud iam workload-identity-pools providers list \
-  --workload-identity-pool=github-pool --location=global
+gcloud auth login
+gcloud auth application-default login
 ```
 
 #### Cloud Run起動失敗

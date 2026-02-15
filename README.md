@@ -44,7 +44,7 @@ utikomi/
 └── docs/                       # ドキュメント
     ├── CODEMAPS/              # コードマップ
     ├── adr/                   # アーキテクチャ決定記録
-    └── plan/                  # 実装計画
+    └── specs/                 # 仕様書
 ```
 
 ## セットアップ
@@ -53,13 +53,17 @@ utikomi/
 
 | ツール | バージョン | 用途 |
 |:---|:---|:---|
+| mise | 最新 | ツール管理（Go/Terraform/Lefthook） |
 | Go | 1.25以上 | バックエンド開発 |
 | Xcode | 16以上 | iOS開発 |
 | Task | 3.x | タスクランナー |
+| Lefthook | 2.x | Gitフック（lint/test/format） |
 
 ### バックエンドのセットアップ
 
 ```bash
+mise trust
+mise install
 task setup
 ```
 
@@ -93,8 +97,13 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 ### デプロイ
 
-- 自動デプロイ: `backend/**` への変更がmainブランチにマージされると自動デプロイ
-- 手動デプロイ: GitHub Actions の「Deploy」ワークフローから手動実行可能
+- 手動デプロイ（推奨）: `task deploy:dev`
+- スクリプト直接実行: `./tools/deploy/deploy-dev.sh`
+
+### E2E
+
+- 開発環境E2E実行: `task e2e:dev`
+- スクリプト直接実行: `./tools/e2e/run-backend-e2e-dev.sh`
 
 詳細は [docs/RUNBOOK.md](./docs/RUNBOOK.md) を参照してください。
 
@@ -110,6 +119,13 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 6. 結果が表示され、食事として保存可能
 
 ## テスト実行
+
+通常の開発では、Lefthookにより `pre-commit` / `pre-push` で lint・format・backend test が実行されます（iOSテストは一時停止中）。
+初回のみ以下を実行してください:
+
+```bash
+task hooks:install
+```
 
 ### バックエンドテスト
 

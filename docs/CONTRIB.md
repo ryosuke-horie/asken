@@ -1,6 +1,6 @@
 # 開発者ガイド（CONTRIB）
 
-最終更新: 2026-02-13
+最終更新: 2026-02-15
 
 このドキュメントは、ウチコミプロジェクトの開発ワークフロー、利用可能なコマンド、環境セットアップ、テスト手順を説明します。
 
@@ -13,6 +13,7 @@
 | Terraform | 1.10以上 | インフラ管理（miseで自動インストール） |
 | Docker / Docker Compose | 最新 | ローカル開発用 |
 | Task | 3.x | タスクランナー |
+| Lefthook | 2.x | Gitフック（lint/test/format） |
 | golangci-lint | 最新 | Goリント |
 | Xcode | 16以上 | iOS開発 |
 | Mockolo | 最新 | iOSモック生成 |
@@ -35,10 +36,13 @@ cd utikomi
 # 初回のみ信頼設定
 mise trust
 mise install
+
+# Git hooksをインストール
+task hooks:install
 ```
 
 miseが自動的に以下を管理します:
-- ツールバージョン: Go 1.25.6, Terraform 1.10
+- ツールバージョン: Go 1.25.6, Terraform 1.10, Lefthook 2.1.1
 - GCP環境変数: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ZONE`
 - gcloud構成の自動切り替え: `CLOUDSDK_ACTIVE_CONFIG_NAME=utikomi-dev`
 - Terraform変数: `TF_VAR_*` プレフィックスで自動設定
@@ -127,11 +131,22 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task run
 
 ```bash
 # バックエンド
+task format
 task lint
 task test
 
 # iOS
-task ios:test
+task ios:format-check
+task ios:lint
+```
+
+iOSテストは現在一時停止中です。必要時のみ手動で `task ios:test` を実行してください。
+
+通常はLefthookにより `pre-commit` / `pre-push` で自動実行されます（backend testのみ。iOSテストは一時停止中）。
+手動実行したい場合:
+
+```bash
+task hooks:run
 ```
 
 ### 開発終了時
@@ -146,6 +161,9 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 |:---|:---|
 | `task --list` | 利用可能なコマンド一覧を表示 |
 | `task help` | 利用可能なコマンド一覧を表示 |
+| `task hooks:install` | Lefthookフックをインストール |
+| `task hooks:run` | pre-commitフックを手動実行 |
+| `task e2e:dev` | 開発環境のバックエンドE2Eテストを実行 |
 
 ### バックエンド
 
@@ -156,6 +174,7 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
 | `task lint` | golangci-lintを実行（デッドコード検知を含む） |
+| `task format` | Goコードを整形 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
 
@@ -191,16 +210,33 @@ firebase deploy --only firestore:indexes --project utikomi-dev
 | `task ios:lint` | SwiftLintを実行 |
 | `task ios:deadcode` | Swiftデッドコード検知（Periphery）を実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
-| `task ios:format-check` | SwiftFormatチェック（CI用） |
+| `task ios:format-check` | SwiftFormatチェック（ローカル検証用） |
 | `task ios:clean` | DerivedDataを削除 |
 | `task ios:clean-all` | SPMキャッシュを含む完全クリア |
 | `task ios:reset-packages` | Package.resolvedを削除して再解決 |
 
 ### デプロイ
 
-デプロイはGitHub Actionsにより自動化されています。mainブランチにpushすると自動的にCloud Runにデプロイされます。
+デプロイはローカル実行のシェルスクリプトを使用します。
+
+```bash
+# 開発環境へデプロイ
+task deploy:dev
+```
 
 詳細は[RUNBOOK.md](./RUNBOOK.md#デプロイ)を参照してください。
+
+### E2Eテスト（開発環境）
+
+デプロイとは分離して、E2E専用スクリプトを使用します。
+
+```bash
+# 開発環境のバックエンドE2Eテストを実行
+task e2e:dev
+
+# スクリプトを直接実行
+./tools/e2e/run-backend-e2e-dev.sh
+```
 
 ## テスト手順
 
@@ -293,8 +329,8 @@ GCPリソースはTerraformで管理しています。
 | Cloud Storage | 画像保存 |
 | Firebase Auth | ユーザー認証 |
 | Secret Manager | APIキー等のシークレット管理 |
-| Workload Identity Federation | GitHub ActionsからのGCP認証（キーレス） |
-| GitHub Secrets/Variables | CI/CD用シークレット |
+| Workload Identity Federation | Terraform管理（既存構成） |
+| GitHub Secrets/Variables | Terraform管理（既存構成） |
 
 ### セットアップ
 
