@@ -16,6 +16,18 @@ tasks:
     cmds:
       - task --list
 
+  hooks:install:
+    desc: LefthookのGitフックをインストール
+    cmds:
+      - echo "=== Lefthookフックをインストール ==="
+      - lefthook install
+      - echo "インストール完了"
+
+  hooks:run:
+    desc: Lefthookのpre-commitフックを手動実行
+    cmds:
+      - lefthook run pre-commit
+
   setup:
     desc: 初期セットアップ（依存関係のダウンロード）
     dir: "{{.BACKEND_DIR}}"
@@ -55,6 +67,13 @@ tasks:
     cmds:
       - echo "=== Goリント実行 ==="
       - golangci-lint run ./...
+
+  format:
+    desc: Goコードを整形
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - echo "=== Goフォーマット実行 ==="
+      - go fmt ./...
 
   build:
     desc: Goバイナリをビルド
@@ -154,7 +173,7 @@ tasks:
       - swiftformat .
 
   ios:format-check:
-    desc: SwiftFormatのチェック（変更なし、CI用）
+    desc: SwiftFormatのチェック（変更なし、ローカル検証用）
     dir: ios
     cmds:
       - echo "=== SwiftFormatチェック ==="
@@ -196,3 +215,8 @@ tasks:
       - rm -f ios/Uchikomi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
       - echo "Package.resolved削除完了"
       - echo "Xcodeで File > Packages > Resolve Package Versions を実行してください"
+
+  deploy:dev:
+    desc: 開発環境へデプロイ（Docker build/push + Cloud Run deploy）
+    cmds:
+      - ./tools/deploy/deploy-dev.sh
