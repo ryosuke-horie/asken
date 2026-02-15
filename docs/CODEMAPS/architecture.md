@@ -173,16 +173,16 @@ infrastructure/
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Local Development Flow                        │
 ├─────────────────────────────────────────────────────────────────┤
-│  1. Git hooks (Lefthook): lint / format / test                  │
+│  1. Git hooks (Lefthook): lint / format / backend test          │
 │  2. 手動デプロイスクリプト実行                                   │
 │  3. Docker Build (multi-stage)                                  │
 │  4. Push to Artifact Registry                                   │
 │  5. Deploy to Cloud Run                                         │
 └─────────────────────────────────────────────────────────────────┘
-
-フック設定: `lefthook.yml`
-デプロイスクリプト: `tools/deploy/deploy-dev.sh`
 ```
+
+フック設定: `lefthook.yml`（iOSテストは一時停止中）
+デプロイスクリプト: `tools/deploy/deploy-dev.sh`
 
 ## 関連コードマップ
 

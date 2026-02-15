@@ -116,7 +116,7 @@ curl https://uchikomi-api-dev-ah4e2vgm6q-an.a.run.app/api/health
 
 ## テスト実行
 
-通常の開発では、Lefthookにより `pre-commit` / `pre-push` で lint・format・test が実行されます。
+通常の開発では、Lefthookにより `pre-commit` / `pre-push` で lint・format・backend test が実行されます（iOSテストは一時停止中）。
 初回のみ以下を実行してください:
 
 ```bash

@@ -51,6 +51,7 @@ Local Execute → Build Docker → Push to Artifact Registry → Deploy to Cloud
 ```
 
 スクリプト: `tools/deploy/deploy-dev.sh`
+オプション/環境変数の詳細: `tools/deploy/README.md`
 
 ### デプロイの確認
 
