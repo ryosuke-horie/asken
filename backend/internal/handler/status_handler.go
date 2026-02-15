@@ -27,6 +27,11 @@ func NewStatusHandler(repository repository.AnalysisRepository) *StatusHandler {
 func (h *StatusHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received status request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {

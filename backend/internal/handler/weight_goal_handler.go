@@ -41,6 +41,11 @@ type WeightGoalNullableResponse struct {
 
 // HandleGet はGET /api/weight/goalリクエストを処理
 func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -76,6 +81,11 @@ func (h *WeightGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 // HandleSet はPUT /api/weight/goalリクエストを処理
 func (h *WeightGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
