@@ -9,6 +9,11 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
+var (
+	_ FoodService                    = (*MockFoodService)(nil)
+	_ repository.AnalysisRepository = (*MockAnalysisRepository)(nil)
+)
+
 // MockFoodService はテスト用のモックFoodService
 type MockFoodService struct {
 	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
@@ -138,9 +143,9 @@ func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType
 	return uuid.Nil, nil
 }
 
-func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string, id uuid.UUID, foods []gemini.NutritionInfo) error {
+func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error {
 	if m.UpdateResultFunc != nil {
-		return m.UpdateResultFunc(ctx, userID, id, foods)
+		return m.UpdateResultFunc(ctx, userID, historyID, foods)
 	}
 	return nil
 }
