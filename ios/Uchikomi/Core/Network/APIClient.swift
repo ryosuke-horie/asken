@@ -89,13 +89,14 @@ actor APIClient {
 
         // Add additional fields
         for (key, value) in additionalFields {
+            let safeKey = sanitizeHeaderValue(key)
             body.append(Data("--\(boundary)\r\n".utf8))
-            body.append(Data("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(safeKey)\"\r\n\r\n".utf8))
             body.append(Data("\(value)\r\n".utf8))
         }
 
         // Add image data
-        let safeFilename = sanitizeFilename(filename)
+        let safeFilename = sanitizeHeaderValue(filename)
         body.append(Data("--\(boundary)\r\n".utf8))
         body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(safeFilename)\"\r\n".utf8))
         body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
@@ -162,10 +163,12 @@ actor APIClient {
 
     // MARK: - Sanitization
 
-    private func sanitizeFilename(_ filename: String) -> String {
-        var sanitized = filename
-        for char in ["\"", "\r", "\n", "\0"] {
-            sanitized = sanitized.replacingOccurrences(of: char, with: "")
+    private func sanitizeHeaderValue(_ value: String) -> String {
+        let forbidden: Set<Character> = ["\"", "\r", "\n", "\0", "\\", ";"]
+        let sanitized = String(value.filter { !forbidden.contains($0) })
+        guard !sanitized.isEmpty else {
+            assertionFailure("[APIClient] sanitizeHeaderValue produced empty string from input: \(value)")
+            return "image.jpg"
         }
         return sanitized
     }
