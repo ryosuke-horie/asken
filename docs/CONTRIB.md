@@ -142,7 +142,7 @@ task ios:lint
 
 iOSテストは現在一時停止中です。必要時のみ手動で `task ios:test` を実行してください。
 
-通常はLefthookにより `pre-commit` / `pre-push` で自動実行されます。
+通常はLefthookにより `pre-commit` / `pre-push` で自動実行されます（backend testのみ。iOSテストは一時停止中）。
 手動実行したい場合:
 
 ```bash
