@@ -298,6 +298,13 @@ Secret Manager管理のシークレット:
 |:---|:---|
 | gemini-api-key | Gemini API キー（Google AI Studio発行） |
 
+## 運用スクリプト
+
+| スクリプト | 役割 |
+|:---|:---|
+| `tools/deploy/deploy-dev.sh` | Cloud Runへの手動デプロイ |
+| `tools/e2e/run-backend-e2e-dev.sh` | 開発環境のバックエンドE2Eテスト実行（デプロイと分離） |
+
 ## 関連コードマップ
 
 - [全体アーキテクチャ](./architecture.md)

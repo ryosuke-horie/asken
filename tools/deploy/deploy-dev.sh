@@ -15,12 +15,10 @@ Options:
   --artifact-registry-url <url>    Artifact Registry base URL
   --service-name <name>            Cloud Run service name
   --image-tag <tag>                Image tag suffix (default: git short SHA)
-  --run-e2e                        Run backend E2E tests after deploy
   --help                           Show this help
 
 Environment variable fallback:
   GCP_PROJECT_ID, GCP_REGION, ARTIFACT_REGISTRY_URL, CLOUD_RUN_SERVICE_NAME
-  E2E_FIREBASE_API_KEY, SERVICE_ACCOUNT_EMAIL, E2E_TEST_UID
 USAGE
 }
 
@@ -48,7 +46,6 @@ REGION="${GCP_REGION:-asia-northeast1}"
 ARTIFACT_REGISTRY_URL="${ARTIFACT_REGISTRY_URL:-$(tf_output artifact_registry_url)}"
 CLOUD_RUN_SERVICE_NAME="${CLOUD_RUN_SERVICE_NAME:-$(tf_output cloud_run_service_name)}"
 CUSTOM_IMAGE_TAG="${IMAGE_TAG:-}"
-RUN_E2E=false
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -71,10 +68,6 @@ while [ $# -gt 0 ]; do
     --image-tag)
       CUSTOM_IMAGE_TAG="$2"
       shift 2
-      ;;
-    --run-e2e)
-      RUN_E2E=true
-      shift
       ;;
     --help|-h)
       usage
@@ -156,16 +149,3 @@ URL="$(gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
 
 echo "=== Deploy complete ==="
 echo "URL: ${URL}"
-
-if [ "${RUN_E2E}" = true ]; then
-  require_cmd go
-  echo "=== Run E2E tests ==="
-  (
-    cd "${BACKEND_DIR}"
-    E2E_BASE_URL="${URL}" \
-    E2E_FIREBASE_API_KEY="${E2E_FIREBASE_API_KEY:-}" \
-    SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_EMAIL:-}" \
-    E2E_TEST_UID="${E2E_TEST_UID:-e2e-test-user}" \
-    go test -v -tags=e2e ./e2e/...
-  )
-fi

@@ -3,13 +3,11 @@
 ## `deploy-dev.sh`
 
 開発環境（Cloud Run）へバックエンドをデプロイするスクリプトです。
+E2E実行は含まず、デプロイ処理のみに責務を限定しています。
 
 ```bash
 # デフォルト設定でデプロイ
 ./tools/deploy/deploy-dev.sh
-
-# E2Eテストも実行
-./tools/deploy/deploy-dev.sh --run-e2e
 ```
 
 ### 設定方法
@@ -26,11 +24,11 @@
 - `GCP_REGION`
 - `ARTIFACT_REGISTRY_URL`
 - `CLOUD_RUN_SERVICE_NAME`
-- `E2E_FIREBASE_API_KEY`（`--run-e2e` 時）
-- `SERVICE_ACCOUNT_EMAIL`（必要に応じて）
 
 ### 前提
 
 - `gcloud` でログイン済み (`gcloud auth login`)
 - Docker が起動している
 - Artifact Registry / Cloud Run へ必要な権限がある
+
+E2E実行は `tools/e2e/run-backend-e2e-dev.sh` を使用してください。

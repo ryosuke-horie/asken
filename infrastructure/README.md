@@ -232,6 +232,10 @@ Local Execute → Build Docker image → Push to Artifact Registry → Deploy to
 デプロイスクリプト: `tools/deploy/deploy-dev.sh`
 Task経由の実行: `task deploy:dev`
 
+E2Eテストは別スクリプトで実行:
+- `tools/e2e/run-backend-e2e-dev.sh`
+- `task e2e:dev`
+
 ### Workload Identity Federation（WIF）
 
 WIFリソースはTerraformで引き続き管理されていますが、現在のデプロイフロー（ローカルスクリプト）では必須ではありません。

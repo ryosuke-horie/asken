@@ -220,3 +220,8 @@ tasks:
     desc: 開発環境へデプロイ（Docker build/push + Cloud Run deploy）
     cmds:
       - ./tools/deploy/deploy-dev.sh
+
+  e2e:dev:
+    desc: 開発環境のバックエンドE2Eテストを実行
+    cmds:
+      - ./tools/e2e/run-backend-e2e-dev.sh
