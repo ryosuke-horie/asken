@@ -99,3 +99,6 @@ xcuserdata/
 
 # Claude Code reports (temporary files)
 .reports/
+
+# Internal planning docs
+docs/plan/
