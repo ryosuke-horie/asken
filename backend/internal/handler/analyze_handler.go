@@ -46,6 +46,11 @@ func NewAnalyzeHandler(foodService FoodService, repository repository.AnalysisRe
 func (h *AnalyzeHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// Content-Typeで処理を分岐
 	contentType := r.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/json") {
@@ -226,6 +231,11 @@ func (h *AnalyzeHandler) handleImageUpload(w http.ResponseWriter, r *http.Reques
 
 // HandleUploadImage は画像のみをアップロードし、パスを返す（分析なし）
 func (h *AnalyzeHandler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// 1. multipart/form-data パース
 	err := r.ParseMultipartForm(10 << 20) // 10MB制限
 	if err != nil {

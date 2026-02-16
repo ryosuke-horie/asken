@@ -29,6 +29,11 @@ type DailyMealsResponse struct {
 
 // Handle はGET /api/meals/dailyリクエストを処理
 func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	// contextからユーザーIDを取得
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {

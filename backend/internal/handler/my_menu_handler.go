@@ -35,13 +35,13 @@ func NewMyMenuHandler(myMenuRepo repository.MyMenuRepository, analysisRepo repos
 
 // CreateMyMenuRequest はマイメニュー作成リクエスト
 type CreateMyMenuRequest struct {
-	Name  string                `json:"name"`
+	Name  string                 `json:"name"`
 	Foods []gemini.NutritionInfo `json:"foods"`
 }
 
 // UpdateMyMenuRequest はマイメニュー更新リクエスト
 type UpdateMyMenuRequest struct {
-	Name  string                `json:"name"`
+	Name  string                 `json:"name"`
 	Foods []gemini.NutritionInfo `json:"foods"`
 }
 
@@ -53,15 +53,15 @@ type RecordMyMenuRequest struct {
 
 // MyMenuResponse はマイメニューのレスポンス
 type MyMenuResponse struct {
-	ID                 string                    `json:"id"`
-	Name               string                    `json:"name"`
-	Foods              []gemini.NutritionInfo    `json:"foods"`
-	TotalCalories      float64                   `json:"totalCalories"`
-	TotalProtein       float64                   `json:"totalProtein"`
-	TotalFat           float64                   `json:"totalFat"`
-	TotalCarbohydrates float64                   `json:"totalCarbohydrates"`
-	CreatedAt          string                    `json:"createdAt"`
-	UpdatedAt          string                    `json:"updatedAt"`
+	ID                 string                 `json:"id"`
+	Name               string                 `json:"name"`
+	Foods              []gemini.NutritionInfo `json:"foods"`
+	TotalCalories      float64                `json:"totalCalories"`
+	TotalProtein       float64                `json:"totalProtein"`
+	TotalFat           float64                `json:"totalFat"`
+	TotalCarbohydrates float64                `json:"totalCarbohydrates"`
+	CreatedAt          string                 `json:"createdAt"`
+	UpdatedAt          string                 `json:"updatedAt"`
 }
 
 // AnalysisIDResponse は分析IDのレスポンス
@@ -71,6 +71,11 @@ type AnalysisIDResponse struct {
 
 // HandleList はGET /api/my-menu リクエストを処理
 func (h *MyMenuHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -103,6 +108,11 @@ func (h *MyMenuHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 // HandleCreate はPOST /api/my-menu リクエストを処理
 func (h *MyMenuHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -150,6 +160,11 @@ func (h *MyMenuHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 // HandleGet はGET /api/my-menu/{id} リクエストを処理
 func (h *MyMenuHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -187,6 +202,11 @@ func (h *MyMenuHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 // HandleUpdate はPUT /api/my-menu/{id} リクエストを処理
 func (h *MyMenuHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -243,6 +263,11 @@ func (h *MyMenuHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 // HandleDelete はDELETE /api/my-menu/{id} リクエストを処理
 func (h *MyMenuHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -271,6 +296,11 @@ func (h *MyMenuHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 // HandleRecord はPOST /api/my-menu/{id}/record リクエストを処理
 func (h *MyMenuHandler) HandleRecord(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)

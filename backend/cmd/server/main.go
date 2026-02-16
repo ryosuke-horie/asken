@@ -50,18 +50,18 @@ func main() {
 }
 
 type handlers struct {
-	health          *handler.HealthHandler
-	analyze         *handler.AnalyzeHandler
-	status          *handler.StatusHandler
-	history         *handler.HistoryHandler
-	historyDelete   *handler.HistoryDeleteHandler
-	image           *handler.ImageHandler
-	dailyMeals      *handler.DailyMealsHandler
-	skipMeal        *handler.SkipMealHandler
-	weightRecord    *handler.WeightRecordHandler
-	weightGoal      *handler.WeightGoalHandler
-	nutritionGoal   *handler.NutritionGoalHandler
-	myMenu          *handler.MyMenuHandler
+	health        *handler.HealthHandler
+	analyze       *handler.AnalyzeHandler
+	status        *handler.StatusHandler
+	history       *handler.HistoryHandler
+	historyDelete *handler.HistoryDeleteHandler
+	image         *handler.ImageHandler
+	dailyMeals    *handler.DailyMealsHandler
+	skipMeal      *handler.SkipMealHandler
+	weightRecord  *handler.WeightRecordHandler
+	weightGoal    *handler.WeightGoalHandler
+	nutritionGoal *handler.NutritionGoalHandler
+	myMenu        *handler.MyMenuHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -205,8 +205,14 @@ func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/my-menu", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuListRouteHandler))))
 
 	myMenuDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		normalizedPath := strings.TrimSuffix(r.URL.Path, "/")
+
 		// /api/my-menu/:id/record エンドポイントの処理
-		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/record") {
+		if strings.HasSuffix(normalizedPath, "/record") {
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
 			h.myMenu.HandleRecord(w, r)
 			return
 		}
@@ -315,18 +321,18 @@ func run() error {
 
 	// ハンドラーの初期化
 	h := handlers{
-		health:          handler.NewHealthHandler(),
-		analyze:         handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
-		status:          handler.NewStatusHandler(analysisRepo),
-		history:         handler.NewHistoryHandler(analysisRepo, geminiClient),
-		historyDelete:   handler.NewHistoryDeleteHandler(analysisRepo),
-		image:           handler.NewImageHandler(storageRepo),
-		dailyMeals:      handler.NewDailyMealsHandler(analysisRepo),
-		skipMeal:        handler.NewSkipMealHandler(analysisRepo),
-		weightRecord:    handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
-		weightGoal:      handler.NewWeightGoalHandler(weightGoalRepo),
-		nutritionGoal:   handler.NewNutritionGoalHandler(nutritionGoalRepo, weightGoalRepo),
-		myMenu:          handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
+		health:        handler.NewHealthHandler(),
+		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
+		status:        handler.NewStatusHandler(analysisRepo),
+		history:       handler.NewHistoryHandler(analysisRepo, geminiClient),
+		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
+		image:         handler.NewImageHandler(storageRepo),
+		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
+		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
+		weightRecord:  handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
+		weightGoal:    handler.NewWeightGoalHandler(weightGoalRepo),
+		nutritionGoal: handler.NewNutritionGoalHandler(nutritionGoalRepo, weightGoalRepo),
+		myMenu:        handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
 	}
 
 	// ワーカーの初期化
