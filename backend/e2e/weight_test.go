@@ -428,6 +428,8 @@ func TestWeightRecords_List_Unauthorized(t *testing.T) {
 }
 
 func TestWeightRecords_Get_NotFound(t *testing.T) {
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	resp, err := client.Get(ctx, "/api/weight/records/00000000-0000-0000-0000-000000000000")
