@@ -119,6 +119,17 @@ func TestNutritionGoalHandler_HandleGet_Unauthorized(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestNutritionGoalHandler_HandleGet_MethodNotAllowed(t *testing.T) {
+	handler := newTestNutritionGoalHandler(&MockNutritionGoalRepository{}, &MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/nutrition/goal", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestNutritionGoalHandler_HandleGet_WithCurrentWeight(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
@@ -320,6 +331,17 @@ func TestNutritionGoalHandler_HandleSet_Unauthorized(t *testing.T) {
 	handler.HandleSet(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestNutritionGoalHandler_HandleSet_MethodNotAllowed(t *testing.T) {
+	handler := newTestNutritionGoalHandler(&MockNutritionGoalRepository{}, &MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/nutrition/goal", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleSet(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestNutritionGoalHandler_HandleSet_InvalidJSON(t *testing.T) {

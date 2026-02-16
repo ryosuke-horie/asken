@@ -33,6 +33,11 @@ type SkipMealResponse struct {
 
 // Handle はPOST /api/meals/skipリクエストを処理
 func (h *SkipMealHandler) Handle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)

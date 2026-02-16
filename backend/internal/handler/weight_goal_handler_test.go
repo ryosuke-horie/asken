@@ -86,6 +86,17 @@ func TestWeightGoalHandler_HandleGet_Unauthorized(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestWeightGoalHandler_HandleGet_MethodNotAllowed(t *testing.T) {
+	handler := NewWeightGoalHandler(&MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/weight/goal", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestWeightGoalHandler_HandleSet_Success(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
@@ -183,6 +194,17 @@ func TestWeightGoalHandler_HandleSet_Unauthorized(t *testing.T) {
 	handler.HandleSet(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestWeightGoalHandler_HandleSet_MethodNotAllowed(t *testing.T) {
+	handler := NewWeightGoalHandler(&MockWeightGoalRepository{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/weight/goal", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleSet(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestWeightGoalHandler_HandleGet_RepositoryError(t *testing.T) {

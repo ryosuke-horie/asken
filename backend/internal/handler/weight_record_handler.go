@@ -56,9 +56,9 @@ type DailySummary struct {
 
 // WeightRecordsListResponse は体重記録一覧のレスポンス
 type WeightRecordsListResponse struct {
-	Records      []WeightRecordResponse `json:"records"`
+	Records      []WeightRecordResponse  `json:"records"`
 	DailySummary map[string]DailySummary `json:"daily_summary"`
-	Goal         *WeightGoalResponse    `json:"goal"`
+	Goal         *WeightGoalResponse     `json:"goal"`
 }
 
 // UpdateWeightRecordRequest は体重記録更新リクエスト
@@ -69,6 +69,11 @@ type UpdateWeightRecordRequest struct {
 
 // HandleList はGET /api/weight/recordsリクエストを処理
 func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -169,6 +174,11 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 
 // HandleCreate はPOST /api/weight/recordsリクエストを処理
 func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -234,6 +244,11 @@ func (h *WeightRecordHandler) HandleCreate(w http.ResponseWriter, r *http.Reques
 
 // HandleGet はGET /api/weight/records/{id}リクエストを処理
 func (h *WeightRecordHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -271,6 +286,11 @@ func (h *WeightRecordHandler) HandleGet(w http.ResponseWriter, r *http.Request) 
 
 // HandleUpdate はPUT /api/weight/records/{id}リクエストを処理
 func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)
@@ -327,6 +347,11 @@ func (h *WeightRecordHandler) HandleUpdate(w http.ResponseWriter, r *http.Reques
 
 // HandleDelete はDELETE /api/weight/records/{id}リクエストを処理
 func (h *WeightRecordHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	userID := middleware.GetFirebaseUIDFromContext(r.Context())
 	if userID == "" {
 		http.Error(w, "認証が必要です", http.StatusUnauthorized)

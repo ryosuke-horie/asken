@@ -54,6 +54,18 @@ func TestStatusHandler_Pending(t *testing.T) {
 	assert.Equal(t, "分析リクエストを受け付けました", response["message"])
 }
 
+func TestStatusHandler_HandlerGuard_MethodNotAllowed(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewStatusHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/analyze/"+uuid.New().String(), nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestStatusHandler_Processing(t *testing.T) {
 	requestID := uuid.New()
 	testUserID := "test-user-123"

@@ -51,6 +51,18 @@ func TestSkipMealHandler_Handle_Success(t *testing.T) {
 	assert.Equal(t, expectedID.String(), response.ID)
 }
 
+func TestSkipMealHandler_Handle_MethodNotAllowed(t *testing.T) {
+	mockRepo := &MockAnalysisRepository{}
+	handler := NewSkipMealHandler(mockRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/skip", nil)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestSkipMealHandler_Handle_MalformedJSON(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewSkipMealHandler(mockRepo)
