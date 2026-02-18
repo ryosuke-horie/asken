@@ -39,7 +39,7 @@ func createTestPNGData() []byte {
 // ISOBMFF形式: オフセット4に"ftyp"、オフセット8にブランド識別子"heic"
 func createTestHEICData() []byte {
 	data := make([]byte, 512)
-	// Box size (12 bytes minimum for ftyp box)
+	// Box size（テスト用の任意値。isHEICMagicBytesはこのフィールドを検査しない）
 	data[0] = 0x00
 	data[1] = 0x00
 	data[2] = 0x00
@@ -211,6 +211,12 @@ func TestValidateImageFile(t *testing.T) {
 			name:      "HEIC拡張子だがマジックバイトが無効",
 			filename:  "fake.heic",
 			content:   []byte("this is not a heic file at all, just fake data padding to fill buffer"),
+			expectErr: true,
+		},
+		{
+			name:      "JPEG拡張子だがHEICマジックバイト",
+			filename:  "photo.jpg",
+			content:   createTestHEICData(),
 			expectErr: true,
 		},
 		{
