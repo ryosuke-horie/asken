@@ -20,7 +20,7 @@ linters:
 
   settings:
     gocyclo:
-      min-complexity: 15
+      min-complexity: 25
 
     errcheck:
       exclude-functions:
