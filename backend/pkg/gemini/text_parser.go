@@ -58,7 +58,7 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 推定量のルール:
 - quantity_valueは数値で指定してください（例: 1, 2, 150, 200）
 - quantity_unitは以下のいずれかを使用してください:
-  g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒, パック, 大さじ, 小さじ
+  %s
 - 重量がわかる食材はgを使用してください（例: ご飯 → 200g）
 - 飲み物やスープはmlを使用してください（例: 味噌汁 → 200ml）
 - 料理は適切な助数詞を選択してください（例: ラーメン → 1杯, カレー → 1皿）
@@ -69,7 +69,7 @@ func (tp *TextParser) ParseTextToFoods(ctx context.Context, inputText string) ([
 - 量が明記されていない場合は一般的な1食分の量を推定してください
 - 「大盛り」「おかわり」などの表現はquantity_valueに反映してください
 - 個数（2個、3杯など）はquantity_valueとquantity_unitに適切に変換してください
-- 日本語の料理名を使用してください`, inputText)
+- 日本語の料理名を使用してください`, inputText, SupportedUnitsCSV())
 
 	// responseSchemaで出力形式を強制
 	schema := FoodItemSchema()

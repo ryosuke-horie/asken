@@ -79,10 +79,10 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 推定量のルール:
 - quantity_valueは数値で指定してください（入力の推定量をそのまま数値に変換）
 - quantity_unitは以下のいずれかを使用してください:
-  g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒, パック, 大さじ, 小さじ
+  %s
 - 入力の推定量に含まれる単位をそのまま使用してください
 
-一般的な食品成分表に基づいて、妥当な値を推定してください。`, string(foodListJSON))
+一般的な食品成分表に基づいて、妥当な値を推定してください。`, string(foodListJSON), SupportedUnitsCSV())
 
 	// responseSchemaで出力形式を強制
 	schema := NutritionInfoSchema()
