@@ -61,26 +61,23 @@ struct WeightInputView: View {
                     }
                 }
 
-                // クイックノート
+                // タイミング選択
                 VStack(spacing: 8) {
-                    Text("メモ")
+                    Text("タイミング")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(timingOptions) { timing in
-                                Button(timing.rawValue) {
-                                    viewModel.setQuickNote(timing.rawValue)
+                                Button(timing.displayName) {
+                                    viewModel.setQuickNote(timing.displayName)
                                 }
                                 .buttonStyle(.bordered)
-                                .tint(viewModel.memo == timing.rawValue ? Theme.primary : .secondary)
+                                .tint(viewModel.memo == timing.displayName ? Theme.primary : .secondary)
                             }
                         }
                     }
-
-                    TextField("メモを入力", text: $viewModel.memo)
-                        .textFieldStyle(.roundedBorder)
                 }
 
                 if let errorMessage = viewModel.errorMessage {

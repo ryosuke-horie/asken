@@ -22,11 +22,7 @@ struct WeightChartView: View {
     @Binding var selectedPeriod: ChartPeriod
 
     private struct ChartPoint: Identifiable {
-        var id: String {
-            "\(recordID)-\(timing.rawValue)"
-        }
-
-        let recordID: String
+        let id: String
         let date: Date
         let weight: Double
         let timing: WeightTiming
@@ -38,7 +34,7 @@ struct WeightChartView: View {
                   let timing = WeightTiming.from(note: record.note) else {
                 return nil
             }
-            return ChartPoint(recordID: record.id, date: date, weight: record.weightKg, timing: timing)
+            return ChartPoint(id: record.id, date: date, weight: record.weightKg, timing: timing)
         }
     }
 
@@ -74,16 +70,16 @@ struct WeightChartView: View {
                         LineMark(
                             x: .value("日付", point.date),
                             y: .value("体重", point.weight),
-                            series: .value("タイミング", point.timing.rawValue)
+                            series: .value("タイミング", point.timing.displayName)
                         )
-                        .foregroundStyle(by: .value("タイミング", point.timing.rawValue))
+                        .foregroundStyle(by: .value("タイミング", point.timing.displayName))
                         .interpolationMethod(.catmullRom)
 
                         PointMark(
                             x: .value("日付", point.date),
                             y: .value("体重", point.weight)
                         )
-                        .foregroundStyle(by: .value("タイミング", point.timing.rawValue))
+                        .foregroundStyle(by: .value("タイミング", point.timing.displayName))
                         .symbolSize(30)
                     }
 
@@ -99,7 +95,7 @@ struct WeightChartView: View {
                     }
                 }
                 .chartForegroundStyleScale(
-                    domain: WeightTiming.allCases.map(\.rawValue),
+                    domain: WeightTiming.allCases.map(\.displayName),
                     range: WeightTiming.allCases.map(\.color)
                 )
                 .chartYScale(domain: yRange)
