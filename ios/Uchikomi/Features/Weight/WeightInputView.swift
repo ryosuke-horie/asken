@@ -7,7 +7,7 @@ struct WeightInputView: View {
 
     let onSaved: () -> Void
 
-    private let quickNotes = ["起床時", "練習前", "練習後", "就寝前"]
+    private let timingOptions = WeightTiming.allCases
 
     init(
         editingRecord: WeightRecord? = nil,
@@ -69,12 +69,12 @@ struct WeightInputView: View {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(quickNotes, id: \.self) { note in
-                                Button(note) {
-                                    viewModel.setQuickNote(note)
+                            ForEach(timingOptions) { timing in
+                                Button(timing.rawValue) {
+                                    viewModel.setQuickNote(timing.rawValue)
                                 }
                                 .buttonStyle(.bordered)
-                                .tint(viewModel.memo == note ? Theme.primary : .secondary)
+                                .tint(viewModel.memo == timing.rawValue ? Theme.primary : .secondary)
                             }
                         }
                     }

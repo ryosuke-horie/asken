@@ -3,6 +3,24 @@ import os
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightRecord")
 
+// MARK: - WeightTiming
+
+enum WeightTiming: String, CaseIterable, Identifiable {
+    case morning = "起床時"
+    case beforePractice = "練習前"
+    case afterPractice = "練習後"
+    case beforeSleep = "就寝前"
+
+    var id: String {
+        rawValue
+    }
+
+    static func from(note: String?) -> WeightTiming? {
+        guard let note else { return nil }
+        return allCases.first { $0.rawValue == note }
+    }
+}
+
 // MARK: - WeightRecord
 
 struct WeightRecord: Codable, Identifiable {
