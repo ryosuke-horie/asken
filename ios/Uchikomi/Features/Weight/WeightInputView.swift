@@ -7,7 +7,7 @@ struct WeightInputView: View {
 
     let onSaved: () -> Void
 
-    private let quickNotes = ["起床時", "練習前", "練習後", "就寝前"]
+    private let timingOptions = WeightTiming.allCases
 
     init(
         editingRecord: WeightRecord? = nil,
@@ -61,26 +61,23 @@ struct WeightInputView: View {
                     }
                 }
 
-                // クイックノート
+                // タイミング選択
                 VStack(spacing: 8) {
-                    Text("メモ")
+                    Text("タイミング")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(quickNotes, id: \.self) { note in
-                                Button(note) {
-                                    viewModel.setQuickNote(note)
+                            ForEach(timingOptions) { timing in
+                                Button(timing.displayName) {
+                                    viewModel.setQuickNote(timing.displayName)
                                 }
                                 .buttonStyle(.bordered)
-                                .tint(viewModel.memo == note ? Theme.primary : .secondary)
+                                .tint(viewModel.memo == timing.displayName ? Theme.primary : .secondary)
                             }
                         }
                     }
-
-                    TextField("メモを入力", text: $viewModel.memo)
-                        .textFieldStyle(.roundedBorder)
                 }
 
                 if let errorMessage = viewModel.errorMessage {
