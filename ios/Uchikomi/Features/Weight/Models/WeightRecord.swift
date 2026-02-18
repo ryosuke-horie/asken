@@ -3,6 +3,37 @@ import os
 
 private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "WeightRecord")
 
+// MARK: - WeightTiming
+
+enum WeightTiming: String, CaseIterable, Identifiable {
+    case morning
+    case beforePractice
+    case afterPractice
+    case beforeSleep
+
+    var id: String {
+        rawValue
+    }
+
+    var displayName: String {
+        switch self {
+        case .morning: "起床時"
+        case .beforePractice: "練習前"
+        case .afterPractice: "練習後"
+        case .beforeSleep: "就寝前"
+        }
+    }
+
+    static func from(note: String?) -> WeightTiming? {
+        guard let note else { return nil }
+        let result = allCases.first { $0.displayName == note }
+        if result == nil, !note.isEmpty {
+            logger.debug("WeightTiming変換失敗: 未知のnote値 '\(note)'")
+        }
+        return result
+    }
+}
+
 // MARK: - WeightRecord
 
 struct WeightRecord: Codable, Identifiable {

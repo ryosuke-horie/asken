@@ -1,22 +1,45 @@
 import Charts
 import SwiftUI
 
+// MARK: - WeightTiming + Color
+
+extension WeightTiming {
+    var color: Color {
+        switch self {
+        case .morning: Color.blue
+        case .beforePractice: Color.orange
+        case .afterPractice: Color.green
+        case .beforeSleep: Color.purple
+        }
+    }
+}
+
+// MARK: - WeightChartView
+
 struct WeightChartView: View {
     let records: [WeightRecord]
     let goal: WeightGoal?
     @Binding var selectedPeriod: ChartPeriod
 
-    private var chartData: [(date: Date, weight: Double)] {
+    private struct ChartPoint: Identifiable {
+        let id: String
+        let date: Date
+        let weight: Double
+        let timing: WeightTiming
+    }
+
+    private var chartPoints: [ChartPoint] {
         records.compactMap { record in
-            guard let date = WeightRecord.parseISO8601(record.recordedAt) else {
+            guard let date = WeightRecord.parseISO8601(record.recordedAt),
+                  let timing = WeightTiming.from(note: record.note) else {
                 return nil
             }
-            return (date: date, weight: record.weightKg)
+            return ChartPoint(id: record.id, date: date, weight: record.weightKg, timing: timing)
         }
     }
 
     private var yRange: ClosedRange<Double> {
-        var allWeights = chartData.map(\.weight)
+        var allWeights = chartPoints.map(\.weight)
         if let goal {
             allWeights.append(goal.targetWeightKg)
         }
@@ -29,7 +52,6 @@ struct WeightChartView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // 期間セグメント
             Picker("期間", selection: $selectedPeriod) {
                 ForEach(ChartPeriod.allCases) { period in
                     Text(period.displayName).tag(period)
@@ -37,26 +59,27 @@ struct WeightChartView: View {
             }
             .pickerStyle(.segmented)
 
-            if chartData.isEmpty {
+            if chartPoints.isEmpty {
                 Text("この期間のデータがありません")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(height: 200)
             } else {
                 Chart {
-                    ForEach(Array(chartData.enumerated()), id: \.offset) { _, point in
+                    ForEach(chartPoints) { point in
                         LineMark(
                             x: .value("日付", point.date),
-                            y: .value("体重", point.weight)
+                            y: .value("体重", point.weight),
+                            series: .value("タイミング", point.timing.displayName)
                         )
-                        .foregroundStyle(Theme.primary)
+                        .foregroundStyle(by: .value("タイミング", point.timing.displayName))
                         .interpolationMethod(.catmullRom)
 
                         PointMark(
                             x: .value("日付", point.date),
                             y: .value("体重", point.weight)
                         )
-                        .foregroundStyle(Theme.primary)
+                        .foregroundStyle(by: .value("タイミング", point.timing.displayName))
                         .symbolSize(30)
                     }
 
@@ -71,7 +94,12 @@ struct WeightChartView: View {
                             }
                     }
                 }
+                .chartForegroundStyleScale(
+                    domain: WeightTiming.allCases.map(\.displayName),
+                    range: WeightTiming.allCases.map(\.color)
+                )
                 .chartYScale(domain: yRange)
+                .chartLegend(position: .bottom, spacing: 8)
                 .frame(height: 200)
             }
         }
