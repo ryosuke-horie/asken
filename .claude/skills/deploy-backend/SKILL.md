@@ -1,6 +1,7 @@
 ---
 name: deploy-backend
 description: バックエンドを開発環境（Cloud Run）にデプロイする。プリフライトチェック、Firestoreインデックス適用、デプロイ実行、E2Eテストを一連のフローで実施。
+user_invoked_only: true
 ---
 
 # バックエンドデプロイスキル
@@ -8,12 +9,9 @@ description: バックエンドを開発環境（Cloud Run）にデプロイす�
 ローカルから開発環境（Cloud Run）へバックエンドをデプロイするためのスキル。
 各フェーズでユーザーに確認を取りながら安全にデプロイを進める。
 
-## 前提条件
-
-- gcloud CLI がインストール済みで認証済みであること
-- Docker が起動していること
-- firebase CLI がインストール済みであること（Firestoreインデックス適用時）
-- 環境変数が `.mise.toml` で設定済みであること
+> このスキルはユーザーが `/deploy-backend` で明示的に呼び出した場合のみ実行すること。
+> エージェントが自律的にこのスキルを参照・実行してはならない。
+> デプロイは本番環境に影響を与える操作であり、必ずユーザーの意図に基づいて実行する。
 
 ## Phase 1: プリフライトチェック
 
@@ -35,16 +33,7 @@ git status --porcelain
 
 未コミットの変更がある場合は中断し、ユーザーに確認を取る。
 
-### 1.3 リモートとの同期確認
-
-```bash
-git fetch origin main
-git log HEAD..origin/main --oneline
-```
-
-ローカルがリモートより遅れている場合は、`git pull` を提案する。
-
-### 1.4 gcloud認証の確認
+### 1.3 gcloud認証の確認
 
 ```bash
 gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1
@@ -52,7 +41,7 @@ gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n 1
 
 アクティブなアカウントがない場合は中断し、`gcloud auth login` を案内する。
 
-### 1.5 Docker起動確認
+### 1.4 Docker起動確認
 
 ```bash
 docker info > /dev/null 2>&1
@@ -60,75 +49,22 @@ docker info > /dev/null 2>&1
 
 Docker が起動していない場合は中断する。
 
-### 1.6 テスト・リントの実行
-
-```bash
-task lint
-task test
-```
-
-lint またはテストが失敗した場合はデプロイを中断する。
-
 すべてのチェックが通過したら、結果をまとめてユーザーに報告し、AskUserQuestion で続行確認を取る。
 
 ---
 
-## Phase 2: 変更差分の確認
+## Phase 2: Firestoreインデックス・ルール適用
 
-ユーザーがデプロイ内容を把握できるよう、変更差分を提示する。
+`firestore.indexes.json` や `firestore.rules` に変更がある場合のみ実行する。
+変更がない場合はこのフェーズをスキップする。
 
-### 2.1 前回デプロイからの変更
+### 2.1 インデックスの差分確認と適用
 
-Cloud Run に現在デプロイされているイメージのタグ（git SHA）を取得し、そこからの差分を表示する。
-
-```bash
-# 現在デプロイ済みのイメージタグを取得
-gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
-  --region "${GCP_REGION}" \
-  --project "${GCP_PROJECT_ID}" \
-  --format 'value(spec.template.spec.containers[0].image)'
-```
-
-イメージタグから git SHA を抽出し、変更ログを表示:
+直近の変更で `firestore.indexes.json` に差分があるか確認する:
 
 ```bash
-git log <deployed-sha>..HEAD --oneline
+git diff HEAD~1 -- firestore.indexes.json
 ```
-
-取得できない場合は直近の10コミットを表示する。
-
-### 2.2 Firestoreインデックスの差分
-
-```bash
-git diff <deployed-sha>..HEAD -- firestore.indexes.json
-```
-
-差分がある場合は、追加・削除されるインデックスを一覧表示する。
-
-### 2.3 Firestoreルールの差分
-
-```bash
-git diff <deployed-sha>..HEAD -- firestore.rules
-```
-
-差分がある場合は、変更内容を表示する。
-
-### 2.4 バックエンドコードの変更サマリ
-
-```bash
-git diff <deployed-sha>..HEAD --stat -- backend/
-```
-
-変更差分をまとめてユーザーに報告する。
-
----
-
-## Phase 3: Firestoreインデックス・ルール適用
-
-Phase 2 でインデックスまたはルールに差分があった場合のみ実行する。
-差分がない場合はこのフェーズをスキップする。
-
-### 3.1 インデックスの適用
 
 差分がある場合、AskUserQuestion でユーザーに確認を取ってから実行:
 
@@ -138,7 +74,13 @@ firebase deploy --only firestore:indexes --project "${GCP_PROJECT_ID}"
 
 注意: インデックスの作成には時間がかかる場合がある。Firebase Console でステータスを確認できることをユーザーに伝える。
 
-### 3.2 ルールの適用
+### 2.2 ルールの差分確認と適用
+
+直近の変更で `firestore.rules` に差分があるか確認する:
+
+```bash
+git diff HEAD~1 -- firestore.rules
+```
 
 差分がある場合、AskUserQuestion でユーザーに確認を取ってから実行:
 
@@ -146,7 +88,7 @@ firebase deploy --only firestore:indexes --project "${GCP_PROJECT_ID}"
 firebase deploy --only firestore:rules --project "${GCP_PROJECT_ID}"
 ```
 
-### 3.3 データ整合性の確認
+### 2.3 データ整合性の確認
 
 スキーマ変更（フィールド追加・変更・削除）を含むコード変更がある場合:
 
@@ -156,11 +98,9 @@ firebase deploy --only firestore:rules --project "${GCP_PROJECT_ID}"
 
 ---
 
-## Phase 4: バックエンドデプロイ
+## Phase 3: バックエンドデプロイ
 
-### 4.1 デプロイ実行
-
-AskUserQuestion で最終確認を取ってから実行:
+### 3.1 デプロイ実行
 
 ```bash
 task deploy:dev
@@ -171,7 +111,7 @@ task deploy:dev
 2. Artifact Registry にプッシュ
 3. Cloud Run にデプロイ
 
-### 4.2 デプロイ結果の確認
+### 3.2 デプロイ結果の確認
 
 デプロイ完了後、サービスURLを取得して表示:
 
@@ -184,9 +124,9 @@ gcloud run services describe "${CLOUD_RUN_SERVICE_NAME}" \
 
 ---
 
-## Phase 5: デプロイ後検証
+## Phase 4: デプロイ後検証
 
-### 5.1 ヘルスチェック
+### 4.1 ヘルスチェック
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/api/health"
@@ -194,7 +134,7 @@ curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/api/health"
 
 200 以外の場合はユーザーに報告する。
 
-### 5.2 E2Eテスト
+### 4.2 E2Eテスト
 
 AskUserQuestion で E2E テストを実行するか確認を取る:
 
@@ -204,7 +144,7 @@ task e2e:dev
 
 注意: Gemini API のレート制限により、テスト実行には数分かかる場合がある。
 
-### 5.3 結果報告
+### 4.3 結果報告
 
 デプロイ結果をまとめてユーザーに報告する:
 
