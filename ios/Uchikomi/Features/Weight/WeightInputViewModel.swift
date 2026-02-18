@@ -37,9 +37,13 @@ final class WeightInputViewModel {
         Double(weightText)
     }
 
+    var isTimingSelected: Bool {
+        WeightTiming.from(note: memo) != nil
+    }
+
     var isValid: Bool {
         guard let weight = weightValue else { return false }
-        return weight >= WeightRecord.minWeightKg && weight <= WeightRecord.maxWeightKg
+        return weight >= WeightRecord.minWeightKg && weight <= WeightRecord.maxWeightKg && isTimingSelected
     }
 
     func incrementWeight() {
