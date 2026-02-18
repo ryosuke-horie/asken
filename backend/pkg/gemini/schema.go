@@ -3,6 +3,7 @@ package gemini
 import (
 	"fmt"
 	"math"
+	"strings"
 )
 
 // supportedUnits はiOS側のQuantityParserがパース可能な単位の一覧
@@ -11,6 +12,7 @@ var supportedUnits = []string{
 	"g", "ml",
 	"杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
 	"膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
+	"パック", "大さじ", "小さじ",
 }
 
 // SupportedUnits はサポート単位のコピーを返す
@@ -18,6 +20,11 @@ func SupportedUnits() []string {
 	result := make([]string, len(supportedUnits))
 	copy(result, supportedUnits)
 	return result
+}
+
+// SupportedUnitsCSV はサポート単位をカンマ区切り文字列で返す（プロンプト埋め込み用）
+func SupportedUnitsCSV() string {
+	return strings.Join(supportedUnits, ", ")
 }
 
 // classifierResponseItem はGemini Classifier/TextParserのレスポンス構造体

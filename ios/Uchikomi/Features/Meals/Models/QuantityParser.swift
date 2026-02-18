@@ -16,11 +16,10 @@ enum QuantityParser {
     // ミリリットル表記のパターン: "200ml", "200ML", "200mL", "200ミリリットル", "200 ml"
     private static let mlPattern = #/(\d+(?:\.\d+)?)\s*(?:ml|ML|mL|ミリリットル)/#
 
-    /// 日本語単位（キャプチャグループで単位も取得）
-    private static let japaneseUnits = [
-        "杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
-        "膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
-    ]
+    /// 日本語単位（MeasurementUnitからg/mlを除いて動的生成）
+    private static let japaneseUnits: [String] = MeasurementUnit.allCases
+        .filter { $0 != .gram && $0 != .milliliter }
+        .map(\.rawValue)
 
     private static let japanesePattern: NSRegularExpression = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")

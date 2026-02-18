@@ -79,7 +79,7 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 	log.Printf("Classifier: 料理分類を開始 (画像サイズ: %d bytes, MIME: %s)", len(imageData), mimeType)
 
 	// プロンプトを構築（料理名の分類に集中）
-	prompt := `この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
+	prompt := fmt.Sprintf(`この画像に写っている料理を特定し、各料理の名前と推定量をJSON形式のリストで出力してください。
 
 料理名は可能な限り具体的に出力してください。
 例:
@@ -90,12 +90,12 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 推定量のルール:
 - quantity_valueは数値で指定してください（例: 1, 2, 150, 200）
 - quantity_unitは以下のいずれかを使用してください:
-  g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒
+  %s
 - 重量がわかる食材はgを使用してください（例: ご飯 → 200g）
 - 飲み物やスープはmlを使用してください（例: 味噌汁 → 200ml）
 - 料理は適切な助数詞を選択してください（例: ラーメン → 1杯, カレー → 1皿）
 
-カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。`
+カロリーや栄養素の情報は不要です。料理の特定と量の推定のみを行ってください。`, SupportedUnitsCSV())
 
 	// responseSchemaで出力形式を強制
 	schema := FoodItemSchema()
