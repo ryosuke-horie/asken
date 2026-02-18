@@ -20,6 +20,7 @@ enum QuantityParser {
     private static let japaneseUnits = [
         "杯", "人前", "個", "枚", "本", "切れ", "食", "皿",
         "膳", "丁", "束", "袋", "缶", "合", "玉", "粒",
+        "パック", "大さじ", "小さじ",
     ]
 
     private static let japanesePattern: NSRegularExpression = {
