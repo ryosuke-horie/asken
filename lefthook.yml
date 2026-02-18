@@ -9,6 +9,10 @@ pre-commit:
       glob: "backend/**/*.go"
       run: task lint
 
+    backend-test:
+      glob: "backend/**/*.go"
+      run: task test
+
     ios-format-check:
       glob: "ios/**/*.swift"
       run: task ios:format-check
@@ -16,16 +20,3 @@ pre-commit:
     ios-lint:
       glob: "ios/**/*.swift"
       run: task ios:lint
-
-pre-push:
-  parallel: true
-  commands:
-    backend-test:
-      run: |
-        if git rev-parse --verify @{upstream} >/dev/null 2>&1; then
-          if ! git diff --name-only @{upstream}...HEAD | rg -q '^backend/'; then
-            echo "No backend changes. Skip backend tests."
-            exit 0
-          fi
-        fi
-        task test

@@ -1493,7 +1493,7 @@ func TestHistoryHandler_HandleUpdate_NonRetryableGeminiContextCanceled(t *testin
 	mockRecalculator := &MockNutritionRecalculator{
 		CalculateNutritionFunc: func(ctx context.Context, foods []gemini.FoodItem) ([]gemini.NutritionInfo, error) {
 			defer close(asyncDone)
-			return nil, fmt.Errorf("request cancelled: %w", context.Canceled)
+			return nil, fmt.Errorf("request canceled: %w", context.Canceled)
 		},
 	}
 
@@ -1597,7 +1597,7 @@ func TestHistoryHandler_HandleUpdate_NonRetryableFirestoreContextCanceled(t *tes
 			}
 			// 非同期保存でcontext.Canceledエラー（リトライ不要）
 			defer close(asyncDone)
-			return fmt.Errorf("context cancelled: %w", context.Canceled)
+			return fmt.Errorf("context canceled: %w", context.Canceled)
 		},
 	}
 

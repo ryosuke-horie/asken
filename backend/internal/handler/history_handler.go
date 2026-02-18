@@ -416,7 +416,7 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 		select {
 		case <-time.After(geminiRetryDelay):
 		case <-ctx.Done():
-			log.Printf("ERROR: Context cancelled before Gemini retry for history %s: %v", historyID, ctx.Err())
+			log.Printf("ERROR: Context canceled before Gemini retry for history %s: %v", historyID, ctx.Err())
 			return
 		}
 		recalculated, err = h.recalculator.CalculateNutrition(ctx, foodItems)
@@ -448,7 +448,7 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 		select {
 		case <-time.After(firestoreRetryDelay):
 		case <-ctx.Done():
-			log.Printf("ERROR: Context cancelled before Firestore retry for history %s: %v", historyID, ctx.Err())
+			log.Printf("ERROR: Context canceled before Firestore retry for history %s: %v", historyID, ctx.Err())
 			return
 		}
 		// リトライ前に鮮度を再チェック（sleep中にユーザーが再保存した可能性がある）

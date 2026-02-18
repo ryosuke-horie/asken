@@ -157,10 +157,10 @@ func TestInMemoryRateLimiterStore_Cleanup(t *testing.T) {
 
 func TestGetClientIP(t *testing.T) {
 	tests := []struct {
-		name           string
-		xForwardedFor  string
-		remoteAddr     string
-		expectedIP     string
+		name          string
+		xForwardedFor string
+		remoteAddr    string
+		expectedIP    string
 	}{
 		{
 			name:          "X-Forwarded-Forが単一IPの場合",
@@ -618,4 +618,3 @@ func TestRateLimitMiddleware_Stop(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 }
-
