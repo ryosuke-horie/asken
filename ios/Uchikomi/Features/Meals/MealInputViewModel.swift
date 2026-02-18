@@ -10,7 +10,7 @@ final class MealInputViewModel {
         static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000
         static let maxPollingAttempts = 60
         static let pollingTimeoutSeconds = 120
-        static let maxImageSizeBytes = 10 * 1024 * 1024 // 10MB
+        static let maxImageSizeBytes = 10 * 1_024 * 1_024 // 10MB
     }
 
     // MARK: - Properties

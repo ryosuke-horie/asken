@@ -21,6 +21,9 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     case go = "合"
     case ball = "玉"
     case grain = "粒"
+    case pack = "パック"
+    case tablespoon = "大さじ"
+    case teaspoon = "小さじ"
 
     var id: String {
         rawValue

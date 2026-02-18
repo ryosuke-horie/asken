@@ -61,7 +61,7 @@ struct APIEndpoint {
 
     static func analysisStatus(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "analyze/\(Self.sanitizedPathID(id))/status",
+            path: "analyze/\(sanitizedPathID(id))/status",
             method: .get,
             requiresAuth: true
         )
@@ -69,7 +69,7 @@ struct APIEndpoint {
 
     static func analysisResult(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "analyze/\(Self.sanitizedPathID(id))/result",
+            path: "analyze/\(sanitizedPathID(id))/result",
             method: .get,
             requiresAuth: true
         )
@@ -79,7 +79,7 @@ struct APIEndpoint {
 
     static func historyDetail(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(Self.sanitizedPathID(id))",
+            path: "history/\(sanitizedPathID(id))",
             method: .get,
             requiresAuth: true
         )
@@ -87,7 +87,7 @@ struct APIEndpoint {
 
     static func updateHistory(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(Self.sanitizedPathID(id))",
+            path: "history/\(sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -95,7 +95,7 @@ struct APIEndpoint {
 
     static func deleteHistory(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "history/\(Self.sanitizedPathID(id))",
+            path: "history/\(sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -122,7 +122,7 @@ struct APIEndpoint {
 
     static func updateWeightRecord(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "weight/records/\(Self.sanitizedPathID(id))",
+            path: "weight/records/\(sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -130,7 +130,7 @@ struct APIEndpoint {
 
     static func deleteWeightRecord(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "weight/records/\(Self.sanitizedPathID(id))",
+            path: "weight/records/\(sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -201,7 +201,7 @@ struct APIEndpoint {
 
     static func updateMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(Self.sanitizedPathID(id))",
+            path: "my-menu/\(sanitizedPathID(id))",
             method: .put,
             requiresAuth: true
         )
@@ -209,7 +209,7 @@ struct APIEndpoint {
 
     static func deleteMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(Self.sanitizedPathID(id))",
+            path: "my-menu/\(sanitizedPathID(id))",
             method: .delete,
             requiresAuth: true
         )
@@ -217,7 +217,7 @@ struct APIEndpoint {
 
     static func recordMyMenu(id: String) -> APIEndpoint {
         APIEndpoint(
-            path: "my-menu/\(Self.sanitizedPathID(id))/record",
+            path: "my-menu/\(sanitizedPathID(id))/record",
             method: .post,
             requiresAuth: true
         )
