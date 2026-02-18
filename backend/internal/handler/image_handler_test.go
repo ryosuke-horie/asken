@@ -139,4 +139,3 @@ func TestImageHandler_Handle_PathTraversal_SlashOnly(t *testing.T) {
 	// スラッシュを含むパスはアクセス拒否されるべき
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
-

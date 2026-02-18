@@ -241,7 +241,11 @@ func run() error {
 	if err != nil {
 		log.Fatalf("Failed to connect to Firestore: %v", err)
 	}
-	defer firestoreClient.Close()
+	defer func() {
+		if err := firestoreClient.Close(); err != nil {
+			log.Printf("Error closing Firestore client: %v", err)
+		}
+	}()
 	log.Println("Firestore connection established")
 
 	// Cloud Storageクライアントの初期化
@@ -249,7 +253,11 @@ func run() error {
 	if err != nil {
 		log.Fatalf("Failed to connect to Cloud Storage: %v", err)
 	}
-	defer storageClient.Close()
+	defer func() {
+		if err := storageClient.Close(); err != nil {
+			log.Printf("Error closing Storage client: %v", err)
+		}
+	}()
 	log.Println("Cloud Storage connection established")
 
 	// StorageRepositoryの初期化
