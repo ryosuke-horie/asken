@@ -338,12 +338,44 @@ func validateImageFile(file multipart.File, header *multipart.FileHeader) error 
 		"image/png":  true,
 	}
 
-	// HEICはDetectContentTypeで検出できないため、拡張子でのみチェック
-	if !validContentTypes[contentType] && ext != ".heic" {
+	// HEICはDetectContentTypeで検出できないため、マジックバイトで検証
+	if !validContentTypes[contentType] {
+		if ext == ".heic" && isHEICMagicBytes(buffer) {
+			return nil
+		}
 		return fmt.Errorf("画像ファイルではありません")
 	}
 
 	return nil
+}
+
+// validHEICBrands はHEIC/HEIF形式のブランド識別子の集合（パッケージ初期化時に一度だけ作成）
+var validHEICBrands = map[string]bool{
+	"heic": true,
+	"heix": true,
+	"hevc": true,
+	"hevx": true,
+	"heim": true,
+	"heis": true,
+	"hevm": true,
+	"hevs": true,
+	"mif1": true,
+}
+
+// isHEICMagicBytes はバッファがHEIC/HEIF形式のマジックバイトを持つか検証する。
+// ISOBMFF形式: オフセット4-7が"ftyp"、オフセット8-11がブランド識別子。
+func isHEICMagicBytes(buf []byte) bool {
+	if len(buf) < 12 {
+		return false
+	}
+
+	// オフセット4-7: "ftyp" マーカー
+	if string(buf[4:8]) != "ftyp" {
+		return false
+	}
+
+	// オフセット8-11: HEIC/HEIF ブランド識別子
+	return validHEICBrands[string(buf[8:12])]
 }
 
 // getContentType はファイルヘッダーからContent-Typeを取得

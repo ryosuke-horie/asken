@@ -35,6 +35,22 @@ func createTestPNGData() []byte {
 	return data
 }
 
+// createTestHEICData はテスト用のHEICマジックバイトを含むバイト列を返す
+// ISOBMFF形式: オフセット4に"ftyp"、オフセット8にブランド識別子"heic"
+func createTestHEICData() []byte {
+	data := make([]byte, 512)
+	// Box size (12 bytes minimum for ftyp box)
+	data[0] = 0x00
+	data[1] = 0x00
+	data[2] = 0x00
+	data[3] = 0x18
+	// "ftyp" marker at offset 4
+	copy(data[4:8], []byte("ftyp"))
+	// "heic" brand at offset 8
+	copy(data[8:12], []byte("heic"))
+	return data
+}
+
 // multipartImageRequest はJPEG画像付きのmultipartリクエストを生成する
 type multipartImageRequest struct {
 	body        *bytes.Buffer
@@ -186,6 +202,18 @@ func TestValidateImageFile(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "HEIC画像（有効なマジックバイト）",
+			filename:  "test.heic",
+			content:   createTestHEICData(),
+			expectErr: false,
+		},
+		{
+			name:      "HEIC拡張子だがマジックバイトが無効",
+			filename:  "fake.heic",
+			content:   []byte("this is not a heic file at all, just fake data padding to fill buffer"),
+			expectErr: true,
+		},
+		{
 			name:      "テキストファイル",
 			filename:  "test.txt",
 			content:   []byte("not an image"),
@@ -215,6 +243,35 @@ func TestValidateImageFile(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func buildFtypBuf(brand string) []byte {
+	buf := make([]byte, 12)
+	copy(buf[4:8], []byte("ftyp"))
+	copy(buf[8:12], []byte(brand))
+	return buf
+}
+
+func TestIsHEICMagicBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		buf      []byte
+		expected bool
+	}{
+		{"heicブランド", buildFtypBuf("heic"), true},
+		{"mif1ブランド", buildFtypBuf("mif1"), true},
+		{"heixブランド", buildFtypBuf("heix"), true},
+		{"不明なブランド", buildFtypBuf("mp41"), false},
+		{"ftypマーカーなし", make([]byte, 12), false},
+		{"バッファが短すぎる", make([]byte, 8), false},
+		{"空バッファ", []byte{}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isHEICMagicBytes(tt.buf))
 		})
 	}
 }
