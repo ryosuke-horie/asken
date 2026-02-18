@@ -15,15 +15,15 @@ import (
 
 // firestoreMyMenuDocument はFirestoreに保存するマイメニュードキュメント構造
 type firestoreMyMenuDocument struct {
-	ID                 string                    `firestore:"id"`
-	Name               string                    `firestore:"name"`
-	Foods              []gemini.NutritionInfo    `firestore:"foods"`
-	TotalCalories      float64                   `firestore:"totalCalories"`
-	TotalProtein       float64                   `firestore:"totalProtein"`
-	TotalFat           float64                   `firestore:"totalFat"`
-	TotalCarbohydrates float64                   `firestore:"totalCarbohydrates"`
-	CreatedAt          time.Time                 `firestore:"createdAt"`
-	UpdatedAt          time.Time                 `firestore:"updatedAt"`
+	ID                 string                 `firestore:"id"`
+	Name               string                 `firestore:"name"`
+	Foods              []gemini.NutritionInfo `firestore:"foods"`
+	TotalCalories      float64                `firestore:"totalCalories"`
+	TotalProtein       float64                `firestore:"totalProtein"`
+	TotalFat           float64                `firestore:"totalFat"`
+	TotalCarbohydrates float64                `firestore:"totalCarbohydrates"`
+	CreatedAt          time.Time              `firestore:"createdAt"`
+	UpdatedAt          time.Time              `firestore:"updatedAt"`
 }
 
 // firestoreMyMenuRepository はFirestoreを使用したMyMenuRepositoryの実装

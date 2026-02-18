@@ -56,9 +56,9 @@ func (p PFCRatio) Validate() error {
 type NutritionPhase string
 
 const (
-	NutritionPhaseWeightLoss  NutritionPhase = "weight_loss"  // 減量期
+	NutritionPhaseWeightLoss  NutritionPhase = "weight_loss" // 減量期
 	NutritionPhaseMaintenance NutritionPhase = "maintenance" // 維持期
-	NutritionPhaseWeightGain  NutritionPhase = "weight_gain"  // 増量期
+	NutritionPhaseWeightGain  NutritionPhase = "weight_gain" // 増量期
 )
 
 // GetDefaultPFCRatio はフェーズに応じたデフォルトPFC比率を返す
@@ -80,12 +80,12 @@ func GetDefaultPFCRatio(phase NutritionPhase) PFCRatio {
 
 // NutritionGoal は栄養目標を表す構造体
 type NutritionGoal struct {
-	TargetCalories      float64       `json:"target_calories"`      // 目標カロリー（kcal）- ユーザー設定
-	TargetProtein       float64       `json:"target_protein"`       // 目標たんぱく質（g）- 自動計算
-	TargetFat           float64       `json:"target_fat"`           // 目標脂質（g）- 自動計算
-	TargetCarbohydrates float64       `json:"target_carbohydrates"` // 目標炭水化物（g）- 自動計算
-	Phase               NutritionPhase `json:"phase"`               // 栄養フェーズ
-	UpdatedAt           time.Time     `json:"updated_at"`
+	TargetCalories      float64        `json:"target_calories"`      // 目標カロリー（kcal）- ユーザー設定
+	TargetProtein       float64        `json:"target_protein"`       // 目標たんぱく質（g）- 自動計算
+	TargetFat           float64        `json:"target_fat"`           // 目標脂質（g）- 自動計算
+	TargetCarbohydrates float64        `json:"target_carbohydrates"` // 目標炭水化物（g）- 自動計算
+	Phase               NutritionPhase `json:"phase"`                // 栄養フェーズ
+	UpdatedAt           time.Time      `json:"updated_at"`
 }
 
 // NutritionGoalRepository は栄養目標の永続化を担当するインターフェース

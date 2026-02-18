@@ -911,4 +911,3 @@ func (r *firestoreAnalysisRepository) toHistoryDetail(doc *firestoreAnalysisDocu
 
 	return detail, nil
 }
-
