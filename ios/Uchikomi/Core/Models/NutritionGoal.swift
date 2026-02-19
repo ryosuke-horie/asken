@@ -8,6 +8,7 @@ struct NutritionGoal: Codable {
     let targetFat: Double
     let targetCarbohydrates: Double
     let phase: NutritionPhase
+    let micronutrientTargets: [String: Double]?
     let updatedAt: String
 
     /// NutritionSummaryCardとの互換性のためのエイリアス
@@ -34,6 +35,7 @@ struct NutritionGoal: Codable {
         fat: Double,
         carbohydrates: Double,
         phase: NutritionPhase = .maintenance,
+        micronutrientTargets: [String: Double]? = nil,
         updatedAt: String = ISO8601DateFormatter().string(from: Date())
     ) {
         self.targetCalories = calories
@@ -41,6 +43,7 @@ struct NutritionGoal: Codable {
         self.targetFat = fat
         self.targetCarbohydrates = carbohydrates
         self.phase = phase
+        self.micronutrientTargets = micronutrientTargets
         self.updatedAt = updatedAt
     }
 }

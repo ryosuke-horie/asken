@@ -9,6 +9,7 @@ final class FoodEditItem: Identifiable {
     var protein: Double
     var fat: Double
     var carbohydrates: Double
+    var micronutrients: [String: Double]
 
     // 元の値を保持（累積誤差防止のため、常に元の値をベースに比率計算する）
     let originalName: String
@@ -17,6 +18,7 @@ final class FoodEditItem: Identifiable {
     let originalProtein: Double
     let originalFat: Double
     let originalCarbohydrates: Double
+    let originalMicronutrients: [String: Double]
 
     // 数値と単位を分離
     var quantityValue: String = ""
@@ -43,7 +45,8 @@ final class FoodEditItem: Identifiable {
         calories: Double = 0,
         protein: Double = 0,
         fat: Double = 0,
-        carbohydrates: Double = 0
+        carbohydrates: Double = 0,
+        micronutrients: [String: Double] = [:]
     ) {
         self.id = id
         self.name = name
@@ -52,12 +55,14 @@ final class FoodEditItem: Identifiable {
         self.protein = protein
         self.fat = fat
         self.carbohydrates = carbohydrates
+        self.micronutrients = micronutrients
         self.originalName = name
         self.originalQuantity = quantity
         self.originalCalories = calories
         self.originalProtein = protein
         self.originalFat = fat
         self.originalCarbohydrates = carbohydrates
+        self.originalMicronutrients = micronutrients
     }
 
     convenience init(from nutritionInfo: NutritionInfo) {
@@ -67,7 +72,8 @@ final class FoodEditItem: Identifiable {
             calories: nutritionInfo.caloriesKcal,
             protein: nutritionInfo.proteinG,
             fat: nutritionInfo.fatG,
-            carbohydrates: nutritionInfo.carbohydratesG
+            carbohydrates: nutritionInfo.carbohydratesG,
+            micronutrients: nutritionInfo.micronutrients ?? [:]
         )
 
         // quantityからquantityValueとquantityUnitをパースして設定
@@ -83,7 +89,8 @@ final class FoodEditItem: Identifiable {
             caloriesKcal: calories,
             proteinG: protein,
             fatG: fat,
-            carbohydratesG: carbohydrates
+            carbohydratesG: carbohydrates,
+            micronutrients: micronutrients.isEmpty ? nil : micronutrients
         )
     }
 
@@ -103,6 +110,13 @@ final class FoodEditItem: Identifiable {
         protein = (originalProtein * ratio * 10).rounded() / 10
         fat = (originalFat * ratio * 10).rounded() / 10
         carbohydrates = (originalCarbohydrates * ratio * 10).rounded() / 10
+
+        // マイクロニュートリエントも同じ比率で再計算（小数点第2位に丸め）
+        var updated: [String: Double] = [:]
+        for (key, originalValue) in originalMicronutrients {
+            updated[key] = (originalValue * ratio * 100).rounded() / 100
+        }
+        micronutrients = updated
     }
 
     /// quantityValueとquantityUnitからquantity文字列を生成
