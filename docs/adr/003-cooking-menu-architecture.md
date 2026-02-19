@@ -135,7 +135,7 @@ Firestore:
 
 - `analysisRequests` に `inputType: "suggestion"` が追加される（`docs/CODEMAPS/data.md` の更新も必要）
 - ルーティング設定に新規エンドポイントが追加される
-- レート制限ミドルウェアの対象エンドポイントが増加する
+- レート制限ミドルウェアの対象エンドポイントが増加する（`rate_limit.go` の `isGeminiEndpoint` に `POST /api/ingredients/scan-receipt`、`POST /api/menu/suggest`、`GET /api/menu/suggestions/{id}` を追加）
 - iOS のタブバー/ナビゲーションに食材管理・サジェストへの導線が追加される
 
 ### コスト影響
