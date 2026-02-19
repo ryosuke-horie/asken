@@ -23,11 +23,12 @@ type ImageDownloader interface {
 
 // AnalysisResult は分析結果を表す構造体
 type AnalysisResult struct {
-	Foods              []gemini.NutritionInfo `json:"foods"`
-	TotalCalories      float64                `json:"total_calories"`
-	TotalProtein       float64                `json:"total_protein"`
-	TotalFat           float64                `json:"total_fat"`
-	TotalCarbohydrates float64                `json:"total_carbohydrates"`
+	Foods               []gemini.NutritionInfo `json:"foods"`
+	TotalCalories       float64                `json:"total_calories"`
+	TotalProtein        float64                `json:"total_protein"`
+	TotalFat            float64                `json:"total_fat"`
+	TotalCarbohydrates  float64                `json:"total_carbohydrates"`
+	TotalMicronutrients map[string]float64     `json:"total_micronutrients,omitempty"`
 }
 
 // FoodServiceInterface は食品分析サービスのインターフェース
@@ -84,15 +85,16 @@ func (s *FoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*
 	}
 
 	// 合計カロリー・栄養素を計算
-	totalCal, totalPro, totalFat, totalCarbs := calculateTotals(nutritionList)
+	totalCal, totalPro, totalFat, totalCarbs, totalMicro := calculateTotals(nutritionList)
 
 	// AnalysisResultを返却
 	return &AnalysisResult{
-		Foods:              nutritionList,
-		TotalCalories:      totalCal,
-		TotalProtein:       totalPro,
-		TotalFat:           totalFat,
-		TotalCarbohydrates: totalCarbs,
+		Foods:               nutritionList,
+		TotalCalories:       totalCal,
+		TotalProtein:        totalPro,
+		TotalFat:            totalFat,
+		TotalCarbohydrates:  totalCarbs,
+		TotalMicronutrients: totalMicro,
 	}, nil
 }
 
@@ -128,24 +130,27 @@ func (s *FoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*A
 	}
 
 	// 合計カロリー・栄養素を計算
-	totalCal, totalPro, totalFat, totalCarbs := calculateTotals(nutritionList)
+	totalCal, totalPro, totalFat, totalCarbs, totalMicro := calculateTotals(nutritionList)
 
 	return &AnalysisResult{
-		Foods:              nutritionList,
-		TotalCalories:      totalCal,
-		TotalProtein:       totalPro,
-		TotalFat:           totalFat,
-		TotalCarbohydrates: totalCarbs,
+		Foods:               nutritionList,
+		TotalCalories:       totalCal,
+		TotalProtein:        totalPro,
+		TotalFat:            totalFat,
+		TotalCarbohydrates:  totalCarbs,
+		TotalMicronutrients: totalMicro,
 	}, nil
 }
 
 // calculateTotals は栄養素の合計を計算する
-func calculateTotals(nutritionList []gemini.NutritionInfo) (totalCal, totalPro, totalFat, totalCarbs float64) {
+func calculateTotals(nutritionList []gemini.NutritionInfo) (totalCal, totalPro, totalFat, totalCarbs float64, totalMicro map[string]float64) {
+	totalMicro = make(map[string]float64)
 	for _, nutrition := range nutritionList {
 		totalCal += nutrition.Calories
 		totalPro += nutrition.Protein
 		totalFat += nutrition.Fat
 		totalCarbs += nutrition.Carbohydrates
+		totalMicro = gemini.MergeMicronutrients(totalMicro, nutrition.Micronutrients)
 	}
 	return
 }

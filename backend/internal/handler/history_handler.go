@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -175,12 +176,13 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 
 // UpdateFoodItem は更新リクエストの食材アイテム
 type UpdateFoodItem struct {
-	Name            string  `json:"name"`
-	EstimatedAmount string  `json:"estimated_amount"`
-	Calories        float64 `json:"calories_kcal"`
-	Protein         float64 `json:"protein_g"`
-	Fat             float64 `json:"fat_g"`
-	Carbohydrates   float64 `json:"carbohydrates_g"`
+	Name            string             `json:"name"`
+	EstimatedAmount string             `json:"estimated_amount"`
+	Calories        float64            `json:"calories_kcal"`
+	Protein         float64            `json:"protein_g"`
+	Fat             float64            `json:"fat_g"`
+	Carbohydrates   float64            `json:"carbohydrates_g"`
+	Micronutrients  map[string]float64 `json:"micronutrients,omitempty"`
 }
 
 // Validate はUpdateFoodItemのバリデーションを行う
@@ -193,6 +195,18 @@ func (f UpdateFoodItem) Validate() error {
 	}
 	if f.Calories < 0 || f.Protein < 0 || f.Fat < 0 || f.Carbohydrates < 0 {
 		return fmt.Errorf("nutrition values must be non-negative")
+	}
+	validKeys := gemini.ValidMicronutrientKeys()
+	for key, val := range f.Micronutrients {
+		if !validKeys[key] {
+			return fmt.Errorf("unknown micronutrient key: %s", key)
+		}
+		if math.IsNaN(val) || math.IsInf(val, 0) {
+			return fmt.Errorf("micronutrient value must be a finite number: %s", key)
+		}
+		if val < 0 {
+			return fmt.Errorf("micronutrient value must be non-negative: %s", key)
+		}
 	}
 	return nil
 }
@@ -259,6 +273,7 @@ func toNutritionInfoSlice(foods []UpdateFoodItem) []gemini.NutritionInfo {
 			Protein:         f.Protein,
 			Fat:             f.Fat,
 			Carbohydrates:   f.Carbohydrates,
+			Micronutrients:  f.Micronutrients,
 		}
 	}
 	return result

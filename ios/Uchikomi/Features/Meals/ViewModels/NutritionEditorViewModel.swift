@@ -28,6 +28,16 @@ final class NutritionEditorViewModel {
         foods.reduce(0) { $0 + $1.carbohydrates }
     }
 
+    var totalMicronutrients: [String: Double] {
+        var result: [String: Double] = [:]
+        for food in foods {
+            for (key, value) in food.micronutrients {
+                result[key, default: 0] += value
+            }
+        }
+        return result
+    }
+
     var canSave: Bool {
         !foods.isEmpty && foods.allSatisfy { food in
             !food.name.isEmpty &&

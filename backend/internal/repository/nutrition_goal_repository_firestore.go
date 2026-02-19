@@ -12,8 +12,9 @@ import (
 
 // firestoreNutritionGoalDocument はFirestoreに保存する栄養目標ドキュメント構造
 type firestoreNutritionGoalDocument struct {
-	TargetCalories float64   `firestore:"targetCalories"`
-	UpdatedAt      time.Time `firestore:"updatedAt"`
+	TargetCalories       float64            `firestore:"targetCalories"`
+	MicronutrientTargets map[string]float64 `firestore:"micronutrientTargets,omitempty"`
+	UpdatedAt            time.Time          `firestore:"updatedAt"`
 }
 
 // firestoreNutritionGoalRepository はFirestoreを使用したNutritionGoalRepositoryの実装
@@ -55,6 +56,17 @@ func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID s
 	phase := DeterminePhase(currentWeightKg, targetWeightKg)
 	calculated := CalculateNutritionGoal(fsDoc.TargetCalories, phase)
 	calculated.UpdatedAt = fsDoc.UpdatedAt
+
+	// ユーザーがカスタマイズしたマイクロニュートリエント目標がある場合は上書き
+	if fsDoc.MicronutrientTargets != nil {
+		if calculated.MicronutrientTargets == nil {
+			calculated.MicronutrientTargets = make(map[string]float64, len(fsDoc.MicronutrientTargets))
+		}
+		for k, v := range fsDoc.MicronutrientTargets {
+			calculated.MicronutrientTargets[k] = v
+		}
+	}
+
 	return calculated, nil
 }
 
@@ -74,12 +86,15 @@ func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID s
 		UpdatedAt:      now,
 	}
 
-	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, doc)
+	// targetCaloriesとupdatedAtのみ更新し、既存のmicronutrientTargetsを保持する
+	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, doc, firestore.MergeAll)
 	if err != nil {
 		return nil, fmt.Errorf("栄養目標の設定に失敗: %w", err)
 	}
 
 	// デフォルトは維持期で返す（現在体重が不明なため）
+	// 注意: 返却値にはデフォルトのマイクロニュートリエント目標が含まれる
+	// Firestoreに保持されたカスタマイズ値は反映されない（次回GetGoal時に反映される）
 	phase := NutritionPhaseMaintenance
 	calculated := CalculateNutritionGoal(targetCalories, phase)
 	calculated.UpdatedAt = now

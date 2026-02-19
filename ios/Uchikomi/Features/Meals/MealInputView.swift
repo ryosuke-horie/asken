@@ -557,7 +557,8 @@ private struct AnalysisResultSection: View {
                 calories: result.totalCalories,
                 protein: result.totalProtein,
                 fat: result.totalFat,
-                carbohydrates: result.totalCarbohydrates
+                carbohydrates: result.totalCarbohydrates,
+                micronutrients: result.totalMicronutrients
             )
 
             VStack(alignment: .leading, spacing: 8) {

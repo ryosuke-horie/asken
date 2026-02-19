@@ -59,9 +59,11 @@
 		9E820E97DF8F143CB2DDED6E /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111989CFA3D813C2AF3757AC /* NotificationSettingsView.swift */; };
 		9F51C77FD003BD2399BF207B /* MyMenuListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA46C44E276D248E520E724 /* MyMenuListView.swift */; };
 		A02FAEFF3BEEC9BBC44E6291 /* NotificationSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB97F37288E662D82E4D89B3 /* NotificationSettingsViewModel.swift */; };
+		A885099A1E74F346D9660171 /* MicronutrientProgressSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D92CF8A21E8A6955173F555 /* MicronutrientProgressSection.swift */; };
 		A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EF1CA05F42093F7BCC75CA /* MealsView.swift */; };
 		B1BF86A829BF5A63107F33C1 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */; };
 		B3D2D8854BFB1B4D794563D8 /* MockFirebaseAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D110691FF801C9B691572637 /* MockFirebaseAuthService.swift */; };
+		B7F15B26BB22414F0DD3DD59 /* Micronutrient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9697ACE5C2B0C029B33AE9AE /* Micronutrient.swift */; };
 		BC9C2C57BAA437DA714F71C5 /* UchikomiCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E4456D284B8FFDA32C61020F /* UchikomiCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BCA7CB63D2B15F0B53BF0C14 /* MealInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EDB121AC061828D06504D0 /* MealInputView.swift */; };
 		BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 654F04EFCD263AE6A5D15331 /* AppEnvironment.swift */; };
@@ -126,6 +128,7 @@
 		1F318F350E924138601873A5 /* MyMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyMenu.swift; sourceTree = "<group>"; };
 		29390303E2235204CDE4AE9C /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		2BC643F36132FFB60AD6C63F /* WeightViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightViewModel.swift; sourceTree = "<group>"; };
+		2D92CF8A21E8A6955173F555 /* MicronutrientProgressSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicronutrientProgressSection.swift; sourceTree = "<group>"; };
 		2F19ED1AEBCFE77CED638ADA /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		3108E437ABED88CC7EAA39E3 /* Uchikomi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Uchikomi.entitlements; sourceTree = "<group>"; };
 		339AA9044DFFD3CF4742F75A /* WeightRecordRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecordRow.swift; sourceTree = "<group>"; };
@@ -159,6 +162,7 @@
 		8F851C2BC1FF724BCE4C2746 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9238F2DC08000E93B04CCF6C /* WeightGoalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightGoalCard.swift; sourceTree = "<group>"; };
 		92C37463672310B4C081DFEE /* NutritionGoalSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionGoalSettingView.swift; sourceTree = "<group>"; };
+		9697ACE5C2B0C029B33AE9AE /* Micronutrient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Micronutrient.swift; sourceTree = "<group>"; };
 		99E2610614116D5AB2DB9B01 /* MeasurementUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementUnit.swift; sourceTree = "<group>"; };
 		9F429EF1E72BA21AAB5D650F /* AppleSignInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInManager.swift; sourceTree = "<group>"; };
 		A10D3510323E7D29D6C571B9 /* MyMenuEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyMenuEditView.swift; sourceTree = "<group>"; };
@@ -226,6 +230,7 @@
 			isa = PBXGroup;
 			children = (
 				3E4D95F83E8D7B930C133A00 /* Meal.swift */,
+				9697ACE5C2B0C029B33AE9AE /* Micronutrient.swift */,
 				1F318F350E924138601873A5 /* MyMenu.swift */,
 				B6654808A0D988114BDF0EFF /* NutritionGoal.swift */,
 				D525367363E0CEBB7BD7939F /* UserProfile.swift */,
@@ -245,10 +250,19 @@
 			path = Core;
 			sourceTree = "<group>";
 		};
+		10BBE577F1294F53EC619C7F /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				7846AC731D8C7A36F11E1207 /* plan */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
 		12042A58C9A5CFE1847BA3BC /* Components */ = {
 			isa = PBXGroup;
 			children = (
 				8E8E3330F9D642785CE702EA /* CalorieProgressView.swift */,
+				2D92CF8A21E8A6955173F555 /* MicronutrientProgressSection.swift */,
 				A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */,
 				4C9657FA9AD5AFD84385A165 /* PFCPieChart.swift */,
 				7BE2BBB2FBE4D7D6F803DC4D /* PFCProgressBar.swift */,
@@ -378,6 +392,13 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
+		7846AC731D8C7A36F11E1207 /* plan */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = plan;
+			sourceTree = "<group>";
+		};
 		82A158792ACECE95B24715C7 /* UchikomiCore */ = {
 			isa = PBXGroup;
 			children = (
@@ -410,6 +431,7 @@
 			isa = PBXGroup;
 			children = (
 				D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */,
+				10BBE577F1294F53EC619C7F /* docs */,
 			);
 			path = UchikomiTests;
 			sourceTree = "<group>";
@@ -688,6 +710,8 @@
 				A8AC5BD7EE06114D2E276746 /* MealsView.swift in Sources */,
 				10D425E1A1A4427B4EAEE826 /* MealsViewModel.swift in Sources */,
 				F57ECB73B55F60AC68F6610C /* MeasurementUnit.swift in Sources */,
+				B7F15B26BB22414F0DD3DD59 /* Micronutrient.swift in Sources */,
+				A885099A1E74F346D9660171 /* MicronutrientProgressSection.swift in Sources */,
 				B3D2D8854BFB1B4D794563D8 /* MockFirebaseAuthService.swift in Sources */,
 				DDB1AFFB4C81FA04CAC6F380 /* MyMenu.swift in Sources */,
 				3BF382584E1642BE116D125F /* MyMenuEditView.swift in Sources */,
