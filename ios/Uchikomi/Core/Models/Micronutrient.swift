@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - MicronutrientKey
 
+/// バックエンド側の定義: backend/pkg/gemini/micronutrients.go (AllMicronutrients) と同期を保つこと
 enum MicronutrientKey: String, CaseIterable, Identifiable {
     var id: String {
         rawValue
@@ -61,7 +62,7 @@ enum MicronutrientKey: String, CaseIterable, Identifiable {
         case .vitaminB2Mg: .mint
         case .vitaminB6Mg: .teal
         case .vitaminB12Ug: .pink
-        case .vitaminCMg: .yellow
+        case .vitaminCMg: .orange.opacity(0.7)
         case .vitaminDUg: .indigo
         case .vitaminEMg: .purple
         }

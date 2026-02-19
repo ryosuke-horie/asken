@@ -124,7 +124,7 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 			TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
 			TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
 			Phase:                string(goal.Phase),
-			MicronutrientTargets: goal.MicronutrientTargets,
+			MicronutrientTargets: roundMicronutrientTargets(goal.MicronutrientTargets),
 			UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
 		}
 	}
@@ -181,7 +181,7 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 		TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
 		TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
 		Phase:                string(goal.Phase),
-		MicronutrientTargets: goal.MicronutrientTargets,
+		MicronutrientTargets: roundMicronutrientTargets(goal.MicronutrientTargets),
 		UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
 	}
 
@@ -195,4 +195,16 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		log.Printf("Error writing response: userID=%s, error=%v", userID, err)
 	}
+}
+
+// roundMicronutrientTargets はマイクロニュートリエント目標値を小数第1位で丸める
+func roundMicronutrientTargets(targets map[string]float64) map[string]float64 {
+	if targets == nil {
+		return nil
+	}
+	rounded := make(map[string]float64, len(targets))
+	for k, v := range targets {
+		rounded[k] = roundToOneDecimalForJSON(v)
+	}
+	return rounded
 }

@@ -146,6 +146,10 @@ func TestCalculateTotals(t *testing.T) {
 			Protein:       30.0,
 			Fat:           24.6,
 			Carbohydrates: 0.4,
+			Micronutrients: map[string]float64{
+				"iron_mg":    2.5,
+				"calcium_mg": 30.0,
+			},
 		},
 		{
 			Name:          "サラダ",
@@ -153,6 +157,11 @@ func TestCalculateTotals(t *testing.T) {
 			Protein:       2.0,
 			Fat:           1.5,
 			Carbohydrates: 8.0,
+			Micronutrients: map[string]float64{
+				"iron_mg":      1.0,
+				"calcium_mg":   50.0,
+				"vitamin_c_mg": 25.0,
+			},
 		},
 	}
 
@@ -163,6 +172,9 @@ func TestCalculateTotals(t *testing.T) {
 	assert.Equal(t, 26.1, totalFat)
 	assert.Equal(t, 8.4, totalCarbs)
 	assert.NotNil(t, totalMicro)
+	assert.Equal(t, 3.5, totalMicro["iron_mg"])
+	assert.Equal(t, 80.0, totalMicro["calcium_mg"])
+	assert.Equal(t, 25.0, totalMicro["vitamin_c_mg"])
 }
 
 func TestAnalyzeFoodText_Success(t *testing.T) {
