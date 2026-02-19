@@ -86,7 +86,8 @@ func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID s
 		UpdatedAt:      now,
 	}
 
-	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, doc)
+	// targetCaloriesとupdatedAtのみ更新し、既存のmicronutrientTargetsを保持する
+	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, doc, firestore.MergeAll)
 	if err != nil {
 		return nil, fmt.Errorf("栄養目標の設定に失敗: %w", err)
 	}

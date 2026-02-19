@@ -118,15 +118,8 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 
 	var response NutritionGoalNullableResponse
 	if goal != nil {
-		response.Goal = &NutritionGoalResponse{
-			TargetCalories:       roundToOneDecimalForJSON(goal.TargetCalories),
-			TargetProtein:        roundToOneDecimalForJSON(goal.TargetProtein),
-			TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
-			TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
-			Phase:                string(goal.Phase),
-			MicronutrientTargets: roundMicronutrientTargets(goal.MicronutrientTargets),
-			UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
-		}
+		resp := toNutritionGoalResponse(goal)
+		response.Goal = &resp
 	}
 
 	var buf bytes.Buffer
@@ -175,15 +168,7 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	response := NutritionGoalResponse{
-		TargetCalories:       roundToOneDecimalForJSON(goal.TargetCalories),
-		TargetProtein:        roundToOneDecimalForJSON(goal.TargetProtein),
-		TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
-		TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
-		Phase:                string(goal.Phase),
-		MicronutrientTargets: roundMicronutrientTargets(goal.MicronutrientTargets),
-		UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
-	}
+	response := toNutritionGoalResponse(goal)
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -197,7 +182,20 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// roundMicronutrientTargets はマイクロニュートリエント目標値を小数第1位で丸める
+// toNutritionGoalResponse はNutritionGoalをレスポンス形式に変換する
+func toNutritionGoalResponse(goal *repository.NutritionGoal) NutritionGoalResponse {
+	return NutritionGoalResponse{
+		TargetCalories:       roundToOneDecimalForJSON(goal.TargetCalories),
+		TargetProtein:        roundToOneDecimalForJSON(goal.TargetProtein),
+		TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
+		TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
+		Phase:                string(goal.Phase),
+		MicronutrientTargets: roundMicronutrientTargets(goal.MicronutrientTargets),
+		UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+// roundMicronutrientTargets はマイクロニュートリエント目標値を小数点以下1桁に丸める
 func roundMicronutrientTargets(targets map[string]float64) map[string]float64 {
 	if targets == nil {
 		return nil
