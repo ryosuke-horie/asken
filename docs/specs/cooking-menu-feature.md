@@ -57,8 +57,8 @@
 
 ### 単位
 
-既存の `MeasurementUnit`（Go/iOS共通）を再利用する:
-g, ml, 杯, 人前, 個, 枚, 本, 切れ, パック, 袋, 束, 丁, 缶, 合, 玉, 粒, 大さじ, 小さじ
+既存の `MeasurementUnit`（Go/iOS共通）を再利用する。詳細は `backend/pkg/gemini/schema.go` の `supportedUnits` を参照:
+g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, 合, 玉, 粒, パック, 大さじ, 小さじ
 
 ### 1.2 menuSuggestions コレクション
 
@@ -73,8 +73,8 @@ g, ml, 杯, 人前, 個, 枚, 本, 切れ, パック, 袋, 束, 丁, 缶, 合, �
 | ingredientsUsed | array | Yes | 使用食材リスト（下記参照） |
 | recipe | string | No | 調理手順（遅延生成） |
 | estimatedNutrition | map | Yes | 推定栄養素 |
-| mealType | string | Yes | 推奨食事タイプ |
-| status | string | Yes | 状態 |
+| mealType | string | Yes | 推奨食事タイプ (breakfast / lunch / dinner / snack) |
+| status | string | Yes | 状態 (suggested / accepted / dismissed) |
 | createdAt | timestamp | Yes | 作成日時 |
 | updatedAt | timestamp | Yes | 更新日時 |
 
@@ -112,7 +112,7 @@ suggested → dismissed（却下、データ保持）
 | コレクション | フィールド | 用途 |
 |:---|:---|:---|
 | ingredients | category ASC, name ASC | カテゴリ別食材一覧 |
-| ingredients | expiryDate ASC | 消費期限順ソート |
+| ingredients | category ASC, expiryDate ASC | カテゴリ別消費期限順ソート |
 | menuSuggestions | status ASC, createdAt DESC | ステータス別サジェスト一覧 |
 
 ### 1.4 analysisRequests の拡張
@@ -126,9 +126,17 @@ suggested → dismissed（却下、データ保持）
 | inputType | `"suggestion"` |
 | status | `"completed"` |
 | confirmed | `true` |
-| result | サジェストの `estimatedNutrition` から生成 |
+| result.foods | サジェストの `ingredientsUsed` から生成 |
+| result.totalCalories | `estimatedNutrition.calories` |
+| result.totalProtein | `estimatedNutrition.protein` |
+| result.totalFat | `estimatedNutrition.fat` |
+| result.totalCarbohydrates | `estimatedNutrition.carbohydrates` |
 | mealType | サジェストの `mealType` |
 | mealDate | 採用時の日付 |
+| createdAt | 作成時のタイムスタンプ |
+| updatedAt | 作成時のタイムスタンプ |
+
+実装時に `docs/CODEMAPS/data.md` の `inputType` 一覧に `"suggestion"` を追加すること。
 
 ---
 
@@ -142,7 +150,7 @@ suggested → dismissed（却下、データ保持）
 
 リクエスト:
 - Content-Type: `multipart/form-data`
-- `image`: レシート画像（JPEG, PNG, HEIC, 最大10MB）
+- `image`: レシート画像（JPEG, PNG, 最大10MB）。HEIC形式はアップロード時にJPEGへ変換する（Gemini APIはHEIC非対応のため）。
 
 レスポンス:
 ```json
@@ -252,7 +260,7 @@ suggested → dismissed（却下、データ保持）
 
 処理フロー:
 1. ユーザーの食材一覧を取得
-2. 栄養目標（`nutritionGoal/current`）を取得
+2. 栄養目標（`nutritionGoal/current`、固定ドキュメントIDの単一ドキュメント）を取得
 3. 直近7日間の食事履歴（`analysisRequests`）を取得
 4. 直近30日間の体重推移（`weightRecords`）を取得
 5. 上記をコンテキストとしてGemini APIでメニュー提案を生成
@@ -344,9 +352,9 @@ suggested → dismissed（却下、データ保持）
 }
 ```
 
-#### DELETE /api/menu/suggestions/{id}
+#### POST /api/menu/suggestions/{id}/dismiss
 
-サジェストを却下する（ステータスを `dismissed` に更新）。
+サジェストを却下する（ステータスを `dismissed` に更新、データは保持）。`/accept` と対称的なエンドポイント設計。
 
 ---
 
@@ -476,7 +484,7 @@ suggested → dismissed（却下、データ保持）
 
 #### ReceiptScanView
 
-- カメラUIでレシート撮影（既存の `CameraView` を再利用可能）
+- カメラUIでレシート撮影（既存の `Features/Meals/CameraView.swift` を `Core/Views/` 等の共有場所に移動して再利用）
 - 解析結果をリスト表示、各項目を編集可能
 - 一括保存ボタン
 
@@ -506,6 +514,8 @@ suggested → dismissed（却下、データ保持）
 
 タブバーに「食材」タブを追加するか、既存の食事記録画面からサジェスト機能への導線を設ける。
 
+現在のタブバー構成: 食事、体重、マイメニュー、設定
+
 導線案:
 ```
 タブバー
@@ -513,8 +523,11 @@ suggested → dismissed（却下、データ保持）
 │     └── サジェストボタン → SuggestionRequestView
 ├── 食材（新規）→ PantryListView
 ├── 体重（既存）
+├── マイメニュー（既存）
 └── 設定（既存）
 ```
+
+タブが5つになるため、iOS の `TabView` でスクロール可能なタブバーを検討する。
 
 ---
 

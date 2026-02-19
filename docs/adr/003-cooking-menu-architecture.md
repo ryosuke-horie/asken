@@ -35,7 +35,7 @@ users/{userId}/
 
 ### Gemini API 拡張
 
-既存の3段階パイプライン（分類→解析→栄養計算）に加え、3つの新しいプロンプトを追加する。
+既存の2段階パイプライン（画像分類またはテキスト解析→栄養計算）に加え、3つの新しいプロンプトを追加する。
 
 | プロンプト | 入力 | 出力 |
 |:---|:---|:---|
@@ -45,7 +45,7 @@ users/{userId}/
 
 ### API設計方針
 
-既存のルーティング構造（Handler層 → Service層 → Repository層）を踏襲する。
+既存のルーティング構造（Handler層→Repository層、Gemini連携等が必要な場合はService層を挟む）を踏襲する。
 
 | カテゴリ | エンドポイント | 概要 |
 |:---|:---|:---|
@@ -58,7 +58,7 @@ users/{userId}/
 | サジェスト | `GET /api/menu/suggestions` | サジェスト一覧取得 |
 | サジェスト | `GET /api/menu/suggestions/{id}` | サジェスト詳細（レシピ含む） |
 | サジェスト | `POST /api/menu/suggestions/{id}/accept` | サジェスト採用→食事記録+食材控除 |
-| サジェスト | `DELETE /api/menu/suggestions/{id}` | サジェスト却下 |
+| サジェスト | `POST /api/menu/suggestions/{id}/dismiss` | サジェスト却下 |
 
 ### iOS アーキテクチャ
 
@@ -112,7 +112,7 @@ users/{userId}/
 
 バックエンド:
 - `internal/handler/ingredient_handler.go` - 食材管理ハンドラ
-- `internal/handler/menu_suggest_handler.go` - サジェストハンドラ
+- `internal/handler/menu_suggestion_handler.go` - サジェストハンドラ
 - `internal/repository/ingredient_repository.go` - 食材リポジトリ
 - `internal/repository/menu_suggestion_repository.go` - サジェストリポジトリ
 - `pkg/gemini/receipt_parser.go` - レシート解析
@@ -133,8 +133,8 @@ Firestore:
 
 ### 既存機能への影響
 
-- `analysisRequests` に `inputType: "suggestion"` が追加される
-- ルーティング (`setupRoutes`) に新規エンドポイントが追加される
+- `analysisRequests` に `inputType: "suggestion"` が追加される（`docs/CODEMAPS/data.md` の更新も必要）
+- ルーティング設定に新規エンドポイントが追加される
 - レート制限ミドルウェアの対象エンドポイントが増加する
 - iOS のタブバー/ナビゲーションに食材管理・サジェストへの導線が追加される
 
