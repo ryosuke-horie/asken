@@ -980,6 +980,14 @@ func TestHistoryHandler_HandleUpdate_ValidationErrors(t *testing.T) {
 			name: "複数食材の2番目が無効",
 			body: `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7},{"name":"","estimated_amount":"200ml","calories_kcal":30,"protein_g":2.0,"fat_g":0.5,"carbohydrates_g":4.0}]}`,
 		},
+		{
+			name: "不正なマイクロニュートリエントキー",
+			body: `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7,"micronutrients":{"invalid_key":1.0}}]}`,
+		},
+		{
+			name: "負のマイクロニュートリエント値",
+			body: `{"foods":[{"name":"白米","estimated_amount":"150g","calories_kcal":252,"protein_g":3.8,"fat_g":0.5,"carbohydrates_g":55.7,"micronutrients":{"iron_mg":-1.0}}]}`,
+		},
 	}
 
 	for _, tt := range tests {

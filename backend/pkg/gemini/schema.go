@@ -45,6 +45,7 @@ func (r classifierResponseItem) toFoodItem() FoodItem {
 
 // nutritionResponseItem はGemini NutritionCalculatorのレスポンス構造体
 // responseSchemaで制約されたJSON出力をデシリアライズする
+// micronutrients.go の AllMicronutrients と同期させること（フィールド追加時は toNutritionInfo() も更新が必要）
 type nutritionResponseItem struct {
 	Name          string  `json:"name"`
 	QuantityValue float64 `json:"quantity_value"`

@@ -24,7 +24,7 @@ type MicronutrientMeta struct {
 	Key         MicronutrientKey
 	DisplayName string
 	Unit        string
-	// 厚生労働省「日本人の食事摂取基準（2020年版）」を参考にした成人向け目安値（年齢・性別により異なる）
+	// 厚生労働省「日本人の食事摂取基準」を参考に簡略化した目安値。年齢・性別によって推奨量は大きく異なるため、正確な値ではなくアプリのデフォルト表示用
 	DefaultTarget float64
 }
 

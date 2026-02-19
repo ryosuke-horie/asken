@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -199,6 +200,9 @@ func (f UpdateFoodItem) Validate() error {
 	for key, val := range f.Micronutrients {
 		if !validKeys[key] {
 			return fmt.Errorf("unknown micronutrient key: %s", key)
+		}
+		if math.IsNaN(val) || math.IsInf(val, 0) {
+			return fmt.Errorf("micronutrient value must be a finite number: %s", key)
 		}
 		if val < 0 {
 			return fmt.Errorf("micronutrient value must be non-negative: %s", key)
