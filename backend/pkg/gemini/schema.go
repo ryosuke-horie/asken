@@ -53,6 +53,19 @@ type nutritionResponseItem struct {
 	Protein       float64 `json:"protein_g"`
 	Fat           float64 `json:"fat_g"`
 	Carbohydrates float64 `json:"carbohydrates_g"`
+	// マイクロニュートリエント
+	Iron       float64 `json:"iron_mg"`
+	Calcium    float64 `json:"calcium_mg"`
+	Zinc       float64 `json:"zinc_mg"`
+	Fiber      float64 `json:"fiber_g"`
+	VitaminA   float64 `json:"vitamin_a_ug"`
+	VitaminB1  float64 `json:"vitamin_b1_mg"`
+	VitaminB2  float64 `json:"vitamin_b2_mg"`
+	VitaminB6  float64 `json:"vitamin_b6_mg"`
+	VitaminB12 float64 `json:"vitamin_b12_ug"`
+	VitaminC   float64 `json:"vitamin_c_mg"`
+	VitaminD   float64 `json:"vitamin_d_ug"`
+	VitaminE   float64 `json:"vitamin_e_mg"`
 }
 
 // toNutritionInfo はnutritionResponseItemをNutritionInfoに変換する
@@ -64,6 +77,20 @@ func (r nutritionResponseItem) toNutritionInfo() NutritionInfo {
 		Protein:         r.Protein,
 		Fat:             r.Fat,
 		Carbohydrates:   r.Carbohydrates,
+		Micronutrients: map[string]float64{
+			string(KeyIron):       r.Iron,
+			string(KeyCalcium):    r.Calcium,
+			string(KeyZinc):       r.Zinc,
+			string(KeyFiber):      r.Fiber,
+			string(KeyVitaminA):   r.VitaminA,
+			string(KeyVitaminB1):  r.VitaminB1,
+			string(KeyVitaminB2):  r.VitaminB2,
+			string(KeyVitaminB6):  r.VitaminB6,
+			string(KeyVitaminB12): r.VitaminB12,
+			string(KeyVitaminC):   r.VitaminC,
+			string(KeyVitaminD):   r.VitaminD,
+			string(KeyVitaminE):   r.VitaminE,
+		},
 	}
 }
 
@@ -131,8 +158,51 @@ func NutritionInfoSchema() *Schema {
 				"carbohydrates_g": {
 					Type: SchemaTypeNumber,
 				},
+				// マイクロニュートリエント
+				"iron_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"calcium_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"zinc_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"fiber_g": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_a_ug": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_b1_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_b2_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_b6_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_b12_ug": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_c_mg": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_d_ug": {
+					Type: SchemaTypeNumber,
+				},
+				"vitamin_e_mg": {
+					Type: SchemaTypeNumber,
+				},
 			},
-			Required: []string{"name", "quantity_value", "quantity_unit", "calories_kcal", "protein_g", "fat_g", "carbohydrates_g"},
+			Required: []string{
+				"name", "quantity_value", "quantity_unit",
+				"calories_kcal", "protein_g", "fat_g", "carbohydrates_g",
+				"iron_mg", "calcium_mg", "zinc_mg", "fiber_g",
+				"vitamin_a_ug", "vitamin_b1_mg", "vitamin_b2_mg", "vitamin_b6_mg",
+				"vitamin_b12_ug", "vitamin_c_mg", "vitamin_d_ug", "vitamin_e_mg",
+			},
 		},
 	}
 }

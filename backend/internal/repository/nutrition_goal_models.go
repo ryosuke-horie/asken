@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
 const (
@@ -80,12 +82,13 @@ func GetDefaultPFCRatio(phase NutritionPhase) PFCRatio {
 
 // NutritionGoal は栄養目標を表す構造体
 type NutritionGoal struct {
-	TargetCalories      float64        `json:"target_calories"`      // 目標カロリー（kcal）- ユーザー設定
-	TargetProtein       float64        `json:"target_protein"`       // 目標たんぱく質（g）- 自動計算
-	TargetFat           float64        `json:"target_fat"`           // 目標脂質（g）- 自動計算
-	TargetCarbohydrates float64        `json:"target_carbohydrates"` // 目標炭水化物（g）- 自動計算
-	Phase               NutritionPhase `json:"phase"`                // 栄養フェーズ
-	UpdatedAt           time.Time      `json:"updated_at"`
+	TargetCalories       float64            `json:"target_calories"`                 // 目標カロリー（kcal）- ユーザー設定
+	TargetProtein        float64            `json:"target_protein"`                  // 目標たんぱく質（g）- 自動計算
+	TargetFat            float64            `json:"target_fat"`                      // 目標脂質（g）- 自動計算
+	TargetCarbohydrates  float64            `json:"target_carbohydrates"`            // 目標炭水化物（g）- 自動計算
+	Phase                NutritionPhase     `json:"phase"`                           // 栄養フェーズ
+	MicronutrientTargets map[string]float64 `json:"micronutrient_targets,omitempty"` // マイクロニュートリエント目標値
+	UpdatedAt            time.Time          `json:"updated_at"`
 }
 
 // NutritionGoalRepository は栄養目標の永続化を担当するインターフェース
@@ -111,12 +114,13 @@ func CalculateNutritionGoal(targetCalories float64, phase NutritionPhase) *Nutri
 	carbsG := (targetCalories * ratio.Carbohydrates) / 4
 
 	return &NutritionGoal{
-		TargetCalories:      targetCalories,
-		TargetProtein:       roundToOneDecimal(proteinG),
-		TargetFat:           roundToOneDecimal(fatG),
-		TargetCarbohydrates: roundToOneDecimal(carbsG),
-		Phase:               phase,
-		UpdatedAt:           time.Now(),
+		TargetCalories:       targetCalories,
+		TargetProtein:        roundToOneDecimal(proteinG),
+		TargetFat:            roundToOneDecimal(fatG),
+		TargetCarbohydrates:  roundToOneDecimal(carbsG),
+		Phase:                phase,
+		MicronutrientTargets: gemini.DefaultMicronutrientTargets(),
+		UpdatedAt:            time.Now(),
 	}
 }
 

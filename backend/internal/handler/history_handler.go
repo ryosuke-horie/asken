@@ -175,12 +175,13 @@ func (h *HistoryHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 
 // UpdateFoodItem は更新リクエストの食材アイテム
 type UpdateFoodItem struct {
-	Name            string  `json:"name"`
-	EstimatedAmount string  `json:"estimated_amount"`
-	Calories        float64 `json:"calories_kcal"`
-	Protein         float64 `json:"protein_g"`
-	Fat             float64 `json:"fat_g"`
-	Carbohydrates   float64 `json:"carbohydrates_g"`
+	Name            string             `json:"name"`
+	EstimatedAmount string             `json:"estimated_amount"`
+	Calories        float64            `json:"calories_kcal"`
+	Protein         float64            `json:"protein_g"`
+	Fat             float64            `json:"fat_g"`
+	Carbohydrates   float64            `json:"carbohydrates_g"`
+	Micronutrients  map[string]float64 `json:"micronutrients,omitempty"`
 }
 
 // Validate はUpdateFoodItemのバリデーションを行う
@@ -259,6 +260,7 @@ func toNutritionInfoSlice(foods []UpdateFoodItem) []gemini.NutritionInfo {
 			Protein:         f.Protein,
 			Fat:             f.Fat,
 			Carbohydrates:   f.Carbohydrates,
+			Micronutrients:  f.Micronutrients,
 		}
 	}
 	return result

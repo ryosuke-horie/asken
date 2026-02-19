@@ -47,17 +47,18 @@ type AnalysisRequest struct {
 
 // HistoryItem は履歴一覧の各項目を表す構造体
 type HistoryItem struct {
-	ID                 uuid.UUID `json:"id"`
-	InputType          InputType `json:"input_type"`
-	ImagePath          string    `json:"image_path"`
-	InputText          string    `json:"input_text"`
-	CreatedAt          time.Time `json:"created_at"`
-	MealType           string    `json:"meal_type"`
-	MealDate           time.Time `json:"meal_date"`
-	TotalCalories      float64   `json:"total_calories"`
-	TotalProtein       float64   `json:"total_protein"`
-	TotalFat           float64   `json:"total_fat"`
-	TotalCarbohydrates float64   `json:"total_carbohydrates"`
+	ID                  uuid.UUID          `json:"id"`
+	InputType           InputType          `json:"input_type"`
+	ImagePath           string             `json:"image_path"`
+	InputText           string             `json:"input_text"`
+	CreatedAt           time.Time          `json:"created_at"`
+	MealType            string             `json:"meal_type"`
+	MealDate            time.Time          `json:"meal_date"`
+	TotalCalories       float64            `json:"total_calories"`
+	TotalProtein        float64            `json:"total_protein"`
+	TotalFat            float64            `json:"total_fat"`
+	TotalCarbohydrates  float64            `json:"total_carbohydrates"`
+	TotalMicronutrients map[string]float64 `json:"total_micronutrients,omitempty"`
 }
 
 // HistoryDetail は履歴詳細を表す構造体
@@ -68,10 +69,11 @@ type HistoryDetail struct {
 
 // DailyTotal は1日の合計栄養素を表す構造体
 type DailyTotal struct {
-	TotalCalories      float64 `json:"total_calories"`
-	TotalProtein       float64 `json:"total_protein"`
-	TotalFat           float64 `json:"total_fat"`
-	TotalCarbohydrates float64 `json:"total_carbohydrates"`
+	TotalCalories       float64            `json:"total_calories"`
+	TotalProtein        float64            `json:"total_protein"`
+	TotalFat            float64            `json:"total_fat"`
+	TotalCarbohydrates  float64            `json:"total_carbohydrates"`
+	TotalMicronutrients map[string]float64 `json:"total_micronutrients,omitempty"`
 }
 
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
