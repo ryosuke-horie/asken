@@ -1,0 +1,222 @@
+// マイメニュー既存データへのマイクロニュートリエントバックフィルスクリプト
+//
+// UTK-23で追加されたマイクロニュートリエント12種について、既存のマイメニューデータには
+// micronutrientsフィールドが存在しない。本スクリプトはGemini APIを使用して栄養素を
+// 再推定し、micronutrientsフィールドをバックフィルする。
+//
+// 実行方法:
+//
+//	cd backend
+//	GEMINI_API_KEY=xxx GOOGLE_APPLICATION_CREDENTIALS=/path/to/creds.json \
+//	  go run ./cmd/ops/20250219/
+//
+// 環境変数:
+//
+//	GEMINI_API_KEY                  - Gemini APIキー（必須）
+//	GOOGLE_APPLICATION_CREDENTIALS  - サービスアカウントキーのパス（必須）
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"cloud.google.com/go/firestore"
+	"google.golang.org/api/iterator"
+
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/database"
+	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
+)
+
+const (
+	// geminiTimeout はGemini APIの1リクエストあたりのタイムアウト
+	geminiTimeout = 60 * time.Second
+
+	// rateLimitWait はGemini APIレート制限に対応するリクエスト間隔
+	// サーバー側レート制限: 0.2 req/s (5秒に1回), バーストサイズ2
+	// バースト消費後は5秒待機が必要なため、余裕を持って6秒とする
+	rateLimitWait = 6 * time.Second
+)
+
+// menuDoc はFirestoreのマイメニュードキュメントの読み取り用構造体
+// バックフィルに必要なフィールドのみ定義する
+type menuDoc struct {
+	Foods []gemini.NutritionInfo `firestore:"foods"`
+}
+
+func main() {
+	ctx := context.Background()
+
+	// Firestoreクライアント初期化（GOOGLE_APPLICATION_CREDENTIALS使用）
+	fsClient, err := database.NewFirestoreClient(ctx, "")
+	if err != nil {
+		log.Fatalf("[FATAL] Firestore初期化失敗: %v", err)
+	}
+	defer func() {
+		if err := fsClient.Close(); err != nil {
+			log.Printf("[WARN] Firestoreクライアントのクローズに失敗: %v", err)
+		}
+	}()
+
+	// NutritionCalculator初期化（GEMINI_API_KEY環境変数使用）
+	calc, err := gemini.NewNutritionCalculator(geminiTimeout)
+	if err != nil {
+		log.Fatalf("[FATAL] NutritionCalculator初期化失敗: %v", err)
+	}
+
+	log.Printf("[INFO] マイメニューマイクロニュートリエントバックフィル開始")
+
+	totalMenus, patchedMenus, skippedMenus, failedMenus := processAllUsers(ctx, fsClient, calc)
+
+	log.Printf("[INFO] バックフィル完了 - 総メニュー: %d, パッチ適用: %d, スキップ: %d, 失敗: %d",
+		totalMenus, patchedMenus, skippedMenus, failedMenus)
+}
+
+// processAllUsers は全ユーザーのマイメニューを処理する
+func processAllUsers(ctx context.Context, fsClient *firestore.Client, calc *gemini.NutritionCalculator) (total, patched, skipped, failed int) {
+	usersIter := fsClient.Collection("users").Documents(ctx)
+	defer usersIter.Stop()
+
+	for {
+		userDoc, err := usersIter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Printf("[ERROR] ユーザー列挙エラー: %v", err)
+			failed++
+			continue
+		}
+
+		userID := userDoc.Ref.ID
+		log.Printf("[INFO] ユーザー処理開始: %s", userID)
+
+		p, s, f := processUserMenus(ctx, fsClient, calc, userID)
+		total += p + s + f
+		patched += p
+		skipped += s
+		failed += f
+	}
+	return
+}
+
+// processUserMenus は指定ユーザーの全マイメニューを処理する
+func processUserMenus(ctx context.Context, fsClient *firestore.Client, calc *gemini.NutritionCalculator, userID string) (patched, skipped, failed int) {
+	menuIter := fsClient.Collection("users").Doc(userID).Collection("myMenu").Documents(ctx)
+	defer menuIter.Stop()
+
+	for {
+		doc, err := menuIter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Printf("[ERROR] マイメニュー列挙エラー (user=%s): %v", userID, err)
+			failed++
+			continue
+		}
+
+		menuID := doc.Ref.ID
+
+		var menu menuDoc
+		if err := doc.DataTo(&menu); err != nil {
+			log.Printf("[ERROR] パースエラー (user=%s, menu=%s): %v", userID, menuID, err)
+			failed++
+			continue
+		}
+
+		if !needsMicronutrientPatch(menu.Foods) {
+			log.Printf("[SKIP] パッチ不要 (user=%s, menu=%s)", userID, menuID)
+			skipped++
+			continue
+		}
+
+		if err := patchMenuMicronutrients(ctx, fsClient, calc, userID, menuID, menu.Foods); err != nil {
+			log.Printf("[ERROR] パッチ失敗 (user=%s, menu=%s): %v", userID, menuID, err)
+			failed++
+			continue
+		}
+
+		patched++
+
+		// レート制限のため待機
+		time.Sleep(rateLimitWait)
+	}
+	return
+}
+
+// needsMicronutrientPatch はFoods配列内にmicronutrientsが不足している食材があるか確認する
+func needsMicronutrientPatch(foods []gemini.NutritionInfo) bool {
+	for _, food := range foods {
+		if len(food.Micronutrients) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// patchMenuMicronutrients は指定マイメニューのmicronutrientsをGemini APIで推定してFirestoreを更新する
+func patchMenuMicronutrients(
+	ctx context.Context,
+	fsClient *firestore.Client,
+	calc *gemini.NutritionCalculator,
+	userID, menuID string,
+	foods []gemini.NutritionInfo,
+) error {
+	// FoodItemリストを構築（Gemini APIへの入力）
+	foodItems := toFoodItems(foods)
+
+	// Gemini APIで栄養素計算
+	nutritionList, err := calc.CalculateNutrition(ctx, foodItems)
+	if err != nil {
+		return fmt.Errorf("Gemini API呼び出し失敗: %w", err)
+	}
+
+	// Geminiレスポンス件数の確認
+	if len(nutritionList) != len(foods) {
+		return fmt.Errorf("Geminiレスポンス件数不一致: 期待=%d, 実際=%d", len(foods), len(nutritionList))
+	}
+
+	// micronutrientsのみ更新（既存のカロリー・タンパク質・脂質・炭水化物は保持）
+	updatedFoods := applyMicronutrients(foods, nutritionList)
+
+	// Firestoreドキュメントを更新
+	docRef := fsClient.Collection("users").Doc(userID).Collection("myMenu").Doc(menuID)
+	_, err = docRef.Update(ctx, []firestore.Update{
+		{Path: "foods", Value: updatedFoods},
+		{Path: "updatedAt", Value: time.Now()},
+	})
+	if err != nil {
+		return fmt.Errorf("Firestore更新失敗: %w", err)
+	}
+
+	log.Printf("[OK] パッチ完了 (user=%s, menu=%s, foods=%d品)", userID, menuID, len(updatedFoods))
+	return nil
+}
+
+// toFoodItems はNutritionInfo配列をFoodItem配列に変換する
+func toFoodItems(foods []gemini.NutritionInfo) []gemini.FoodItem {
+	items := make([]gemini.FoodItem, len(foods))
+	for i, food := range foods {
+		items[i] = gemini.FoodItem{
+			Name:            food.Name,
+			EstimatedAmount: food.EstimatedAmount,
+		}
+	}
+	return items
+}
+
+// applyMicronutrients はGeminiの計算結果からmicronutrientsを既存foodsに適用する
+// micronutrientsが既に存在するfoodはスキップし、不足しているfoodのみ更新する
+// 既存のカロリー・タンパク質・脂質・炭水化物は保持する
+func applyMicronutrients(original []gemini.NutritionInfo, geminiResults []gemini.NutritionInfo) []gemini.NutritionInfo {
+	updated := make([]gemini.NutritionInfo, len(original))
+	for i, food := range original {
+		updated[i] = food
+		if len(food.Micronutrients) == 0 {
+			updated[i].Micronutrients = geminiResults[i].Micronutrients
+		}
+	}
+	return updated
+}
