@@ -97,5 +97,18 @@ func TestNutritionInfoSchema(t *testing.T) {
 	assert.Contains(t, schema.Items.Properties, "protein_g")
 	assert.Contains(t, schema.Items.Properties, "fat_g")
 	assert.Contains(t, schema.Items.Properties, "carbohydrates_g")
-	assert.Len(t, schema.Items.Required, 7)
+	// マイクロニュートリエント
+	assert.Contains(t, schema.Items.Properties, "iron_mg")
+	assert.Contains(t, schema.Items.Properties, "calcium_mg")
+	assert.Contains(t, schema.Items.Properties, "zinc_mg")
+	assert.Contains(t, schema.Items.Properties, "fiber_g")
+	assert.Contains(t, schema.Items.Properties, "vitamin_a_ug")
+	assert.Contains(t, schema.Items.Properties, "vitamin_b1_mg")
+	assert.Contains(t, schema.Items.Properties, "vitamin_b2_mg")
+	assert.Contains(t, schema.Items.Properties, "vitamin_b6_mg")
+	assert.Contains(t, schema.Items.Properties, "vitamin_b12_ug")
+	assert.Contains(t, schema.Items.Properties, "vitamin_c_mg")
+	assert.Contains(t, schema.Items.Properties, "vitamin_d_ug")
+	assert.Contains(t, schema.Items.Properties, "vitamin_e_mg")
+	assert.Len(t, schema.Items.Required, 19) // 7 + 12 micronutrients
 }

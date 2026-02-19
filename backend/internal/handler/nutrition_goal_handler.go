@@ -39,12 +39,13 @@ type SetNutritionGoalRequest struct {
 
 // NutritionGoalResponse は栄養目標のレスポンス
 type NutritionGoalResponse struct {
-	TargetCalories      float64 `json:"target_calories"`
-	TargetProtein       float64 `json:"target_protein"`
-	TargetFat           float64 `json:"target_fat"`
-	TargetCarbohydrates float64 `json:"target_carbohydrates"`
-	Phase               string  `json:"phase"`
-	UpdatedAt           string  `json:"updated_at"`
+	TargetCalories       float64            `json:"target_calories"`
+	TargetProtein        float64            `json:"target_protein"`
+	TargetFat            float64            `json:"target_fat"`
+	TargetCarbohydrates  float64            `json:"target_carbohydrates"`
+	Phase                string             `json:"phase"`
+	MicronutrientTargets map[string]float64 `json:"micronutrient_targets,omitempty"`
+	UpdatedAt            string             `json:"updated_at"`
 }
 
 // NutritionGoalNullableResponse は栄養目標取得のレスポンス（nilを許容）
@@ -118,12 +119,13 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 	var response NutritionGoalNullableResponse
 	if goal != nil {
 		response.Goal = &NutritionGoalResponse{
-			TargetCalories:      roundToOneDecimalForJSON(goal.TargetCalories),
-			TargetProtein:       roundToOneDecimalForJSON(goal.TargetProtein),
-			TargetFat:           roundToOneDecimalForJSON(goal.TargetFat),
-			TargetCarbohydrates: roundToOneDecimalForJSON(goal.TargetCarbohydrates),
-			Phase:               string(goal.Phase),
-			UpdatedAt:           goal.UpdatedAt.Format(time.RFC3339),
+			TargetCalories:       roundToOneDecimalForJSON(goal.TargetCalories),
+			TargetProtein:        roundToOneDecimalForJSON(goal.TargetProtein),
+			TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
+			TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
+			Phase:                string(goal.Phase),
+			MicronutrientTargets: goal.MicronutrientTargets,
+			UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
 		}
 	}
 
@@ -174,12 +176,13 @@ func (h *NutritionGoalHandler) HandleSet(w http.ResponseWriter, r *http.Request)
 	}
 
 	response := NutritionGoalResponse{
-		TargetCalories:      roundToOneDecimalForJSON(goal.TargetCalories),
-		TargetProtein:       roundToOneDecimalForJSON(goal.TargetProtein),
-		TargetFat:           roundToOneDecimalForJSON(goal.TargetFat),
-		TargetCarbohydrates: roundToOneDecimalForJSON(goal.TargetCarbohydrates),
-		Phase:               string(goal.Phase),
-		UpdatedAt:           goal.UpdatedAt.Format(time.RFC3339),
+		TargetCalories:       roundToOneDecimalForJSON(goal.TargetCalories),
+		TargetProtein:        roundToOneDecimalForJSON(goal.TargetProtein),
+		TargetFat:            roundToOneDecimalForJSON(goal.TargetFat),
+		TargetCarbohydrates:  roundToOneDecimalForJSON(goal.TargetCarbohydrates),
+		Phase:                string(goal.Phase),
+		MicronutrientTargets: goal.MicronutrientTargets,
+		UpdatedAt:            goal.UpdatedAt.Format(time.RFC3339),
 	}
 
 	var buf bytes.Buffer

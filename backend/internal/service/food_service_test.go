@@ -156,12 +156,13 @@ func TestCalculateTotals(t *testing.T) {
 		},
 	}
 
-	totalCal, totalPro, totalFat, totalCarbs := calculateTotals(nutritionList)
+	totalCal, totalPro, totalFat, totalCarbs, totalMicro := calculateTotals(nutritionList)
 
 	assert.Equal(t, 410.0, totalCal)
 	assert.Equal(t, 32.0, totalPro)
 	assert.Equal(t, 26.1, totalFat)
 	assert.Equal(t, 8.4, totalCarbs)
+	assert.NotNil(t, totalMicro)
 }
 
 func TestAnalyzeFoodText_Success(t *testing.T) {

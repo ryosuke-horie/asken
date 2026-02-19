@@ -12,8 +12,9 @@ import (
 
 // firestoreNutritionGoalDocument はFirestoreに保存する栄養目標ドキュメント構造
 type firestoreNutritionGoalDocument struct {
-	TargetCalories float64   `firestore:"targetCalories"`
-	UpdatedAt      time.Time `firestore:"updatedAt"`
+	TargetCalories       float64            `firestore:"targetCalories"`
+	MicronutrientTargets map[string]float64 `firestore:"micronutrientTargets,omitempty"`
+	UpdatedAt            time.Time          `firestore:"updatedAt"`
 }
 
 // firestoreNutritionGoalRepository はFirestoreを使用したNutritionGoalRepositoryの実装
@@ -55,6 +56,14 @@ func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID s
 	phase := DeterminePhase(currentWeightKg, targetWeightKg)
 	calculated := CalculateNutritionGoal(fsDoc.TargetCalories, phase)
 	calculated.UpdatedAt = fsDoc.UpdatedAt
+
+	// ユーザーがカスタマイズしたマイクロニュートリエント目標がある場合は上書き
+	if fsDoc.MicronutrientTargets != nil {
+		for k, v := range fsDoc.MicronutrientTargets {
+			calculated.MicronutrientTargets[k] = v
+		}
+	}
+
 	return calculated, nil
 }
 
