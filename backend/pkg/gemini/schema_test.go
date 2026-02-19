@@ -58,6 +58,9 @@ func TestNutritionResponseItem_toNutritionInfo(t *testing.T) {
 		Protein:       15.5,
 		Fat:           20.3,
 		Carbohydrates: 85.2,
+		Iron:          3.5,
+		Calcium:       120.0,
+		VitaminC:      15.0,
 	}
 
 	info := item.toNutritionInfo()
@@ -68,6 +71,10 @@ func TestNutritionResponseItem_toNutritionInfo(t *testing.T) {
 	assert.Equal(t, 15.5, info.Protein)
 	assert.Equal(t, 20.3, info.Fat)
 	assert.Equal(t, 85.2, info.Carbohydrates)
+	assert.Equal(t, 3.5, info.Micronutrients["iron_mg"])
+	assert.Equal(t, 120.0, info.Micronutrients["calcium_mg"])
+	assert.Equal(t, 15.0, info.Micronutrients["vitamin_c_mg"])
+	assert.Len(t, info.Micronutrients, len(AllMicronutrients))
 }
 
 func TestFoodItemSchema(t *testing.T) {
@@ -90,25 +97,18 @@ func TestNutritionInfoSchema(t *testing.T) {
 
 	assert.Equal(t, SchemaTypeArray, schema.Type)
 	assert.NotNil(t, schema.Items)
-	assert.Contains(t, schema.Items.Properties, "name")
-	assert.Contains(t, schema.Items.Properties, "quantity_value")
-	assert.Contains(t, schema.Items.Properties, "quantity_unit")
-	assert.Contains(t, schema.Items.Properties, "calories_kcal")
-	assert.Contains(t, schema.Items.Properties, "protein_g")
-	assert.Contains(t, schema.Items.Properties, "fat_g")
-	assert.Contains(t, schema.Items.Properties, "carbohydrates_g")
-	// マイクロニュートリエント
-	assert.Contains(t, schema.Items.Properties, "iron_mg")
-	assert.Contains(t, schema.Items.Properties, "calcium_mg")
-	assert.Contains(t, schema.Items.Properties, "zinc_mg")
-	assert.Contains(t, schema.Items.Properties, "fiber_g")
-	assert.Contains(t, schema.Items.Properties, "vitamin_a_ug")
-	assert.Contains(t, schema.Items.Properties, "vitamin_b1_mg")
-	assert.Contains(t, schema.Items.Properties, "vitamin_b2_mg")
-	assert.Contains(t, schema.Items.Properties, "vitamin_b6_mg")
-	assert.Contains(t, schema.Items.Properties, "vitamin_b12_ug")
-	assert.Contains(t, schema.Items.Properties, "vitamin_c_mg")
-	assert.Contains(t, schema.Items.Properties, "vitamin_d_ug")
-	assert.Contains(t, schema.Items.Properties, "vitamin_e_mg")
-	assert.Len(t, schema.Items.Required, 19) // 7 + 12 micronutrients
+
+	// 基本プロパティ
+	baseProps := []string{"name", "quantity_value", "quantity_unit", "calories_kcal", "protein_g", "fat_g", "carbohydrates_g"}
+	for _, prop := range baseProps {
+		assert.Contains(t, schema.Items.Properties, prop)
+	}
+
+	// マイクロニュートリエント（レジストリから検証）
+	for _, key := range AllMicronutrientKeys() {
+		assert.Contains(t, schema.Items.Properties, key)
+		assert.Equal(t, SchemaTypeNumber, schema.Items.Properties[key].Type)
+	}
+
+	assert.Len(t, schema.Items.Required, len(baseProps)+len(AllMicronutrients))
 }

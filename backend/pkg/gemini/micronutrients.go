@@ -19,11 +19,12 @@ const (
 )
 
 // MicronutrientMeta はマイクロニュートリエントのメタデータ
+// iOS側のMicronutrientKey enumと同期を保つこと
 type MicronutrientMeta struct {
 	Key         MicronutrientKey
 	DisplayName string
 	Unit        string
-	// 厚生労働省「日本人の食事摂取基準（2020年版）」に基づく成人推奨値
+	// 厚生労働省「日本人の食事摂取基準（2020年版）」を参考にした成人向け目安値（年齢・性別により異なる）
 	DefaultTarget float64
 }
 
@@ -61,13 +62,24 @@ func DefaultMicronutrientTargets() map[string]float64 {
 	return targets
 }
 
-// MergeMicronutrients は2つのmicronutrients mapを合算する
+// MergeMicronutrients は2つのmicronutrients mapを合算した新しいmapを返す
+// 引数のmapは変更しない（イミュータビリティ原則）
 func MergeMicronutrients(dst, src map[string]float64) map[string]float64 {
-	if dst == nil {
-		dst = make(map[string]float64, len(src))
+	result := make(map[string]float64, len(dst)+len(src))
+	for k, v := range dst {
+		result[k] = v
 	}
 	for k, v := range src {
-		dst[k] += v
+		result[k] += v
 	}
-	return dst
+	return result
+}
+
+// ValidMicronutrientKeys は有効なマイクロニュートリエントキーのセットを返す
+func ValidMicronutrientKeys() map[string]bool {
+	keys := make(map[string]bool, len(AllMicronutrients))
+	for _, m := range AllMicronutrients {
+		keys[string(m.Key)] = true
+	}
+	return keys
 }

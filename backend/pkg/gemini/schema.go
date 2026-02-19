@@ -130,79 +130,35 @@ func FoodItemSchema() *Schema {
 }
 
 // NutritionInfoSchema はNutritionCalculator用のresponseSchema
+// マイクロニュートリエントのプロパティはAllMicronutrientsレジストリから自動生成される
 func NutritionInfoSchema() *Schema {
+	properties := map[string]*Schema{
+		"name":            {Type: SchemaTypeString},
+		"quantity_value":  {Type: SchemaTypeNumber},
+		"quantity_unit":   {Type: SchemaTypeString, Enum: SupportedUnits()},
+		"calories_kcal":   {Type: SchemaTypeNumber},
+		"protein_g":       {Type: SchemaTypeNumber},
+		"fat_g":           {Type: SchemaTypeNumber},
+		"carbohydrates_g": {Type: SchemaTypeNumber},
+	}
+
+	required := []string{
+		"name", "quantity_value", "quantity_unit",
+		"calories_kcal", "protein_g", "fat_g", "carbohydrates_g",
+	}
+
+	for _, m := range AllMicronutrients {
+		key := string(m.Key)
+		properties[key] = &Schema{Type: SchemaTypeNumber}
+		required = append(required, key)
+	}
+
 	return &Schema{
 		Type: SchemaTypeArray,
 		Items: &Schema{
-			Type: SchemaTypeObject,
-			Properties: map[string]*Schema{
-				"name": {
-					Type: SchemaTypeString,
-				},
-				"quantity_value": {
-					Type: SchemaTypeNumber,
-				},
-				"quantity_unit": {
-					Type: SchemaTypeString,
-					Enum: SupportedUnits(),
-				},
-				"calories_kcal": {
-					Type: SchemaTypeNumber,
-				},
-				"protein_g": {
-					Type: SchemaTypeNumber,
-				},
-				"fat_g": {
-					Type: SchemaTypeNumber,
-				},
-				"carbohydrates_g": {
-					Type: SchemaTypeNumber,
-				},
-				// マイクロニュートリエント
-				"iron_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"calcium_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"zinc_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"fiber_g": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_a_ug": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_b1_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_b2_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_b6_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_b12_ug": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_c_mg": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_d_ug": {
-					Type: SchemaTypeNumber,
-				},
-				"vitamin_e_mg": {
-					Type: SchemaTypeNumber,
-				},
-			},
-			Required: []string{
-				"name", "quantity_value", "quantity_unit",
-				"calories_kcal", "protein_g", "fat_g", "carbohydrates_g",
-				"iron_mg", "calcium_mg", "zinc_mg", "fiber_g",
-				"vitamin_a_ug", "vitamin_b1_mg", "vitamin_b2_mg", "vitamin_b6_mg",
-				"vitamin_b12_ug", "vitamin_c_mg", "vitamin_d_ug", "vitamin_e_mg",
-			},
+			Type:       SchemaTypeObject,
+			Properties: properties,
+			Required:   required,
 		},
 	}
 }

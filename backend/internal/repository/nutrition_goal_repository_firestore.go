@@ -59,6 +59,9 @@ func (r *firestoreNutritionGoalRepository) GetGoal(ctx context.Context, userID s
 
 	// ユーザーがカスタマイズしたマイクロニュートリエント目標がある場合は上書き
 	if fsDoc.MicronutrientTargets != nil {
+		if calculated.MicronutrientTargets == nil {
+			calculated.MicronutrientTargets = make(map[string]float64, len(fsDoc.MicronutrientTargets))
+		}
 		for k, v := range fsDoc.MicronutrientTargets {
 			calculated.MicronutrientTargets[k] = v
 		}

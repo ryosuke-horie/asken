@@ -195,6 +195,15 @@ func (f UpdateFoodItem) Validate() error {
 	if f.Calories < 0 || f.Protein < 0 || f.Fat < 0 || f.Carbohydrates < 0 {
 		return fmt.Errorf("nutrition values must be non-negative")
 	}
+	validKeys := gemini.ValidMicronutrientKeys()
+	for key, val := range f.Micronutrients {
+		if !validKeys[key] {
+			return fmt.Errorf("unknown micronutrient key: %s", key)
+		}
+		if val < 0 {
+			return fmt.Errorf("micronutrient value must be non-negative: %s", key)
+		}
+	}
 	return nil
 }
 
