@@ -269,11 +269,16 @@ func (h *HistoryHandler) triggerRecalculationIfNeeded(userID string, historyID u
 	if h.recalculator == nil {
 		return
 	}
+
+	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
 	changedFoods := detectNameChanges(oldFoods, newFoods)
-	if changedFoods == nil && len(oldFoods) != len(newFoods) {
-		log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
+	if changedFoods == nil {
+		if len(oldFoods) != len(newFoods) {
+			log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
+		}
 		return
 	}
+
 	if len(changedFoods) > 0 {
 		log.Printf("Detected %d food name changes, triggering async recalculation for history %s", len(changedFoods), historyID)
 		// goroutineに渡す前にスライスをコピー（呼び出し元との共有を防止）
@@ -399,6 +404,8 @@ func retryWithDelay(ctx context.Context, delay time.Duration, nonRetryableCheck 
 		return err
 	}
 
+	log.Printf("WARN: Operation failed, retrying after %v: %v", delay, err)
+
 	select {
 	case <-time.After(delay):
 	case <-ctx.Done():
@@ -485,7 +492,9 @@ func (h *HistoryHandler) saveRecalculatedResult(ctx context.Context, userID stri
 	}
 
 	// リトライ前に鮮度を再チェック（sleep中にユーザーが再保存した可能性がある）
-	if stale, checkErr := h.isFoodsStale(ctx, userID, historyID, currentFoods); checkErr != nil || stale {
+	if stale, checkErr := h.isFoodsStale(ctx, userID, historyID, currentFoods); checkErr != nil {
+		return checkErr
+	} else if stale {
 		return nil
 	}
 
