@@ -221,41 +221,9 @@ func (r UpdateHistoryRequest) Validate() error {
 	return nil
 }
 
-// HandleUpdate はPUT /api/history/:idリクエストを処理（履歴更新）
-func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received history update request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
-
-	// PUTメソッドのみ許可
-	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// contextからユーザーIDを取得
-	userID := middleware.GetFirebaseUIDFromContext(r.Context())
-	if userID == "" {
-		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
-		http.Error(w, "認証が必要です", http.StatusUnauthorized)
-		return
-	}
-
-	// URLからhistory_idを抽出
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 4 {
-		log.Printf("Invalid URL path: %s", r.URL.Path)
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	historyIDStr := pathParts[3]
-	historyID, err := uuid.Parse(historyIDStr)
-	if err != nil {
-		log.Printf("Invalid UUID: %s, error: %v", historyIDStr, err)
-		http.Error(w, "Invalid history ID", http.StatusBadRequest)
-		return
-	}
-
-	// リクエストボディをパース
+// decodeUpdateRequest はリクエストボディをデコード・検証し、UpdateHistoryRequestを返す。
+// エラー時はHTTPレスポンスを書き込みfalseを返す。
+func decodeUpdateRequest(w http.ResponseWriter, r *http.Request) (*UpdateHistoryRequest, bool) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB: 食材リストを含むため余裕を持たせる
 
 	var req UpdateHistoryRequest
@@ -264,23 +232,97 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &maxBytesErr) {
 			log.Printf("Request body too large: limit=%d", maxBytesErr.Limit)
 			http.Error(w, "リクエストボディが大きすぎます", http.StatusRequestEntityTooLarge)
-			return
+			return nil, false
 		}
 		log.Printf("Error decoding request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+		return nil, false
 	}
 
-	// バリデーション
 	if err := req.Validate(); err != nil {
 		log.Printf("Validation error: %v", err)
 		http.Error(w, fmt.Sprintf("Validation error: %s", err), http.StatusBadRequest)
+		return nil, false
+	}
+
+	return &req, true
+}
+
+// toNutritionInfoSlice はUpdateFoodItemスライスをNutritionInfoスライスに変換する
+func toNutritionInfoSlice(foods []UpdateFoodItem) []gemini.NutritionInfo {
+	result := make([]gemini.NutritionInfo, len(foods))
+	for i, f := range foods {
+		result[i] = gemini.NutritionInfo{
+			Name:            f.Name,
+			EstimatedAmount: f.EstimatedAmount,
+			Calories:        f.Calories,
+			Protein:         f.Protein,
+			Fat:             f.Fat,
+			Carbohydrates:   f.Carbohydrates,
+		}
+	}
+	return result
+}
+
+// triggerRecalculationIfNeeded はメニュー名変更を検知し、必要に応じて非同期で栄養素を再計算する
+func (h *HistoryHandler) triggerRecalculationIfNeeded(userID string, historyID uuid.UUID, oldFoods, newFoods []gemini.NutritionInfo) {
+	if h.recalculator == nil {
+		return
+	}
+
+	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
+	changedFoods := detectNameChanges(oldFoods, newFoods)
+	if changedFoods == nil {
+		log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
+		return
+	}
+
+	if len(changedFoods) > 0 {
+		log.Printf("Detected %d food name changes, triggering async recalculation for history %s", len(changedFoods), historyID)
+		// goroutineに渡す前にスライスをコピー（呼び出し元との共有を防止）
+		foodsCopy := make([]gemini.NutritionInfo, len(newFoods))
+		copy(foodsCopy, newFoods)
+		go h.recalculateAsync(userID, historyID, foodsCopy)
+	}
+}
+
+// HandleUpdate はPUT /api/history/:idリクエストを処理（履歴更新）
+func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Received history update request from %s: %s %s", r.RemoteAddr, r.Method, r.URL.Path)
+
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := middleware.GetFirebaseUIDFromContext(r.Context())
+	if userID == "" {
+		log.Printf("Authentication failed for %s: %s %s - no Firebase UID in context", r.RemoteAddr, r.Method, r.URL.Path)
+		http.Error(w, "認証が必要です", http.StatusUnauthorized)
+		return
+	}
+
+	pathParts := strings.Split(r.URL.Path, "/")
+	if len(pathParts) < 4 {
+		log.Printf("Invalid URL path: %s", r.URL.Path)
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	historyID, err := uuid.Parse(pathParts[3])
+	if err != nil {
+		log.Printf("Invalid UUID: %s, error: %v", pathParts[3], err)
+		http.Error(w, "Invalid history ID", http.StatusBadRequest)
+		return
+	}
+
+	req, ok := decodeUpdateRequest(w, r)
+	if !ok {
 		return
 	}
 
 	log.Printf("Updating history for ID: %s, userID: %s, with %d foods", historyID, userID, len(req.Foods))
 
-	// 保存前に旧データを取得（名前変更検知のため）
 	oldDetail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error getting old history detail for comparison: %v", err)
@@ -292,20 +334,8 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// リクエストをNutritionInfo形式に変換（現在の値をそのまま保存）
-	foods := make([]gemini.NutritionInfo, len(req.Foods))
-	for i, f := range req.Foods {
-		foods[i] = gemini.NutritionInfo{
-			Name:            f.Name,
-			EstimatedAmount: f.EstimatedAmount,
-			Calories:        f.Calories,
-			Protein:         f.Protein,
-			Fat:             f.Fat,
-			Carbohydrates:   f.Carbohydrates,
-		}
-	}
+	foods := toNutritionInfoSlice(req.Foods)
 
-	// リポジトリで更新（userIDでスコープ、まず現在の値で保存）
 	if err := h.repository.UpdateResult(r.Context(), userID, historyID, foods); err != nil {
 		log.Printf("Error updating history: %v", err)
 		if errors.Is(err, repository.ErrNotFound) {
@@ -318,21 +348,8 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("History updated successfully for ID: %s", historyID)
 
-	// メニュー名変更を検知し、非同期で栄養素を再計算
-	if h.recalculator != nil {
-		changedFoods := detectNameChanges(oldDetail.Foods, foods)
-		if changedFoods == nil && len(oldDetail.Foods) != len(foods) {
-			log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldDetail.Foods), len(foods))
-		} else if len(changedFoods) > 0 {
-			log.Printf("Detected %d food name changes, triggering async recalculation for history %s", len(changedFoods), historyID)
-			// goroutineに渡す前にスライスをコピー（呼び出し元との共有を防止）
-			foodsCopy := make([]gemini.NutritionInfo, len(foods))
-			copy(foodsCopy, foods)
-			go h.recalculateAsync(userID, historyID, foodsCopy)
-		}
-	}
+	h.triggerRecalculationIfNeeded(userID, historyID, oldDetail.Foods, foods)
 
-	// 更新後の詳細を取得して返却（userIDでスコープ）
 	detail, err := h.repository.GetHistoryDetail(r.Context(), userID, historyID)
 	if err != nil {
 		log.Printf("Error getting updated history detail: %v", err)
@@ -340,7 +357,6 @@ func (h *HistoryHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// JSONレスポンスを返却
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(detail); err != nil {
@@ -369,6 +385,32 @@ func detectNameChanges(oldFoods []gemini.NutritionInfo, newFoods []gemini.Nutrit
 	}
 
 	return changed
+}
+
+// retryWithDelay は操作を1回リトライする。リトライ不要なエラー（context系）はリトライせず即座にエラーを返す。
+// nonRetryableCheck はリトライ不要な追加エラー条件を指定する（nilの場合は context 系のみ判定）。
+func retryWithDelay(ctx context.Context, delay time.Duration, nonRetryableCheck func(error) bool, op func() error) error {
+	err := op()
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	if nonRetryableCheck != nil && nonRetryableCheck(err) {
+		return err
+	}
+
+	log.Printf("WARN: Operation failed, retrying after %v: %v", delay, err)
+
+	select {
+	case <-time.After(delay):
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	return op()
 }
 
 // recalculateAsync はGemini APIで非同期に全食材の栄養素を一括再計算し、結果をFirestoreに保存する。
@@ -405,69 +447,81 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 	log.Printf("Starting async nutrition recalculation for history %s with %d foods", historyID, len(foodItems))
 
 	// Gemini APIで栄養素を再計算（1回リトライ）
-	recalculated, err := h.recalculator.CalculateNutrition(ctx, foodItems)
+	var recalculated []gemini.NutritionInfo
+	err := retryWithDelay(ctx, geminiRetryDelay, nil, func() error {
+		var calcErr error
+		recalculated, calcErr = h.recalculator.CalculateNutrition(ctx, foodItems)
+		return calcErr
+	})
 	if err != nil {
-		// リトライ不要なエラーはすぐに終了（コンテキストキャンセル）
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("ERROR: Non-retryable Gemini error for history %s, userID=%s: %v", historyID, userID, err)
-			return
-		}
-		log.Printf("WARN: Async nutrition recalculation failed for history %s, retrying: %v", historyID, err)
-		select {
-		case <-time.After(geminiRetryDelay):
-		case <-ctx.Done():
-			log.Printf("ERROR: Context canceled before Gemini retry for history %s: %v", historyID, ctx.Err())
-			return
-		}
-		recalculated, err = h.recalculator.CalculateNutrition(ctx, foodItems)
-		if err != nil {
-			log.Printf("ERROR: Async nutrition recalculation failed after retry for history %s, userID=%s, foodCount=%d: %v", historyID, userID, len(foodItems), err)
-			return
-		}
+		log.Printf("ERROR: Async nutrition recalculation failed for history %s, userID=%s, foodCount=%d: %v", historyID, userID, len(foodItems), err)
+		return
 	}
 
 	// 鮮度チェック: 再計算中にユーザーが再保存していないか確認
-	currentDetail, err := h.repository.GetHistoryDetail(ctx, userID, historyID)
-	if err != nil {
-		log.Printf("ERROR: Staleness check failed for history %s, userID=%s: %v", historyID, userID, err)
-		return
-	}
-	if !foodsMatch(currentFoods, currentDetail.Foods) {
-		log.Printf("Skipping async recalculation for history %s: data modified during recalculation", historyID)
+	if stale, checkErr := h.isFoodsStale(ctx, userID, historyID, currentFoods); checkErr != nil || stale {
 		return
 	}
 
-	// 再計算結果をFirestoreに保存（1回リトライ）
-	if err := h.repository.UpdateResult(ctx, userID, historyID, recalculated); err != nil {
-		// リトライ不要なエラーはすぐに終了（NotFound、コンテキストキャンセル）
-		if errors.Is(err, repository.ErrNotFound) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			log.Printf("ERROR: Non-retryable error saving recalculated nutrition for history %s, userID=%s: %v", historyID, userID, err)
-			return
-		}
-		log.Printf("WARN: Failed to save recalculated nutrition for history %s, retrying: %v", historyID, err)
-		select {
-		case <-time.After(firestoreRetryDelay):
-		case <-ctx.Done():
-			log.Printf("ERROR: Context canceled before Firestore retry for history %s: %v", historyID, ctx.Err())
-			return
-		}
-		// リトライ前に鮮度を再チェック（sleep中にユーザーが再保存した可能性がある）
-		currentDetail, err := h.repository.GetHistoryDetail(ctx, userID, historyID)
-		if err != nil {
-			log.Printf("ERROR: Staleness re-check failed for history %s, userID=%s: %v", historyID, userID, err)
-			return
-		}
-		if !foodsMatch(currentFoods, currentDetail.Foods) {
-			log.Printf("Skipping async recalculation retry for history %s: data modified during retry", historyID)
-			return
-		}
-		if err := h.repository.UpdateResult(ctx, userID, historyID, recalculated); err != nil {
-			log.Printf("ERROR: Failed to save recalculated nutrition after retry for history %s, userID=%s: %v", historyID, userID, err)
-			return
-		}
+	// 再計算結果をFirestoreに保存（1回リトライ、リトライ前に鮮度を再チェック）
+	saved, err := h.saveRecalculatedResult(ctx, userID, historyID, currentFoods, recalculated)
+	if err != nil {
+		log.Printf("ERROR: Failed to save recalculated nutrition for history %s, userID=%s: %v", historyID, userID, err)
+		return
+	}
+	if !saved {
+		return
 	}
 
 	log.Printf("Async nutrition recalculation completed successfully for history %s", historyID)
+}
+
+// saveRecalculatedResult は再計算結果をFirestoreに保存する（1回リトライ）。
+// リトライ前に鮮度を再チェックし、ユーザーが再保存した場合はスキップする。
+// リトライ間の鮮度チェックが必要なため、retryWithDelayではなく独自のリトライロジックを使用。
+// 戻り値: saved=true は保存成功、saved=false かつ err==nil は鮮度チェックによりスキップ、
+// saved=false かつ err!=nil はエラー（リトライ不要エラー含む）。
+func (h *HistoryHandler) saveRecalculatedResult(ctx context.Context, userID string, historyID uuid.UUID, currentFoods, recalculated []gemini.NutritionInfo) (saved bool, err error) {
+	err = h.repository.UpdateResult(ctx, userID, historyID, recalculated)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, repository.ErrNotFound) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false, err
+	}
+
+	log.Printf("WARN: Failed to save recalculated nutrition for history %s, retrying after %v: %v", historyID, firestoreRetryDelay, err)
+
+	select {
+	case <-time.After(firestoreRetryDelay):
+	case <-ctx.Done():
+		return false, ctx.Err()
+	}
+
+	// リトライ前に鮮度を再チェック（sleep中にユーザーが再保存した可能性がある）
+	if stale, checkErr := h.isFoodsStale(ctx, userID, historyID, currentFoods); checkErr != nil {
+		return false, checkErr
+	} else if stale {
+		return false, nil
+	}
+
+	err = h.repository.UpdateResult(ctx, userID, historyID, recalculated)
+	return err == nil, err
+}
+
+// isFoodsStale は再計算中にユーザーがデータを変更したか確認する。
+// エラーまたはデータが変更されている場合はtrue（古い）を返す。
+func (h *HistoryHandler) isFoodsStale(ctx context.Context, userID string, historyID uuid.UUID, expectedFoods []gemini.NutritionInfo) (bool, error) {
+	currentDetail, err := h.repository.GetHistoryDetail(ctx, userID, historyID)
+	if err != nil {
+		log.Printf("ERROR: Staleness check failed for history %s, userID=%s: %v", historyID, userID, err)
+		return true, err
+	}
+	if !foodsMatch(expectedFoods, currentDetail.Foods) {
+		log.Printf("Skipping async recalculation for history %s: data modified during recalculation", historyID)
+		return true, nil
+	}
+	return false, nil
 }
 
 // foodsMatch は2つの食材リストのName・EstimatedAmountが一致するか確認する。
