@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"cloud.google.com/go/firestore"
+
 	"github.com/ryosuke-horie/uchikomi/backend/internal/handler"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
@@ -232,6 +234,81 @@ func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/my-menu/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuDetailRouteHandler))))
 }
 
+// repositories はリポジトリ群をまとめた構造体
+type repositories struct {
+	analysis      repository.AnalysisRepository
+	storage       repository.StorageRepository
+	weightRecord  repository.WeightRecordRepository
+	weightGoal    repository.WeightGoalRepository
+	nutritionGoal repository.NutritionGoalRepository
+	myMenu        repository.MyMenuRepository
+}
+
+func initRepositories(firestoreClient *firestore.Client, storageRepo repository.StorageRepository) repositories {
+	analysisRepo, err := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
+	if err != nil {
+		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
+	}
+
+	weightRecordRepo, weightGoalRepo, err := repository.NewWeightRepositories(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize WeightRepositories: %v", err)
+	}
+
+	nutritionGoalRepo, err := repository.NewNutritionGoalRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize NutritionGoalRepository: %v", err)
+	}
+
+	myMenuRepo, err := repository.NewMyMenuRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
+	}
+
+	return repositories{
+		analysis:      analysisRepo,
+		storage:       storageRepo,
+		weightRecord:  weightRecordRepo,
+		weightGoal:    weightGoalRepo,
+		nutritionGoal: nutritionGoalRepo,
+		myMenu:        myMenuRepo,
+	}
+}
+
+func initGeminiClient() *RealGeminiClient {
+	classifier, err := gemini.NewClassifier(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini Classifier: %v", err)
+	}
+	textParser, err := gemini.NewTextParser(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini TextParser: %v", err)
+	}
+	calculator, err := gemini.NewNutritionCalculator(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize Gemini NutritionCalculator: %v", err)
+	}
+	log.Println("Gemini API clients initialized")
+	return &RealGeminiClient{
+		classifier: classifier,
+		textParser: textParser,
+		calculator: calculator,
+	}
+}
+
+func initAuthMiddleware(ctx context.Context, firebaseCredentials string) middleware.Authenticator {
+	if middleware.IsDevMode() {
+		log.Println("WARNING: Running in development mode with mock authentication")
+		return middleware.NewDevAuthMiddleware()
+	}
+	firebaseAuthService, err := service.NewFirebaseAuthService(ctx, firebaseCredentials)
+	if err != nil {
+		log.Fatalf("Failed to initialize Firebase Auth Service: %v", err)
+	}
+	log.Println("Firebase Auth Service initialized")
+	return middleware.NewAuthMiddleware(firebaseAuthService)
+}
+
 func run() error {
 	ctx := context.Background()
 
@@ -270,87 +347,33 @@ func run() error {
 		log.Fatalf("Failed to initialize StorageRepository: %v", err)
 	}
 
-	// リポジトリの初期化
-	analysisRepo, err := repository.NewAnalysisRepositoryFirestore(firestoreClient, storageRepo)
-	if err != nil {
-		log.Fatalf("Failed to initialize AnalysisRepository: %v", err)
-	}
-
-	weightRecordRepo, weightGoalRepo, err := repository.NewWeightRepositories(firestoreClient)
-	if err != nil {
-		log.Fatalf("Failed to initialize WeightRepositories: %v", err)
-	}
-
-	nutritionGoalRepo, err := repository.NewNutritionGoalRepository(firestoreClient)
-	if err != nil {
-		log.Fatalf("Failed to initialize NutritionGoalRepository: %v", err)
-	}
-
-	myMenuRepo, err := repository.NewMyMenuRepository(firestoreClient)
-	if err != nil {
-		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
-	}
-
-	// 依存関係の初期化
-	classifier, err := gemini.NewClassifier(120 * time.Second)
-	if err != nil {
-		log.Fatalf("Failed to initialize Gemini Classifier: %v", err)
-	}
-	textParser, err := gemini.NewTextParser(120 * time.Second)
-	if err != nil {
-		log.Fatalf("Failed to initialize Gemini TextParser: %v", err)
-	}
-	calculator, err := gemini.NewNutritionCalculator(120 * time.Second)
-	if err != nil {
-		log.Fatalf("Failed to initialize Gemini NutritionCalculator: %v", err)
-	}
-	log.Println("Gemini API clients initialized")
-	geminiClient := &RealGeminiClient{
-		classifier: classifier,
-		textParser: textParser,
-		calculator: calculator,
-	}
-
+	repos := initRepositories(firestoreClient, storageRepo)
+	geminiClient := initGeminiClient()
 	foodService := service.NewFoodService(geminiClient, storageRepo)
-
-	// 認証ミドルウェアの初期化
-	var authMiddleware middleware.Authenticator
-	if middleware.IsDevMode() {
-		log.Println("WARNING: Running in development mode with mock authentication")
-		authMiddleware = middleware.NewDevAuthMiddleware()
-	} else {
-		firebaseAuthService, err := service.NewFirebaseAuthService(ctx, firebaseCredentials)
-		if err != nil {
-			log.Fatalf("Failed to initialize Firebase Auth Service: %v", err)
-		}
-		log.Println("Firebase Auth Service initialized")
-		authMiddleware = middleware.NewAuthMiddleware(firebaseAuthService)
-	}
+	authMiddleware := initAuthMiddleware(ctx, firebaseCredentials)
 
 	// ハンドラーの初期化
 	h := handlers{
 		health:        handler.NewHealthHandler(),
-		analyze:       handler.NewAnalyzeHandler(foodService, analysisRepo, storageRepo),
-		status:        handler.NewStatusHandler(analysisRepo),
-		history:       handler.NewHistoryHandler(analysisRepo, geminiClient),
-		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
+		analyze:       handler.NewAnalyzeHandler(foodService, repos.analysis, storageRepo),
+		status:        handler.NewStatusHandler(repos.analysis),
+		history:       handler.NewHistoryHandler(repos.analysis, geminiClient),
+		historyDelete: handler.NewHistoryDeleteHandler(repos.analysis),
 		image:         handler.NewImageHandler(storageRepo),
-		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
-		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
-		weightRecord:  handler.NewWeightRecordHandler(weightRecordRepo, weightGoalRepo),
-		weightGoal:    handler.NewWeightGoalHandler(weightGoalRepo),
-		nutritionGoal: handler.NewNutritionGoalHandler(nutritionGoalRepo, weightGoalRepo),
-		myMenu:        handler.NewMyMenuHandler(myMenuRepo, analysisRepo),
+		dailyMeals:    handler.NewDailyMealsHandler(repos.analysis),
+		skipMeal:      handler.NewSkipMealHandler(repos.analysis),
+		weightRecord:  handler.NewWeightRecordHandler(repos.weightRecord, repos.weightGoal),
+		weightGoal:    handler.NewWeightGoalHandler(repos.weightGoal),
+		nutritionGoal: handler.NewNutritionGoalHandler(repos.nutritionGoal, repos.weightGoal),
+		myMenu:        handler.NewMyMenuHandler(repos.myMenu, repos.analysis),
 	}
 
 	// ワーカーの初期化
-	analysisWorker := worker.NewAnalysisWorker(foodService, analysisRepo, 5*time.Second)
+	analysisWorker := worker.NewAnalysisWorker(foodService, repos.analysis, 5*time.Second)
 
-	// ワーカー用のコンテキスト
 	workerCtx, workerCancel := context.WithCancel(context.Background())
 	defer workerCancel()
 
-	// ワーカーを別ゴルーチンで起動
 	go analysisWorker.Start(workerCtx)
 
 	// レート制限ミドルウェアの初期化
@@ -390,11 +413,9 @@ func run() error {
 
 		log.Println("Shutting down server...")
 
-		// ワーカーを停止
 		workerCancel()
 		log.Println("Worker stopped")
 
-		// HTTPサーバーを停止
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 

@@ -127,45 +127,64 @@ func (c *Classifier) ClassifyFoodsFromData(ctx context.Context, imageData []byte
 	return foods, nil
 }
 
+// magicSignature はマジックバイトによるMIMEタイプ判定のエントリ
+type magicSignature struct {
+	mimeType string
+	offset   int
+	magic    []byte
+}
+
+// magicSignatures はマジックバイト判定テーブル
+// WebPはRIFFヘッダー（offset=0）+WEBPマーカー（offset=8）の2段階で判定するため、
+// RIFFヘッダー部分は拡張子フォールバックに委ねる形で、WEBPマーカーのみoffset=8で登録する。
+var magicSignatures = []magicSignature{
+	{"image/jpeg", 0, []byte{0xFF, 0xD8, 0xFF}},
+	{"image/png", 0, []byte{0x89, 0x50, 0x4E, 0x47}},
+	{"image/gif", 0, []byte{0x47, 0x49, 0x46}},
+	{"image/webp", 8, []byte{0x57, 0x45, 0x42, 0x50}},
+}
+
+// extensionMimeMap は拡張子からMIMEタイプへのマッピング
+var extensionMimeMap = []struct {
+	mimeType   string
+	extensions []string
+}{
+	{"image/jpeg", []string{".jpg", ".jpeg"}},
+	{"image/png", []string{".png"}},
+	{"image/gif", []string{".gif"}},
+	{"image/webp", []string{".webp"}},
+}
+
 // detectMimeType は画像ファイルのMIMEタイプを判定する
 // サポートする形式: JPEG, PNG, GIF, WebP
 // サポート外の形式の場合はエラーを返す
 func detectMimeType(filePath string, data []byte) (string, error) {
 	// マジックバイトで判定
-	if len(data) >= 4 {
-		// JPEG
-		if data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
-			return "image/jpeg", nil
-		}
-		// PNG
-		if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
-			return "image/png", nil
-		}
-		// GIF
-		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 {
-			return "image/gif", nil
-		}
-		// WebP
-		if len(data) >= 12 && data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46 {
-			if data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 {
-				return "image/webp", nil
-			}
+	for _, sig := range magicSignatures {
+		end := sig.offset + len(sig.magic)
+		if len(data) >= end && matchBytes(data[sig.offset:end], sig.magic) {
+			return sig.mimeType, nil
 		}
 	}
 
 	// 拡張子で判定（フォールバック）
-	switch {
-	case hasExtension(filePath, ".jpg", ".jpeg"):
-		return "image/jpeg", nil
-	case hasExtension(filePath, ".png"):
-		return "image/png", nil
-	case hasExtension(filePath, ".gif"):
-		return "image/gif", nil
-	case hasExtension(filePath, ".webp"):
-		return "image/webp", nil
-	default:
-		return "", fmt.Errorf("サポートされていない画像形式です: %s (JPEG, PNG, GIF, WebPのみ対応)", filePath)
+	for _, entry := range extensionMimeMap {
+		if hasExtension(filePath, entry.extensions...) {
+			return entry.mimeType, nil
+		}
 	}
+
+	return "", fmt.Errorf("サポートされていない画像形式です: %s (JPEG, PNG, GIF, WebPのみ対応)", filePath)
+}
+
+// matchBytes は2つのバイトスライスが一致するか比較する
+func matchBytes(data, pattern []byte) bool {
+	for i, b := range pattern {
+		if data[i] != b {
+			return false
+		}
+	}
+	return true
 }
 
 // hasExtension はファイルパスが指定の拡張子を持つかチェックする
