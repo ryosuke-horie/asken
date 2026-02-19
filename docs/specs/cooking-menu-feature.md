@@ -91,6 +91,8 @@ g, ml, 杯, 人前, 個, 枚, 本, 切れ, 食, 皿, 膳, 丁, 束, 袋, 缶, �
 
 ### estimatedNutrition 構造
 
+1食分の合計栄養素を表す。既存の `analysisRequests.result` は `totalCalories` 等のプレフィックス付き命名だが、`menuSuggestions` では `estimatedNutrition` マップ自体が「推定」を表すため、簡潔な命名を採用する。`analysisRequests` へのマッピング時は `total*` フィールドに変換する（セクション1.4参照）。
+
 ```json
 {
   "calories": 450,
@@ -109,6 +111,8 @@ suggested → dismissed（却下、データ保持）
 
 ### 1.3 Firestore インデックス（追加分）
 
+全て `queryScope: COLLECTION`（サブコレクション内のクエリ）。定義先は `firestore.indexes.json`（リポジトリルート）。
+
 | コレクション | フィールド | 用途 |
 |:---|:---|:---|
 | ingredients | category ASC, name ASC | カテゴリ別食材一覧 |
@@ -126,7 +130,9 @@ suggested → dismissed（却下、データ保持）
 | inputType | `"suggestion"` |
 | status | `"completed"` |
 | confirmed | `true` |
-| result.foods | サジェストの `ingredientsUsed` から生成 |
+| imagePath | 空文字列 |
+| inputText | サジェストの `title`（食事履歴一覧での表示に使用） |
+| result.foods | サジェストのタイトルを食品名とした単一要素の配列（下記参照） |
 | result.totalCalories | `estimatedNutrition.calories` |
 | result.totalProtein | `estimatedNutrition.protein` |
 | result.totalFat | `estimatedNutrition.fat` |
@@ -135,6 +141,23 @@ suggested → dismissed（却下、データ保持）
 | mealDate | 採用時の日付 |
 | createdAt | 作成時のタイムスタンプ |
 | updatedAt | 作成時のタイムスタンプ |
+
+`result.foods` の生成方法: サジェスト全体を1つの `NutritionInfo` として記録する。
+
+```json
+[
+  {
+    "name": "鶏むね肉のヘルシー照り焼き定食",
+    "estimated_amount": "1食分",
+    "calories": 520.0,
+    "protein": 42.0,
+    "fat": 10.0,
+    "carbohydrates": 55.0
+  }
+]
+```
+
+個別食材の栄養素内訳はサジェスト段階では算出しないため、メニュー全体を1食品として扱う。ユーザーが履歴から食品を個別編集したい場合は、既存の履歴編集機能で対応可能。
 
 実装時に `docs/CODEMAPS/data.md` の `inputType` 一覧に `"suggestion"` を追加すること。
 
