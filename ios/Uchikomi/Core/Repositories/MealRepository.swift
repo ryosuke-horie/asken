@@ -24,6 +24,7 @@ struct UpdateFoodItem: Encodable {
     let proteinG: Double
     let fatG: Double
     let carbohydratesG: Double
+    let micronutrients: [String: Double]?
 }
 
 // MARK: - UpdateHistoryRequest

@@ -11,12 +11,13 @@ import (
 
 // NutritionInfo は栄養素情報を表す構造体
 type NutritionInfo struct {
-	Name            string  `json:"name"`
-	EstimatedAmount string  `json:"estimated_amount"`
-	Calories        float64 `json:"calories_kcal"`
-	Protein         float64 `json:"protein_g"`
-	Fat             float64 `json:"fat_g"`
-	Carbohydrates   float64 `json:"carbohydrates_g"`
+	Name            string             `json:"name"`
+	EstimatedAmount string             `json:"estimated_amount"`
+	Calories        float64            `json:"calories_kcal"`
+	Protein         float64            `json:"protein_g"`
+	Fat             float64            `json:"fat_g"`
+	Carbohydrates   float64            `json:"carbohydrates_g"`
+	Micronutrients  map[string]float64 `json:"micronutrients,omitempty" firestore:"micronutrients,omitempty"`
 }
 
 // NutritionCalculator は栄養素計算を行うクライアント
@@ -71,7 +72,7 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
 	}
 
 	// プロンプトを構築（栄養素算出のみに集中）
-	prompt := fmt.Sprintf(`以下の食材リストについて、それぞれのカロリーと栄養素（タンパク質、脂質、炭水化物）を推定してJSON形式で出力してください。
+	prompt := fmt.Sprintf(`以下の食材リストについて、それぞれのカロリーと栄養素を推定してJSON形式で出力してください。
 
 食材リスト:
 %s
@@ -82,7 +83,13 @@ func (nc *NutritionCalculator) CalculateNutrition(ctx context.Context, foods []F
   %s
 - 入力の推定量に含まれる単位をそのまま使用してください
 
-一般的な食品成分表に基づいて、妥当な値を推定してください。`, string(foodListJSON), SupportedUnitsCSV())
+推定する栄養素:
+- 三大栄養素: カロリー(kcal)、タンパク質(g)、脂質(g)、炭水化物(g)
+- ミネラル: 鉄分(mg)、カルシウム(mg)、亜鉛(mg)
+- ビタミン: A(μg RAE)、B1(mg)、B2(mg)、B6(mg)、B12(μg)、C(mg)、D(μg)、E(mg)
+- 食物繊維(g)
+
+日本食品標準成分表に基づいて、妥当な値を推定してください。`, string(foodListJSON), SupportedUnitsCSV())
 
 	// responseSchemaで出力形式を強制
 	schema := NutritionInfoSchema()

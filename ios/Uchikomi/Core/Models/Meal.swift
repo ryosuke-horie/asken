@@ -59,6 +59,25 @@ struct NutritionInfo: Codable, Identifiable, Equatable {
     let proteinG: Double
     let fatG: Double
     let carbohydratesG: Double
+    let micronutrients: [String: Double]?
+
+    init(
+        name: String,
+        estimatedAmount: String,
+        caloriesKcal: Double,
+        proteinG: Double,
+        fatG: Double,
+        carbohydratesG: Double,
+        micronutrients: [String: Double]? = nil
+    ) {
+        self.name = name
+        self.estimatedAmount = estimatedAmount
+        self.caloriesKcal = caloriesKcal
+        self.proteinG = proteinG
+        self.fatG = fatG
+        self.carbohydratesG = carbohydratesG
+        self.micronutrients = micronutrients
+    }
 }
 
 // MARK: - HistoryDetail
@@ -75,6 +94,7 @@ struct HistoryDetail: Codable, Identifiable {
     let totalProtein: Double
     let totalFat: Double
     let totalCarbohydrates: Double
+    let totalMicronutrients: [String: Double]?
     let foods: [NutritionInfo]
 
     init(from decoder: Decoder) throws {
@@ -90,6 +110,7 @@ struct HistoryDetail: Codable, Identifiable {
         totalProtein = try container.decode(Double.self, forKey: .totalProtein)
         totalFat = try container.decode(Double.self, forKey: .totalFat)
         totalCarbohydrates = try container.decode(Double.self, forKey: .totalCarbohydrates)
+        totalMicronutrients = try container.decodeIfPresent([String: Double].self, forKey: .totalMicronutrients)
         foods = try container.decodeIfPresent([NutritionInfo].self, forKey: .foods) ?? []
     }
 }
@@ -123,6 +144,7 @@ struct DailyTotal: Codable {
     let totalProtein: Double
     let totalFat: Double
     let totalCarbohydrates: Double
+    let totalMicronutrients: [String: Double]?
 }
 
 // MARK: - DailyMeals
@@ -156,4 +178,5 @@ struct AnalysisResult: Decodable {
     let totalProtein: Double
     let totalFat: Double
     let totalCarbohydrates: Double
+    let totalMicronutrients: [String: Double]?
 }

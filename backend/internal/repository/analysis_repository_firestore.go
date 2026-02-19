@@ -36,11 +36,12 @@ type firestoreAnalysisDocument struct {
 
 // firestoreAnalysisResult は分析結果を保持する構造体
 type firestoreAnalysisResult struct {
-	Foods              []gemini.NutritionInfo `firestore:"foods"`
-	TotalCalories      float64                `firestore:"totalCalories"`
-	TotalProtein       float64                `firestore:"totalProtein"`
-	TotalFat           float64                `firestore:"totalFat"`
-	TotalCarbohydrates float64                `firestore:"totalCarbohydrates"`
+	Foods               []gemini.NutritionInfo `firestore:"foods"`
+	TotalCalories       float64                `firestore:"totalCalories"`
+	TotalProtein        float64                `firestore:"totalProtein"`
+	TotalFat            float64                `firestore:"totalFat"`
+	TotalCarbohydrates  float64                `firestore:"totalCarbohydrates"`
+	TotalMicronutrients map[string]float64     `firestore:"totalMicronutrients,omitempty"`
 }
 
 // firestoreAnalysisRepository はFirestoreを使用したAnalysisRepositoryの実装
@@ -224,11 +225,12 @@ func (r *firestoreAnalysisRepository) SaveResult(ctx context.Context, requestID 
 	}
 
 	fsResult := &firestoreAnalysisResult{
-		Foods:              result.Foods,
-		TotalCalories:      result.TotalCalories,
-		TotalProtein:       result.TotalProtein,
-		TotalFat:           result.TotalFat,
-		TotalCarbohydrates: result.TotalCarbohydrates,
+		Foods:               result.Foods,
+		TotalCalories:       result.TotalCalories,
+		TotalProtein:        result.TotalProtein,
+		TotalFat:            result.TotalFat,
+		TotalCarbohydrates:  result.TotalCarbohydrates,
+		TotalMicronutrients: result.TotalMicronutrients,
 	}
 
 	_, err = doc.Ref.Update(ctx, []firestore.Update{
@@ -268,11 +270,12 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 	}
 
 	return &service.AnalysisResult{
-		Foods:              fsDoc.Result.Foods,
-		TotalCalories:      fsDoc.Result.TotalCalories,
-		TotalProtein:       fsDoc.Result.TotalProtein,
-		TotalFat:           fsDoc.Result.TotalFat,
-		TotalCarbohydrates: fsDoc.Result.TotalCarbohydrates,
+		Foods:               fsDoc.Result.Foods,
+		TotalCalories:       fsDoc.Result.TotalCalories,
+		TotalProtein:        fsDoc.Result.TotalProtein,
+		TotalFat:            fsDoc.Result.TotalFat,
+		TotalCarbohydrates:  fsDoc.Result.TotalCarbohydrates,
+		TotalMicronutrients: fsDoc.Result.TotalMicronutrients,
 	}, nil
 }
 
@@ -510,6 +513,7 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID 
 		dailyTotal.TotalProtein += detail.TotalProtein
 		dailyTotal.TotalFat += detail.TotalFat
 		dailyTotal.TotalCarbohydrates += detail.TotalCarbohydrates
+		dailyTotal.TotalMicronutrients = gemini.MergeMicronutrients(dailyTotal.TotalMicronutrients, detail.TotalMicronutrients)
 	}
 
 	return meals, dailyTotal, nil
@@ -545,11 +549,12 @@ func (r *firestoreAnalysisRepository) CreateRequestFromMylist(ctx context.Contex
 		UpdatedAt: now,
 		Confirmed: true, // マイリストからの記録は即座に確定
 		Result: &firestoreAnalysisResult{
-			Foods:              result.Foods,
-			TotalCalories:      result.TotalCalories,
-			TotalProtein:       result.TotalProtein,
-			TotalFat:           result.TotalFat,
-			TotalCarbohydrates: result.TotalCarbohydrates,
+			Foods:               result.Foods,
+			TotalCalories:       result.TotalCalories,
+			TotalProtein:        result.TotalProtein,
+			TotalFat:            result.TotalFat,
+			TotalCarbohydrates:  result.TotalCarbohydrates,
+			TotalMicronutrients: result.TotalMicronutrients,
 		},
 	}
 
@@ -590,11 +595,12 @@ func (r *firestoreAnalysisRepository) CreateSkippedMeal(ctx context.Context, mea
 		UpdatedAt: now,
 		Confirmed: true, // スキップ記録は即座に確定
 		Result: &firestoreAnalysisResult{
-			Foods:              []gemini.NutritionInfo{},
-			TotalCalories:      0,
-			TotalProtein:       0,
-			TotalFat:           0,
-			TotalCarbohydrates: 0,
+			Foods:               []gemini.NutritionInfo{},
+			TotalCalories:       0,
+			TotalProtein:        0,
+			TotalFat:            0,
+			TotalCarbohydrates:  0,
+			TotalMicronutrients: map[string]float64{},
 		},
 	}
 
@@ -634,19 +640,22 @@ func (r *firestoreAnalysisRepository) UpdateResult(ctx context.Context, userID s
 
 	// 合計値を計算
 	var totalCalories, totalProtein, totalFat, totalCarbohydrates float64
+	totalMicronutrients := make(map[string]float64)
 	for _, food := range foods {
 		totalCalories += food.Calories
 		totalProtein += food.Protein
 		totalFat += food.Fat
 		totalCarbohydrates += food.Carbohydrates
+		totalMicronutrients = gemini.MergeMicronutrients(totalMicronutrients, food.Micronutrients)
 	}
 
 	fsResult := &firestoreAnalysisResult{
-		Foods:              foods,
-		TotalCalories:      totalCalories,
-		TotalProtein:       totalProtein,
-		TotalFat:           totalFat,
-		TotalCarbohydrates: totalCarbohydrates,
+		Foods:               foods,
+		TotalCalories:       totalCalories,
+		TotalProtein:        totalProtein,
+		TotalFat:            totalFat,
+		TotalCarbohydrates:  totalCarbohydrates,
+		TotalMicronutrients: totalMicronutrients,
 	}
 
 	// confirmed: trueに更新し、一覧に表示されるようにする
@@ -889,6 +898,7 @@ func (r *firestoreAnalysisRepository) toHistoryItem(doc *firestoreAnalysisDocume
 		item.TotalProtein = doc.Result.TotalProtein
 		item.TotalFat = doc.Result.TotalFat
 		item.TotalCarbohydrates = doc.Result.TotalCarbohydrates
+		item.TotalMicronutrients = doc.Result.TotalMicronutrients
 	}
 
 	return item, nil
