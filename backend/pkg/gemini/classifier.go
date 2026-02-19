@@ -132,16 +132,16 @@ type magicSignature struct {
 	mimeType string
 	offset   int
 	magic    []byte
+	prefix   []byte // optional: offset=0で追加チェックするバイト列（WebPのRIFFヘッダー等）
 }
 
 // magicSignatures はマジックバイト判定テーブル
-// WebPはRIFFヘッダー（offset=0）+WEBPマーカー（offset=8）の2段階で判定するため、
-// RIFFヘッダー部分は拡張子フォールバックに委ねる形で、WEBPマーカーのみoffset=8で登録する。
+// WebPはRIFFヘッダー（offset=0）+WEBPマーカー（offset=8）の2段階で判定する。
 var magicSignatures = []magicSignature{
-	{"image/jpeg", 0, []byte{0xFF, 0xD8, 0xFF}},
-	{"image/png", 0, []byte{0x89, 0x50, 0x4E, 0x47}},
-	{"image/gif", 0, []byte{0x47, 0x49, 0x46}},
-	{"image/webp", 8, []byte{0x57, 0x45, 0x42, 0x50}},
+	{"image/jpeg", 0, []byte{0xFF, 0xD8, 0xFF}, nil},
+	{"image/png", 0, []byte{0x89, 0x50, 0x4E, 0x47}, nil},
+	{"image/gif", 0, []byte{0x47, 0x49, 0x46}, nil},
+	{"image/webp", 8, []byte{0x57, 0x45, 0x42, 0x50}, []byte{0x52, 0x49, 0x46, 0x46}},
 }
 
 // extensionMimeMap は拡張子からMIMEタイプへのマッピング
@@ -162,9 +162,16 @@ func detectMimeType(filePath string, data []byte) (string, error) {
 	// マジックバイトで判定
 	for _, sig := range magicSignatures {
 		end := sig.offset + len(sig.magic)
-		if len(data) >= end && matchBytes(data[sig.offset:end], sig.magic) {
-			return sig.mimeType, nil
+		if len(data) < end {
+			continue
 		}
+		if !matchBytes(data[sig.offset:end], sig.magic) {
+			continue
+		}
+		if len(sig.prefix) > 0 && (len(data) < len(sig.prefix) || !matchBytes(data[:len(sig.prefix)], sig.prefix)) {
+			continue
+		}
+		return sig.mimeType, nil
 	}
 
 	// 拡張子で判定（フォールバック）
