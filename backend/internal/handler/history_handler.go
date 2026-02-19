@@ -271,7 +271,6 @@ func (h *HistoryHandler) triggerRecalculationIfNeeded(userID string, historyID u
 	}
 
 	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
-	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
 	changedFoods := detectNameChanges(oldFoods, newFoods)
 	if changedFoods == nil {
 		log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
@@ -480,7 +479,8 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 // saveRecalculatedResult は再計算結果をFirestoreに保存する（1回リトライ）。
 // リトライ前に鮮度を再チェックし、ユーザーが再保存した場合はスキップする。
 // リトライ間の鮮度チェックが必要なため、retryWithDelayではなく独自のリトライロジックを使用。
-// 戻り値: saved=true は保存成功、saved=false は鮮度チェックによりスキップ。
+// 戻り値: saved=true は保存成功、saved=false かつ err==nil は鮮度チェックによりスキップ、
+// saved=false かつ err!=nil はエラー（リトライ不要エラー含む）。
 func (h *HistoryHandler) saveRecalculatedResult(ctx context.Context, userID string, historyID uuid.UUID, currentFoods, recalculated []gemini.NutritionInfo) (saved bool, err error) {
 	err = h.repository.UpdateResult(ctx, userID, historyID, recalculated)
 	if err == nil {
