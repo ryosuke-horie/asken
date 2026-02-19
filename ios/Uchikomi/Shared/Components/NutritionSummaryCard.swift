@@ -7,6 +7,7 @@ struct NutritionSummaryCard: View {
     let protein: Double
     let fat: Double
     let carbohydrates: Double
+    var micronutrients: [String: Double]?
 
     var goal: NutritionGoal?
 
@@ -52,6 +53,15 @@ struct NutritionSummaryCard: View {
                         goalProtein: goal.protein,
                         goalFat: goal.fat,
                         goalCarbs: goal.carbohydrates
+                    )
+                }
+
+                // マイクロニュートリエント表示
+                if let microTargets = goal.micronutrientTargets, !microTargets.isEmpty {
+                    Divider()
+                    MicronutrientProgressSection(
+                        current: micronutrients ?? [:],
+                        targets: microTargets
                     )
                 }
             } else {
@@ -138,11 +148,18 @@ private struct MacroItem: View {
         protein: 85.5,
         fat: 52.3,
         carbohydrates: 178.0,
+        micronutrients: [
+            "iron_mg": 5.2,
+            "calcium_mg": 450,
+            "vitamin_c_mg": 65,
+            "fiber_g": 12,
+        ],
         goal: NutritionGoal(
             calories: 2_000,
             protein: 100,
             fat: 60,
-            carbohydrates: 250
+            carbohydrates: 250,
+            micronutrientTargets: MicronutrientKey.allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
         )
     )
     .padding()

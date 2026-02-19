@@ -43,6 +43,7 @@ struct MealsView: View {
                                 protein: dailyMeals.dailyTotal.totalProtein,
                                 fat: dailyMeals.dailyTotal.totalFat,
                                 carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates,
+                                micronutrients: dailyMeals.dailyTotal.totalMicronutrients,
                                 goal: viewModel.nutritionGoal
                             )
 

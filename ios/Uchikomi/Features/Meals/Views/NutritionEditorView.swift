@@ -39,7 +39,8 @@ struct NutritionEditorView: View {
                                     calories: viewModel.totalCalories,
                                     protein: viewModel.totalProtein,
                                     fat: viewModel.totalFat,
-                                    carbohydrates: viewModel.totalCarbohydrates
+                                    carbohydrates: viewModel.totalCarbohydrates,
+                                    micronutrients: viewModel.totalMicronutrients
                                 )
                             }
 
