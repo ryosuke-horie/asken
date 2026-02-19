@@ -64,12 +64,12 @@ func DefaultMicronutrientTargets() map[string]float64 {
 
 // MergeMicronutrients は2つのmicronutrients mapを合算した新しいmapを返す
 // 引数のmapは変更しない（イミュータビリティ原則）
-func MergeMicronutrients(dst, src map[string]float64) map[string]float64 {
-	result := make(map[string]float64, len(dst)+len(src))
-	for k, v := range dst {
+func MergeMicronutrients(a, b map[string]float64) map[string]float64 {
+	result := make(map[string]float64, len(a)+len(b))
+	for k, v := range a {
 		result[k] = v
 	}
-	for k, v := range src {
+	for k, v := range b {
 		result[k] += v
 	}
 	return result

@@ -93,6 +93,8 @@ func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID s
 	}
 
 	// デフォルトは維持期で返す（現在体重が不明なため）
+	// 注意: 返却値にはデフォルトのマイクロニュートリエント目標が含まれる
+	// Firestoreに保持されたカスタマイズ値は反映されない（次回GetGoal時に反映される）
 	phase := NutritionPhaseMaintenance
 	calculated := CalculateNutritionGoal(targetCalories, phase)
 	calculated.UpdatedAt = now
