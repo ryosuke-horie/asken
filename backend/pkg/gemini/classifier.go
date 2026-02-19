@@ -1,6 +1,7 @@
 package gemini
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -165,10 +166,10 @@ func detectMimeType(filePath string, data []byte) (string, error) {
 		if len(data) < end {
 			continue
 		}
-		if !matchBytes(data[sig.offset:end], sig.magic) {
+		if !bytes.Equal(data[sig.offset:end], sig.magic) {
 			continue
 		}
-		if len(sig.prefix) > 0 && (len(data) < len(sig.prefix) || !matchBytes(data[:len(sig.prefix)], sig.prefix)) {
+		if len(sig.prefix) > 0 && (len(data) < len(sig.prefix) || !bytes.Equal(data[:len(sig.prefix)], sig.prefix)) {
 			continue
 		}
 		return sig.mimeType, nil
@@ -182,16 +183,6 @@ func detectMimeType(filePath string, data []byte) (string, error) {
 	}
 
 	return "", fmt.Errorf("サポートされていない画像形式です: %s (JPEG, PNG, GIF, WebPのみ対応)", filePath)
-}
-
-// matchBytes は2つのバイトスライスが一致するか比較する
-func matchBytes(data, pattern []byte) bool {
-	for i, b := range pattern {
-		if data[i] != b {
-			return false
-		}
-	}
-	return true
 }
 
 // hasExtension はファイルパスが指定の拡張子を持つかチェックする

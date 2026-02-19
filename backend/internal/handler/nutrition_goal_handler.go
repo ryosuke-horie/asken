@@ -60,10 +60,12 @@ func parseOptionalWeight(w http.ResponseWriter, raw string, paramName string) (*
 	}
 	parsed, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
+		log.Printf("Error parsing %s: value=%s, error=%v", paramName, raw, err)
 		http.Error(w, paramName+"のパースに失敗しました", http.StatusBadRequest)
 		return nil, err
 	}
 	if err := repository.ValidateWeightKg(parsed); err != nil {
+		log.Printf("Validation error for %s: value=%f, error=%v", paramName, parsed, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
@@ -106,9 +108,9 @@ func (h *NutritionGoalHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	goal, getGoalErr := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeight)
-	if getGoalErr != nil {
-		log.Printf("Error getting nutrition goal: userID=%s, error=%v", userID, getGoalErr)
+	goal, err := h.nutritionGoalRepo.GetGoal(r.Context(), userID, currentWeight, targetWeight)
+	if err != nil {
+		log.Printf("Error getting nutrition goal: userID=%s, error=%v", userID, err)
 		http.Error(w, "栄養目標の取得に失敗しました", http.StatusInternalServerError)
 		return
 	}
