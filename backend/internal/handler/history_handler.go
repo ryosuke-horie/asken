@@ -271,11 +271,10 @@ func (h *HistoryHandler) triggerRecalculationIfNeeded(userID string, historyID u
 	}
 
 	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
+	// detectNameChangesは要素数が異なる場合nilを返す（インデックスベース比較が不正確なため）
 	changedFoods := detectNameChanges(oldFoods, newFoods)
 	if changedFoods == nil {
-		if len(oldFoods) != len(newFoods) {
-			log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
-		}
+		log.Printf("Skipping async recalculation for history %s: food count changed (old=%d, new=%d)", historyID, len(oldFoods), len(newFoods))
 		return
 	}
 
@@ -466,8 +465,12 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 	}
 
 	// 再計算結果をFirestoreに保存（1回リトライ、リトライ前に鮮度を再チェック）
-	if err := h.saveRecalculatedResult(ctx, userID, historyID, currentFoods, recalculated); err != nil {
+	saved, err := h.saveRecalculatedResult(ctx, userID, historyID, currentFoods, recalculated)
+	if err != nil {
 		log.Printf("ERROR: Failed to save recalculated nutrition for history %s, userID=%s: %v", historyID, userID, err)
+		return
+	}
+	if !saved {
 		return
 	}
 
@@ -476,29 +479,34 @@ func (h *HistoryHandler) recalculateAsync(userID string, historyID uuid.UUID, cu
 
 // saveRecalculatedResult は再計算結果をFirestoreに保存する（1回リトライ）。
 // リトライ前に鮮度を再チェックし、ユーザーが再保存した場合はスキップする。
-func (h *HistoryHandler) saveRecalculatedResult(ctx context.Context, userID string, historyID uuid.UUID, currentFoods, recalculated []gemini.NutritionInfo) error {
-	err := h.repository.UpdateResult(ctx, userID, historyID, recalculated)
+// リトライ間の鮮度チェックが必要なため、retryWithDelayではなく独自のリトライロジックを使用。
+// 戻り値: saved=true は保存成功、saved=false は鮮度チェックによりスキップ。
+func (h *HistoryHandler) saveRecalculatedResult(ctx context.Context, userID string, historyID uuid.UUID, currentFoods, recalculated []gemini.NutritionInfo) (saved bool, err error) {
+	err = h.repository.UpdateResult(ctx, userID, historyID, recalculated)
 	if err == nil {
-		return nil
+		return true, nil
 	}
 	if errors.Is(err, repository.ErrNotFound) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return err
+		return false, err
 	}
+
+	log.Printf("WARN: Failed to save recalculated nutrition for history %s, retrying after %v: %v", historyID, firestoreRetryDelay, err)
 
 	select {
 	case <-time.After(firestoreRetryDelay):
 	case <-ctx.Done():
-		return ctx.Err()
+		return false, ctx.Err()
 	}
 
 	// リトライ前に鮮度を再チェック（sleep中にユーザーが再保存した可能性がある）
 	if stale, checkErr := h.isFoodsStale(ctx, userID, historyID, currentFoods); checkErr != nil {
-		return checkErr
+		return false, checkErr
 	} else if stale {
-		return nil
+		return false, nil
 	}
 
-	return h.repository.UpdateResult(ctx, userID, historyID, recalculated)
+	err = h.repository.UpdateResult(ctx, userID, historyID, recalculated)
+	return err == nil, err
 }
 
 // isFoodsStale は再計算中にユーザーがデータを変更したか確認する。

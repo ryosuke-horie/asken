@@ -133,11 +133,11 @@ type magicSignature struct {
 	mimeType string
 	offset   int
 	magic    []byte
-	prefix   []byte // optional: offset=0で追加チェックするバイト列（WebPのRIFFヘッダー等）
+	prefix   []byte // optional: data先頭からの追加マッチ条件（例: WebPのRIFF先頭4バイト）
 }
 
 // magicSignatures はマジックバイト判定テーブル
-// WebPはRIFFヘッダー（offset=0）+WEBPマーカー（offset=8）の2段階で判定する。
+// WebPはWEBPマーカー（offset=8のmagic）とRIFFヘッダー（offset=0のprefix）の両方を検証する。
 var magicSignatures = []magicSignature{
 	{"image/jpeg", 0, []byte{0xFF, 0xD8, 0xFF}, nil},
 	{"image/png", 0, []byte{0x89, 0x50, 0x4E, 0x47}, nil},

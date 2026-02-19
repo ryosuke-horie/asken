@@ -65,7 +65,7 @@ func parseOptionalWeight(w http.ResponseWriter, raw string, paramName string) (*
 		return nil, err
 	}
 	if err := repository.ValidateWeightKg(parsed); err != nil {
-		log.Printf("Validation error for %s: value=%f, error=%v", paramName, parsed, err)
+		log.Printf("Validation error for %s: value=%.1f, error=%v", paramName, parsed, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
