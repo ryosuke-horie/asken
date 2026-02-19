@@ -73,7 +73,7 @@ func main() {
 
 	log.Printf("[INFO] マイメニューマイクロニュートリエントバックフィル開始")
 
-	totalMenus, patchedMenus, skippedMenus, failedMenus := processAllUsers(ctx, fsClient, calc)
+	totalMenus, patchedMenus, skippedMenus, failedMenus := processAllMenus(ctx, fsClient, calc)
 
 	log.Printf("[INFO] バックフィル完了 - 総メニュー: %d, パッチ適用: %d, スキップ: %d, 失敗: %d",
 		totalMenus, patchedMenus, skippedMenus, failedMenus)
@@ -84,38 +84,13 @@ func main() {
 	}
 }
 
-// processAllUsers は全ユーザーのマイメニューを処理する
-func processAllUsers(ctx context.Context, fsClient *firestore.Client, calc *gemini.NutritionCalculator) (total, patched, skipped, failed int) {
-	usersIter := fsClient.Collection("users").Documents(ctx)
-	defer usersIter.Stop()
-
-	for {
-		userDoc, err := usersIter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			// イテレータエラーは続行不可能なため即座に終了（failedをインクリメントしてos.Exit(1)を保証）
-			log.Printf("[ERROR] ユーザー列挙エラーが発生しました。処理を中断します: %v", err)
-			failed++
-			return
-		}
-
-		userID := userDoc.Ref.ID
-		log.Printf("[INFO] ユーザー処理開始: %s", userID)
-
-		p, s, f := processUserMenus(ctx, fsClient, calc, userID)
-		total += p + s + f
-		patched += p
-		skipped += s
-		failed += f
-	}
-	return
-}
-
-// processUserMenus は指定ユーザーの全マイメニューを処理する
-func processUserMenus(ctx context.Context, fsClient *firestore.Client, calc *gemini.NutritionCalculator, userID string) (patched, skipped, failed int) {
-	menuIter := fsClient.Collection("users").Doc(userID).Collection("myMenu").Documents(ctx)
+// processAllMenus はCollectionGroupクエリで全ユーザーのマイメニューを一括処理する
+//
+// users/{userId}ドキュメント自体がフィールドを持たない「暗黙ドキュメント」である場合、
+// Collection("users").Documents()はドキュメントを返さない。
+// CollectionGroup("myMenu")はサブコレクションを直接列挙するため、この問題を回避できる。
+func processAllMenus(ctx context.Context, fsClient *firestore.Client, calc *gemini.NutritionCalculator) (total, patched, skipped, failed int) {
+	menuIter := fsClient.CollectionGroup("myMenu").Documents(ctx)
 	defer menuIter.Stop()
 
 	for {
@@ -124,13 +99,16 @@ func processUserMenus(ctx context.Context, fsClient *firestore.Client, calc *gem
 			break
 		}
 		if err != nil {
-			// イテレータエラーは後続のNext()も同じエラーを返すため、このユーザーの処理を中断
-			log.Printf("[ERROR] マイメニュー列挙エラーが発生しました。このユーザーの処理を中断します (user=%s): %v", userID, err)
+			// イテレータエラーは続行不可能なため即座に終了（failedをインクリメントしてos.Exit(1)を保証）
+			log.Printf("[ERROR] マイメニュー列挙エラーが発生しました。処理を中断します: %v", err)
 			failed++
 			return
 		}
 
+		// doc.Ref.Parent.Parent は users/{userId} ドキュメントの参照
+		userID := doc.Ref.Parent.Parent.ID
 		menuID := doc.Ref.ID
+		total++
 
 		var menu menuDoc
 		if err := doc.DataTo(&menu); err != nil {
