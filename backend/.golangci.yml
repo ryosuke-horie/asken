@@ -20,7 +20,7 @@ linters:
 
   settings:
     gocyclo:
-      min-complexity: 25  # 既存関数の複雑度対応のため一時的に緩和（UTK-19で15に戻す）
+      min-complexity: 15
 
     errcheck:
       exclude-functions:

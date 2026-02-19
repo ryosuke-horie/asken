@@ -67,6 +67,56 @@ type UpdateWeightRecordRequest struct {
 	Note     string  `json:"note"`
 }
 
+// dateRangeParams は日付範囲クエリパラメータの解析結果
+type dateRangeParams struct {
+	from time.Time
+	to   time.Time
+	loc  *time.Location
+}
+
+// parseDateRangeParams はクエリパラメータの日付範囲を解析・検証する。
+// エラー時はHTTPレスポンスを書き込みエラーを返す。
+func parseDateRangeParams(w http.ResponseWriter, r *http.Request, userID string) (*dateRangeParams, error) {
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+	tz := r.URL.Query().Get("tz")
+	if tz == "" {
+		tz = "UTC"
+	}
+
+	if fromStr == "" || toStr == "" {
+		http.Error(w, "fromとtoパラメータが必要です", http.StatusBadRequest)
+		return nil, fmt.Errorf("missing from/to parameters")
+	}
+
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("タイムゾーンが不正です: %s", tz), http.StatusBadRequest)
+		return nil, err
+	}
+
+	from, err := util.ParseDateInTimezone(fromStr, tz)
+	if err != nil {
+		log.Printf("Error parsing from parameter: userID=%s, from=%s, error=%v", userID, fromStr, err)
+		http.Error(w, "fromパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
+		return nil, err
+	}
+
+	_, toEnd, err := util.GetDayRangeInTimezone(toStr, tz)
+	if err != nil {
+		log.Printf("Error parsing to parameter: userID=%s, to=%s, error=%v", userID, toStr, err)
+		http.Error(w, "toパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
+		return nil, err
+	}
+
+	if toEnd.Sub(from) > 366*24*time.Hour {
+		http.Error(w, "取得期間は最大366日です", http.StatusBadRequest)
+		return nil, fmt.Errorf("date range exceeds 366 days")
+	}
+
+	return &dateRangeParams{from: from, to: toEnd, loc: loc}, nil
+}
+
 // HandleList はGET /api/weight/recordsリクエストを処理
 func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -80,46 +130,12 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fromStr := r.URL.Query().Get("from")
-	toStr := r.URL.Query().Get("to")
-	tz := r.URL.Query().Get("tz")
-	if tz == "" {
-		tz = "UTC"
-	}
-
-	if fromStr == "" || toStr == "" {
-		http.Error(w, "fromとtoパラメータが必要です", http.StatusBadRequest)
-		return
-	}
-
-	loc, err := time.LoadLocation(tz)
+	params, err := parseDateRangeParams(w, r, userID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("タイムゾーンが不正です: %s", tz), http.StatusBadRequest)
 		return
 	}
 
-	from, err := util.ParseDateInTimezone(fromStr, tz)
-	if err != nil {
-		log.Printf("Error parsing from parameter: userID=%s, from=%s, error=%v", userID, fromStr, err)
-		http.Error(w, "fromパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
-		return
-	}
-
-	// toは日付の終了時刻まで含める
-	_, toEnd, err := util.GetDayRangeInTimezone(toStr, tz)
-	if err != nil {
-		log.Printf("Error parsing to parameter: userID=%s, to=%s, error=%v", userID, toStr, err)
-		http.Error(w, "toパラメータが不正です。YYYY-MM-DD形式で指定してください", http.StatusBadRequest)
-		return
-	}
-
-	// 最大366日間のバリデーション（うるう年対応）
-	if toEnd.Sub(from) > 366*24*time.Hour {
-		http.Error(w, "取得期間は最大366日です", http.StatusBadRequest)
-		return
-	}
-
-	records, err := h.repository.ListRecordsByDateRange(r.Context(), userID, from, toEnd)
+	records, err := h.repository.ListRecordsByDateRange(r.Context(), userID, params.from, params.to)
 	if err != nil {
 		log.Printf("Error listing weight records: userID=%s, error=%v", userID, err)
 		http.Error(w, "体重記録の取得に失敗しました", http.StatusInternalServerError)
@@ -139,7 +155,7 @@ func (h *WeightRecordHandler) HandleList(w http.ResponseWriter, r *http.Request)
 	for _, record := range records {
 		responseRecords = append(responseRecords, toWeightRecordResponse(record))
 
-		dateKey := record.RecordedAt.In(loc).Format("2006-01-02")
+		dateKey := record.RecordedAt.In(params.loc).Format("2006-01-02")
 		summary := dailySummary[dateKey]
 		summary.Count++
 		summary.LatestWeight = record.WeightKg // recordedAtで昇順ソート済みなので最後が最新
