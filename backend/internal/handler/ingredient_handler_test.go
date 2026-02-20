@@ -218,6 +218,14 @@ func TestIngredientHandler_HandleList(t *testing.T) {
 				assert.Empty(t, resp.Ingredients)
 			},
 		},
+		{
+			name: "リポジトリエラーで500",
+			url:  "/api/ingredients",
+			mockList: func(ctx context.Context, userID string, category string) ([]repository.Ingredient, error) {
+				return nil, fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -323,6 +331,19 @@ func TestIngredientHandler_HandleCreate(t *testing.T) {
 			body:           CreateIngredientRequest{Name: "テスト", Category: "meat", Quantity: 100, Unit: "g", Source: "manual", PurchaseDate: "invalid-date"},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "expiryDateが不正形式でBadRequest",
+			body:           CreateIngredientRequest{Name: "テスト", Category: "meat", Quantity: 100, Unit: "g", Source: "manual", ExpiryDate: "invalid-date"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "リポジトリエラーで500",
+			body: validBody,
+			mockCreate: func(ctx context.Context, userID string, input repository.CreateIngredientInput) (*repository.Ingredient, error) {
+				return nil, fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -394,6 +415,33 @@ func TestIngredientHandler_HandleUpdate(t *testing.T) {
 			body:           UpdateIngredientRequest{Name: "テスト", Category: "meat", Quantity: 0, Unit: "g"},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "categoryが不正でBadRequest",
+			url:            "/api/ingredients/" + ingredientID,
+			body:           UpdateIngredientRequest{Name: "テスト", Category: "invalid", Quantity: 100, Unit: "g"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "unitが不正でBadRequest",
+			url:            "/api/ingredients/" + ingredientID,
+			body:           UpdateIngredientRequest{Name: "テスト", Category: "meat", Quantity: 100, Unit: "invalid"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "purchaseDateが不正形式でBadRequest",
+			url:            "/api/ingredients/" + ingredientID,
+			body:           UpdateIngredientRequest{Name: "テスト", Category: "meat", Quantity: 100, Unit: "g", PurchaseDate: "invalid-date"},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "リポジトリエラーで500",
+			url:  "/api/ingredients/" + ingredientID,
+			body: validBody,
+			mockUpdate: func(ctx context.Context, userID string, id string, input repository.UpdateIngredientInput) (*repository.Ingredient, error) {
+				return nil, fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -440,6 +488,14 @@ func TestIngredientHandler_HandleDelete(t *testing.T) {
 				return fmt.Errorf("食材が見つかりません: %w", repository.ErrNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name: "リポジトリエラーで500",
+			url:  "/api/ingredients/" + ingredientID,
+			mockDelete: func(ctx context.Context, userID string, id string) error {
+				return fmt.Errorf("database error")
+			},
+			expectedStatus: http.StatusInternalServerError,
 		},
 	}
 
@@ -598,6 +654,75 @@ func TestParseOptionalDate(t *testing.T) {
 				} else {
 					assert.NotNil(t, result)
 				}
+			}
+		})
+	}
+}
+
+func TestIngredientHandler_HandleCreate_InvalidJSON(t *testing.T) {
+	mock := &MockIngredientRepository{}
+	h := NewIngredientHandler(mock)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/ingredients", bytes.NewBufferString("{invalid json}"))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), "test-user-id")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	h.HandleCreate(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestIngredientHandler_HandleUpdate_InvalidJSON(t *testing.T) {
+	ingredientID := "550e8400-e29b-41d4-a716-446655440000"
+	mock := &MockIngredientRepository{}
+	h := NewIngredientHandler(mock)
+
+	req := httptest.NewRequest(http.MethodPut, "/api/ingredients/"+ingredientID, bytes.NewBufferString("{invalid json}"))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), "test-user-id")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	h.HandleUpdate(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestExtractIngredientID(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		expectedID  string
+		expectError bool
+	}{
+		{
+			name:       "正常にIDを抽出できる",
+			path:       "/api/ingredients/550e8400-e29b-41d4-a716-446655440000",
+			expectedID: "550e8400-e29b-41d4-a716-446655440000",
+		},
+		{
+			name:        "UUIDでないIDでエラー",
+			path:        "/api/ingredients/not-a-uuid",
+			expectError: true,
+		},
+		{
+			name:        "空IDでエラー（二重スラッシュ）",
+			path:        "/api/ingredients//",
+			expectError: true,
+		},
+		{
+			name:        "パスが短すぎてエラー",
+			path:        "/api",
+			expectError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			id, err := extractIngredientID(tt.path)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Empty(t, id)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedID, id)
 			}
 		})
 	}
