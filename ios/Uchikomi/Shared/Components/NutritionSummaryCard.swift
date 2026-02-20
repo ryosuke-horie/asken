@@ -159,7 +159,7 @@ private struct MacroItem: View {
             protein: 100,
             fat: 60,
             carbohydrates: 250,
-            micronutrientTargets: MicronutrientKey.allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
+            micronutrientTargets: MicronutrientKey.defaultTargets
         )
     )
     .padding()

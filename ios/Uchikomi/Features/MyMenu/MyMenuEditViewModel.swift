@@ -64,6 +64,16 @@ final class MyMenuEditViewModel {
         foodItems.reduce(0) { $0 + $1.carbohydrates }
     }
 
+    var totalMicronutrients: [String: Double] {
+        var result: [String: Double] = [:]
+        for item in foodItems {
+            for (key, value) in item.micronutrients {
+                result[key, default: 0] += value
+            }
+        }
+        return result
+    }
+
     var isValid: Bool {
         !menuName.isEmpty && !foodItems.isEmpty
     }
@@ -85,7 +95,8 @@ final class MyMenuEditViewModel {
                 caloriesKcal: item.calories,
                 proteinG: item.protein,
                 fatG: item.fat,
-                carbohydratesG: item.carbohydrates
+                carbohydratesG: item.carbohydrates,
+                micronutrients: item.micronutrients.isEmpty ? nil : item.micronutrients
             )
         }
 
@@ -300,6 +311,7 @@ final class MyMenuEditViewModel {
 
         // 分析結果をfoodItemsに反映
         // 分析後は、このfoodItemsをベースに保存される
+        // micronutrientsがnilの場合は空辞書にフォールバックし、UIでセクションが非表示になる（正常動作）
         foodItems = result.result.foods.map { nutritionInfo in
             FoodEditItem(
                 name: nutritionInfo.name,
@@ -307,7 +319,8 @@ final class MyMenuEditViewModel {
                 calories: nutritionInfo.caloriesKcal,
                 protein: nutritionInfo.proteinG,
                 fat: nutritionInfo.fatG,
-                carbohydrates: nutritionInfo.carbohydratesG
+                carbohydrates: nutritionInfo.carbohydratesG,
+                micronutrients: nutritionInfo.micronutrients ?? [:]
             )
         }
     }

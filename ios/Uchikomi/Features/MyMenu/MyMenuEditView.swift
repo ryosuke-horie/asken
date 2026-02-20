@@ -48,6 +48,15 @@ struct MyMenuEditView: View {
                                     carbohydrates: viewModel.totalCarbohydrates
                                 )
 
+                                let micros = viewModel.totalMicronutrients
+                                if !micros.isEmpty {
+                                    MicronutrientProgressSection(
+                                        current: micros,
+                                        targets: MicronutrientKey.defaultTargets
+                                    )
+                                    .padding(.horizontal)
+                                }
+
                                 Divider()
 
                                 Text("現在の登録内容")
@@ -321,6 +330,13 @@ private struct AnalysisResultSection: View {
                 carbohydrates: result.totalCarbohydrates,
                 micronutrients: result.totalMicronutrients
             )
+
+            if let micros = result.totalMicronutrients, !micros.isEmpty {
+                MicronutrientProgressSection(
+                    current: micros,
+                    targets: MicronutrientKey.defaultTargets
+                )
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("検出されたメニュー")
