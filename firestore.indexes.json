@@ -68,6 +68,22 @@
         { "fieldPath": "mealType", "order": "ASCENDING" },
         { "fieldPath": "mealDate", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "ingredients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "ingredients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "expiryDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
