@@ -12,9 +12,10 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// cleanupMenuSuggestionTestData はテスト用メニューサジェストデータをクリーンアップする
-func cleanupMenuSuggestionTestData(ctx context.Context, client *firestore.Client, userID string) {
-	iter := client.Collection("users").Doc(userID).Collection("menuSuggestions").Documents(ctx)
+// cleanupUserCollection はテスト用の指定コレクションデータをクリーンアップする
+func cleanupUserCollection(t *testing.T, ctx context.Context, client *firestore.Client, userID, collection string) {
+	t.Helper()
+	iter := client.Collection("users").Doc(userID).Collection(collection).Documents(ctx)
 	defer iter.Stop()
 
 	bw := client.BulkWriter(ctx)
@@ -24,46 +25,7 @@ func cleanupMenuSuggestionTestData(ctx context.Context, client *firestore.Client
 			break
 		}
 		if err != nil {
-			break
-		}
-		bw.Delete(doc.Ref)
-	}
-	bw.Flush()
-	bw.End()
-}
-
-// cleanupIngredientDataForMenuTest はテスト用食材データをクリーンアップする
-func cleanupIngredientDataForMenuTest(ctx context.Context, client *firestore.Client, userID string) {
-	iter := client.Collection("users").Doc(userID).Collection("ingredients").Documents(ctx)
-	defer iter.Stop()
-
-	bw := client.BulkWriter(ctx)
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			break
-		}
-		bw.Delete(doc.Ref)
-	}
-	bw.Flush()
-	bw.End()
-}
-
-// cleanupAnalysisRequestsForMenuTest はテスト用analysisRequestsデータをクリーンアップする
-func cleanupAnalysisRequestsForMenuTest(ctx context.Context, client *firestore.Client, userID string) {
-	iter := client.Collection("users").Doc(userID).Collection("analysisRequests").Documents(ctx)
-	defer iter.Stop()
-
-	bw := client.BulkWriter(ctx)
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
+			t.Logf("クリーンアップ中にドキュメント取得エラー (%s): %v", collection, err)
 			break
 		}
 		bw.Delete(doc.Ref)
@@ -120,7 +82,7 @@ func createIngredientDoc(ctx context.Context, client *firestore.Client, userID, 
 func TestNewMenuSuggestionRepository(t *testing.T) {
 	t.Run("nilクライアントでエラー", func(t *testing.T) {
 		repo, err := NewMenuSuggestionRepository(nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, repo)
 	})
 }
@@ -133,7 +95,7 @@ func TestMenuSuggestionRepository_Create(t *testing.T) {
 	userID := "test-menu-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -171,7 +133,7 @@ func TestMenuSuggestionRepository_Create(t *testing.T) {
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		input := newSampleCreateInput("lunch", "")
 		_, err := repo.Create(ctx, "", input)
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -183,7 +145,7 @@ func TestMenuSuggestionRepository_List(t *testing.T) {
 	userID := "test-menu-list-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -216,6 +178,19 @@ func TestMenuSuggestionRepository_List(t *testing.T) {
 		assert.Empty(t, items)
 	})
 
+	t.Run("dismissedステータスでフィルタできる", func(t *testing.T) {
+		dismissedInput := newSampleCreateInput("snack", "")
+		created, err := repo.Create(ctx, userID, dismissedInput)
+		require.NoError(t, err)
+		err = repo.Dismiss(ctx, userID, created.ID)
+		require.NoError(t, err)
+
+		items, err := repo.List(ctx, userID, string(MenuStatusDismissed), 10)
+		require.NoError(t, err)
+		require.Len(t, items, 1)
+		assert.Equal(t, string(MenuStatusDismissed), items[0].Status)
+	})
+
 	t.Run("limit=1で1件のみ取得できる", func(t *testing.T) {
 		items, err := repo.List(ctx, userID, "", 1)
 		require.NoError(t, err)
@@ -224,7 +199,7 @@ func TestMenuSuggestionRepository_List(t *testing.T) {
 
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.List(ctx, "", "", 10)
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -236,7 +211,7 @@ func TestMenuSuggestionRepository_GetByID(t *testing.T) {
 	userID := "test-menu-get-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -261,12 +236,12 @@ func TestMenuSuggestionRepository_GetByID(t *testing.T) {
 
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.GetByID(ctx, "", created.ID)
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("IDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.GetByID(ctx, userID, "")
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -278,7 +253,7 @@ func TestMenuSuggestionRepository_UpdateRecipe(t *testing.T) {
 	userID := "test-menu-recipe-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -305,7 +280,7 @@ func TestMenuSuggestionRepository_UpdateRecipe(t *testing.T) {
 
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		err := repo.UpdateRecipe(ctx, "", created.ID, "レシピ")
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -317,7 +292,7 @@ func TestMenuSuggestionRepository_Dismiss(t *testing.T) {
 	userID := "test-menu-dismiss-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -359,7 +334,7 @@ func TestMenuSuggestionRepository_Dismiss(t *testing.T) {
 		created, err := repo.Create(ctx, userID, newSampleCreateInput("lunch", ""))
 		require.NoError(t, err)
 
-		// ステータスを直接accepted に変更
+		// ステータスを直接acceptedに変更
 		_, err = client.Collection("users").Doc(userID).Collection("menuSuggestions").Doc(created.ID).Update(ctx, []firestore.Update{
 			{Path: "status", Value: string(MenuStatusAccepted)},
 		})
@@ -379,9 +354,9 @@ func TestMenuSuggestionRepository_Accept(t *testing.T) {
 	userID := "test-menu-accept-user-" + uuid.New().String()
 
 	t.Cleanup(func() {
-		cleanupMenuSuggestionTestData(ctx, client, userID)
-		cleanupIngredientDataForMenuTest(ctx, client, userID)
-		cleanupAnalysisRequestsForMenuTest(ctx, client, userID)
+		cleanupUserCollection(t, ctx, client, userID, "menuSuggestions")
+		cleanupUserCollection(t, ctx, client, userID, "ingredients")
+		cleanupUserCollection(t, ctx, client, userID, "analysisRequests")
 	})
 
 	repo, err := NewMenuSuggestionRepository(client)
@@ -532,6 +507,21 @@ func TestMenuSuggestionRepository_Accept(t *testing.T) {
 		assert.ErrorIs(t, err, ErrAlreadyProcessed)
 	})
 
+	t.Run("dismissedはacceptできない（ErrAlreadyProcessed）", func(t *testing.T) {
+		created, err := repo.Create(ctx, userID, newSampleCreateInput("lunch", ""))
+		require.NoError(t, err)
+
+		// ステータスを直接dismissedに変更
+		_, err = client.Collection("users").Doc(userID).Collection("menuSuggestions").Doc(created.ID).Update(ctx, []firestore.Update{
+			{Path: "status", Value: string(MenuStatusDismissed)},
+		})
+		require.NoError(t, err)
+
+		_, err = repo.Accept(ctx, userID, created.ID)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrAlreadyProcessed)
+	})
+
 	t.Run("存在しないIDでNotFound", func(t *testing.T) {
 		_, err := repo.Accept(ctx, userID, "nonexistent-id")
 		require.Error(t, err)
@@ -540,6 +530,6 @@ func TestMenuSuggestionRepository_Accept(t *testing.T) {
 
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.Accept(ctx, "", "some-id")
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
