@@ -181,7 +181,7 @@ private struct MicronutrientProgressBar: View {
             "vitamin_a_ug": 500,
             "vitamin_c_mg": 120,
         ],
-        targets: MicronutrientKey.allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
+        targets: MicronutrientKey.defaultTargets
     )
     .padding()
     .background(Color(.systemGroupedBackground))
