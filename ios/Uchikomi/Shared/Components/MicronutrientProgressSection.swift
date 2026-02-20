@@ -110,7 +110,8 @@ private struct MicronutrientProgressBar: View {
     }
 
     private var isOverGoal: Bool {
-        current > goal
+        guard goal > 0 else { return false }
+        return current > goal
     }
 
     private var formattedCurrent: String {
