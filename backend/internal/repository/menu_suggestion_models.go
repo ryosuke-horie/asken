@@ -2,8 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrAlreadyProcessed はサジェストが既に採用または却下済みの場合に返るエラー
+var ErrAlreadyProcessed = errors.New("suggestion already processed")
 
 // MenuSuggestionStatus はメニューサジェストのステータスを表す型
 type MenuSuggestionStatus string

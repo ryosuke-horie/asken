@@ -15,6 +15,9 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
+// recentMealHistoryLimit は直近の食事履歴取得件数の上限
+const recentMealHistoryLimit = 100
+
 // MenuSuggestionHandler はメニューサジェスト関連のエンドポイントを処理するハンドラー
 type MenuSuggestionHandler struct {
 	menuRepo          repository.MenuSuggestionRepository
@@ -217,9 +220,12 @@ func (h *MenuSuggestionHandler) HandleList(w http.ResponseWriter, r *http.Reques
 
 	limit := 10
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 50 {
-			limit = l
+		l, err := strconv.Atoi(limitStr)
+		if err != nil || l <= 0 || l > 50 {
+			http.Error(w, "limitは1以上50以下の整数で指定してください", http.StatusBadRequest)
+			return
 		}
+		limit = l
 	}
 
 	filterStatus := statusParam
@@ -329,8 +335,8 @@ func (h *MenuSuggestionHandler) HandleAccept(w http.ResponseWriter, r *http.Requ
 			http.Error(w, "メニューサジェストが見つかりません", http.StatusNotFound)
 			return
 		}
-		if strings.Contains(err.Error(), "既に処理済み") {
-			http.Error(w, err.Error(), http.StatusConflict)
+		if errors.Is(err, repository.ErrAlreadyProcessed) {
+			http.Error(w, "このサジェストは既に採用または却下済みです", http.StatusConflict)
 			return
 		}
 		log.Printf("Error accepting menu suggestion: userID=%s, id=%s, error=%v", userID, suggestionID, err)
@@ -388,8 +394,8 @@ func (h *MenuSuggestionHandler) HandleDismiss(w http.ResponseWriter, r *http.Req
 			http.Error(w, "メニューサジェストが見つかりません", http.StatusNotFound)
 			return
 		}
-		if strings.Contains(err.Error(), "既に処理済み") {
-			http.Error(w, err.Error(), http.StatusConflict)
+		if errors.Is(err, repository.ErrAlreadyProcessed) {
+			http.Error(w, "このサジェストは既に採用または却下済みです", http.StatusConflict)
 			return
 		}
 		log.Printf("Error dismissing menu suggestion: userID=%s, id=%s, error=%v", userID, suggestionID, err)
@@ -426,7 +432,11 @@ func (h *MenuSuggestionHandler) buildSuggestionInput(r *http.Request, userID, me
 
 	// 栄養目標を取得（未設定でも処理を継続）
 	nutritionGoal, err := h.nutritionGoalRepo.GetGoal(ctx, userID, nil, nil)
-	if err == nil && nutritionGoal != nil {
+	if err != nil {
+		if !errors.Is(err, repository.ErrNotFound) {
+			log.Printf("Warning: failed to get nutrition goal for suggestion context: userID=%s, error=%v", userID, err)
+		}
+	} else if nutritionGoal != nil {
 		input.NutritionGoal = &gemini.NutritionGoalContext{
 			TargetCalories:      nutritionGoal.TargetCalories,
 			TargetProtein:       nutritionGoal.TargetProtein,
@@ -437,8 +447,10 @@ func (h *MenuSuggestionHandler) buildSuggestionInput(r *http.Request, userID, me
 	}
 
 	// 直近7日間の食事履歴を取得
-	historyItems, _, err := h.analysisRepo.GetHistoryList(ctx, userID, 1, 100)
-	if err == nil {
+	historyItems, _, err := h.analysisRepo.GetHistoryList(ctx, userID, 1, recentMealHistoryLimit)
+	if err != nil {
+		log.Printf("Warning: failed to get meal history for suggestion context: userID=%s, error=%v", userID, err)
+	} else {
 		sevenDaysAgo := time.Now().AddDate(0, 0, -7)
 		input.RecentMeals = make([]gemini.RecentMealContext, 0)
 		for _, item := range historyItems {
@@ -465,7 +477,9 @@ func (h *MenuSuggestionHandler) buildSuggestionInput(r *http.Request, userID, me
 	to := time.Now()
 	from := to.AddDate(0, 0, -30)
 	weightRecords, err := h.weightRecordRepo.ListRecordsByDateRange(ctx, userID, from, to)
-	if err == nil {
+	if err != nil {
+		log.Printf("Warning: failed to get weight records for suggestion context: userID=%s, error=%v", userID, err)
+	} else {
 		input.WeightTrend = make([]gemini.WeightTrendContext, len(weightRecords))
 		for i, w := range weightRecords {
 			input.WeightTrend[i] = gemini.WeightTrendContext{
