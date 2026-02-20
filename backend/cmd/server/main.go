@@ -64,6 +64,7 @@ type handlers struct {
 	weightGoal    *handler.WeightGoalHandler
 	nutritionGoal *handler.NutritionGoalHandler
 	myMenu        *handler.MyMenuHandler
+	ingredient    *handler.IngredientHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -80,6 +81,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupWeightRoutes(mux, h, authMiddleware, rl)
 	setupNutritionRoutes(mux, h, authMiddleware, rl)
 	setupMyMenuRoutes(mux, h, authMiddleware, rl)
+	setupIngredientRoutes(mux, h, authMiddleware, rl)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -234,6 +236,32 @@ func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/my-menu/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuDetailRouteHandler))))
 }
 
+func setupIngredientRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	ingredientListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.ingredient.HandleList(w, r)
+		case http.MethodPost:
+			h.ingredient.HandleCreate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/ingredients", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(ingredientListRouteHandler))))
+
+	ingredientDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			h.ingredient.HandleUpdate(w, r)
+		case http.MethodDelete:
+			h.ingredient.HandleDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/ingredients/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(ingredientDetailRouteHandler))))
+}
+
 // repositories はリポジトリ群をまとめた構造体
 type repositories struct {
 	analysis      repository.AnalysisRepository
@@ -242,6 +270,7 @@ type repositories struct {
 	weightGoal    repository.WeightGoalRepository
 	nutritionGoal repository.NutritionGoalRepository
 	myMenu        repository.MyMenuRepository
+	ingredient    repository.IngredientRepository
 }
 
 func initRepositories(firestoreClient *firestore.Client, storageRepo repository.StorageRepository) repositories {
@@ -265,6 +294,11 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		log.Fatalf("Failed to initialize MyMenuRepository: %v", err)
 	}
 
+	ingredientRepo, err := repository.NewIngredientRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize IngredientRepository: %v", err)
+	}
+
 	return repositories{
 		analysis:      analysisRepo,
 		storage:       storageRepo,
@@ -272,6 +306,7 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		weightGoal:    weightGoalRepo,
 		nutritionGoal: nutritionGoalRepo,
 		myMenu:        myMenuRepo,
+		ingredient:    ingredientRepo,
 	}
 }
 
@@ -366,6 +401,7 @@ func run() error {
 		weightGoal:    handler.NewWeightGoalHandler(repos.weightGoal),
 		nutritionGoal: handler.NewNutritionGoalHandler(repos.nutritionGoal, repos.weightGoal),
 		myMenu:        handler.NewMyMenuHandler(repos.myMenu, repos.analysis),
+		ingredient:    handler.NewIngredientHandler(repos.ingredient),
 	}
 
 	// ワーカーの初期化
