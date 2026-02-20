@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -212,7 +211,7 @@ func (r *firestoreMenuSuggestionRepository) Accept(ctx context.Context, userID s
 		return nil, err
 	}
 	if suggestion.Status != string(MenuStatusSuggested) {
-		return nil, fmt.Errorf("サジェストは既に処理済みです（status: %s）", suggestion.Status)
+		return nil, fmt.Errorf("%w: status=%s", ErrAlreadyProcessed, suggestion.Status)
 	}
 
 	var result AcceptMenuSuggestionResult
@@ -266,6 +265,9 @@ func (r *firestoreMenuSuggestionRepository) Accept(ctx context.Context, userID s
 func (r *firestoreMenuSuggestionRepository) txValidateSuggestion(tx *firestore.Transaction, ref *firestore.DocumentRef) (*firestoreMenuSuggestionDocument, error) {
 	snap, err := tx.Get(ref)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, fmt.Errorf("メニューサジェストが見つかりません: %w", ErrNotFound)
+		}
 		return nil, fmt.Errorf("サジェストの取得に失敗: %w", err)
 	}
 	var fsDoc firestoreMenuSuggestionDocument
@@ -273,7 +275,7 @@ func (r *firestoreMenuSuggestionRepository) txValidateSuggestion(tx *firestore.T
 		return nil, fmt.Errorf("サジェストのパースに失敗: %w", err)
 	}
 	if fsDoc.Status != string(MenuStatusSuggested) {
-		return nil, fmt.Errorf("サジェストは既に処理済みです（status: %s）", fsDoc.Status)
+		return nil, fmt.Errorf("%w: status=%s", ErrAlreadyProcessed, fsDoc.Status)
 	}
 	return &fsDoc, nil
 }
@@ -287,10 +289,13 @@ func (r *firestoreMenuSuggestionRepository) txCollectIngredientSnaps(tx *firesto
 		}
 		ingRef := r.client.Collection("users").Doc(userID).Collection("ingredients").Doc(ing.IngredientID)
 		ingSnap, err := tx.Get(ingRef)
-		snaps = append(snaps, acceptIngredientSnap{ref: ingRef, snap: ingSnap, ing: ing})
-		if err != nil && status.Code(err) != codes.NotFound {
-			return nil, fmt.Errorf("食材の取得に失敗 (%s): %w", ing.IngredientID, err)
+		if err != nil {
+			if status.Code(err) != codes.NotFound {
+				return nil, fmt.Errorf("食材の取得に失敗 (%s): %w", ing.IngredientID, err)
+			}
+			ingSnap = nil
 		}
+		snaps = append(snaps, acceptIngredientSnap{ref: ingRef, snap: ingSnap, ing: ing})
 	}
 	return snaps, nil
 }
@@ -342,8 +347,7 @@ func (r *firestoreMenuSuggestionRepository) txDeductIngredients(tx *firestore.Tr
 
 		var fsIng firestoreIngredientDocument
 		if err := is.snap.DataTo(&fsIng); err != nil {
-			log.Printf("食材ドキュメントのパースに失敗 (%s): %v", is.ing.IngredientID, err)
-			continue
+			return nil, fmt.Errorf("食材ドキュメントのパースに失敗 (%s): %w", is.ing.IngredientID, err)
 		}
 
 		newQty := fsIng.Quantity - is.ing.Quantity
@@ -394,28 +398,17 @@ func (r *firestoreMenuSuggestionRepository) Dismiss(ctx context.Context, userID 
 	}
 
 	docRef := r.getUserMenuSuggestionCollection(userID).Doc(id)
-	snap, err := docRef.Get(ctx)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return fmt.Errorf("メニューサジェストが見つかりません: %s: %w", id, ErrNotFound)
+	err := r.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		if _, err := r.txValidateSuggestion(tx, docRef); err != nil {
+			return err
 		}
-		return fmt.Errorf("メニューサジェストの取得に失敗: %w", err)
-	}
-
-	var fsDoc firestoreMenuSuggestionDocument
-	if err := snap.DataTo(&fsDoc); err != nil {
-		return fmt.Errorf("ドキュメントのパースに失敗: %w", err)
-	}
-	if fsDoc.Status != string(MenuStatusSuggested) {
-		return fmt.Errorf("サジェストは既に処理済みです（status: %s）", fsDoc.Status)
-	}
-
-	_, err = docRef.Update(ctx, []firestore.Update{
-		{Path: "status", Value: string(MenuStatusDismissed)},
-		{Path: "updatedAt", Value: time.Now()},
+		return tx.Update(docRef, []firestore.Update{
+			{Path: "status", Value: string(MenuStatusDismissed)},
+			{Path: "updatedAt", Value: time.Now()},
+		})
 	})
 	if err != nil {
-		return fmt.Errorf("却下ステータスの更新に失敗: %w", err)
+		return fmt.Errorf("却下トランザクションに失敗: %w", err)
 	}
 	return nil
 }

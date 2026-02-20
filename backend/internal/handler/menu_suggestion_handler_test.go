@@ -338,7 +338,7 @@ func TestHandleAccept_NotFound(t *testing.T) {
 func TestHandleAccept_AlreadyProcessed(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{
 		AcceptFunc: func(ctx context.Context, userID string, id string) (*repository.AcceptMenuSuggestionResult, error) {
-			return nil, fmt.Errorf("サジェストは既に処理済みです（status: accepted）")
+			return nil, fmt.Errorf("採用トランザクションに失敗: %w", repository.ErrAlreadyProcessed)
 		},
 	}
 	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
@@ -404,7 +404,7 @@ func TestHandleDismiss_NotFound(t *testing.T) {
 func TestHandleDismiss_AlreadyProcessed(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{
 		DismissFunc: func(ctx context.Context, userID string, id string) error {
-			return fmt.Errorf("サジェストは既に処理済みです（status: dismissed）")
+			return fmt.Errorf("却下トランザクションに失敗: %w", repository.ErrAlreadyProcessed)
 		},
 	}
 	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
