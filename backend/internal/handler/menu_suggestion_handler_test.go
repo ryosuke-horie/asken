@@ -31,7 +31,7 @@ func (m *MockMenuSuggestionRepository) Create(ctx context.Context, userID string
 	if m.CreateFunc != nil {
 		return m.CreateFunc(ctx, userID, input)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("MockMenuSuggestionRepository: CreateFunc is not set")
 }
 
 func (m *MockMenuSuggestionRepository) List(ctx context.Context, userID string, status string, limit int) ([]repository.MenuSuggestion, error) {
@@ -45,7 +45,7 @@ func (m *MockMenuSuggestionRepository) GetByID(ctx context.Context, userID strin
 	if m.GetByIDFunc != nil {
 		return m.GetByIDFunc(ctx, userID, id)
 	}
-	return nil, nil
+	return nil, fmt.Errorf("MockMenuSuggestionRepository: GetByIDFunc is not set")
 }
 
 func (m *MockMenuSuggestionRepository) UpdateRecipe(ctx context.Context, userID string, id string, recipe string) error {
@@ -121,8 +121,8 @@ func newMenuRequest(t *testing.T, method, url string, body interface{}) *http.Re
 func TestHandleList_Success(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{
 		ListFunc: func(ctx context.Context, userID string, status string, limit int) ([]repository.MenuSuggestion, error) {
-			assert.Equal(t, "test-user-id", userID)
-			assert.Equal(t, "suggested", status)
+			require.Equal(t, "test-user-id", userID)
+			require.Equal(t, "suggested", status)
 			return []repository.MenuSuggestion{*sampleMenuSuggestion("id-1")}, nil
 		},
 	}
@@ -222,7 +222,7 @@ func TestHandleGet_Success_WithExistingRecipe(t *testing.T) {
 	suggestion.Recipe = "既存のレシピ内容"
 	menuRepo := &MockMenuSuggestionRepository{
 		GetByIDFunc: func(ctx context.Context, userID string, id string) (*repository.MenuSuggestion, error) {
-			assert.Equal(t, "suggestion-1", id)
+			require.Equal(t, "suggestion-1", id)
 			return suggestion, nil
 		},
 	}
@@ -250,7 +250,7 @@ func TestHandleGet_Success_RecipeLazyGeneration(t *testing.T) {
 			return suggestion, nil
 		},
 		UpdateRecipeFunc: func(ctx context.Context, userID string, id string, recipe string) error {
-			assert.Equal(t, "suggestion-2", id)
+			require.Equal(t, "suggestion-2", id)
 			return nil
 		},
 	}
@@ -293,7 +293,7 @@ func TestHandleGet_NotFound(t *testing.T) {
 func TestHandleAccept_Success(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{
 		AcceptFunc: func(ctx context.Context, userID string, id string) (*repository.AcceptMenuSuggestionResult, error) {
-			assert.Equal(t, "suggestion-1", id)
+			require.Equal(t, "suggestion-1", id)
 			return &repository.AcceptMenuSuggestionResult{
 				AnalysisRequestID: "analysis-123",
 				DeductedIngredients: []repository.DeductedIngredient{
@@ -369,7 +369,7 @@ func TestHandleDismiss_Success(t *testing.T) {
 	dismissed := false
 	menuRepo := &MockMenuSuggestionRepository{
 		DismissFunc: func(ctx context.Context, userID string, id string) error {
-			assert.Equal(t, "suggestion-1", id)
+			require.Equal(t, "suggestion-1", id)
 			dismissed = true
 			return nil
 		},
@@ -570,7 +570,7 @@ func TestHandleSuggest_CountNormalization(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.HandleSuggest(w, req)
 
-			assert.Equal(t, http.StatusCreated, w.Code)
+			require.Equal(t, http.StatusCreated, w.Code)
 			assert.Contains(t, capturedPrompt, tt.expectedCount)
 		})
 	}
