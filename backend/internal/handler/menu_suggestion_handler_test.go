@@ -585,3 +585,489 @@ func TestValidateSuggestionStatus(t *testing.T) {
 	assert.Error(t, validateSuggestionStatus("invalid"))
 	assert.Error(t, validateSuggestionStatus("all"))
 }
+
+// --- NewMenuSuggestionHandler パニックテスト ---
+
+func TestNewMenuSuggestionHandler_NilMenuRepo_Panics(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(nil, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
+	})
+}
+
+func TestNewMenuSuggestionHandler_NilIngredientRepo_Panics(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, nil, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
+	})
+}
+
+func TestNewMenuSuggestionHandler_NilNutritionGoalRepo_Panics(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, nil, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
+	})
+}
+
+func TestNewMenuSuggestionHandler_NilWeightRecordRepo_Panics(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, nil, &MockAnalysisRepository{}, suggester)
+	})
+}
+
+func TestNewMenuSuggestionHandler_NilAnalysisRepo_Panics(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, nil, suggester)
+	})
+}
+
+func TestNewMenuSuggestionHandler_NilSuggester_Panics(t *testing.T) {
+	assert.Panics(t, func() {
+		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, nil)
+	})
+}
+
+// --- HandleSuggest 追加テスト ---
+
+func TestHandleSuggest_IngredientRepoError(t *testing.T) {
+	ingredientRepo := &MockIngredientRepository{
+		ListFunc: func(ctx context.Context, userID string, category string) ([]repository.Ingredient, error) {
+			return nil, fmt.Errorf("DB接続エラー")
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, ingredientRepo, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "lunch", "count": 2})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleSuggest_GeminiError(t *testing.T) {
+	ingredientRepo := &MockIngredientRepository{
+		ListFunc: func(ctx context.Context, userID string, category string) ([]repository.Ingredient, error) {
+			return []repository.Ingredient{}, nil
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return nil, fmt.Errorf("Gemini API タイムアウト")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, ingredientRepo, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "dinner", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleSuggest_CreateError(t *testing.T) {
+	geminiRespJSON := `{
+		"suggestions": [
+			{
+				"title": "テスト料理",
+				"description": "説明",
+				"reason": "理由",
+				"ingredients": [],
+				"estimatedNutrition": {"calories": 300.0, "protein": 20.0, "fat": 5.0, "carbohydrates": 40.0}
+			}
+		]
+	}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return nil, fmt.Errorf("Firestore書き込みエラー")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "breakfast", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleSuggest_NutritionGoalError_StillSucceeds(t *testing.T) {
+	// 栄養目標取得に失敗してもメニューサジェストは成功する（非致命的エラー）
+	geminiRespJSON := `{"suggestions": [{"title": "テスト料理", "description": "説明", "reason": "理由", "ingredients": [], "estimatedNutrition": {"calories": 300.0, "protein": 20.0, "fat": 5.0, "carbohydrates": 40.0}}]}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	saved := sampleMenuSuggestion("new-id-1")
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return saved, nil
+		},
+	}
+	nutritionRepo := &MockNutritionGoalRepository{
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
+			return nil, fmt.Errorf("DB接続エラー（ErrNotFound以外）")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, nutritionRepo, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "lunch", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+func TestHandleSuggest_AnalysisHistoryError_StillSucceeds(t *testing.T) {
+	// 食事履歴取得に失敗してもメニューサジェストは成功する（非致命的エラー）
+	geminiRespJSON := `{"suggestions": [{"title": "テスト料理2", "description": "説明", "reason": "理由", "ingredients": [], "estimatedNutrition": {"calories": 300.0, "protein": 20.0, "fat": 5.0, "carbohydrates": 40.0}}]}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	saved := sampleMenuSuggestion("new-id-2")
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return saved, nil
+		},
+	}
+	analysisRepo := &MockAnalysisRepository{
+		GetHistoryListFunc: func(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error) {
+			return nil, 0, fmt.Errorf("食事履歴取得エラー")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, analysisRepo, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "dinner", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+func TestHandleSuggest_NutritionGoalErrNotFound_StillSucceeds(t *testing.T) {
+	// 栄養目標がErrNotFoundの場合も成功する（未設定状態）
+	geminiRespJSON := `{"suggestions": [{"title": "テスト料理_notfound", "description": "説明", "reason": "理由", "ingredients": [], "estimatedNutrition": {"calories": 300.0, "protein": 20.0, "fat": 5.0, "carbohydrates": 40.0}}]}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	saved := sampleMenuSuggestion("new-id-notfound")
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return saved, nil
+		},
+	}
+	nutritionRepo := &MockNutritionGoalRepository{
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
+			return nil, repository.ErrNotFound
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, nutritionRepo, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "lunch", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+func TestHandleSuggest_WithNutritionGoal_IncludesGoalInContext(t *testing.T) {
+	// 栄養目標が設定されている場合、コンテキストに含まれることを確認
+	capturedPrompt := ""
+	geminiRespJSON := `{"suggestions": [{"title": "栄養目標考慮メニュー", "description": "説明", "reason": "理由", "ingredients": [], "estimatedNutrition": {"calories": 400.0, "protein": 30.0, "fat": 10.0, "carbohydrates": 50.0}}]}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			capturedPrompt = prompt
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	saved := sampleMenuSuggestion("new-id-goal")
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return saved, nil
+		},
+	}
+	nutritionRepo := &MockNutritionGoalRepository{
+		GetGoalFunc: func(ctx context.Context, userID string, currentWeightKg *float64, targetWeightKg *float64) (*repository.NutritionGoal, error) {
+			return &repository.NutritionGoal{
+				TargetCalories:      2500,
+				TargetProtein:       180,
+				TargetFat:           70,
+				TargetCarbohydrates: 300,
+				Phase:               "bulk",
+			}, nil
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, nutritionRepo, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "lunch", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, capturedPrompt, "2500") // 栄養目標がプロンプトに含まれる
+}
+
+func TestHandleSuggest_WeightRecordError_StillSucceeds(t *testing.T) {
+	// 体重記録取得に失敗してもメニューサジェストは成功する（非致命的エラー）
+	geminiRespJSON := `{"suggestions": [{"title": "テスト料理3", "description": "説明", "reason": "理由", "ingredients": [], "estimatedNutrition": {"calories": 300.0, "protein": 20.0, "fat": 5.0, "carbohydrates": 40.0}}]}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: geminiRespJSON}, nil
+		},
+	}
+	saved := sampleMenuSuggestion("new-id-3")
+	menuRepo := &MockMenuSuggestionRepository{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateMenuSuggestionInput) (*repository.MenuSuggestion, error) {
+			return saved, nil
+		},
+	}
+	weightRepo := &MockWeightRecordRepository{
+		ListRecordsByDateRangeFunc: func(ctx context.Context, userID string, from time.Time, to time.Time) ([]repository.WeightRecord, error) {
+			return nil, fmt.Errorf("体重記録取得エラー")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, weightRepo, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", map[string]interface{}{"mealType": "breakfast", "count": 1})
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
+// --- HandleGet 追加テスト ---
+
+func TestHandleGet_Unauthorized(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/menu/suggestions/suggestion-1", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestHandleGet_MethodNotAllowed(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggestions/suggestion-1", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestHandleGet_InvalidPath(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions/", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleGet_InternalError(t *testing.T) {
+	menuRepo := &MockMenuSuggestionRepository{
+		GetByIDFunc: func(ctx context.Context, userID string, id string) (*repository.MenuSuggestion, error) {
+			return nil, fmt.Errorf("Firestore接続エラー")
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions/suggestion-1", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleGet_RecipeGenerationFails_ReturnsOK(t *testing.T) {
+	// レシピ生成失敗はノンクリティカル: レシピなしで200 OKを返す
+	suggestion := sampleMenuSuggestion("suggestion-3")
+	suggestion.Recipe = ""
+
+	menuRepo := &MockMenuSuggestionRepository{
+		GetByIDFunc: func(ctx context.Context, userID string, id string) (*repository.MenuSuggestion, error) {
+			return suggestion, nil
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return nil, fmt.Errorf("Gemini APIエラー")
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions/suggestion-3", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp menuSuggestionResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "", resp.Recipe) // レシピなしで返る
+}
+
+func TestHandleGet_UpdateRecipeFails_ReturnsOK(t *testing.T) {
+	// UpdateRecipe失敗もノンクリティカル: レシピなしで200 OKを返す
+	suggestion := sampleMenuSuggestion("suggestion-4")
+	suggestion.Recipe = ""
+
+	menuRepo := &MockMenuSuggestionRepository{
+		GetByIDFunc: func(ctx context.Context, userID string, id string) (*repository.MenuSuggestion, error) {
+			return suggestion, nil
+		},
+		UpdateRecipeFunc: func(ctx context.Context, userID string, id string, recipe string) error {
+			return fmt.Errorf("Firestore更新エラー")
+		},
+	}
+	recipeJSON := `{"recipe": "生成されたレシピ"}`
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{
+		ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+			return &gemini.Response{Response: recipeJSON}, nil
+		},
+	}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions/suggestion-4", nil)
+	w := httptest.NewRecorder()
+	handler.HandleGet(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp menuSuggestionResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "", resp.Recipe) // 保存失敗のためレシピなしで返る
+}
+
+// --- HandleAccept 追加テスト ---
+
+func TestHandleAccept_Unauthorized(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/menu/suggestions/suggestion-1/accept", nil)
+	w := httptest.NewRecorder()
+	handler.HandleAccept(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestHandleAccept_InvalidPath(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggestions//accept", nil)
+	w := httptest.NewRecorder()
+	handler.HandleAccept(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleAccept_InternalError(t *testing.T) {
+	menuRepo := &MockMenuSuggestionRepository{
+		AcceptFunc: func(ctx context.Context, userID string, id string) (*repository.AcceptMenuSuggestionResult, error) {
+			return nil, fmt.Errorf("Firestoreトランザクションエラー")
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggestions/suggestion-1/accept", nil)
+	w := httptest.NewRecorder()
+	handler.HandleAccept(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// --- HandleDismiss 追加テスト ---
+
+func TestHandleDismiss_InvalidPath(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggestions//dismiss", nil)
+	w := httptest.NewRecorder()
+	handler.HandleDismiss(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestHandleDismiss_InternalError(t *testing.T) {
+	menuRepo := &MockMenuSuggestionRepository{
+		DismissFunc: func(ctx context.Context, userID string, id string) error {
+			return fmt.Errorf("Firestoreエラー")
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodPost, "/api/menu/suggestions/suggestion-1/dismiss", nil)
+	w := httptest.NewRecorder()
+	handler.HandleDismiss(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// --- HandleList 追加テスト ---
+
+func TestHandleList_InternalError(t *testing.T) {
+	menuRepo := &MockMenuSuggestionRepository{
+		ListFunc: func(ctx context.Context, userID string, status string, limit int) ([]repository.MenuSuggestion, error) {
+			return nil, fmt.Errorf("Firestore接続エラー")
+		},
+	}
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions", nil)
+	w := httptest.NewRecorder()
+	handler.HandleList(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+func TestHandleList_InvalidLimit(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	tests := []struct {
+		name  string
+		limit string
+	}{
+		{"文字列", "abc"},
+		{"ゼロ", "0"},
+		{"負の数", "-1"},
+		{"上限超え", "51"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions?limit="+tt.limit, nil)
+			w := httptest.NewRecorder()
+			handler.HandleList(w, req)
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	}
+}
