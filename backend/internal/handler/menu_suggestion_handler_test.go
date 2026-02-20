@@ -516,6 +516,42 @@ func TestHandleSuggest_Success(t *testing.T) {
 	assert.Equal(t, "チキン炒め", resp.Suggestions[0].Title)
 }
 
+func TestHandleSuggest_CountNormalization(t *testing.T) {
+	// count=0以下→3、count=6以上→5 に正規化されることを確認
+	// Geminiプロンプトに "%d件提案" として正規化後の件数が含まれる
+	tests := []struct {
+		name          string
+		count         int
+		expectedCount string
+	}{
+		{"count=0はデフォルト3に正規化", 0, "3件"},
+		{"count負値はデフォルト3に正規化", -1, "3件"},
+		{"count=6は上限5に正規化", 6, "5件"},
+		{"count=5は正常値のまま", 5, "5件"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			capturedPrompt := ""
+			mockHTTPClient := &gemini.MockGeminiHTTPClient{
+				ExecuteFunc: func(ctx context.Context, prompt string, schema *gemini.Schema) (*gemini.Response, error) {
+					capturedPrompt = prompt
+					return &gemini.Response{Response: `{"suggestions": []}`}, nil
+				},
+			}
+			handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+			body := map[string]interface{}{"mealType": "lunch", "count": tt.count}
+			req := newMenuRequest(t, http.MethodPost, "/api/menu/suggest", body)
+			w := httptest.NewRecorder()
+			handler.HandleSuggest(w, req)
+
+			assert.Equal(t, http.StatusCreated, w.Code)
+			assert.Contains(t, capturedPrompt, tt.expectedCount)
+		})
+	}
+}
+
 // --- ユーティリティ関数 ---
 
 func TestExtractMenuSuggestionID(t *testing.T) {
@@ -588,50 +624,32 @@ func TestValidateSuggestionStatus(t *testing.T) {
 
 // --- NewMenuSuggestionHandler パニックテスト ---
 
-func TestNewMenuSuggestionHandler_NilMenuRepo_Panics(t *testing.T) {
+func TestNewMenuSuggestionHandler_NilDependency_Panics(t *testing.T) {
 	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
 	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(nil, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
-	})
-}
+	menuRepo := &MockMenuSuggestionRepository{}
+	ingRepo := &MockIngredientRepository{}
+	nutRepo := &MockNutritionGoalRepository{}
+	weightRepo := &MockWeightRecordRepository{}
+	anaRepo := &MockAnalysisRepository{}
 
-func TestNewMenuSuggestionHandler_NilIngredientRepo_Panics(t *testing.T) {
-	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
-	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, nil, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
-	})
-}
+	tests := []struct {
+		name  string
+		build func()
+	}{
+		{"nilMenuRepo", func() { NewMenuSuggestionHandler(nil, ingRepo, nutRepo, weightRepo, anaRepo, suggester) }},
+		{"nilIngredientRepo", func() { NewMenuSuggestionHandler(menuRepo, nil, nutRepo, weightRepo, anaRepo, suggester) }},
+		{"nilNutritionGoalRepo", func() { NewMenuSuggestionHandler(menuRepo, ingRepo, nil, weightRepo, anaRepo, suggester) }},
+		{"nilWeightRecordRepo", func() { NewMenuSuggestionHandler(menuRepo, ingRepo, nutRepo, nil, anaRepo, suggester) }},
+		{"nilAnalysisRepo", func() { NewMenuSuggestionHandler(menuRepo, ingRepo, nutRepo, weightRepo, nil, suggester) }},
+		{"nilSuggester", func() { NewMenuSuggestionHandler(menuRepo, ingRepo, nutRepo, weightRepo, anaRepo, nil) }},
+	}
 
-func TestNewMenuSuggestionHandler_NilNutritionGoalRepo_Panics(t *testing.T) {
-	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
-	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, nil, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, suggester)
-	})
-}
-
-func TestNewMenuSuggestionHandler_NilWeightRecordRepo_Panics(t *testing.T) {
-	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
-	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, nil, &MockAnalysisRepository{}, suggester)
-	})
-}
-
-func TestNewMenuSuggestionHandler_NilAnalysisRepo_Panics(t *testing.T) {
-	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
-	suggester := gemini.NewMenuSuggesterWithHTTPClient(mockHTTPClient)
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, nil, suggester)
-	})
-}
-
-func TestNewMenuSuggestionHandler_NilSuggester_Panics(t *testing.T) {
-	assert.Panics(t, func() {
-		NewMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, nil)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Panics(t, tt.build)
+		})
+	}
 }
 
 // --- HandleSuggest 追加テスト ---
