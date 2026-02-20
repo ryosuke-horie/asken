@@ -27,10 +27,11 @@ const (
 type InputType string
 
 const (
-	InputTypeImage   InputType = "image"
-	InputTypeText    InputType = "text"
-	InputTypeMylist  InputType = "mylist"
-	InputTypeSkipped InputType = "skipped"
+	InputTypeImage      InputType = "image"
+	InputTypeText       InputType = "text"
+	InputTypeMylist     InputType = "mylist"
+	InputTypeSkipped    InputType = "skipped"
+	InputTypeSuggestion InputType = "suggestion"
 )
 
 // AnalysisRequest は分析リクエストを表す構造体

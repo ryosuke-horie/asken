@@ -52,19 +52,20 @@ func main() {
 }
 
 type handlers struct {
-	health        *handler.HealthHandler
-	analyze       *handler.AnalyzeHandler
-	status        *handler.StatusHandler
-	history       *handler.HistoryHandler
-	historyDelete *handler.HistoryDeleteHandler
-	image         *handler.ImageHandler
-	dailyMeals    *handler.DailyMealsHandler
-	skipMeal      *handler.SkipMealHandler
-	weightRecord  *handler.WeightRecordHandler
-	weightGoal    *handler.WeightGoalHandler
-	nutritionGoal *handler.NutritionGoalHandler
-	myMenu        *handler.MyMenuHandler
-	ingredient    *handler.IngredientHandler
+	health         *handler.HealthHandler
+	analyze        *handler.AnalyzeHandler
+	status         *handler.StatusHandler
+	history        *handler.HistoryHandler
+	historyDelete  *handler.HistoryDeleteHandler
+	image          *handler.ImageHandler
+	dailyMeals     *handler.DailyMealsHandler
+	skipMeal       *handler.SkipMealHandler
+	weightRecord   *handler.WeightRecordHandler
+	weightGoal     *handler.WeightGoalHandler
+	nutritionGoal  *handler.NutritionGoalHandler
+	myMenu         *handler.MyMenuHandler
+	ingredient     *handler.IngredientHandler
+	menuSuggestion *handler.MenuSuggestionHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -82,6 +83,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupNutritionRoutes(mux, h, authMiddleware, rl)
 	setupMyMenuRoutes(mux, h, authMiddleware, rl)
 	setupIngredientRoutes(mux, h, authMiddleware, rl)
+	setupMenuSuggestionRoutes(mux, h, authMiddleware, rl)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -236,6 +238,58 @@ func setupMyMenuRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware
 	mux.Handle("/api/my-menu/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(myMenuDetailRouteHandler))))
 }
 
+func setupMenuSuggestionRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	suggestRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.menuSuggestion.HandleSuggest(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/menu/suggest", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(suggestRouteHandler))))
+
+	suggestionsListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.menuSuggestion.HandleList(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/menu/suggestions", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(suggestionsListRouteHandler))))
+
+	suggestionsDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		normalizedPath := strings.TrimSuffix(r.URL.Path, "/")
+
+		if strings.HasSuffix(normalizedPath, "/accept") {
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			h.menuSuggestion.HandleAccept(w, r)
+			return
+		}
+
+		if strings.HasSuffix(normalizedPath, "/dismiss") {
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			h.menuSuggestion.HandleDismiss(w, r)
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			h.menuSuggestion.HandleGet(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/menu/suggestions/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(suggestionsDetailRouteHandler))))
+}
+
 func setupIngredientRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	ingredientListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -264,13 +318,14 @@ func setupIngredientRoutes(mux *http.ServeMux, h handlers, authMiddleware middle
 
 // repositories はリポジトリ群をまとめた構造体
 type repositories struct {
-	analysis      repository.AnalysisRepository
-	storage       repository.StorageRepository
-	weightRecord  repository.WeightRecordRepository
-	weightGoal    repository.WeightGoalRepository
-	nutritionGoal repository.NutritionGoalRepository
-	myMenu        repository.MyMenuRepository
-	ingredient    repository.IngredientRepository
+	analysis       repository.AnalysisRepository
+	storage        repository.StorageRepository
+	weightRecord   repository.WeightRecordRepository
+	weightGoal     repository.WeightGoalRepository
+	nutritionGoal  repository.NutritionGoalRepository
+	myMenu         repository.MyMenuRepository
+	ingredient     repository.IngredientRepository
+	menuSuggestion repository.MenuSuggestionRepository
 }
 
 func initRepositories(firestoreClient *firestore.Client, storageRepo repository.StorageRepository) repositories {
@@ -299,15 +354,30 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		log.Fatalf("Failed to initialize IngredientRepository: %v", err)
 	}
 
-	return repositories{
-		analysis:      analysisRepo,
-		storage:       storageRepo,
-		weightRecord:  weightRecordRepo,
-		weightGoal:    weightGoalRepo,
-		nutritionGoal: nutritionGoalRepo,
-		myMenu:        myMenuRepo,
-		ingredient:    ingredientRepo,
+	menuSuggestionRepo, err := repository.NewMenuSuggestionRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize MenuSuggestionRepository: %v", err)
 	}
+
+	return repositories{
+		analysis:       analysisRepo,
+		storage:        storageRepo,
+		weightRecord:   weightRecordRepo,
+		weightGoal:     weightGoalRepo,
+		nutritionGoal:  nutritionGoalRepo,
+		myMenu:         myMenuRepo,
+		ingredient:     ingredientRepo,
+		menuSuggestion: menuSuggestionRepo,
+	}
+}
+
+func initMenuSuggester() *gemini.MenuSuggester {
+	suggester, err := gemini.NewMenuSuggester(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize MenuSuggester: %v", err)
+	}
+	log.Println("Gemini MenuSuggester initialized")
+	return suggester
 }
 
 func initGeminiClient() *RealGeminiClient {
@@ -384,6 +454,7 @@ func run() error {
 
 	repos := initRepositories(firestoreClient, storageRepo)
 	geminiClient := initGeminiClient()
+	menuSuggester := initMenuSuggester()
 	foodService := service.NewFoodService(geminiClient, storageRepo)
 	authMiddleware := initAuthMiddleware(ctx, firebaseCredentials)
 
@@ -402,6 +473,14 @@ func run() error {
 		nutritionGoal: handler.NewNutritionGoalHandler(repos.nutritionGoal, repos.weightGoal),
 		myMenu:        handler.NewMyMenuHandler(repos.myMenu, repos.analysis),
 		ingredient:    handler.NewIngredientHandler(repos.ingredient),
+		menuSuggestion: handler.NewMenuSuggestionHandler(
+			repos.menuSuggestion,
+			repos.ingredient,
+			repos.nutritionGoal,
+			repos.weightRecord,
+			repos.analysis,
+			menuSuggester,
+		),
 	}
 
 	// ワーカーの初期化
