@@ -59,7 +59,7 @@ func (m *MockMenuSuggestionRepository) Accept(ctx context.Context, userID string
 	if m.AcceptFunc != nil {
 		return m.AcceptFunc(ctx, userID, id)
 	}
-	return nil, nil
+	return &repository.AcceptMenuSuggestionResult{DeductedIngredients: []repository.DeductedIngredient{}}, nil
 }
 
 func (m *MockMenuSuggestionRepository) Dismiss(ctx context.Context, userID string, id string) error {
@@ -133,7 +133,7 @@ func TestHandleList_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleList(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp suggestionsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	require.Len(t, resp.Suggestions, 1)
@@ -233,7 +233,7 @@ func TestHandleGet_Success_WithExistingRecipe(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleGet(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp menuSuggestionResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "suggestion-1", resp.ID)
@@ -266,7 +266,7 @@ func TestHandleGet_Success_RecipeLazyGeneration(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleGet(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp menuSuggestionResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "生成されたレシピ内容", resp.Recipe)
@@ -309,7 +309,7 @@ func TestHandleAccept_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleAccept(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp acceptResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "analysis-123", resp.AnalysisRequestID)
@@ -417,6 +417,17 @@ func TestHandleDismiss_AlreadyProcessed(t *testing.T) {
 	assert.Equal(t, http.StatusConflict, w.Code)
 }
 
+func TestHandleDismiss_MethodNotAllowed(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions/suggestion-1/dismiss", nil)
+	w := httptest.NewRecorder()
+	handler.HandleDismiss(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestHandleDismiss_Unauthorized(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{}
 	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
@@ -430,6 +441,19 @@ func TestHandleDismiss_Unauthorized(t *testing.T) {
 }
 
 // --- HandleSuggest ---
+
+func TestHandleSuggest_MalformedBody(t *testing.T) {
+	mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+	handler := newTestMenuSuggestionHandler(&MockMenuSuggestionRepository{}, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/menu/suggest", bytes.NewBufferString(`{invalid json`))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), "test-user-id")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	handler.HandleSuggest(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
 
 func TestHandleSuggest_InvalidMealType(t *testing.T) {
 	menuRepo := &MockMenuSuggestionRepository{}
@@ -509,7 +533,7 @@ func TestHandleSuggest_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleSuggest(w, req)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	require.Equal(t, http.StatusCreated, w.Code)
 	var resp suggestionsListResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	require.Len(t, resp.Suggestions, 1)
@@ -942,7 +966,7 @@ func TestHandleGet_RecipeGenerationFails_ReturnsOK(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleGet(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp menuSuggestionResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 	assert.Equal(t, "", resp.Recipe) // レシピなしで返る
@@ -973,10 +997,10 @@ func TestHandleGet_UpdateRecipeFails_ReturnsOK(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.HandleGet(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, http.StatusOK, w.Code)
 	var resp menuSuggestionResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "", resp.Recipe) // 保存失敗のためレシピなしで返る
+	assert.Equal(t, "", resp.Recipe) // Geminiでのレシピ生成は成功したがFirestore保存が失敗したため空文字で返る
 }
 
 // --- HandleAccept 追加テスト ---
