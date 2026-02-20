@@ -95,7 +95,5 @@ enum MicronutrientKey: String, CaseIterable, Identifiable {
     ]
 
     /// 全栄養素のデフォルト目標値の辞書
-    static var defaultTargets: [String: Double] {
-        allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
-    }
+    static let defaultTargets: [String: Double] = allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
 }

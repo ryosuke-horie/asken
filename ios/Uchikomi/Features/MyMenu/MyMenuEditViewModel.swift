@@ -311,6 +311,7 @@ final class MyMenuEditViewModel {
 
         // 分析結果をfoodItemsに反映
         // 分析後は、このfoodItemsをベースに保存される
+        // micronutrientsがnilの場合は空辞書にフォールバックし、UIでセクションが非表示になる（正常動作）
         foodItems = result.result.foods.map { nutritionInfo in
             FoodEditItem(
                 name: nutritionInfo.name,
