@@ -172,6 +172,38 @@ func TestHandleList_InvalidStatus(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestHandleList_AcceptedAndDismissedStatusPassThrough(t *testing.T) {
+	// accepted/dismissed ステータスがリポジトリにそのまま渡ることを確認
+	tests := []struct {
+		queryStatus    string
+		expectedStatus string
+	}{
+		{"accepted", "accepted"},
+		{"dismissed", "dismissed"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.queryStatus, func(t *testing.T) {
+			capturedStatus := ""
+			menuRepo := &MockMenuSuggestionRepository{
+				ListFunc: func(ctx context.Context, userID string, status string, limit int) ([]repository.MenuSuggestion, error) {
+					capturedStatus = status
+					return []repository.MenuSuggestion{}, nil
+				},
+			}
+			mockHTTPClient := &gemini.MockGeminiHTTPClient{}
+			handler := newTestMenuSuggestionHandler(menuRepo, &MockIngredientRepository{}, &MockNutritionGoalRepository{}, &MockWeightRecordRepository{}, &MockAnalysisRepository{}, mockHTTPClient)
+
+			req := newMenuRequest(t, http.MethodGet, "/api/menu/suggestions?status="+tt.queryStatus, nil)
+			w := httptest.NewRecorder()
+			handler.HandleList(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Equal(t, tt.expectedStatus, capturedStatus)
+		})
+	}
+}
+
 func TestHandleList_AllStatus(t *testing.T) {
 	capturedStatus := "sentinel"
 	menuRepo := &MockMenuSuggestionRepository{

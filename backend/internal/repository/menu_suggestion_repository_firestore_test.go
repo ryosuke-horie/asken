@@ -282,6 +282,11 @@ func TestMenuSuggestionRepository_UpdateRecipe(t *testing.T) {
 		err := repo.UpdateRecipe(ctx, "", created.ID, "レシピ")
 		require.Error(t, err)
 	})
+
+	t.Run("IDが空の場合エラー", func(t *testing.T) {
+		err := repo.UpdateRecipe(ctx, userID, "", "レシピ")
+		require.Error(t, err)
+	})
 }
 
 // --- Dismiss ---
@@ -328,6 +333,11 @@ func TestMenuSuggestionRepository_Dismiss(t *testing.T) {
 		err = repo.Dismiss(ctx, userID, created.ID)
 		require.Error(t, err)
 		assert.ErrorIs(t, err, ErrAlreadyProcessed)
+	})
+
+	t.Run("IDが空の場合エラー", func(t *testing.T) {
+		err := repo.Dismiss(ctx, userID, "")
+		require.Error(t, err)
 	})
 
 	t.Run("acceptedは却下できない（ErrAlreadyProcessed）", func(t *testing.T) {
@@ -530,6 +540,11 @@ func TestMenuSuggestionRepository_Accept(t *testing.T) {
 
 	t.Run("userIDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.Accept(ctx, "", "some-id")
+		require.Error(t, err)
+	})
+
+	t.Run("IDが空の場合エラー", func(t *testing.T) {
+		_, err := repo.Accept(ctx, userID, "")
 		require.Error(t, err)
 	})
 }
