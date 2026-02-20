@@ -93,4 +93,9 @@ enum MicronutrientKey: String, CaseIterable, Identifiable {
         .vitaminAUg, .vitaminB1Mg, .vitaminB2Mg, .vitaminB6Mg,
         .vitaminB12Ug, .vitaminCMg, .vitaminDUg, .vitaminEMg,
     ]
+
+    /// 全栄養素のデフォルト目標値の辞書
+    static var defaultTargets: [String: Double] {
+        allCases.reduce(into: [:]) { $0[$1.rawValue] = $1.defaultTarget }
+    }
 }
