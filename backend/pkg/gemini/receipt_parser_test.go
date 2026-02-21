@@ -17,6 +17,19 @@ func TestNewReceiptParser_MissingAPIKey(t *testing.T) {
 	assert.Contains(t, err.Error(), "GEMINI_API_KEY")
 }
 
+func TestNewReceiptParser_InvalidTimeout(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "test-api-key")
+	_, err := NewReceiptParser(0)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create receipt parser")
+}
+
+func TestNewReceiptParserWithHTTPClient_NilPanic(t *testing.T) {
+	assert.Panics(t, func() {
+		NewReceiptParserWithHTTPClient(nil)
+	})
+}
+
 func TestReceiptParser_ParseReceiptImage_Success(t *testing.T) {
 	mockResponse := `[
 		{"name":"鶏むね肉","category":"meat","quantity_value":300,"quantity_unit":"g"},

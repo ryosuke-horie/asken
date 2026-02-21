@@ -83,9 +83,17 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 		return nil, fmt.Errorf("食材リストのパースエラー: %w", err)
 	}
 
-	ingredients := make([]ReceiptIngredient, len(items))
-	for i, item := range items {
-		ingredients[i] = item.toReceiptIngredient()
+	ingredients := make([]ReceiptIngredient, 0, len(items))
+	for _, item := range items {
+		if item.Name == "" {
+			log.Printf("ReceiptParser: 警告 - name が空の食材をスキップします")
+			continue
+		}
+		if item.QuantityValue < 0 {
+			log.Printf("ReceiptParser: 警告 - quantity_value が負値の食材をスキップします: name=%s, value=%v", item.Name, item.QuantityValue)
+			continue
+		}
+		ingredients = append(ingredients, item.toReceiptIngredient())
 	}
 
 	if len(ingredients) == 0 {

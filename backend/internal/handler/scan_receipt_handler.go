@@ -59,10 +59,11 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// multipart/form-data パース（10MB制限）
+	// リクエスト全体を10MBに制限（超過はParseMultipartFormで検出される）
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		log.Printf("ScanReceiptHandler: multipartパースエラー: userID=%s, error=%v", userID, err)
-		http.Error(w, "ファイルのパースに失敗しました", http.StatusBadRequest)
+		log.Printf("ScanReceiptHandler: multipartパースエラー（サイズ超過の可能性）: userID=%s, error=%v", userID, err)
+		http.Error(w, "ファイルのパースに失敗しました（最大10MB）", http.StatusBadRequest)
 		return
 	}
 
@@ -139,8 +140,11 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(data); err != nil {
-		log.Printf("ScanReceiptHandler: レスポンス書き込みエラー: userID=%s, error=%v", userID, err)
+		// この時点でヘッダーは送信済みのため、エラーレスポンスへの変更は不可能
+		// クライアントには不完全なJSONが届く可能性があり、クライアント側で再試行が必要
+		log.Printf("ScanReceiptHandler: レスポンス書き込みエラー（クライアントに不完全なデータが送信された可能性あり）: userID=%s, error=%v", userID, err)
 	}
 }
 
