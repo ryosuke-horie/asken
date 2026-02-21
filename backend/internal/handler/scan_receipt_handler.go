@@ -15,6 +15,9 @@ import (
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
+// maxReceiptImageSize はレシート画像の最大サイズ（10MB）
+const maxReceiptImageSize = 10 << 20
+
 // ReceiptParserClient はレシート解析クライアントのインターフェース
 type ReceiptParserClient interface {
 	ParseReceiptImage(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error)
@@ -105,7 +108,7 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 // 返値: imageData, mimeType, ok（falseのとき既にエラーレスポンス送信済み）
 func parseAndValidateImageUpload(w http.ResponseWriter, r *http.Request, userID string) ([]byte, string, bool) {
 	// リクエスト全体を10MBに制限（超過はParseMultipartFormで検出される）
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	r.Body = http.MaxBytesReader(w, r.Body, maxReceiptImageSize)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) {
@@ -128,13 +131,6 @@ func parseAndValidateImageUpload(w http.ResponseWriter, r *http.Request, userID 
 
 	log.Printf("ScanReceiptHandler: ファイル受信: name=%s, size=%d bytes, userID=%s", header.Filename, header.Size, userID)
 
-	// ファイル名が空の場合はエラー
-	if header.Filename == "" {
-		log.Printf("ScanReceiptHandler: ファイル名が空: userID=%s", userID)
-		http.Error(w, "ファイル名が指定されていません", http.StatusBadRequest)
-		return nil, "", false
-	}
-
 	// 拡張子チェック（JPEG, PNGのみ。HEICはGemini API非対応）
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	validExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
@@ -145,13 +141,13 @@ func parseAndValidateImageUpload(w http.ResponseWriter, r *http.Request, userID 
 	}
 
 	// 画像データを全て読み込む（10MB+1バイトで上限を検知）
-	imageData, err := io.ReadAll(io.LimitReader(file, 10<<20+1))
+	imageData, err := io.ReadAll(io.LimitReader(file, maxReceiptImageSize+1))
 	if err != nil {
 		log.Printf("ScanReceiptHandler: 画像読み込みエラー: userID=%s, error=%v", userID, err)
 		http.Error(w, "ファイルの読み込みに失敗しました", http.StatusInternalServerError)
 		return nil, "", false
 	}
-	if int64(len(imageData)) > 10<<20 {
+	if int64(len(imageData)) > maxReceiptImageSize {
 		log.Printf("ScanReceiptHandler: ファイルサイズ超過: userID=%s, filename=%s, size=%d bytes", userID, header.Filename, len(imageData))
 		http.Error(w, "ファイルサイズが大きすぎます（最大10MB）", http.StatusBadRequest)
 		return nil, "", false
@@ -171,6 +167,8 @@ func parseAndValidateImageUpload(w http.ResponseWriter, r *http.Request, userID 
 // handleReceiptParseError はレシート解析エラーを種別に応じて処理する
 func handleReceiptParseError(w http.ResponseWriter, userID string, err error) {
 	if errors.Is(err, context.Canceled) {
+		// クライアント切断済みのためレスポンス書き込みは不要
+		// （ResponseWriter への書き込みはクライアントに届かない）
 		log.Printf("ScanReceiptHandler: クライアント切断によるキャンセル: userID=%s", userID)
 		return
 	}

@@ -259,6 +259,39 @@ func TestScanReceiptHandler_Handle_ExtensionMagicByteMismatch(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "ファイルの形式が正しくありません")
 }
 
+func TestScanReceiptHandler_Handle_ContextCanceled(t *testing.T) {
+	mock := &MockReceiptParserClient{
+		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
+			return nil, fmt.Errorf("operation aborted: %w", context.Canceled)
+		},
+	}
+
+	h := NewScanReceiptHandler(mock)
+	req := createReceiptMultipartRequest(t, createTestJPEGData(), "receipt.jpg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	// クライアント切断時はレスポンスボディを書かずに終了する（HTTPデフォルトの200）
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Body.String())
+}
+
+func TestScanReceiptHandler_Handle_ContextDeadlineExceeded(t *testing.T) {
+	mock := &MockReceiptParserClient{
+		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
+			return nil, fmt.Errorf("timeout waiting for response: %w", context.DeadlineExceeded)
+		},
+	}
+
+	h := NewScanReceiptHandler(mock)
+	req := createReceiptMultipartRequest(t, createTestJPEGData(), "receipt.jpg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	assert.Contains(t, w.Body.String(), "タイムアウト")
+}
+
 func TestScanReceiptHandler_Handle_GeminiError(t *testing.T) {
 	mock := &MockReceiptParserClient{
 		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
