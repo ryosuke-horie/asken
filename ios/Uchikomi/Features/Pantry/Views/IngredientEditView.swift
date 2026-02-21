@@ -97,6 +97,7 @@ struct IngredientEditView: View {
 
 // MARK: - IngredientEditViewModel
 
+@MainActor
 @Observable
 final class IngredientEditViewModel {
     var name: String

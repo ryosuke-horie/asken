@@ -226,8 +226,9 @@ struct APIEndpoint {
     // MARK: - Ingredients Endpoints
 
     static func ingredientsList(category: String? = nil) -> APIEndpoint {
-        let path = if let category {
-            "ingredients?category=\(category)"
+        let path = if let category,
+                      let encoded = category.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            "ingredients?category=\(encoded)"
         } else {
             "ingredients"
         }
