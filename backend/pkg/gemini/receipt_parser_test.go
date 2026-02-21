@@ -125,6 +125,84 @@ func TestReceiptParser_ParseReceiptImage_CodeBlockResponse(t *testing.T) {
 	assert.Equal(t, "個", ingredients[0].Unit)
 }
 
+func TestReceiptParser_ParseReceiptImage_SkipsEmptyNameItems(t *testing.T) {
+	mockResponse := `[
+		{"name":"","category":"meat","quantity_value":300,"quantity_unit":"g"},
+		{"name":"牛乳","category":"dairy","quantity_value":1,"quantity_unit":"パック"}
+	]`
+
+	mockClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
+			return &Response{Response: mockResponse}, nil
+		},
+	}
+
+	parser := NewReceiptParserWithHTTPClient(mockClient)
+	ingredients, err := parser.ParseReceiptImage(context.Background(), []byte("test-image"), "image/jpeg")
+
+	require.NoError(t, err)
+	require.Len(t, ingredients, 1)
+	assert.Equal(t, "牛乳", ingredients[0].Name)
+}
+
+func TestReceiptParser_ParseReceiptImage_SkipsNegativeQuantityItems(t *testing.T) {
+	mockResponse := `[
+		{"name":"鶏むね肉","category":"meat","quantity_value":-1,"quantity_unit":"g"},
+		{"name":"牛乳","category":"dairy","quantity_value":1,"quantity_unit":"パック"}
+	]`
+
+	mockClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
+			return &Response{Response: mockResponse}, nil
+		},
+	}
+
+	parser := NewReceiptParserWithHTTPClient(mockClient)
+	ingredients, err := parser.ParseReceiptImage(context.Background(), []byte("test-image"), "image/jpeg")
+
+	require.NoError(t, err)
+	require.Len(t, ingredients, 1)
+	assert.Equal(t, "牛乳", ingredients[0].Name)
+}
+
+func TestReceiptParser_ParseReceiptImage_CorrectUnknownCategory(t *testing.T) {
+	mockResponse := `[
+		{"name":"鶏むね肉","category":"unknown_category","quantity_value":300,"quantity_unit":"g"}
+	]`
+
+	mockClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
+			return &Response{Response: mockResponse}, nil
+		},
+	}
+
+	parser := NewReceiptParserWithHTTPClient(mockClient)
+	ingredients, err := parser.ParseReceiptImage(context.Background(), []byte("test-image"), "image/jpeg")
+
+	require.NoError(t, err)
+	require.Len(t, ingredients, 1)
+	assert.Equal(t, "other", ingredients[0].Category)
+}
+
+func TestReceiptParser_ParseReceiptImage_CorrectUnknownUnit(t *testing.T) {
+	mockResponse := `[
+		{"name":"鶏むね肉","category":"meat","quantity_value":300,"quantity_unit":"不明な単位"}
+	]`
+
+	mockClient := &MockGeminiHTTPClient{
+		ExecuteWithImageFunc: func(ctx context.Context, prompt string, imageData []byte, mimeType string, schema *Schema) (*Response, error) {
+			return &Response{Response: mockResponse}, nil
+		},
+	}
+
+	parser := NewReceiptParserWithHTTPClient(mockClient)
+	ingredients, err := parser.ParseReceiptImage(context.Background(), []byte("test-image"), "image/jpeg")
+
+	require.NoError(t, err)
+	require.Len(t, ingredients, 1)
+	assert.Equal(t, "個", ingredients[0].Unit)
+}
+
 func TestReceiptIngredientSchema(t *testing.T) {
 	schema := ReceiptIngredientSchema()
 
