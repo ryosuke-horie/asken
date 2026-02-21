@@ -32,7 +32,7 @@ struct FoodItemEditRow: View {
             HStack(spacing: 8) {
                 TextField("数値", text: $item.quantityValue)
                     .textFieldStyle(.roundedBorder)
-                    .keyboardType(item.quantityUnit?.inputType == .decimal ? .decimalPad : .numberPad)
+                    .keyboardType(.decimalPad)
                     .onChange(of: item.quantityValue) {
                         item.updateQuantityString()
                         item.recalculateNutrition()

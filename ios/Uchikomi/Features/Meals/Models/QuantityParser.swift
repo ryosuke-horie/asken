@@ -23,8 +23,14 @@ enum QuantityParser {
 
     private static let japanesePattern: NSRegularExpression = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
-        // swiftlint:disable:next force_try
-        return try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*("# + units + ")$")
+        let pattern = #"^(\d+(?:\.\d+)?)\s*("# + units + ")$"
+        do {
+            return try NSRegularExpression(pattern: pattern)
+        } catch {
+            preconditionFailure(
+                "japanesePattern のコンパイルに失敗しました。MeasurementUnit に無効な rawValue が追加された可能性があります。エラー: \(error)"
+            )
+        }
     }()
 
     static func parse(_ text: String) -> ParsedQuantity? {
