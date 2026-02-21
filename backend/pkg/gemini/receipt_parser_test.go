@@ -4,10 +4,18 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewReceiptParser_MissingAPIKey(t *testing.T) {
+	t.Setenv("GEMINI_API_KEY", "")
+	_, err := NewReceiptParser(30 * time.Second)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "GEMINI_API_KEY")
+}
 
 func TestReceiptParser_ParseReceiptImage_Success(t *testing.T) {
 	mockResponse := `[

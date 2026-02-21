@@ -84,6 +84,7 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		".png":  true,
 	}
 	if !validExtensions[ext] {
+		log.Printf("ScanReceiptHandler: 非対応拡張子: userID=%s, filename=%s, ext=%s", userID, header.Filename, ext)
 		http.Error(w, "サポートされていないファイル形式です（JPEG, PNGのみ）", http.StatusBadRequest)
 		return
 	}

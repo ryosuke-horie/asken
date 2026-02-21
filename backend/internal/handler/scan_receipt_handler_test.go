@@ -247,6 +247,19 @@ func TestScanReceiptHandler_Handle_JpegExtensionSuccess(t *testing.T) {
 	assert.Equal(t, "卵", resp.Ingredients[0].Name)
 }
 
+func TestScanReceiptHandler_Handle_ExtensionMagicByteMismatch(t *testing.T) {
+	h := NewScanReceiptHandler(&MockReceiptParserClient{})
+
+	// .jpg拡張子だが内容がJPEGでもPNGでもないデータ（拡張子チェックは通過するがMIME判定で失敗）
+	invalidData := make([]byte, 20) // ゼロバイト列（JPEG/PNGマジックバイトなし）
+	req := createReceiptMultipartRequest(t, invalidData, "receipt.jpg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルの形式が正しくありません")
+}
+
 func TestScanReceiptHandler_Handle_GeminiError(t *testing.T) {
 	mock := &MockReceiptParserClient{
 		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
@@ -295,17 +308,7 @@ func TestDetectReceiptImageMimeType(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "マジックバイト不一致 - 拡張子がJPEGでもエラー",
-			data:    make([]byte, 10),
-			wantErr: true,
-		},
-		{
-			name:    "マジックバイト不一致 - 拡張子がPNGでもエラー",
-			data:    make([]byte, 10),
-			wantErr: true,
-		},
-		{
-			name:    "不明な形式",
+			name:    "マジックバイト不一致（ゼロバイト列はJPEGでもPNGでもない）",
 			data:    make([]byte, 10),
 			wantErr: true,
 		},

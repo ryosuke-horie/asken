@@ -1,3 +1,6 @@
+// このファイルはテスト専用モックです。
+// 複数パッケージのテストから参照されるため _test.go にできません。
+// プロダクションコードから MockGeminiHTTPClient を使用しないでください。
 package gemini
 
 import "context"
