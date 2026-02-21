@@ -93,6 +93,7 @@ func TestScanReceiptHandler_Handle_Success(t *testing.T) {
 	h.Handle(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 
 	var resp ScanReceiptResponse
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
@@ -180,6 +181,49 @@ func TestScanReceiptHandler_Handle_UnsupportedFormat(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "JPEG, PNGのみ")
 }
 
+func TestScanReceiptHandler_Handle_FileTooLarge(t *testing.T) {
+	h := NewScanReceiptHandler(&MockReceiptParserClient{})
+
+	// 10MB + 1バイトのデータを作成（JPEGマジックバイト付き）
+	largeData := make([]byte, 10<<20+1)
+	largeData[0] = 0xFF
+	largeData[1] = 0xD8
+	largeData[2] = 0xFF
+
+	req := createReceiptMultipartRequest(t, largeData, "large.jpg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "ファイルサイズが大きすぎます")
+}
+
+func TestScanReceiptHandler_Handle_InvalidMultipartBody(t *testing.T) {
+	h := NewScanReceiptHandler(&MockReceiptParserClient{})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/ingredients/scan-receipt", nil)
+	req.Header.Set("Content-Type", "multipart/form-data; boundary=broken")
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), "test-user")
+	req = req.WithContext(ctx)
+
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestScanReceiptHandler_Handle_InvalidImageData(t *testing.T) {
+	h := NewScanReceiptHandler(&MockReceiptParserClient{})
+
+	// 3バイト未満のデータ（マジックバイト判定不能）
+	req := createReceiptMultipartRequest(t, []byte{0xFF}, "receipt.jpg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "画像データが不正です")
+}
+
 func TestScanReceiptHandler_Handle_GeminiError(t *testing.T) {
 	mock := &MockReceiptParserClient{
 		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
@@ -216,21 +260,21 @@ func TestDetectReceiptImageMimeType(t *testing.T) {
 			expectedMime: "image/png",
 		},
 		{
-			name:         "拡張子フォールバック - JPEG",
-			data:         make([]byte, 10),
-			ext:          ".jpg",
-			expectedMime: "image/jpeg",
-		},
-		{
-			name:         "拡張子フォールバック - PNG",
-			data:         make([]byte, 10),
-			ext:          ".png",
-			expectedMime: "image/png",
-		},
-		{
 			name:    "データ不足",
 			data:    []byte{0xFF},
 			ext:     ".txt",
+			wantErr: true,
+		},
+		{
+			name:    "マジックバイト不一致 - 拡張子がJPEGでもエラー",
+			data:    make([]byte, 10),
+			ext:     ".jpg",
+			wantErr: true,
+		},
+		{
+			name:    "マジックバイト不一致 - 拡張子がPNGでもエラー",
+			data:    make([]byte, 10),
+			ext:     ".png",
 			wantErr: true,
 		},
 		{

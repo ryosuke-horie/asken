@@ -76,12 +76,6 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("ScanReceiptHandler: ファイル受信: name=%s, size=%d bytes, userID=%s", header.Filename, header.Size, userID)
 
-	// ファイルサイズチェック（最大10MB）
-	if header.Size > 10<<20 {
-		http.Error(w, "ファイルサイズが大きすぎます（最大10MB）", http.StatusBadRequest)
-		return
-	}
-
 	// 拡張子チェック（JPEG, PNGのみ。HEICはGemini API非対応）
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	validExtensions := map[string]bool{
@@ -94,17 +88,22 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 画像データを全て読み込む
-	imageData, err := io.ReadAll(file)
+	// 画像データを全て読み込む（10MB+1バイトで上限を検知）
+	imageData, err := io.ReadAll(io.LimitReader(file, 10<<20+1))
 	if err != nil {
 		log.Printf("ScanReceiptHandler: 画像読み込みエラー: userID=%s, error=%v", userID, err)
 		http.Error(w, "ファイルの読み込みに失敗しました", http.StatusInternalServerError)
+		return
+	}
+	if int64(len(imageData)) > 10<<20 {
+		http.Error(w, "ファイルサイズが大きすぎます（最大10MB）", http.StatusBadRequest)
 		return
 	}
 
 	// MIMEタイプをマジックバイトから判定
 	mimeType, err := detectReceiptImageMimeType(imageData, ext)
 	if err != nil {
+		log.Printf("ScanReceiptHandler: MIMEタイプ判定エラー: userID=%s, filename=%s, error=%v", userID, header.Filename, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -143,9 +142,9 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// detectReceiptImageMimeType はレシート画像のMIMEタイプを判定する
-// JPEG と PNG のみサポート
-func detectReceiptImageMimeType(data []byte, ext string) (string, error) {
+// detectReceiptImageMimeType はレシート画像のMIMEタイプをマジックバイトで判定する
+// JPEG と PNG のみサポート。拡張子フォールバックは行わない
+func detectReceiptImageMimeType(data []byte, _ string) (string, error) {
 	if len(data) < 3 {
 		return "", fmt.Errorf("画像データが不正です")
 	}
@@ -157,14 +156,6 @@ func detectReceiptImageMimeType(data []byte, ext string) (string, error) {
 
 	// PNGマジックバイト: 89 50 4E 47
 	if len(data) >= 4 && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
-		return "image/png", nil
-	}
-
-	// 拡張子フォールバック
-	switch ext {
-	case ".jpg", ".jpeg":
-		return "image/jpeg", nil
-	case ".png":
 		return "image/png", nil
 	}
 
