@@ -65,6 +65,7 @@ type handlers struct {
 	nutritionGoal  *handler.NutritionGoalHandler
 	myMenu         *handler.MyMenuHandler
 	ingredient     *handler.IngredientHandler
+	scanReceipt    *handler.ScanReceiptHandler
 	menuSuggestion *handler.MenuSuggestionHandler
 }
 
@@ -303,6 +304,17 @@ func setupIngredientRoutes(mux *http.ServeMux, h handlers, authMiddleware middle
 	}
 	mux.Handle("/api/ingredients", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(ingredientListRouteHandler))))
 
+	// scan-receipt は /api/ingredients/ の前に登録することで優先マッチさせる
+	scanReceiptRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.scanReceipt.Handle(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/ingredients/scan-receipt", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(scanReceiptRouteHandler))))
+
 	ingredientDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
@@ -369,6 +381,15 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		ingredient:     ingredientRepo,
 		menuSuggestion: menuSuggestionRepo,
 	}
+}
+
+func initReceiptParser() *gemini.ReceiptParser {
+	parser, err := gemini.NewReceiptParser(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize ReceiptParser: %v", err)
+	}
+	log.Println("Gemini ReceiptParser initialized")
+	return parser
 }
 
 func initMenuSuggester() *gemini.MenuSuggester {
@@ -455,6 +476,7 @@ func run() error {
 	repos := initRepositories(firestoreClient, storageRepo)
 	geminiClient := initGeminiClient()
 	menuSuggester := initMenuSuggester()
+	receiptParser := initReceiptParser()
 	foodService := service.NewFoodService(geminiClient, storageRepo)
 	authMiddleware := initAuthMiddleware(ctx, firebaseCredentials)
 
@@ -473,6 +495,7 @@ func run() error {
 		nutritionGoal: handler.NewNutritionGoalHandler(repos.nutritionGoal, repos.weightGoal),
 		myMenu:        handler.NewMyMenuHandler(repos.myMenu, repos.analysis),
 		ingredient:    handler.NewIngredientHandler(repos.ingredient),
+		scanReceipt:   handler.NewScanReceiptHandler(receiptParser),
 		menuSuggestion: handler.NewMenuSuggestionHandler(
 			repos.menuSuggestion,
 			repos.ingredient,

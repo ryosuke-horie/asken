@@ -177,6 +177,10 @@ func (m *RateLimitMiddleware) isGeminiEndpoint(r *http.Request) bool {
 		return true
 	}
 
+	if path == "/api/ingredients/scan-receipt" && method == http.MethodPost {
+		return true
+	}
+
 	return false
 }
 
