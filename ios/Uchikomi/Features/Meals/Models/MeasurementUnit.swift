@@ -32,14 +32,4 @@ enum MeasurementUnit: String, CaseIterable, Identifiable, Codable {
     var displayName: String {
         rawValue
     }
-
-    var inputType: QuantityInputType {
-        .decimal
-    }
-}
-
-// MARK: - QuantityInputType
-
-enum QuantityInputType {
-    case decimal
 }
