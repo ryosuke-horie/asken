@@ -26,6 +26,9 @@ type ReceiptParser struct {
 // 環境変数GEMINI_API_KEYからAPIキーを読み取る
 func NewReceiptParser(timeout time.Duration) (*ReceiptParser, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("failed to create receipt parser: 環境変数 GEMINI_API_KEY が設定されていません")
+	}
 	httpClient, err := NewHTTPClient(apiKey, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create receipt parser: %w", err)
