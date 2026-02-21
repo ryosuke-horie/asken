@@ -302,6 +302,9 @@ final class ReceiptScanViewModel {
         } else if wasCancelled {
             errorMessage = saved.isEmpty ? nil : "\(saved.count)件を保存しました（処理が中断されました）"
             phase = .review
+        } else {
+            // 全件成功: 呼び出し元でdismissされるが、stateを一貫させる
+            phase = .review
         }
 
         return saved
