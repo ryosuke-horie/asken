@@ -21,14 +21,15 @@ enum QuantityParser {
         .filter { $0 != .gram && $0 != .milliliter }
         .map(\.rawValue)
 
-    private static let japanesePattern: NSRegularExpression? = {
+    private static let japanesePattern: NSRegularExpression = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
         let pattern = #"^(\d+(?:\.\d+)?)\s*("# + units + ")$"
         do {
             return try NSRegularExpression(pattern: pattern)
         } catch {
-            assertionFailure("japanesePattern のコンパイルに失敗しました。MeasurementUnit に無効な rawValue が追加された可能性があります。エラー: \(error)")
-            return nil
+            preconditionFailure(
+                "japanesePattern のコンパイルに失敗しました。MeasurementUnit に無効な rawValue が追加された可能性があります。エラー: \(error)"
+            )
         }
     }()
 
@@ -50,7 +51,7 @@ enum QuantityParser {
 
         // 日本語単位を試行（キャッシュ済み正規表現を使用）
         let range = NSRange(trimmed.startIndex..., in: trimmed)
-        if let match = japanesePattern?.firstMatch(in: trimmed, range: range) {
+        if let match = japanesePattern.firstMatch(in: trimmed, range: range) {
             guard let valueRange = Range(match.range(at: 1), in: trimmed),
                   let unitRange = Range(match.range(at: 2), in: trimmed),
                   let value = Double(trimmed[valueRange]) else {
