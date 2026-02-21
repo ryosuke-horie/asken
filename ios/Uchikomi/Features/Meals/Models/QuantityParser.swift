@@ -21,10 +21,9 @@ enum QuantityParser {
         .filter { $0 != .gram && $0 != .milliliter }
         .map(\.rawValue)
 
-    private static let japanesePattern: NSRegularExpression = {
+    private static let japanesePattern: NSRegularExpression? = {
         let units = japaneseUnits.map { NSRegularExpression.escapedPattern(for: $0) }.joined(separator: "|")
-        // swiftlint:disable:next force_try
-        return try! NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*("# + units + ")$")
+        return try? NSRegularExpression(pattern: #"^(\d+(?:\.\d+)?)\s*("# + units + ")$")
     }()
 
     static func parse(_ text: String) -> ParsedQuantity? {
@@ -45,7 +44,7 @@ enum QuantityParser {
 
         // 日本語単位を試行（キャッシュ済み正規表現を使用）
         let range = NSRange(trimmed.startIndex..., in: trimmed)
-        if let match = japanesePattern.firstMatch(in: trimmed, range: range) {
+        if let match = japanesePattern?.firstMatch(in: trimmed, range: range) {
             guard let valueRange = Range(match.range(at: 1), in: trimmed),
                   let unitRange = Range(match.range(at: 2), in: trimmed),
                   let value = Double(trimmed[valueRange]) else {
