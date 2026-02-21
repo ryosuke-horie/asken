@@ -38,6 +38,9 @@ func NewReceiptParser(timeout time.Duration) (*ReceiptParser, error) {
 
 // NewReceiptParserWithHTTPClient はHTTPClientインターフェースを受け取るコンストラクタ（テスト用）
 func NewReceiptParserWithHTTPClient(httpClient GeminiHTTPClient) *ReceiptParser {
+	if httpClient == nil {
+		panic("receipt parser: httpClient must not be nil")
+	}
 	return &ReceiptParser{httpClient: httpClient}
 }
 
@@ -86,9 +89,9 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 	}
 
 	if len(ingredients) == 0 {
-		log.Printf("ReceiptParser: 警告 - レシートから食材を検出できませんでした")
+		log.Printf("ReceiptParser: 警告 - レシートから食材を検出できませんでした (imageSize=%d bytes, mimeType=%s)", len(imageData), mimeType)
 	} else {
-		log.Printf("ReceiptParser: レシート解析完了 (%d品を検出)", len(ingredients))
+		log.Printf("ReceiptParser: レシート解析完了 (%d品を検出, imageSize=%d bytes)", len(ingredients), len(imageData))
 	}
 	return ingredients, nil
 }
