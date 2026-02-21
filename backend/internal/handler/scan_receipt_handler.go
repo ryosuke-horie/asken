@@ -96,15 +96,16 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if int64(len(imageData)) > 10<<20 {
+		log.Printf("ScanReceiptHandler: ファイルサイズ超過: userID=%s, filename=%s, size=%d bytes", userID, header.Filename, len(imageData))
 		http.Error(w, "ファイルサイズが大きすぎます（最大10MB）", http.StatusBadRequest)
 		return
 	}
 
 	// MIMEタイプをマジックバイトから判定
-	mimeType, err := detectReceiptImageMimeType(imageData, ext)
+	mimeType, err := detectReceiptImageMimeType(imageData)
 	if err != nil {
-		log.Printf("ScanReceiptHandler: MIMEタイプ判定エラー: userID=%s, filename=%s, error=%v", userID, header.Filename, err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("ScanReceiptHandler: MIMEタイプ判定エラー（拡張子とマジックバイト不一致の可能性）: userID=%s, filename=%s, ext=%s, error=%v", userID, header.Filename, ext, err)
+		http.Error(w, "ファイルの形式が正しくありません（JPEG, PNGのみ）", http.StatusBadRequest)
 		return
 	}
 
@@ -144,7 +145,7 @@ func (h *ScanReceiptHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 // detectReceiptImageMimeType はレシート画像のMIMEタイプをマジックバイトで判定する
 // JPEG と PNG のみサポート。拡張子フォールバックは行わない
-func detectReceiptImageMimeType(data []byte, _ string) (string, error) {
+func detectReceiptImageMimeType(data []byte) (string, error) {
 	if len(data) < 3 {
 		return "", fmt.Errorf("画像データが不正です")
 	}

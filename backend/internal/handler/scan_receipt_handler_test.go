@@ -221,7 +221,30 @@ func TestScanReceiptHandler_Handle_InvalidImageData(t *testing.T) {
 	h.Handle(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "画像データが不正です")
+	assert.Contains(t, w.Body.String(), "ファイルの形式が正しくありません")
+}
+
+func TestScanReceiptHandler_Handle_JpegExtensionSuccess(t *testing.T) {
+	mock := &MockReceiptParserClient{
+		ParseReceiptImageFunc: func(ctx context.Context, imageData []byte, mimeType string) ([]gemini.ReceiptIngredient, error) {
+			assert.Equal(t, "image/jpeg", mimeType)
+			return []gemini.ReceiptIngredient{
+				{Name: "卵", Category: "other", Quantity: 6, Unit: "個"},
+			}, nil
+		},
+	}
+
+	h := NewScanReceiptHandler(mock)
+	req := createReceiptMultipartRequest(t, createTestJPEGData(), "receipt.jpeg", "test-user")
+	w := httptest.NewRecorder()
+	h.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp ScanReceiptResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Len(t, resp.Ingredients, 1)
+	assert.Equal(t, "卵", resp.Ingredients[0].Name)
 }
 
 func TestScanReceiptHandler_Handle_GeminiError(t *testing.T) {
@@ -243,51 +266,54 @@ func TestDetectReceiptImageMimeType(t *testing.T) {
 	tests := []struct {
 		name         string
 		data         []byte
-		ext          string
 		expectedMime string
 		wantErr      bool
 	}{
 		{
 			name:         "JPEGマジックバイト",
 			data:         createTestJPEGData(),
-			ext:          ".jpg",
 			expectedMime: "image/jpeg",
 		},
 		{
 			name:         "PNGマジックバイト",
 			data:         createTestPNGData(),
-			ext:          ".png",
 			expectedMime: "image/png",
 		},
 		{
-			name:    "データ不足",
+			name:         "3バイトJPEGマジックバイト - 最小サイズ",
+			data:         []byte{0xFF, 0xD8, 0xFF},
+			expectedMime: "image/jpeg",
+		},
+		{
+			name:    "2バイト - データ不足",
+			data:    []byte{0xFF, 0xD8},
+			wantErr: true,
+		},
+		{
+			name:    "1バイト - データ不足",
 			data:    []byte{0xFF},
-			ext:     ".txt",
 			wantErr: true,
 		},
 		{
 			name:    "マジックバイト不一致 - 拡張子がJPEGでもエラー",
 			data:    make([]byte, 10),
-			ext:     ".jpg",
 			wantErr: true,
 		},
 		{
 			name:    "マジックバイト不一致 - 拡張子がPNGでもエラー",
 			data:    make([]byte, 10),
-			ext:     ".png",
 			wantErr: true,
 		},
 		{
 			name:    "不明な形式",
 			data:    make([]byte, 10),
-			ext:     ".txt",
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mime, err := detectReceiptImageMimeType(tt.data, tt.ext)
+			mime, err := detectReceiptImageMimeType(tt.data)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
