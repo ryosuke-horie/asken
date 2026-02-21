@@ -58,11 +58,11 @@ type IngredientResponse struct {
 	Category     string  `json:"category"`
 	Quantity     float64 `json:"quantity"`
 	Unit         string  `json:"unit"`
-	PurchaseDate string  `json:"purchaseDate,omitempty"`
-	ExpiryDate   string  `json:"expiryDate,omitempty"`
+	PurchaseDate string  `json:"purchase_date,omitempty"`
+	ExpiryDate   string  `json:"expiry_date,omitempty"`
 	Source       string  `json:"source"`
-	CreatedAt    string  `json:"createdAt"`
-	UpdatedAt    string  `json:"updatedAt"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
 }
 
 // IngredientsListResponse は食材一覧のレスポンス

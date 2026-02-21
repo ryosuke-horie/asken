@@ -1,4 +1,7 @@
+import os
 import SwiftUI
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "IngredientEditViewModel")
 
 // MARK: - IngredientEditView
 
@@ -172,9 +175,11 @@ final class IngredientEditViewModel {
                 return try await repository.createIngredient(request)
             }
         } catch let error as APIError {
+            logger.error("食材保存でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             return nil
         } catch {
+            logger.error("食材保存で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "保存に失敗しました"
             return nil
         }

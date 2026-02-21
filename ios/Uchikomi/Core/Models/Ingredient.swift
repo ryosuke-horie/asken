@@ -95,9 +95,22 @@ struct Ingredient: Identifiable, Codable, Equatable {
         // createdAt/updatedAt: RFC3339形式
         let iso8601 = ISO8601DateFormatter()
         let createdAtStr = try container.decode(String.self, forKey: .createdAt)
-        createdAt = iso8601.date(from: createdAtStr) ?? Date()
+        guard let parsedCreatedAt = iso8601.date(from: createdAtStr) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .createdAt, in: container,
+                debugDescription: "Invalid ISO8601 date: \(createdAtStr)"
+            )
+        }
+        createdAt = parsedCreatedAt
+
         let updatedAtStr = try container.decode(String.self, forKey: .updatedAt)
-        updatedAt = iso8601.date(from: updatedAtStr) ?? Date()
+        guard let parsedUpdatedAt = iso8601.date(from: updatedAtStr) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .updatedAt, in: container,
+                debugDescription: "Invalid ISO8601 date: \(updatedAtStr)"
+            )
+        }
+        updatedAt = parsedUpdatedAt
 
         // purchaseDate/expiryDate: YYYY-MM-DD形式
         let dateOnlyFormatter = DateFormatter()
@@ -111,7 +124,8 @@ struct Ingredient: Identifiable, Codable, Equatable {
             purchaseDate = nil
         }
 
-        if let expiryDateStr = try container.decodeIfPresent(String.self, forKey: .expiryDate), !expiryDateStr.isEmpty {
+        if let expiryDateStr = try container.decodeIfPresent(String.self, forKey: .expiryDate),
+           !expiryDateStr.isEmpty {
             expiryDate = dateOnlyFormatter.date(from: expiryDateStr)
         } else {
             expiryDate = nil
