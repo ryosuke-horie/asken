@@ -222,4 +222,43 @@ struct APIEndpoint {
             requiresAuth: true
         )
     }
+
+    // MARK: - Ingredients Endpoints
+
+    static func ingredientsList(category: String? = nil) -> APIEndpoint {
+        let path = if let category {
+            "ingredients?category=\(category)"
+        } else {
+            "ingredients"
+        }
+        return APIEndpoint(path: path, method: .get, requiresAuth: true)
+    }
+
+    static let createIngredient = APIEndpoint(
+        path: "ingredients",
+        method: .post,
+        requiresAuth: true
+    )
+
+    static func updateIngredient(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "ingredients/\(sanitizedPathID(id))",
+            method: .put,
+            requiresAuth: true
+        )
+    }
+
+    static func deleteIngredient(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "ingredients/\(sanitizedPathID(id))",
+            method: .delete,
+            requiresAuth: true
+        )
+    }
+
+    static let scanReceipt = APIEndpoint(
+        path: "ingredients/scan-receipt",
+        method: .post,
+        requiresAuth: true
+    )
 }
