@@ -225,6 +225,7 @@ final class ReceiptScanViewModel {
         errorMessage = nil
 
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            logger.error("UIImage.jpegData returned nil; 画像が無効な可能性があります")
             errorMessage = "画像の変換に失敗しました"
             phase = .review
             return
@@ -258,10 +259,13 @@ final class ReceiptScanViewModel {
 
         var saved: [Ingredient] = []
         var failedCount = 0
+        var wasCancelled = false
 
         for item in scannedIngredients {
-            // キャンセルされた場合はループを抜ける
-            if Task.isCancelled { break }
+            if Task.isCancelled {
+                wasCancelled = true
+                break
+            }
 
             let request = CreateIngredientRequest(
                 name: item.name,
@@ -277,6 +281,7 @@ final class ReceiptScanViewModel {
                 let ingredient = try await repository.createIngredient(request)
                 saved.append(ingredient)
             } catch is CancellationError {
+                wasCancelled = true
                 break
             } catch let error as APIError {
                 logger.error("食材一括保存でAPIエラー: name=\(item.name), error=\(error.localizedDescription)")
@@ -287,11 +292,15 @@ final class ReceiptScanViewModel {
             }
         }
 
+        // ループ終了後は必ず .saving から抜け出す
         if saved.isEmpty, !scannedIngredients.isEmpty {
             errorMessage = "保存に失敗しました"
             phase = .review
         } else if failedCount > 0 {
             errorMessage = "\(failedCount)件の保存に失敗しました"
+            phase = .review
+        } else if wasCancelled {
+            errorMessage = saved.isEmpty ? nil : "\(saved.count)件を保存しました（処理が中断されました）"
             phase = .review
         }
 
