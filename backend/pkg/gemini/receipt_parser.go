@@ -83,6 +83,15 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 		return nil, fmt.Errorf("食材リストのパースエラー: %w", err)
 	}
 
+	validCategories := map[string]bool{}
+	for _, c := range validIngredientCategories {
+		validCategories[c] = true
+	}
+	validUnits := map[string]bool{}
+	for _, u := range SupportedUnits() {
+		validUnits[u] = true
+	}
+
 	ingredients := make([]ReceiptIngredient, 0, len(items))
 	for _, item := range items {
 		if item.Name == "" {
@@ -92,6 +101,14 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 		if item.QuantityValue < 0 {
 			log.Printf("ReceiptParser: 警告 - quantity_value が負値の食材をスキップします: name=%s, value=%v", item.Name, item.QuantityValue)
 			continue
+		}
+		if !validCategories[item.Category] {
+			log.Printf("ReceiptParser: 警告 - 未知のcategoryをotherに補正します: name=%s, category=%s", item.Name, item.Category)
+			item.Category = "other"
+		}
+		if !validUnits[item.QuantityUnit] {
+			log.Printf("ReceiptParser: 警告 - 未知のunitを「個」に補正します: name=%s, unit=%s", item.Name, item.QuantityUnit)
+			item.QuantityUnit = "個"
 		}
 		ingredients = append(ingredients, item.toReceiptIngredient())
 	}
