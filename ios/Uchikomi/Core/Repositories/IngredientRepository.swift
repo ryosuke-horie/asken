@@ -29,6 +29,16 @@ private struct IngredientsListResponse: Decodable {
     let ingredients: [Ingredient]
 }
 
+// MARK: - ScannedIngredientResponse
+
+private struct ScannedIngredientResponse: Decodable {
+    let name: String
+    let category: IngredientCategory
+    let quantity: Double
+    let unit: String
+    let source: String
+}
+
 // MARK: - ScanReceiptAPIResponse
 
 private struct ScanReceiptAPIResponse: Decodable {

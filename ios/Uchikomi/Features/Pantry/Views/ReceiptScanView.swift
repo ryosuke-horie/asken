@@ -194,6 +194,7 @@ private struct ScannedIngredientRow: View {
 
 // MARK: - ReceiptScanViewModel
 
+@MainActor
 @Observable
 final class ReceiptScanViewModel {
     enum Phase {
@@ -246,8 +247,12 @@ final class ReceiptScanViewModel {
         errorMessage = nil
 
         var saved: [Ingredient] = []
+        var failedCount = 0
 
         for item in scannedIngredients {
+            // キャンセルされた場合はループを抜ける
+            if Task.isCancelled { break }
+
             let request = CreateIngredientRequest(
                 name: item.name,
                 category: item.category.rawValue,
@@ -261,13 +266,18 @@ final class ReceiptScanViewModel {
             do {
                 let ingredient = try await repository.createIngredient(request)
                 saved.append(ingredient)
+            } catch is CancellationError {
+                break
             } catch {
-                // 個別の失敗はスキップして続行
+                failedCount += 1
             }
         }
 
         if saved.isEmpty, !scannedIngredients.isEmpty {
             errorMessage = "保存に失敗しました"
+            phase = .review
+        } else if failedCount > 0 {
+            errorMessage = "\(failedCount)件の保存に失敗しました"
             phase = .review
         }
 

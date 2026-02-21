@@ -118,11 +118,11 @@ struct Ingredient: Identifiable, Codable, Equatable {
         }
     }
 
-    /// 消費期限が3日以内かどうか
+    /// 消費期限が3日以内かどうか（期限切れは含まない）
     var isExpiringWithinThreeDays: Bool {
         guard let expiryDate else { return false }
         let daysUntilExpiry = Calendar.current.dateComponents([.day], from: Date(), to: expiryDate).day ?? 0
-        return daysUntilExpiry <= 3
+        return daysUntilExpiry >= 0 && daysUntilExpiry <= 3
     }
 
     /// 消費期限が切れているかどうか
@@ -155,14 +155,4 @@ struct ScannedIngredient: Identifiable, Equatable {
         self.quantity = quantity
         self.unit = unit
     }
-}
-
-// MARK: - ScannedIngredientResponse
-
-struct ScannedIngredientResponse: Decodable {
-    let name: String
-    let category: IngredientCategory
-    let quantity: Double
-    let unit: String
-    let source: String
 }

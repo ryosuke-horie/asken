@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 @Observable
 final class PantryViewModel {
     var ingredients: [Ingredient] = []
@@ -24,6 +25,7 @@ final class PantryViewModel {
     func loadIngredients() async {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
 
         do {
             ingredients = try await repository.fetchIngredients(category: nil)
@@ -32,8 +34,6 @@ final class PantryViewModel {
         } catch {
             errorMessage = "食材の取得に失敗しました"
         }
-
-        isLoading = false
     }
 
     func deleteIngredient(id: String) async {
