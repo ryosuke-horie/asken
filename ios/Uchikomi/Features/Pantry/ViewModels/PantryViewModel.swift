@@ -1,4 +1,9 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "PantryViewModel")
+
+// MARK: - PantryViewModel
 
 @MainActor
 @Observable
@@ -30,8 +35,10 @@ final class PantryViewModel {
         do {
             ingredients = try await repository.fetchIngredients(category: nil)
         } catch let error as APIError {
+            logger.error("食材取得でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("食材取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "食材の取得に失敗しました"
         }
     }
@@ -43,8 +50,10 @@ final class PantryViewModel {
             try await repository.deleteIngredient(id: id)
             ingredients.removeAll { $0.id == id }
         } catch let error as APIError {
+            logger.error("食材削除でAPIエラー: id=\(id), error=\(error.localizedDescription)")
             errorMessage = error.localizedDescription
         } catch {
+            logger.error("食材削除で予期しないエラー: id=\(id), error=\(error.localizedDescription)")
             errorMessage = "削除に失敗しました"
         }
     }
@@ -54,8 +63,10 @@ final class PantryViewModel {
     }
 
     func updateIngredient(_ updated: Ingredient) {
-        if let index = ingredients.firstIndex(where: { $0.id == updated.id }) {
-            ingredients[index] = updated
+        guard let index = ingredients.firstIndex(where: { $0.id == updated.id }) else {
+            logger.error("updateIngredient: 食材ID \(updated.id) がローカルリストに存在しない")
+            return
         }
+        ingredients[index] = updated
     }
 }

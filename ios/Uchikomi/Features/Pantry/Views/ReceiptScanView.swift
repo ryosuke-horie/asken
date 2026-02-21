@@ -1,4 +1,7 @@
+import os
 import SwiftUI
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi", category: "ReceiptScanViewModel")
 
 // MARK: - ReceiptScanView
 
@@ -126,7 +129,10 @@ struct ReceiptScanView: View {
                 let saved = await viewModel.saveAll()
                 if !saved.isEmpty {
                     onSaved(saved)
-                    dismiss()
+                    // 全件成功の場合のみ閉じる（部分失敗時はエラーを表示してレビュー画面に留まる）
+                    if viewModel.errorMessage == nil {
+                        dismiss()
+                    }
                 }
             }
         } label: {
@@ -227,10 +233,14 @@ final class ReceiptScanViewModel {
         do {
             scannedIngredients = try await repository.scanReceipt(imageData: imageData)
             phase = .review
+        } catch is CancellationError {
+            phase = .camera
         } catch let error as APIError {
+            logger.error("レシート解析でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             phase = .review
         } catch {
+            logger.error("レシート解析で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "解析に失敗しました"
             phase = .review
         }
@@ -268,7 +278,11 @@ final class ReceiptScanViewModel {
                 saved.append(ingredient)
             } catch is CancellationError {
                 break
+            } catch let error as APIError {
+                logger.error("食材一括保存でAPIエラー: name=\(item.name), error=\(error.localizedDescription)")
+                failedCount += 1
             } catch {
+                logger.error("食材一括保存で予期しないエラー: name=\(item.name), error=\(error.localizedDescription)")
                 failedCount += 1
             }
         }
