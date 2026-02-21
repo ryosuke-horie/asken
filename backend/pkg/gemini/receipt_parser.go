@@ -74,7 +74,7 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 	var items []receiptParserResponseItem
 	if err := json.Unmarshal([]byte(listJSON), &items); err != nil {
 		log.Printf("ReceiptParser: 食材リストのJSONパースエラー: %v", err)
-		return nil, fmt.Errorf("食材リストのパースエラー: %w\nデータ: %s", err, listJSON)
+		return nil, fmt.Errorf("食材リストのパースエラー: %w", err)
 	}
 
 	ingredients := make([]ReceiptIngredient, len(items))
@@ -82,6 +82,10 @@ func (p *ReceiptParser) ParseReceiptImage(ctx context.Context, imageData []byte,
 		ingredients[i] = item.toReceiptIngredient()
 	}
 
-	log.Printf("ReceiptParser: レシート解析完了 (%d品を検出)", len(ingredients))
+	if len(ingredients) == 0 {
+		log.Printf("ReceiptParser: 警告 - レシートから食材を検出できませんでした")
+	} else {
+		log.Printf("ReceiptParser: レシート解析完了 (%d品を検出)", len(ingredients))
+	}
 	return ingredients, nil
 }
