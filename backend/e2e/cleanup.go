@@ -32,6 +32,8 @@ func CleanupTestData(ctx context.Context) error {
 		fmt.Sprintf("users/%s/analysisRequests", testUID()),
 		fmt.Sprintf("users/%s/weightRecords", testUID()),
 		fmt.Sprintf("users/%s/weightGoal", testUID()),
+		fmt.Sprintf("users/%s/ingredients", testUID()),
+		fmt.Sprintf("users/%s/menuSuggestions", testUID()),
 	}
 
 	for _, collPath := range collections {
