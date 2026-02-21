@@ -91,45 +91,45 @@ struct Ingredient: Identifiable, Codable, Equatable {
         quantity = try container.decode(Double.self, forKey: .quantity)
         unit = try container.decode(String.self, forKey: .unit)
         source = try container.decode(IngredientSource.self, forKey: .source)
+        createdAt = try Self.decodeISO8601Date(from: container, forKey: .createdAt)
+        updatedAt = try Self.decodeISO8601Date(from: container, forKey: .updatedAt)
+        purchaseDate = try Self.decodeOptionalDateOnly(from: container, forKey: .purchaseDate)
+        expiryDate = try Self.decodeOptionalDateOnly(from: container, forKey: .expiryDate)
+    }
 
-        // createdAt/updatedAt: RFC3339形式
-        let iso8601 = ISO8601DateFormatter()
-        let createdAtStr = try container.decode(String.self, forKey: .createdAt)
-        guard let parsedCreatedAt = iso8601.date(from: createdAtStr) else {
+    private static func decodeISO8601Date(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys
+    ) throws -> Date {
+        let str = try container.decode(String.self, forKey: key)
+        guard let date = ISO8601DateFormatter().date(from: str) else {
             throw DecodingError.dataCorruptedError(
-                forKey: .createdAt, in: container,
-                debugDescription: "Invalid ISO8601 date: \(createdAtStr)"
+                forKey: key,
+                in: container,
+                debugDescription: "Invalid ISO8601 date: \(str)"
             )
         }
-        createdAt = parsedCreatedAt
+        return date
+    }
 
-        let updatedAtStr = try container.decode(String.self, forKey: .updatedAt)
-        guard let parsedUpdatedAt = iso8601.date(from: updatedAtStr) else {
+    private static func decodeOptionalDateOnly(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        forKey key: CodingKeys
+    ) throws -> Date? {
+        guard let str = try container.decodeIfPresent(String.self, forKey: key), !str.isEmpty else {
+            return nil
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        guard let date = formatter.date(from: str) else {
             throw DecodingError.dataCorruptedError(
-                forKey: .updatedAt, in: container,
-                debugDescription: "Invalid ISO8601 date: \(updatedAtStr)"
+                forKey: key,
+                in: container,
+                debugDescription: "Invalid date format: \(str)"
             )
         }
-        updatedAt = parsedUpdatedAt
-
-        // purchaseDate/expiryDate: YYYY-MM-DD形式
-        let dateOnlyFormatter = DateFormatter()
-        dateOnlyFormatter.dateFormat = "yyyy-MM-dd"
-        dateOnlyFormatter.locale = Locale(identifier: "en_US_POSIX")
-
-        if let purchaseDateStr = try container.decodeIfPresent(String.self, forKey: .purchaseDate),
-           !purchaseDateStr.isEmpty {
-            purchaseDate = dateOnlyFormatter.date(from: purchaseDateStr)
-        } else {
-            purchaseDate = nil
-        }
-
-        if let expiryDateStr = try container.decodeIfPresent(String.self, forKey: .expiryDate),
-           !expiryDateStr.isEmpty {
-            expiryDate = dateOnlyFormatter.date(from: expiryDateStr)
-        } else {
-            expiryDate = nil
-        }
+        return date
     }
 
     /// 消費期限が3日以内かどうか（期限切れは含まない）
