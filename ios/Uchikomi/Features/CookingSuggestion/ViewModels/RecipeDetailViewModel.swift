@@ -17,7 +17,7 @@ final class RecipeDetailViewModel {
     var acceptResult: AcceptMenuSuggestionResult?
     var errorMessage: String?
 
-    let repository: MenuSuggestionRepositoryProtocol
+    private let repository: MenuSuggestionRepositoryProtocol
 
     init(
         suggestion: MenuSuggestion,
