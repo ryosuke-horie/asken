@@ -8,7 +8,7 @@
 - UI: SwiftUI
 - 最小iOS: iOS 17
 - アーキテクチャ: MVVM + Repository
-- 認証: Keychain（JWT保存）
+- 認証: Firebase Authentication（Google Sign-In / Apple Sign-In）
 - 非同期処理: async/await
 - グラフ: Swift Charts
 
@@ -36,6 +36,7 @@ ios/
 │   │   └── Weight/            # 体重記録画面
 │   ├── Shared/
 │   │   ├── Components/   # 共通UIコンポーネント
+│   │   ├── Models/       # 共有モデル（通知設定等）
 │   │   └── Theme.swift   # テーマ定義
 │   └── Resources/        # アセット、Info.plist
 ├── UchikomiCore/          # コアフレームワーク
