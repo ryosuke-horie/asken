@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-15
+最終更新: 2026-02-22
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -19,69 +19,46 @@ ios/
 │   │   │   ├── AppleSignInManager.swift     # Apple Sign-In
 │   │   │   └── MockFirebaseAuthService.swift # 開発用モック (#if DEBUG)
 │   │   ├── Models/             # データモデル
+│   │   │   ├── Ingredient.swift
 │   │   │   ├── Meal.swift
+│   │   │   ├── MenuSuggestion.swift
+│   │   │   ├── Micronutrient.swift
+│   │   │   ├── MyMenu.swift
 │   │   │   ├── NutritionGoal.swift
 │   │   │   └── UserProfile.swift
+│   │   ├── Extensions/         # Swift拡張
+│   │   │   └── KeyedDecodingContainer+ISO8601.swift
 │   │   ├── Network/            # API通信
 │   │   │   ├── APIClient.swift       # AuthServiceProvider含む
 │   │   │   ├── APIEndpoint.swift
 │   │   │   └── APIError.swift
 │   │   ├── Notification/       # 通知機能
 │   │   │   └── NotificationManager.swift
+│   │   ├── Views/              # 共通ビュー
+│   │   │   └── CameraView.swift      # カメラ撮影UI
 │   │   └── Repositories/       # データアクセス
+│   │       ├── IngredientRepository.swift
 │   │       ├── MealRepository.swift
-│   │       └── NutritionGoalRepository.swift
+│   │       ├── MenuSuggestionRepository.swift
+│   │       ├── MyMenuRepository.swift
+│   │       ├── NutritionGoalRepository.swift
+│   │       └── WeightRepository.swift
 │   ├── Features/               # 機能モジュール
 │   │   ├── Auth/               # 認証UI
-│   │   │   ├── LoginView.swift
-│   │   │   └── LoginViewModel.swift
+│   │   ├── CookingSuggestion/  # メニューサジェストUI
 │   │   ├── Meals/              # 食事
-│   │   │   ├── CameraView.swift
-│   │   │   ├── MealsView.swift
-│   │   │   ├── MealsViewModel.swift
-│   │   │   ├── MealInputView.swift
-│   │   │   ├── MealInputViewModel.swift
-│   │   │   ├── Models/
-│   │   │   │   ├── FoodEditItem.swift
-│   │   │   │   ├── ImageFilenameValidator.swift
-│   │   │   │   ├── MeasurementUnit.swift
-│   │   │   │   └── QuantityParser.swift
-│   │   │   ├── ViewModels/
-│   │   │   │   └── NutritionEditorViewModel.swift
-│   │   │   └── Views/
-│   │   │       ├── NutritionEditorView.swift
-│   │   │       ├── NutritionGoalSettingView.swift
-│   │   │       └── FoodItemEditRow.swift
 │   │   ├── MyMenu/             # マイメニュー
-│   │   │   ├── MyMenuEditView.swift
-│   │   │   ├── MyMenuEditViewModel.swift
-│   │   │   ├── MyMenuListView.swift
-│   │   │   ├── MyMenuListViewModel.swift
-│   │   │   └── MyMenuSelectionView.swift
-│   │   ├── Weight/             # 体重
-│   │   │   ├── WeightView.swift
-│   │   │   ├── WeightViewModel.swift
-│   │   │   ├── WeightInputView.swift
-│   │   │   ├── WeightInputViewModel.swift
-│   │   │   ├── Models/
-│   │   │   │   └── WeightRecord.swift
-│   │   │   └── Views/
-│   │   │       ├── WeightChartView.swift
-│   │   │       ├── WeightGoalCard.swift
-│   │   │       ├── WeightGoalSheet.swift
-│   │   │       └── WeightRecordRow.swift
-│   │   └── Settings/           # 設定
-│   │       ├── SettingsView.swift
-│   │       ├── SettingsViewModel.swift
-│   │       ├── NotificationSettingsView.swift
-│   │       └── NotificationSettingsViewModel.swift
+│   │   ├── Pantry/             # 食材管理（パントリー）
+│   │   ├── Settings/           # 設定
+│   │   └── Weight/             # 体重
 │   ├── Shared/
 │   │   ├── Components/
 │   │   │   ├── CalorieProgressView.swift
+│   │   │   ├── MicronutrientProgressSection.swift
 │   │   │   ├── NutritionSummaryCard.swift
 │   │   │   ├── PFCPieChart.swift
 │   │   │   └── PFCProgressBar.swift
-│   │   ├── Models/             # 共通データモデル
+│   │   ├── Models/
 │   │   │   └── NotificationSettings.swift
 │   │   └── Theme.swift
 │   └── Resources/
@@ -93,21 +70,25 @@ ios/
 │   └── Models/
 │       └── Auth.swift                     # User, FirebaseAuthUser, GoogleCredential
 └── UchikomiTests/               # テスト (UchikomiCoreのみ依存)
-    ├── Generated/
-    │   └── MockGenerated.swift  # Mockolo生成
-    ├── AuthManagerTests.swift
-    ├── Features/
-    │   ├── Meals/
-    │   │   ├── MealInputViewModelTests.swift
-    │   │   ├── MealInputViewModelSkipTests.swift
-    │   │   ├── MealInputManualFoodTests.swift
-    │   │   ├── FoodEditItemTests.swift
-    │   │   └── QuantityParserTests.swift
-    │   └── Weight/
-    │       ├── WeightViewModelTests.swift
-    │       └── WeightInputViewModelTests.swift
     └── Disabled/                # 一時無効化テスト
+        ├── AuthManagerTests.swift
         ├── MealsViewModelTests.swift
+        ├── Generated/
+        │   └── MockGenerated.swift  # Mockolo生成
+        ├── Features/
+        │   ├── Meals/
+        │   │   ├── MealInputViewModelTests.swift
+        │   │   ├── MealInputViewModelSkipTests.swift
+        │   │   ├── MealInputManualFoodTests.swift
+        │   │   ├── FoodEditItemTests.swift
+        │   │   ├── ImageFilenameValidatorTests.swift
+        │   │   └── QuantityParserTests.swift
+        │   ├── Settings/
+        │   │   ├── NotificationSettingsModelTests.swift
+        │   │   └── NotificationSettingsViewModelTests.swift
+        │   └── Weight/
+        │       ├── WeightViewModelTests.swift
+        │       └── WeightInputViewModelTests.swift
         └── Snapshots/
             └── NutritionSummaryCardSnapshotTests.swift
 ```
@@ -229,8 +210,9 @@ enum AuthServiceProvider {
 - 認証済み: MainTabView
   - タブ1: MealsView（食事記録画面）
   - タブ2: WeightView（体重記録画面）
-  - タブ3: MyMenuListView（マイメニュー画面）
-  - タブ4: SettingsView（設定画面）
+  - タブ3: PantryListView（食材管理画面）
+  - タブ4: MyMenuListView（マイメニュー画面）
+  - タブ5: SettingsView（設定画面）
 
 ## 機能モジュール
 
@@ -259,9 +241,8 @@ enum AuthServiceProvider {
 | MealsViewModel.swift | 食事一覧ロジック |
 | MealInputViewModel.swift | 食事入力ロジック |
 | NutritionEditorViewModel.swift | 栄養素編集ロジック |
-| MealsView.swift | 食事一覧UI |
+| MealsView.swift | 食事一覧UI（メニューサジェストへの導線含む） |
 | MealInputView.swift | 食事入力UI |
-| CameraView.swift | カメラ撮影UI |
 | NutritionEditorView.swift | 栄養素編集UI |
 | NutritionGoalSettingView.swift | 栄養目標設定UI（推奨カロリー計算機能付き） |
 | FoodItemEditRow.swift | 食品アイテム行 |
@@ -269,6 +250,25 @@ enum AuthServiceProvider {
 | ImageFilenameValidator.swift | 画像ファイル名バリデーション |
 | MeasurementUnit.swift | 計量単位定義（g, ml, 杯, 人前, 個, 枚, 本, 切, 匹, 尾, パック, 袋, 束, 丁, 缶, 合, 玉, 粒） |
 | QuantityParser.swift | 量の文字列パーサー（数値と単位の抽出） |
+
+### メニューサジェスト (Features/CookingSuggestion/)
+
+| ファイル | 責務 |
+|:---|:---|
+| CookingSuggestionViewModel.swift | サジェスト一覧・リクエストロジック |
+| RecipeDetailViewModel.swift | レシピ詳細・採用・却下ロジック |
+| SuggestionListView.swift | サジェスト一覧UI |
+| SuggestionRequestView.swift | サジェストリクエストUI |
+| RecipeDetailView.swift | レシピ詳細UI |
+
+### 食材管理 (Features/Pantry/)
+
+| ファイル | 責務 |
+|:---|:---|
+| PantryViewModel.swift | 食材一覧・管理ロジック |
+| PantryListView.swift | 食材一覧UI |
+| IngredientEditView.swift | 食材編集UI |
+| ReceiptScanView.swift | レシート読取UI |
 
 ### マイメニュー (Features/MyMenu/)
 
@@ -309,10 +309,26 @@ enum AuthServiceProvider {
 | ファイル | 場所 | 内容 |
 |:---|:---|:---|
 | Auth.swift | UchikomiCore | User, FirebaseAuthUser, GoogleCredential, FirebaseAuthError |
+| Ingredient.swift | Uchikomi | 食材モデル (Ingredient, IngredientCategory) |
 | Meal.swift | Uchikomi | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
+| MenuSuggestion.swift | Uchikomi | メニューサジェストモデル (MenuSuggestion, EstimatedNutrition) |
+| Micronutrient.swift | Uchikomi | 微量栄養素モデル (MicronutrientType, MicronutrientInfo) |
+| MyMenu.swift | Uchikomi | マイメニューモデル |
 | NutritionGoal.swift | Uchikomi | 栄養目標モデル (NutritionGoal, NutritionPhase, PFCRatios, NutritionGoalCalculator) |
 | UserProfile.swift | Uchikomi | ユーザー属性モデル (Gender, ActivityLevel, RecommendedCaloriesCalculator) |
 | NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
+
+### Extensions (Core/Extensions/)
+
+| ファイル | 責務 |
+|:---|:---|
+| KeyedDecodingContainer+ISO8601.swift | ISO8601日付デコード拡張 |
+
+### Views (Core/Views/)
+
+| ファイル | 責務 |
+|:---|:---|
+| CameraView.swift | カメラ撮影UI（UIViewControllerRepresentable） |
 
 ### Network (Core/Network/)
 
@@ -338,9 +354,11 @@ NotificationSchedulerProtocolの主要メソッド:
 
 | ファイル | 責務 |
 |:---|:---|
+| IngredientRepository.swift | 食材データアクセス |
 | MealRepository.swift | 食事データアクセス |
-| NutritionGoalRepository.swift | 栄養目標取得・設定 |
+| MenuSuggestionRepository.swift | メニューサジェストデータアクセス |
 | MyMenuRepository.swift | マイメニューデータアクセス |
+| NutritionGoalRepository.swift | 栄養目標取得・設定 |
 | WeightRepository.swift | 体重記録・目標データアクセス |
 
 ## 共通コンポーネント (Shared/)
@@ -348,91 +366,11 @@ NotificationSchedulerProtocolの主要メソッド:
 | ファイル | 用途 |
 |:---|:---|
 | CalorieProgressView.swift | カロリー進捗バー |
+| MicronutrientProgressSection.swift | 微量栄養素進捗表示セクション |
 | NutritionSummaryCard.swift | 栄養素サマリーカード |
 | PFCPieChart.swift | PFCバランス円グラフ |
 | PFCProgressBar.swift | PFC進捗バー |
 | Theme.swift | アプリテーマ定義 |
-
-## データモデル
-
-### 通知設定関連 (NotificationSettings.swift)
-
-```swift
-struct MealNotificationSetting: Codable, Equatable {
-    let mealType: MealType
-    var isEnabled: Bool
-    var hour: Int
-    var minute: Int
-}
-
-struct WeightNotificationSetting: Codable, Equatable {
-    var isEnabled: Bool
-    var hour: Int
-    var minute: Int
-
-    static let `default` = WeightNotificationSetting(
-        isEnabled: true,
-        hour: 7,
-        minute: 0
-    )
-}
-
-struct NotificationSettings: Codable, Equatable {
-    var isGlobalEnabled: Bool
-    var meals: [MealNotificationSetting]
-    var weight: WeightNotificationSetting
-}
-```
-
-### 食事関連 (Meal.swift)
-
-```swift
-enum MealType: String, Codable, CaseIterable {
-    case breakfast, lunch, dinner, snack
-}
-
-struct NutritionInfo: Codable, Identifiable {
-    let name: String
-    let estimatedAmount: String
-    let caloriesKcal: Double
-    let proteinG: Double
-    let fatG: Double
-    let carbohydratesG: Double
-}
-
-struct DailyMeals: Codable {
-    let date: String
-    let meals: MealsByType
-    let dailyTotal: DailyTotal
-}
-```
-
-### 認証関連 (UchikomiCore/Models/Auth.swift)
-
-```swift
-struct User: Codable, Sendable {
-    let id: String
-    let email: String
-    let name: String?
-}
-
-struct FirebaseAuthUser: Sendable {
-    let uid: String
-    let email: String?
-    let displayName: String?
-}
-
-struct GoogleCredential: Sendable {
-    let idToken: String
-    let accessToken: String
-}
-
-enum FirebaseAuthError: LocalizedError {
-    case notSignedIn
-    case tokenRetrievalFailed
-    case configurationError
-}
-```
 
 ## 依存関係図
 
@@ -451,17 +389,16 @@ UchikomiApp.swift
         ├── MealsView (タブ1)
         │   ├── MealsViewModel
         │   │   ├── MealRepository
-        │   │   │   └── APIClient
         │   │   ├── NutritionGoalRepository
-        │   │   │   └── APIClient
         │   │   └── WeightRepository
         │   │       └── APIClient
         │   │           └── AuthServiceProvider.shared.getIDToken()
-        │   ├── NutritionGoalSettingView
-        │   │   └── NutritionGoalRepository
-        │   └── MealInputView
-        │       └── MealInputViewModel
-        │           └── MealRepository
+        │   ├── MealInputView
+        │   │   └── MealInputViewModel
+        │   │       └── MealRepository
+        │   └── SuggestionRequestView (メニューサジェスト導線)
+        │       └── CookingSuggestionViewModel
+        │           └── MenuSuggestionRepository
         ├── WeightView (タブ2)
         │   ├── WeightViewModel
         │   │   └── WeightRepository
@@ -469,13 +406,22 @@ UchikomiApp.swift
         │   └── WeightInputView
         │       └── WeightInputViewModel
         │           └── WeightRepository
-        ├── MyMenuListView (タブ3)
+        ├── PantryListView (タブ3)
+        │   └── PantryViewModel
+        │       └── IngredientRepository
+        │           └── APIClient
+        ├── MyMenuListView (タブ4)
         │   └── MyMenuListViewModel
         │       └── MyMenuRepository
         │           └── APIClient
-        └── SettingsView (タブ4)
-            └── SettingsViewModel
-                └── NotificationSettingsStore
+        └── SettingsView (タブ5)
+            ├── SettingsViewModel
+            │   └── AuthManager
+            ├── NutritionGoalSettingView
+            │   └── NutritionGoalRepository
+            └── NotificationSettingsView
+                └── NotificationSettingsViewModel
+                    └── NotificationSettingsStore
 ```
 
 ## API通信 (APIClient)
@@ -502,49 +448,28 @@ actor APIClient {
 }
 ```
 
-### エンドポイント
-
-```swift
-enum APIEndpoint {
-    // 食事
-    case dailyMeals(date: String, timezone: String)
-    case analyze
-    case analysisStatus(id: String)
-    case analysisResult(id: String)
-    // 体重
-    case weightRecords(from: String, to: String)
-    case createWeightRecord
-    case weightRecord(id: String)
-    case weightGoal
-    // 栄養目標
-    case nutritionGoal(currentWeight: Double?, goalWeight: Double?)
-    case setNutritionGoal
-    // ...
-}
-```
-
 ## テスト構成
 
 UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase SDKを初期化せずにテスト実行可能。
 
-### ユニットテスト
+現在全テストは `Disabled/` ディレクトリに移動され一時無効化中（macOS/Xcodeバージョン問題による）。
+
+### テスト一覧
 
 | ファイル | テスト対象 | 状態 |
 |:---|:---|:---|
-| AuthManagerTests.swift | 認証状態管理 | 有効 |
-| MealInputViewModelTests.swift | 食事入力ロジック | 有効 |
-| MealInputViewModelSkipTests.swift | 食事スキップロジック | 有効 |
-| MealInputManualFoodTests.swift | 食事手入力ロジック | 有効 |
-| FoodEditItemTests.swift | 食品編集モデル（栄養素再計算） | 有効 |
-| QuantityParserTests.swift | 量パーサー | 有効 |
-| WeightViewModelTests.swift | 体重一覧ロジック | 有効 |
-| WeightInputViewModelTests.swift | 体重入力ロジック | 有効 |
+| AuthManagerTests.swift | 認証状態管理 | 一時無効化 (Disabled/) |
+| MealInputViewModelTests.swift | 食事入力ロジック | 一時無効化 (Disabled/) |
+| MealInputViewModelSkipTests.swift | 食事スキップロジック | 一時無効化 (Disabled/) |
+| MealInputManualFoodTests.swift | 食事手入力ロジック | 一時無効化 (Disabled/) |
+| FoodEditItemTests.swift | 食品編集モデル（栄養素再計算） | 一時無効化 (Disabled/) |
+| ImageFilenameValidatorTests.swift | 画像ファイル名バリデーション | 一時無効化 (Disabled/) |
+| QuantityParserTests.swift | 量パーサー | 一時無効化 (Disabled/) |
+| NotificationSettingsModelTests.swift | 通知設定モデル | 一時無効化 (Disabled/) |
+| NotificationSettingsViewModelTests.swift | 通知設定ロジック | 一時無効化 (Disabled/) |
+| WeightViewModelTests.swift | 体重一覧ロジック | 一時無効化 (Disabled/) |
+| WeightInputViewModelTests.swift | 体重入力ロジック | 一時無効化 (Disabled/) |
 | MealsViewModelTests.swift | 食事一覧ロジック | 一時無効化 (Disabled/) |
-
-### スナップショットテスト
-
-| ファイル | テスト対象 | 状態 |
-|:---|:---|:---|
 | NutritionSummaryCardSnapshotTests.swift | 栄養素カードUI | 一時無効化 (Disabled/) |
 
 ### モック生成
@@ -555,14 +480,7 @@ Mockoloを使用してプロトコルからモックを自動生成:
 task ios:generate-mocks
 ```
 
-生成先: `UchikomiTests/Generated/MockGenerated.swift`
-
-### テスト実行
-
-```bash
-# Firebase SDK初期化なしでテスト実行可能
-task ios:test
-```
+生成先: `UchikomiTests/Disabled/Generated/MockGenerated.swift`
 
 ## 関連コードマップ
 
