@@ -393,8 +393,6 @@ UchikomiApp.swift
         │   │   └── WeightRepository
         │   │       └── APIClient
         │   │           └── AuthServiceProvider.shared.getIDToken()
-        │   ├── NutritionGoalSettingView
-        │   │   └── NutritionGoalRepository
         │   ├── MealInputView
         │   │   └── MealInputViewModel
         │   │       └── MealRepository
@@ -417,8 +415,13 @@ UchikomiApp.swift
         │       └── MyMenuRepository
         │           └── APIClient
         └── SettingsView (タブ5)
-            └── SettingsViewModel
-                └── NotificationSettingsStore
+            ├── SettingsViewModel
+            │   └── AuthManager
+            ├── NutritionGoalSettingView
+            │   └── NutritionGoalRepository
+            └── NotificationSettingsView
+                └── NotificationSettingsViewModel
+                    └── NotificationSettingsStore
 ```
 
 ## API通信 (APIClient)
