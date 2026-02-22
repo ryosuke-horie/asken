@@ -17,6 +17,22 @@ struct SuggestionListView: View {
         .navigationDestination(for: MenuSuggestion.self) { suggestion in
             RecipeDetailView(suggestion: suggestion)
         }
+        .alert("エラー", isPresented: showingDismissError) {
+            Button("OK") {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            if let error = viewModel.errorMessage {
+                Text(error)
+            }
+        }
+    }
+
+    private var showingDismissError: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )
     }
 
     // MARK: - Subviews
@@ -55,7 +71,7 @@ struct SuggestionListView: View {
 
 // MARK: - SuggestionCard
 
-struct SuggestionCard: View {
+private struct SuggestionCard: View {
     let suggestion: MenuSuggestion
 
     var body: some View {

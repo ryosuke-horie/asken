@@ -271,11 +271,10 @@ struct APIEndpoint {
         requiresAuth: true
     )
 
-    static func menuSuggestions(status: String? = nil, limit: Int = 10) -> APIEndpoint {
+    static func menuSuggestions(status: MenuSuggestionStatus? = nil, limit: Int = 10) -> APIEndpoint {
         var queryParts: [String] = []
-        if let status,
-           let encoded = status.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-            queryParts.append("status=\(encoded)")
+        if let status {
+            queryParts.append("status=\(status.rawValue)")
         }
         queryParts.append("limit=\(limit)")
         let query = queryParts.joined(separator: "&")

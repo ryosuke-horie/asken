@@ -15,7 +15,6 @@ final class CookingSuggestionViewModel {
     var suggestionCount = 3
     var suggestions: [MenuSuggestion] = []
     var isGenerating = false
-    var isLoading = false
     var errorMessage: String?
 
     private let repository: MenuSuggestionRepositoryProtocol
@@ -40,25 +39,6 @@ final class CookingSuggestionViewModel {
         } catch {
             logger.error("サジェスト生成で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "メニューサジェストの生成に失敗しました"
-        }
-    }
-
-    func loadSuggestions() async {
-        isLoading = true
-        errorMessage = nil
-        defer { isLoading = false }
-
-        do {
-            suggestions = try await repository.fetchSuggestions(
-                status: MenuSuggestionStatus.suggested.rawValue,
-                limit: 10
-            )
-        } catch let error as APIError {
-            logger.error("サジェスト取得でAPIエラー: \(error.localizedDescription)")
-            errorMessage = error.localizedDescription
-        } catch {
-            logger.error("サジェスト取得で予期しないエラー: \(error.localizedDescription)")
-            errorMessage = "サジェストの取得に失敗しました"
         }
     }
 

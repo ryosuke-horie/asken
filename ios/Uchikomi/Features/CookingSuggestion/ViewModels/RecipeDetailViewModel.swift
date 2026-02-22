@@ -15,7 +15,8 @@ final class RecipeDetailViewModel {
     var isLoadingRecipe = false
     var isAccepting = false
     var acceptResult: AcceptMenuSuggestionResult?
-    var errorMessage: String?
+    var recipeErrorMessage: String?
+    var acceptErrorMessage: String?
 
     private let repository: MenuSuggestionRepositoryProtocol
 
@@ -31,23 +32,23 @@ final class RecipeDetailViewModel {
         guard suggestion.recipe == nil else { return }
 
         isLoadingRecipe = true
-        errorMessage = nil
+        recipeErrorMessage = nil
         defer { isLoadingRecipe = false }
 
         do {
             suggestion = try await repository.fetchSuggestionDetail(id: suggestion.id)
         } catch let error as APIError {
             logger.error("レシピ取得でAPIエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
-            errorMessage = "レシピの取得に失敗しました"
+            recipeErrorMessage = "レシピの取得に失敗しました"
         } catch {
             logger.error("レシピ取得で予期しないエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
-            errorMessage = "レシピの取得に失敗しました"
+            recipeErrorMessage = "レシピの取得に失敗しました"
         }
     }
 
     func accept() async -> Bool {
         isAccepting = true
-        errorMessage = nil
+        acceptErrorMessage = nil
         defer { isAccepting = false }
 
         do {
@@ -55,11 +56,11 @@ final class RecipeDetailViewModel {
             return true
         } catch let error as APIError {
             logger.error("サジェスト採用でAPIエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
-            errorMessage = error.localizedDescription
+            acceptErrorMessage = error.localizedDescription
             return false
         } catch {
             logger.error("サジェスト採用で予期しないエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
-            errorMessage = "サジェストの採用に失敗しました"
+            acceptErrorMessage = "サジェストの採用に失敗しました"
             return false
         }
     }
