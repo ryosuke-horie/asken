@@ -91,25 +91,10 @@ struct Ingredient: Identifiable, Codable, Equatable {
         quantity = try container.decode(Double.self, forKey: .quantity)
         unit = try container.decode(String.self, forKey: .unit)
         source = try container.decode(IngredientSource.self, forKey: .source)
-        createdAt = try Self.decodeISO8601Date(from: container, forKey: .createdAt)
-        updatedAt = try Self.decodeISO8601Date(from: container, forKey: .updatedAt)
+        createdAt = try container.decodeISO8601Date(forKey: .createdAt)
+        updatedAt = try container.decodeISO8601Date(forKey: .updatedAt)
         purchaseDate = try Self.decodeOptionalDateOnly(from: container, forKey: .purchaseDate)
         expiryDate = try Self.decodeOptionalDateOnly(from: container, forKey: .expiryDate)
-    }
-
-    private static func decodeISO8601Date(
-        from container: KeyedDecodingContainer<CodingKeys>,
-        forKey key: CodingKeys
-    ) throws -> Date {
-        let str = try container.decode(String.self, forKey: key)
-        guard let date = ISO8601DateFormatter().date(from: str) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: key,
-                in: container,
-                debugDescription: "Invalid ISO8601 date: \(str)"
-            )
-        }
-        return date
     }
 
     private static func decodeOptionalDateOnly(
