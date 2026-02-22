@@ -5,7 +5,7 @@ import Foundation
 /// @mockable
 protocol MenuSuggestionRepositoryProtocol {
     func suggestMenu(mealType: MealType, count: Int) async throws -> [MenuSuggestion]
-    func fetchSuggestions(status: String?, limit: Int) async throws -> [MenuSuggestion]
+    func fetchSuggestions(status: MenuSuggestionStatus?, limit: Int) async throws -> [MenuSuggestion]
     func fetchSuggestionDetail(id: String) async throws -> MenuSuggestion
     func acceptSuggestion(id: String) async throws -> AcceptMenuSuggestionResult
     func dismissSuggestion(id: String) async throws
@@ -21,7 +21,7 @@ final class MenuSuggestionRepository: MenuSuggestionRepositoryProtocol {
     }
 
     func suggestMenu(mealType: MealType, count: Int) async throws -> [MenuSuggestion] {
-        let request = SuggestMenuRequest(mealType: mealType.rawValue, count: count)
+        let request = SuggestMenuRequest(mealType: mealType, count: count)
         let response: MenuSuggestionListResponse = try await client.request(
             endpoint: .suggestMenu,
             body: request
@@ -29,7 +29,7 @@ final class MenuSuggestionRepository: MenuSuggestionRepositoryProtocol {
         return response.suggestions
     }
 
-    func fetchSuggestions(status: String? = nil, limit: Int = 10) async throws -> [MenuSuggestion] {
+    func fetchSuggestions(status: MenuSuggestionStatus? = nil, limit: Int = 10) async throws -> [MenuSuggestion] {
         let response: MenuSuggestionListResponse = try await client.request(
             endpoint: .menuSuggestions(status: status, limit: limit)
         )

@@ -7,6 +7,7 @@ struct RecipeDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingAcceptConfirmation = false
     @State private var showingAcceptResult = false
+    @State private var showingAcceptError = false
 
     init(suggestion: MenuSuggestion) {
         _viewModel = State(initialValue: RecipeDetailViewModel(suggestion: suggestion))
@@ -34,6 +35,8 @@ struct RecipeDetailView: View {
                     let success = await viewModel.accept()
                     if success {
                         showingAcceptResult = true
+                    } else {
+                        showingAcceptError = true
                     }
                 }
             }
@@ -48,6 +51,13 @@ struct RecipeDetailView: View {
         } message: {
             if let result = viewModel.acceptResult {
                 Text(acceptResultMessage(result))
+            }
+        }
+        .alert("記録に失敗しました", isPresented: $showingAcceptError) {
+            Button("OK") {}
+        } message: {
+            if let error = viewModel.acceptErrorMessage {
+                Text(error)
             }
         }
     }
@@ -142,10 +152,18 @@ struct RecipeDetailView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 8)
-            } else if let error = viewModel.errorMessage {
-                Text(error)
-                    .font(.subheadline)
-                    .foregroundStyle(.red)
+            } else if let error = viewModel.recipeErrorMessage {
+                VStack(spacing: 8) {
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+                    Button("再試行") {
+                        Task {
+                            await viewModel.loadRecipe()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
     }

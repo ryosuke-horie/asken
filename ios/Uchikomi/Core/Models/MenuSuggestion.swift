@@ -32,7 +32,7 @@ struct EstimatedNutrition: Codable, Equatable {
 
 // MARK: - MenuSuggestion
 
-struct MenuSuggestion: Identifiable, Codable, Equatable, Hashable {
+struct MenuSuggestion: Identifiable, Decodable, Equatable, Hashable {
     let id: String
     let title: String
     let description: String
@@ -70,7 +70,7 @@ struct MenuSuggestion: Identifiable, Codable, Equatable, Hashable {
 // MARK: - SuggestMenuRequest
 
 struct SuggestMenuRequest: Encodable {
-    let mealType: String
+    let mealType: MealType
     let count: Int
 }
 

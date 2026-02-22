@@ -1,9 +1,11 @@
 import Foundation
 
+private let iso8601Formatter = ISO8601DateFormatter()
+
 extension KeyedDecodingContainer {
     func decodeISO8601Date(forKey key: Key) throws -> Date {
         let str = try decode(String.self, forKey: key)
-        guard let date = ISO8601DateFormatter().date(from: str) else {
+        guard let date = iso8601Formatter.date(from: str) else {
             throw DecodingError.dataCorruptedError(
                 forKey: key,
                 in: self,
