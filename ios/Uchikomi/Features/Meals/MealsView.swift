@@ -68,6 +68,15 @@ struct MealsView: View {
                 }
             }
             .navigationTitle("食事記録")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink {
+                        SuggestionRequestView()
+                    } label: {
+                        Image(systemName: "sparkles")
+                    }
+                }
+            }
             .sheet(item: $selectedMealTypeForInput) { mealType in
                 MealInputView(
                     mealDate: viewModel.selectedDate,
