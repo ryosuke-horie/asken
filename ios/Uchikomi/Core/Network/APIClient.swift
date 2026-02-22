@@ -109,6 +109,41 @@ actor APIClient {
         return try await performRequest(request)
     }
 
+    // MARK: - Generic Multipart Request
+
+    func uploadImageDecoded<T: Decodable>(
+        endpoint: APIEndpoint,
+        imageData: Data,
+        filename: String,
+        additionalFields: [String: String] = [:]
+    ) async throws -> T {
+        var request = try await createRequest(endpoint: endpoint)
+
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        for (key, value) in additionalFields {
+            let safeKey = sanitizeHeaderValue(key)
+            body.append(Data("--\(boundary)\r\n".utf8))
+            body.append(Data("Content-Disposition: form-data; name=\"\(safeKey)\"\r\n\r\n".utf8))
+            body.append(Data("\(value)\r\n".utf8))
+        }
+
+        let safeFilename = sanitizeHeaderValue(filename)
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(safeFilename)\"\r\n".utf8))
+        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+        body.append(imageData)
+        body.append(Data("\r\n".utf8))
+        body.append(Data("--\(boundary)--\r\n".utf8))
+
+        request.httpBody = body
+
+        return try await performRequest(request)
+    }
+
     // MARK: - Request without response body
 
     func requestWithoutResponse(
