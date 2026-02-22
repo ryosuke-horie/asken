@@ -37,17 +37,32 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 
 ## コマンド一覧
 
+### 一般
+
 | コマンド | 説明 |
 |:---|:---|
 | `task --list` | 利用可能なコマンド一覧を表示 |
 | `task help` | 利用可能なコマンド一覧を表示 |
+| `task hooks:install` | Lefthookフックをインストール |
+| `task hooks:run` | pre-commitフックを手動実行 |
+
+### バックエンド
+
+| コマンド | 説明 |
+|:---|:---|
 | `task setup` | Go依存関係をダウンロード |
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
 | `task lint` | Goリントを実行（デッドコード検知を含む） |
+| `task format` | Goコードを整形 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
+
+### iOS
+
+| コマンド | 説明 |
+|:---|:---|
 | `task ios:generate-mocks` | Mockoloでモックを生成 |
 | `task ios:test` | iOSのテストを実行 |
 | `task ios:test:coverage` | iOSカバレッジ計測付きテスト |
@@ -58,6 +73,13 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task ios:clean` | DerivedDataを削除 |
 | `task ios:clean-all` | SPMキャッシュを含む完全クリア |
 | `task ios:reset-packages` | Package.resolvedを削除して再解決 |
+
+### デプロイ・E2E
+
+| コマンド | 説明 |
+|:---|:---|
+| `task deploy:dev` | 開発環境へデプロイ（Docker build/push + Cloud Run deploy） |
+| `task e2e:dev` | 開発環境のバックエンドE2Eテストを実行 |
 
 ## iOSビルドトラブル時
 
