@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-15
+最終更新: 2026-02-22
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -12,6 +12,8 @@ users/{userId}/weightRecords/{recordId}
 users/{userId}/weightGoal/current
 users/{userId}/nutritionGoal/current
 users/{userId}/myMenu/{menuId}
+users/{userId}/ingredients/{ingredientId}
+users/{userId}/menuSuggestions/{suggestionId}
 ```
 
 ## ドキュメント定義
@@ -115,6 +117,71 @@ PFC値（たんぱく質・脂質・炭水化物の目標グラム数）はリ�
 | createdAt | timestamp | 作成日時 |
 | updatedAt | timestamp | 更新日時 |
 
+### ingredients/{ingredientId}
+
+食材（パントリー管理）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| id | string | 食材ID |
+| name | string | 食材名 |
+| category | string | カテゴリ (meat/fish/vegetable/fruit/dairy/grain/seasoning/beverage/other) |
+| quantity | number | 数量 |
+| unit | string | 単位 |
+| purchaseDate | timestamp | 購入日（任意） |
+| expiryDate | timestamp | 賞味期限（任意） |
+| source | string | 入力元 (receipt/manual) |
+| createdAt | timestamp | 作成日時 |
+| updatedAt | timestamp | 更新日時 |
+
+カテゴリ一覧:
+
+| カテゴリ | 説明 |
+|:---|:---|
+| meat | 肉類 |
+| fish | 魚介類 |
+| vegetable | 野菜 |
+| fruit | 果物 |
+| dairy | 乳製品 |
+| grain | 穀物 |
+| seasoning | 調味料 |
+| beverage | 飲料 |
+| other | その他 |
+
+### menuSuggestions/{suggestionId}
+
+メニューサジェスト（AIによる献立提案）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| id | string | サジェストID |
+| title | string | メニュー名 |
+| description | string | メニュー説明 |
+| reason | string | 提案理由 |
+| ingredientsUsed | array | 使用食材リスト |
+| recipe | string | レシピ（遅延生成、詳細表示時にGemini APIで生成） |
+| estimatedNutrition | map | 推定栄養素 (calories/protein/fat/carbohydrates) |
+| mealType | string | 食事タイプ (breakfast/lunch/dinner/snack) |
+| status | string | ステータス (suggested/accepted/dismissed) |
+| createdAt | timestamp | 作成日時 |
+| updatedAt | timestamp | 更新日時 |
+
+ingredientsUsed 配列要素:
+
+```json
+{
+  "ingredientId": "食材ID",
+  "name": "食材名",
+  "quantity": 100.0,
+  "unit": "g"
+}
+```
+
+ステータスの動作:
+- `suggested`: 初期状態（提案済み）
+- `accepted`: ユーザーが採用 → 食事記録作成 + 使用食材の数量控除（トランザクション）
+- `dismissed`: ユーザーが却下
+
 ## インデックス
 
 Firestoreの複合インデックスは`firestore.indexes.json`で管理されています。
@@ -128,6 +195,10 @@ Firestoreの複合インデックスは`firestore.indexes.json`で管理され�
 | analysisRequests | inputType, mealType, mealDate | 既存マイリスト/スキップ検索 |
 | analysisRequests | mealType, mealDate, inputType | スキップ記録削除用 |
 | analysisRequests | status, mealDate | ステータス別日次検索 |
+| analysisRequests | mealType, mealDate | 食事タイプ別日次検索 |
+| ingredients | category, name | カテゴリ別食材一覧（名前順） |
+| ingredients | category, expiryDate | カテゴリ別食材一覧（賞味期限順） |
+| menuSuggestions | status, createdAt DESC | ステータス別サジェスト一覧 |
 | weightRecords | recordedAt | 期間別体重記録取得 |
 
 インデックス更新手順は[docs/CONTRIB.md](../CONTRIB.md#firestoreインデックス管理)を参照。

@@ -1,6 +1,6 @@
 # 運用手順書（RUNBOOK）
 
-最終更新: 2026-02-15
+最終更新: 2026-02-22
 
 GCPサーバレス環境の運用手順、監視、トラブルシューティングを説明します。
 
@@ -22,7 +22,7 @@ GCPサーバレス環境の運用手順、監視、トラブルシューティ�
 | ストレージ | Cloud Storage | 画像保存 |
 | 認証 | Firebase Auth | ユーザー認証 |
 | シークレット | Secret Manager | APIキー等の安全な保存 |
-| AI | Gemini API | 画像認識・栄養素分析 |
+| AI | Gemini API | 画像認識・栄養素分析・レシート解析・メニューサジェスト |
 | デプロイ方式 | Shell Script | `tools/deploy/deploy-dev.sh` をローカル実行 |
 
 インフラはTerraformで管理: [infrastructure/README.md](../infrastructure/README.md)
