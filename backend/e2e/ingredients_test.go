@@ -18,12 +18,12 @@ func TestIngredients_Create_Success(t *testing.T) {
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	reqBody := map[string]any{
-		"name":         "鶏むね肉",
-		"category":     "meat",
-		"quantity":     300.0,
-		"unit":         "g",
-		"purchaseDate": time.Now().Format("2006-01-02"),
-		"source":       "manual",
+		"name":          "鶏むね肉",
+		"category":      "meat",
+		"quantity":      300.0,
+		"unit":          "g",
+		"purchase_date": time.Now().Format("2006-01-02"),
+		"source":        "manual",
 	}
 
 	resp, err := client.Post(ctx, "/api/ingredients", reqBody)
