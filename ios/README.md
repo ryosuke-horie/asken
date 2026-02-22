@@ -22,7 +22,7 @@ ios/
 │   │   ├── Auth/         # 認証マネージャー
 │   │   ├── Extensions/   # Swift拡張
 │   │   ├── Models/       # データモデル
-│   │   ├── Network/      # APIClient, TokenManager
+│   │   ├── Network/      # APIClient, APIEndpoint, APIError
 │   │   ├── Notification/ # 通知マネージャー
 │   │   ├── Repositories/ # データアクセス層
 │   │   └── Views/        # 共通ビュー（カメラ等）

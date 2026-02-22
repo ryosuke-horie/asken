@@ -26,12 +26,16 @@ ios/
 │   │   │   ├── MyMenu.swift
 │   │   │   ├── NutritionGoal.swift
 │   │   │   └── UserProfile.swift
+│   │   ├── Extensions/         # Swift拡張
+│   │   │   └── KeyedDecodingContainer+ISO8601.swift
 │   │   ├── Network/            # API通信
 │   │   │   ├── APIClient.swift       # AuthServiceProvider含む
 │   │   │   ├── APIEndpoint.swift
 │   │   │   └── APIError.swift
 │   │   ├── Notification/       # 通知機能
 │   │   │   └── NotificationManager.swift
+│   │   ├── Views/              # 共通ビュー
+│   │   │   └── CameraView.swift      # カメラ撮影UI
 │   │   └── Repositories/       # データアクセス
 │   │       ├── IngredientRepository.swift
 │   │       ├── MealRepository.swift
@@ -66,18 +70,22 @@ ios/
 │   └── Models/
 │       └── Auth.swift                     # User, FirebaseAuthUser, GoogleCredential
 └── UchikomiTests/               # テスト (UchikomiCoreのみ依存)
-    ├── Generated/
-    │   └── MockGenerated.swift  # Mockolo生成
     └── Disabled/                # 一時無効化テスト
         ├── AuthManagerTests.swift
         ├── MealsViewModelTests.swift
+        ├── Generated/
+        │   └── MockGenerated.swift  # Mockolo生成
         ├── Features/
         │   ├── Meals/
         │   │   ├── MealInputViewModelTests.swift
         │   │   ├── MealInputViewModelSkipTests.swift
         │   │   ├── MealInputManualFoodTests.swift
         │   │   ├── FoodEditItemTests.swift
+        │   │   ├── ImageFilenameValidatorTests.swift
         │   │   └── QuantityParserTests.swift
+        │   ├── Settings/
+        │   │   ├── NotificationSettingsModelTests.swift
+        │   │   └── NotificationSettingsViewModelTests.swift
         │   └── Weight/
         │       ├── WeightViewModelTests.swift
         │       └── WeightInputViewModelTests.swift
@@ -202,8 +210,9 @@ enum AuthServiceProvider {
 - 認証済み: MainTabView
   - タブ1: MealsView（食事記録画面）
   - タブ2: WeightView（体重記録画面）
-  - タブ3: MyMenuListView（マイメニュー画面）
-  - タブ4: SettingsView（設定画面）
+  - タブ3: PantryListView（食材管理画面）
+  - タブ4: MyMenuListView（マイメニュー画面）
+  - タブ5: SettingsView（設定画面）
 
 ## 機能モジュール
 
@@ -234,7 +243,6 @@ enum AuthServiceProvider {
 | NutritionEditorViewModel.swift | 栄養素編集ロジック |
 | MealsView.swift | 食事一覧UI（メニューサジェストへの導線含む） |
 | MealInputView.swift | 食事入力UI |
-| CameraView.swift | カメラ撮影UI |
 | NutritionEditorView.swift | 栄養素編集UI |
 | NutritionGoalSettingView.swift | 栄養目標設定UI（推奨カロリー計算機能付き） |
 | FoodItemEditRow.swift | 食品アイテム行 |
@@ -310,6 +318,18 @@ enum AuthServiceProvider {
 | UserProfile.swift | Uchikomi | ユーザー属性モデル (Gender, ActivityLevel, RecommendedCaloriesCalculator) |
 | NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
 
+### Extensions (Core/Extensions/)
+
+| ファイル | 責務 |
+|:---|:---|
+| KeyedDecodingContainer+ISO8601.swift | ISO8601日付デコード拡張 |
+
+### Views (Core/Views/)
+
+| ファイル | 責務 |
+|:---|:---|
+| CameraView.swift | カメラ撮影UI（UIViewControllerRepresentable） |
+
 ### Network (Core/Network/)
 
 | ファイル | 責務 |
@@ -378,7 +398,7 @@ UchikomiApp.swift
         │   ├── MealInputView
         │   │   └── MealInputViewModel
         │   │       └── MealRepository
-        │   └── SuggestionListView (メニューサジェスト導線)
+        │   └── SuggestionRequestView (メニューサジェスト導線)
         │       └── CookingSuggestionViewModel
         │           └── MenuSuggestionRepository
         ├── WeightView (タブ2)
@@ -388,17 +408,17 @@ UchikomiApp.swift
         │   └── WeightInputView
         │       └── WeightInputViewModel
         │           └── WeightRepository
-        ├── MyMenuListView (タブ3)
+        ├── PantryListView (タブ3)
+        │   └── PantryViewModel
+        │       └── IngredientRepository
+        │           └── APIClient
+        ├── MyMenuListView (タブ4)
         │   └── MyMenuListViewModel
         │       └── MyMenuRepository
         │           └── APIClient
-        └── SettingsView (タブ4)
-            ├── SettingsViewModel
-            │   └── NotificationSettingsStore
-            └── PantryListView (食材管理)
-                └── PantryViewModel
-                    └── IngredientRepository
-                        └── APIClient
+        └── SettingsView (タブ5)
+            └── SettingsViewModel
+                └── NotificationSettingsStore
 ```
 
 ## API通信 (APIClient)
@@ -440,7 +460,10 @@ UchikomiTestsはUchikomiCoreフレームワークのみに依存し、Firebase S
 | MealInputViewModelSkipTests.swift | 食事スキップロジック | 一時無効化 (Disabled/) |
 | MealInputManualFoodTests.swift | 食事手入力ロジック | 一時無効化 (Disabled/) |
 | FoodEditItemTests.swift | 食品編集モデル（栄養素再計算） | 一時無効化 (Disabled/) |
+| ImageFilenameValidatorTests.swift | 画像ファイル名バリデーション | 一時無効化 (Disabled/) |
 | QuantityParserTests.swift | 量パーサー | 一時無効化 (Disabled/) |
+| NotificationSettingsModelTests.swift | 通知設定モデル | 一時無効化 (Disabled/) |
+| NotificationSettingsViewModelTests.swift | 通知設定ロジック | 一時無効化 (Disabled/) |
 | WeightViewModelTests.swift | 体重一覧ロジック | 一時無効化 (Disabled/) |
 | WeightInputViewModelTests.swift | 体重入力ロジック | 一時無効化 (Disabled/) |
 | MealsViewModelTests.swift | 食事一覧ロジック | 一時無効化 (Disabled/) |
@@ -454,7 +477,7 @@ Mockoloを使用してプロトコルからモックを自動生成:
 task ios:generate-mocks
 ```
 
-生成先: `UchikomiTests/Generated/MockGenerated.swift`
+生成先: `UchikomiTests/Disabled/Generated/MockGenerated.swift`
 
 ## 関連コードマップ
 
