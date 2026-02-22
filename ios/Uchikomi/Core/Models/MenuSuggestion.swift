@@ -55,7 +55,7 @@ struct MenuSuggestion: Identifiable, Codable, Equatable, Hashable {
         estimatedNutrition = try container.decode(EstimatedNutrition.self, forKey: .estimatedNutrition)
         mealType = try container.decode(MealType.self, forKey: .mealType)
         status = try container.decode(MenuSuggestionStatus.self, forKey: .status)
-        createdAt = try Self.decodeISO8601Date(from: container, forKey: .createdAt)
+        createdAt = try container.decodeISO8601Date(forKey: .createdAt)
     }
 
     static func == (lhs: MenuSuggestion, rhs: MenuSuggestion) -> Bool {
@@ -64,21 +64,6 @@ struct MenuSuggestion: Identifiable, Codable, Equatable, Hashable {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-    }
-
-    private static func decodeISO8601Date(
-        from container: KeyedDecodingContainer<CodingKeys>,
-        forKey key: CodingKeys
-    ) throws -> Date {
-        let str = try container.decode(String.self, forKey: key)
-        guard let date = ISO8601DateFormatter().date(from: str) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: key,
-                in: container,
-                debugDescription: "Invalid ISO8601 date: \(str)"
-            )
-        }
-        return date
     }
 }
 

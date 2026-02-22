@@ -90,6 +90,7 @@
 		E3FDEFB853D4ED8616F5DAD9 /* MyMenuSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E875AF5DBFFDB82CEE140301 /* MyMenuSelectionView.swift */; };
 		EEF299C65F3E2D388454ABF6 /* FoodEditItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7270033D73999E560F355AF4 /* FoodEditItem.swift */; };
 		EEFA513AC51A9EECB9C04F82 /* PantryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DEAA8C384F1175EB120E8B /* PantryViewModel.swift */; };
+		F1092E945197F08988E31888 /* KeyedDecodingContainer+ISO8601.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0D11C996677E9D4DEBA2E2 /* KeyedDecodingContainer+ISO8601.swift */; };
 		F57ECB73B55F60AC68F6610C /* MeasurementUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E2610614116D5AB2DB9B01 /* MeasurementUnit.swift */; };
 		F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */; };
 /* End PBXBuildFile section */
@@ -196,6 +197,7 @@
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		C24F2CA7351F04E395DC332D /* ReceiptScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptScanView.swift; sourceTree = "<group>"; };
 		C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuantityParser.swift; sourceTree = "<group>"; };
+		CE0D11C996677E9D4DEBA2E2 /* KeyedDecodingContainer+ISO8601.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyedDecodingContainer+ISO8601.swift"; sourceTree = "<group>"; };
 		D027BD9CAB95A7247E0974E0 /* CookingSuggestionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingSuggestionViewModel.swift; sourceTree = "<group>"; };
 		D08FF0AB5413B6C56251BF43 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
 		D110691FF801C9B691572637 /* MockFirebaseAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFirebaseAuthService.swift; sourceTree = "<group>"; };
@@ -270,6 +272,7 @@
 			isa = PBXGroup;
 			children = (
 				3D156597270BE3D3C071FA55 /* Auth */,
+				50DC0E1F70E96D3E1F044112 /* Extensions */,
 				03D462EB688278868763A4DF /* Models */,
 				39EFFCC2C6BAC7A5B3FD52C6 /* Network */,
 				356CE3D851D0D85EC39AE6C7 /* Notification */,
@@ -401,6 +404,14 @@
 				3A3EC520C975F7D5C9044B48 /* NotificationSettings.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		50DC0E1F70E96D3E1F044112 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				CE0D11C996677E9D4DEBA2E2 /* KeyedDecodingContainer+ISO8601.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 		5B9BF1171E6F2B31EFAD1AA2 /* Repositories */ = {
@@ -800,6 +811,7 @@
 				CCE24DA2C14838035EB5A109 /* Ingredient.swift in Sources */,
 				B6308A0072DDEC14A38BC5F3 /* IngredientEditView.swift in Sources */,
 				CEEE4AA51FDC0CB19E4DFFB5 /* IngredientRepository.swift in Sources */,
+				F1092E945197F08988E31888 /* KeyedDecodingContainer+ISO8601.swift in Sources */,
 				9939611EB00A3F8CC08FAB5C /* LoginView.swift in Sources */,
 				393D2E6F3C751FD1802F7D6E /* LoginViewModel.swift in Sources */,
 				15FB70824FCCE86C38D34772 /* Meal.swift in Sources */,

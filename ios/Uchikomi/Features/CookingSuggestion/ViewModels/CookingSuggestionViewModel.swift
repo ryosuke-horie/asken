@@ -18,7 +18,7 @@ final class CookingSuggestionViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    let repository: MenuSuggestionRepositoryProtocol
+    private let repository: MenuSuggestionRepositoryProtocol
 
     init(repository: MenuSuggestionRepositoryProtocol = MenuSuggestionRepository()) {
         self.repository = repository
