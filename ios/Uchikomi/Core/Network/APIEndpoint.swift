@@ -262,4 +262,46 @@ struct APIEndpoint {
         method: .post,
         requiresAuth: true
     )
+
+    // MARK: - Menu Suggestion Endpoints
+
+    static let suggestMenu = APIEndpoint(
+        path: "menu/suggest",
+        method: .post,
+        requiresAuth: true
+    )
+
+    static func menuSuggestions(status: MenuSuggestionStatus? = nil, limit: Int = 10) -> APIEndpoint {
+        var queryParts: [String] = []
+        if let status {
+            queryParts.append("status=\(status.rawValue)")
+        }
+        queryParts.append("limit=\(limit)")
+        let query = queryParts.joined(separator: "&")
+        return APIEndpoint(path: "menu/suggestions?\(query)", method: .get, requiresAuth: true)
+    }
+
+    static func menuSuggestionDetail(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "menu/suggestions/\(sanitizedPathID(id))",
+            method: .get,
+            requiresAuth: true
+        )
+    }
+
+    static func acceptMenuSuggestion(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "menu/suggestions/\(sanitizedPathID(id))/accept",
+            method: .post,
+            requiresAuth: true
+        )
+    }
+
+    static func dismissMenuSuggestion(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "menu/suggestions/\(sanitizedPathID(id))/dismiss",
+            method: .post,
+            requiresAuth: true
+        )
+    }
 }
