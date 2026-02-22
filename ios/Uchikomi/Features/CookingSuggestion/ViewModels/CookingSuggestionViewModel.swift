@@ -33,6 +33,8 @@ final class CookingSuggestionViewModel {
                 mealType: selectedMealType,
                 count: suggestionCount
             )
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
             logger.error("サジェスト生成でAPIエラー: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
@@ -48,6 +50,8 @@ final class CookingSuggestionViewModel {
         do {
             try await repository.dismissSuggestion(id: id)
             suggestions.removeAll { $0.id == id }
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
             logger.error("サジェスト却下でAPIエラー: id=\(id), error=\(error.localizedDescription)")
             errorMessage = error.localizedDescription

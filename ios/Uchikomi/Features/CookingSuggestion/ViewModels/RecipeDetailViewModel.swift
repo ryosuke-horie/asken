@@ -37,6 +37,8 @@ final class RecipeDetailViewModel {
 
         do {
             suggestion = try await repository.fetchSuggestionDetail(id: suggestion.id)
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
             logger.error("レシピ取得でAPIエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
             recipeErrorMessage = "レシピの取得に失敗しました"
@@ -54,6 +56,8 @@ final class RecipeDetailViewModel {
         do {
             acceptResult = try await repository.acceptSuggestion(id: suggestion.id)
             return true
+        } catch is CancellationError {
+            return false
         } catch let error as APIError {
             logger.error("サジェスト採用でAPIエラー: id=\(self.suggestion.id), error=\(error.localizedDescription)")
             acceptErrorMessage = error.localizedDescription

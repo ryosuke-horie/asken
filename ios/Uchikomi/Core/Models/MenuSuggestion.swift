@@ -10,7 +10,7 @@ enum MenuSuggestionStatus: String, Codable {
 
 // MARK: - MenuSuggestionIngredient
 
-struct MenuSuggestionIngredient: Codable, Equatable, Identifiable {
+struct MenuSuggestionIngredient: Decodable, Equatable, Identifiable {
     var id: String {
         ingredientId
     }
@@ -23,7 +23,7 @@ struct MenuSuggestionIngredient: Codable, Equatable, Identifiable {
 
 // MARK: - EstimatedNutrition
 
-struct EstimatedNutrition: Codable, Equatable {
+struct EstimatedNutrition: Decodable, Equatable {
     let calories: Double
     let protein: Double
     let fat: Double
