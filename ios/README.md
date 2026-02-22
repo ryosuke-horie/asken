@@ -20,15 +20,20 @@ ios/
 │   ├── App/              # アプリエントリポイント
 │   ├── Core/
 │   │   ├── Auth/         # 認証マネージャー
-│   │   ├── Network/      # APIClient, TokenManager
+│   │   ├── Extensions/   # Swift拡張
 │   │   ├── Models/       # データモデル
-│   │   └── Repositories/ # データアクセス層
+│   │   ├── Network/      # APIClient, TokenManager
+│   │   ├── Notification/ # 通知マネージャー
+│   │   ├── Repositories/ # データアクセス層
+│   │   └── Views/        # 共通ビュー（カメラ等）
 │   ├── Features/
-│   │   ├── Auth/         # ログイン画面
-│   │   ├── Meals/        # 食事記録画面
-│   │   ├── Weight/       # 体重記録画面
-│   │   ├── MyMenu/       # マイメニュー画面
-│   │   └── Settings/     # 設定画面
+│   │   ├── Auth/              # ログイン画面
+│   │   ├── CookingSuggestion/ # メニューサジェスト画面
+│   │   ├── Meals/             # 食事記録画面
+│   │   ├── MyMenu/            # マイメニュー画面
+│   │   ├── Pantry/            # 食材管理画面
+│   │   ├── Settings/          # 設定画面
+│   │   └── Weight/            # 体重記録画面
 │   ├── Shared/
 │   │   ├── Components/   # 共通UIコンポーネント
 │   │   └── Theme.swift   # テーマ定義
@@ -113,6 +118,18 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 - よく食べるメニューの登録・管理
 - マイメニューからの食事記録
 
+### 栄養目標
+- PFC（タンパク質・脂質・炭水化物）目標設定
+- 微量栄養素の表示
+
+### 食材管理（パントリー）
+- 食材の登録・管理（カテゴリ・賞味期限対応）
+- レシート読取による食材一括登録（Gemini API）
+
+### メニューサジェスト
+- 手持ちの食材と栄養目標に基づくメニュー提案（Gemini API）
+- サジェストの採用・却下
+
 ### 設定
 - 通知設定
 
@@ -123,20 +140,37 @@ Mac の IP アドレスは `ifconfig | grep "inet "` で確認できます。
 | エンドポイント | 用途 |
 |:---|:---|
 | POST /api/analyze | 画像分析開始 |
-| GET /api/analyze/:id/status | 分析ステータス確認 |
+| GET /api/analyze/{id} | 分析ステータス確認 |
 | POST /api/upload-image | 画像アップロード |
-| GET /api/images/:path | 画像取得 |
+| GET /api/images/{uuid} | 画像取得 |
 | GET /api/history | 分析履歴一覧 |
-| GET /api/history/:id | 分析履歴詳細 |
-| PUT /api/history/:id | 分析履歴更新 |
-| DELETE /api/history/:id | 分析履歴削除 |
+| GET /api/history/{id} | 分析履歴詳細 |
+| PUT /api/history/{id} | 分析履歴更新 |
+| DELETE /api/history/{id} | 分析履歴削除 |
 | GET /api/meals/daily | 日別食事取得 |
 | POST /api/meals/skip | 食事スキップ |
 | GET /api/weight/records | 体重記録一覧 |
 | POST /api/weight/records | 体重記録作成 |
+| GET /api/weight/records/{id} | 体重記録詳細 |
+| PUT /api/weight/records/{id} | 体重記録更新 |
+| DELETE /api/weight/records/{id} | 体重記録削除 |
 | GET /api/weight/goal | 体重目標取得 |
 | PUT /api/weight/goal | 体重目標更新 |
+| GET /api/nutrition/goal | 栄養目標取得 |
+| PUT /api/nutrition/goal | 栄養目標設定 |
 | GET /api/my-menu | マイメニュー一覧 |
 | POST /api/my-menu | マイメニュー作成 |
-| PUT /api/my-menu/:id | マイメニュー更新 |
-| DELETE /api/my-menu/:id | マイメニュー削除 |
+| GET /api/my-menu/{id} | マイメニュー詳細 |
+| PUT /api/my-menu/{id} | マイメニュー更新 |
+| DELETE /api/my-menu/{id} | マイメニュー削除 |
+| POST /api/my-menu/{id}/record | マイメニューから食事記録 |
+| GET /api/ingredients | 食材一覧 |
+| POST /api/ingredients | 食材作成 |
+| PUT /api/ingredients/{id} | 食材更新 |
+| DELETE /api/ingredients/{id} | 食材削除 |
+| POST /api/ingredients/scan-receipt | レシート読取 |
+| POST /api/menu/suggest | メニューサジェストリクエスト |
+| GET /api/menu/suggestions | サジェスト一覧 |
+| GET /api/menu/suggestions/{id} | サジェスト詳細 |
+| POST /api/menu/suggestions/{id}/accept | サジェスト採用 |
+| POST /api/menu/suggestions/{id}/dismiss | サジェスト却下 |
