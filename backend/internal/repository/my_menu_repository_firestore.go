@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -15,15 +16,16 @@ import (
 
 // firestoreMyMenuDocument はFirestoreに保存するマイメニュードキュメント構造
 type firestoreMyMenuDocument struct {
-	ID                 string                 `firestore:"id"`
-	Name               string                 `firestore:"name"`
-	Foods              []gemini.NutritionInfo `firestore:"foods"`
-	TotalCalories      float64                `firestore:"totalCalories"`
-	TotalProtein       float64                `firestore:"totalProtein"`
-	TotalFat           float64                `firestore:"totalFat"`
-	TotalCarbohydrates float64                `firestore:"totalCarbohydrates"`
-	CreatedAt          time.Time              `firestore:"createdAt"`
-	UpdatedAt          time.Time              `firestore:"updatedAt"`
+	ID                  string                 `firestore:"id"`
+	Name                string                 `firestore:"name"`
+	Foods               []gemini.NutritionInfo `firestore:"foods"`
+	TotalCalories       float64                `firestore:"totalCalories"`
+	TotalProtein        float64                `firestore:"totalProtein"`
+	TotalFat            float64                `firestore:"totalFat"`
+	TotalCarbohydrates  float64                `firestore:"totalCarbohydrates"`
+	TotalMicronutrients map[string]float64     `firestore:"totalMicronutrients,omitempty"`
+	CreatedAt           time.Time              `firestore:"createdAt"`
+	UpdatedAt           time.Time              `firestore:"updatedAt"`
 }
 
 // firestoreMyMenuRepository はFirestoreを使用したMyMenuRepositoryの実装
@@ -61,18 +63,19 @@ func (r *firestoreMyMenuRepository) Create(ctx context.Context, userID string, n
 	now := time.Now()
 	id := uuid.New().String()
 
-	totalCalories, totalProtein, totalFat, totalCarbs := calculateTotals(foods)
+	totalCalories, totalProtein, totalFat, totalCarbs, totalMicro := calculateTotals(foods)
 
 	doc := firestoreMyMenuDocument{
-		ID:                 id,
-		Name:               name,
-		Foods:              foods,
-		TotalCalories:      totalCalories,
-		TotalProtein:       totalProtein,
-		TotalFat:           totalFat,
-		TotalCarbohydrates: totalCarbs,
-		CreatedAt:          now,
-		UpdatedAt:          now,
+		ID:                  id,
+		Name:                name,
+		Foods:               foods,
+		TotalCalories:       totalCalories,
+		TotalProtein:        totalProtein,
+		TotalFat:            totalFat,
+		TotalCarbohydrates:  totalCarbs,
+		TotalMicronutrients: totalMicro,
+		CreatedAt:           now,
+		UpdatedAt:           now,
 	}
 
 	_, err := r.getMyMenuCollection(userID).Doc(id).Set(ctx, doc)
@@ -97,8 +100,11 @@ func (r *firestoreMyMenuRepository) List(ctx context.Context, userID string) ([]
 	var items []MyMenuItem
 	for {
 		doc, err := iter.Next()
-		if err != nil {
+		if err == iterator.Done {
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("マイメニュー一覧の取得中にエラーが発生しました: %w", err)
 		}
 
 		var fsDoc firestoreMyMenuDocument
@@ -173,7 +179,7 @@ func (r *firestoreMyMenuRepository) Update(ctx context.Context, userID string, m
 	}
 
 	now := time.Now()
-	totalCalories, totalProtein, totalFat, totalCarbs := calculateTotals(foods)
+	totalCalories, totalProtein, totalFat, totalCarbs, totalMicro := calculateTotals(foods)
 
 	_, err = docRef.Update(ctx, []firestore.Update{
 		{Path: "name", Value: name},
@@ -182,6 +188,7 @@ func (r *firestoreMyMenuRepository) Update(ctx context.Context, userID string, m
 		{Path: "totalProtein", Value: totalProtein},
 		{Path: "totalFat", Value: totalFat},
 		{Path: "totalCarbohydrates", Value: totalCarbs},
+		{Path: "totalMicronutrients", Value: totalMicro},
 		{Path: "updatedAt", Value: now},
 	})
 	if err != nil {
@@ -194,6 +201,7 @@ func (r *firestoreMyMenuRepository) Update(ctx context.Context, userID string, m
 	fsDoc.TotalProtein = totalProtein
 	fsDoc.TotalFat = totalFat
 	fsDoc.TotalCarbohydrates = totalCarbs
+	fsDoc.TotalMicronutrients = totalMicro
 	fsDoc.UpdatedAt = now
 
 	return r.toMyMenuItem(&fsDoc), nil
@@ -231,15 +239,16 @@ func (r *firestoreMyMenuRepository) Delete(ctx context.Context, userID string, m
 // toMyMenuItem はFirestoreドキュメントをMyMenuItemに変換
 func (r *firestoreMyMenuRepository) toMyMenuItem(doc *firestoreMyMenuDocument) *MyMenuItem {
 	return &MyMenuItem{
-		ID:                 doc.ID,
-		Name:               doc.Name,
-		Foods:              doc.Foods,
-		TotalCalories:      doc.TotalCalories,
-		TotalProtein:       doc.TotalProtein,
-		TotalFat:           doc.TotalFat,
-		TotalCarbohydrates: doc.TotalCarbohydrates,
-		CreatedAt:          doc.CreatedAt,
-		UpdatedAt:          doc.UpdatedAt,
+		ID:                  doc.ID,
+		Name:                doc.Name,
+		Foods:               doc.Foods,
+		TotalCalories:       doc.TotalCalories,
+		TotalProtein:        doc.TotalProtein,
+		TotalFat:            doc.TotalFat,
+		TotalCarbohydrates:  doc.TotalCarbohydrates,
+		TotalMicronutrients: doc.TotalMicronutrients,
+		CreatedAt:           doc.CreatedAt,
+		UpdatedAt:           doc.UpdatedAt,
 	}
 }
 
@@ -266,12 +275,18 @@ func validateFoods(foods []gemini.NutritionInfo) error {
 }
 
 // calculateTotals は食品リストから総栄養素を計算します
-func calculateTotals(foods []gemini.NutritionInfo) (calories, protein, fat, carbs float64) {
+// micronutrientsが1件もない場合はmicroにnilを返す（omitemptyによるJSON省略のため）
+func calculateTotals(foods []gemini.NutritionInfo) (calories, protein, fat, carbs float64, micro map[string]float64) {
+	micro = make(map[string]float64)
 	for _, food := range foods {
 		calories += food.Calories
 		protein += food.Protein
 		fat += food.Fat
 		carbs += food.Carbohydrates
+		micro = gemini.MergeMicronutrients(micro, food.Micronutrients)
+	}
+	if len(micro) == 0 {
+		micro = nil
 	}
 	return
 }
