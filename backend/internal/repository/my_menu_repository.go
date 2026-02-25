@@ -27,13 +27,14 @@ type MyMenuRepository interface {
 
 // MyMenuItem はマイメニュー項目を表す構造体
 type MyMenuItem struct {
-	ID                 string
-	Name               string
-	Foods              []gemini.NutritionInfo
-	TotalCalories      float64
-	TotalProtein       float64
-	TotalFat           float64
-	TotalCarbohydrates float64
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                  string
+	Name                string
+	Foods               []gemini.NutritionInfo
+	TotalCalories       float64
+	TotalProtein        float64
+	TotalFat            float64
+	TotalCarbohydrates  float64
+	TotalMicronutrients map[string]float64
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
