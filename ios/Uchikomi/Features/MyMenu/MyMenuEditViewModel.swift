@@ -95,6 +95,7 @@ final class MyMenuEditViewModel {
 
         isSaving = true
         errorMessage = nil
+        analysisWarning = nil
         defer { isSaving = false }
 
         // 新規作成時のみ: micronutrientsがない食品があれば自動的にGemini分析を実行してから保存する
@@ -386,6 +387,7 @@ extension MyMenuEditViewModel {
                 }
             }
         } catch is CancellationError {
+            analysisWarning = "ビタミン・ミネラルの自動分析がキャンセルされました。保存後に手動で再分析できます。"
             return
         } catch let error as APIError {
             // 既知のAPIエラー - micronutrientsなしで保存を続行
