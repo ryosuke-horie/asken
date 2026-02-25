@@ -19,6 +19,8 @@ final class MyMenuEditViewModel {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+    /// 保存は成功したがmicronutrientsの自動分析に失敗した場合のノンブロッキング警告
+    var analysisWarning: String?
     var shouldDismiss = false
 
     // Analysis properties
@@ -68,7 +70,7 @@ final class MyMenuEditViewModel {
 
     var totalMicronutrients: [String: Double] {
         // 編集モードかつAPIから取得したマイクロニュートリエント合計がある場合は、それを優先して使用する
-        // （foodItemsの各micronutrientsより正確な値がバックエンドで集計済みのため）
+        // （保存時にバックエンドで集計・永続化された値がFirestoreの状態と一致しているため）
         if isEditMode, let micros = existingMenuItem?.totalMicronutrients, !micros.isEmpty {
             return micros
         }
@@ -96,6 +98,7 @@ final class MyMenuEditViewModel {
         defer { isSaving = false }
 
         // 新規作成時のみ: micronutrientsがない食品があれば自動的にGemini分析を実行してから保存する
+        // 分析に失敗した場合はmicronutrientsなしで保存を続行し、analysisWarningがセットされる
         if !isEditMode {
             let needsAnalysis = foodItems.contains { $0.micronutrients.isEmpty }
             if needsAnalysis {
@@ -121,10 +124,13 @@ final class MyMenuEditViewModel {
             } else {
                 _ = try await repository.createMyMenu(name: menuName, foods: foods)
             }
-            shouldDismiss = true // 成功フラグ（画面を閉じるため）
+            shouldDismiss = true
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] save unexpected error: \(error)")
+            #endif
             errorMessage = "保存に失敗しました"
         }
     }
@@ -342,8 +348,9 @@ extension MyMenuEditViewModel {
         }
     }
 
-    /// micronutrientsがない食品を対象にGemini分析を行い、結果をfoodItemsに反映する。
-    /// 分析に失敗した場合はmicronutrientsなしで保存を続行する（エラーは無視）。
+    /// 全食品をGemini分析してmicronutrientsをfoodItemsに反映する。
+    /// 実際には全食品を一括送信し、APIのレスポンス順序がfoodItemsと一致することを前提としてインデックスで突き合わせる。
+    /// 分析に失敗した場合はmicronutrientsなしで保存を続行し、analysisWarningにメッセージをセットする。
     func autoAnalyzeForMicronutrients() async {
         let inputText = buildInputText(from: foodItems)
         guard !inputText.isEmpty else { return }
@@ -368,6 +375,7 @@ extension MyMenuEditViewModel {
 
             // インデックスでマッチングしてmicronutrientsのみを反映する
             // （カロリー等の手動入力値は上書きしない）
+            // APIがfoodsを追加・統合した場合でもfoodItemsの個数を超えるレスポンスは無視する（意図的）
             for (index, analysisFood) in result.result.foods.enumerated() {
                 guard index < foodItems.count else { break }
                 if let micros = analysisFood.micronutrients, !micros.isEmpty {
@@ -376,10 +384,17 @@ extension MyMenuEditViewModel {
             }
         } catch is CancellationError {
             return
-        } catch {
-            // 分析失敗時はmicronutrientsなしで保存を続行（エラーは無視してユーザーの操作を妨げない）
+        } catch let error as APIError {
+            // 既知のAPIエラー - micronutrientsなしで保存を続行
+            analysisWarning = "ビタミン・ミネラルの自動分析に失敗しました。保存後に手動で再分析できます。"
             #if DEBUG
-            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients error: \(error)")
+            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients APIError: \(error)")
+            #endif
+        } catch {
+            // 予期しないエラー - micronutrientsなしで保存を続行
+            analysisWarning = "ビタミン・ミネラルの自動分析に失敗しました。保存後に手動で再分析できます。"
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients unexpected error: \(error)")
             #endif
         }
     }

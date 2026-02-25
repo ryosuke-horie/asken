@@ -7,6 +7,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -99,8 +100,11 @@ func (r *firestoreMyMenuRepository) List(ctx context.Context, userID string) ([]
 	var items []MyMenuItem
 	for {
 		doc, err := iter.Next()
-		if err != nil {
+		if err == iterator.Done {
 			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("マイメニュー一覧の取得中にエラーが発生しました: %w", err)
 		}
 
 		var fsDoc firestoreMyMenuDocument
@@ -271,6 +275,7 @@ func validateFoods(foods []gemini.NutritionInfo) error {
 }
 
 // calculateTotals は食品リストから総栄養素を計算します
+// micronutrientsが1件もない場合はmicroにnilを返す（omitemptyによるJSON省略のため）
 func calculateTotals(foods []gemini.NutritionInfo) (calories, protein, fat, carbs float64, micro map[string]float64) {
 	micro = make(map[string]float64)
 	for _, food := range foods {
@@ -279,6 +284,9 @@ func calculateTotals(foods []gemini.NutritionInfo) (calories, protein, fat, carb
 		fat += food.Fat
 		carbs += food.Carbohydrates
 		micro = gemini.MergeMicronutrients(micro, food.Micronutrients)
+	}
+	if len(micro) == 0 {
+		micro = nil
 	}
 	return
 }
