@@ -148,6 +148,9 @@ final class MyMenuEditViewModel {
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] delete unexpected error: \(error)")
+            #endif
             errorMessage = "削除に失敗しました"
         }
     }
