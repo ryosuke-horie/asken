@@ -53,15 +53,16 @@ type RecordMyMenuRequest struct {
 
 // MyMenuResponse はマイメニューのレスポンス
 type MyMenuResponse struct {
-	ID                 string                 `json:"id"`
-	Name               string                 `json:"name"`
-	Foods              []gemini.NutritionInfo `json:"foods"`
-	TotalCalories      float64                `json:"totalCalories"`
-	TotalProtein       float64                `json:"totalProtein"`
-	TotalFat           float64                `json:"totalFat"`
-	TotalCarbohydrates float64                `json:"totalCarbohydrates"`
-	CreatedAt          string                 `json:"createdAt"`
-	UpdatedAt          string                 `json:"updatedAt"`
+	ID                  string                 `json:"id"`
+	Name                string                 `json:"name"`
+	Foods               []gemini.NutritionInfo `json:"foods"`
+	TotalCalories       float64                `json:"totalCalories"`
+	TotalProtein        float64                `json:"totalProtein"`
+	TotalFat            float64                `json:"totalFat"`
+	TotalCarbohydrates  float64                `json:"totalCarbohydrates"`
+	TotalMicronutrients map[string]float64     `json:"totalMicronutrients,omitempty"`
+	CreatedAt           string                 `json:"createdAt"`
+	UpdatedAt           string                 `json:"updatedAt"`
 }
 
 // AnalysisIDResponse は分析IDのレスポンス
@@ -352,11 +353,12 @@ func (h *MyMenuHandler) HandleRecord(w http.ResponseWriter, r *http.Request) {
 
 	// 既存のCreateRequestFromMylistメソッドを使用
 	analysisResult := &service.AnalysisResult{
-		Foods:              menu.Foods,
-		TotalCalories:      menu.TotalCalories,
-		TotalProtein:       menu.TotalProtein,
-		TotalFat:           menu.TotalFat,
-		TotalCarbohydrates: menu.TotalCarbohydrates,
+		Foods:               menu.Foods,
+		TotalCalories:       menu.TotalCalories,
+		TotalProtein:        menu.TotalProtein,
+		TotalFat:            menu.TotalFat,
+		TotalCarbohydrates:  menu.TotalCarbohydrates,
+		TotalMicronutrients: menu.TotalMicronutrients,
 	}
 
 	inputText := menu.Name // マイメニュー名をinputTextに使用
@@ -455,14 +457,15 @@ func extractMenuIDForRecord(path string) (string, error) {
 // toMyMenuResponse はMyMenuItemをレスポンスに変換
 func toMyMenuResponse(item repository.MyMenuItem) MyMenuResponse {
 	return MyMenuResponse{
-		ID:                 item.ID,
-		Name:               item.Name,
-		Foods:              item.Foods,
-		TotalCalories:      item.TotalCalories,
-		TotalProtein:       item.TotalProtein,
-		TotalFat:           item.TotalFat,
-		TotalCarbohydrates: item.TotalCarbohydrates,
-		CreatedAt:          item.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:          item.UpdatedAt.Format(time.RFC3339),
+		ID:                  item.ID,
+		Name:                item.Name,
+		Foods:               item.Foods,
+		TotalCalories:       item.TotalCalories,
+		TotalProtein:        item.TotalProtein,
+		TotalFat:            item.TotalFat,
+		TotalCarbohydrates:  item.TotalCarbohydrates,
+		TotalMicronutrients: item.TotalMicronutrients,
+		CreatedAt:           item.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:           item.UpdatedAt.Format(time.RFC3339),
 	}
 }

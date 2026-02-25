@@ -1,6 +1,8 @@
 import Foundation
 import UIKit
 
+// MARK: - MyMenuEditViewModel
+
 @Observable
 final class MyMenuEditViewModel {
     // MARK: - Constants
@@ -65,6 +67,11 @@ final class MyMenuEditViewModel {
     }
 
     var totalMicronutrients: [String: Double] {
+        // 編集モードかつAPIから取得したマイクロニュートリエント合計がある場合は、それを優先して使用する
+        // （foodItemsの各micronutrientsより正確な値がバックエンドで集計済みのため）
+        if isEditMode, let micros = existingMenuItem?.totalMicronutrients, !micros.isEmpty {
+            return micros
+        }
         var result: [String: Double] = [:]
         for item in foodItems {
             for (key, value) in item.micronutrients {
@@ -87,6 +94,14 @@ final class MyMenuEditViewModel {
         isSaving = true
         errorMessage = nil
         defer { isSaving = false }
+
+        // 新規作成時のみ: micronutrientsがない食品があれば自動的にGemini分析を実行してから保存する
+        if !isEditMode {
+            let needsAnalysis = foodItems.contains { $0.micronutrients.isEmpty }
+            if needsAnalysis {
+                await autoAnalyzeForMicronutrients()
+            }
+        }
 
         let foods = foodItems.map { item in
             NutritionInfo(
@@ -148,23 +163,14 @@ final class MyMenuEditViewModel {
         manualFoods.contains { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    private func buildInputText(from foods: [FoodEditItem]) -> String {
-        foods
-            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .map { food in
-                let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                let quantity = food.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
-                return quantity.isEmpty ? name : "\(name) \(quantity)"
-            }
-            .joined(separator: ", ")
-    }
-
     var canAnalyze: Bool {
         selectedImage != nil || hasValidManualInput
     }
+}
 
-    // MARK: - Analysis
+// MARK: - Analysis
 
+extension MyMenuEditViewModel {
     func analyze() async {
         if selectedImage != nil {
             await analyzeImage()
@@ -274,7 +280,7 @@ final class MyMenuEditViewModel {
         }
     }
 
-    private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
+    func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
         for attempt in 0 ..< maxAttempts {
             let status = try await mealRepository.checkAnalysisStatus(id: id)
 
@@ -299,7 +305,18 @@ final class MyMenuEditViewModel {
         throw APIError.serverError("分析がタイムアウトしました。時間をおいてやり直してください。")
     }
 
-    private func applyAnalysisResult() {
+    func buildInputText(from foods: [FoodEditItem]) -> String {
+        foods
+            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .map { food in
+                let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let quantity = food.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
+                return quantity.isEmpty ? name : "\(name) \(quantity)"
+            }
+            .joined(separator: ", ")
+    }
+
+    func applyAnalysisResult() {
         guard let result = analysisResult else {
             // 分析成功後に結果がないのはロジックエラー
             #if DEBUG
@@ -322,6 +339,48 @@ final class MyMenuEditViewModel {
                 carbohydrates: nutritionInfo.carbohydratesG,
                 micronutrients: nutritionInfo.micronutrients ?? [:]
             )
+        }
+    }
+
+    /// micronutrientsがない食品を対象にGemini分析を行い、結果をfoodItemsに反映する。
+    /// 分析に失敗した場合はmicronutrientsなしで保存を続行する（エラーは無視）。
+    func autoAnalyzeForMicronutrients() async {
+        let inputText = buildInputText(from: foodItems)
+        guard !inputText.isEmpty else { return }
+
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+
+        do {
+            let id = try await mealRepository.analyzeText(
+                inputText: inputText,
+                mealType: .lunch, // ダミー値（マイメニューでは使用しない）
+                mealDate: Date() // ダミー値（マイメニューでは使用しない）
+            )
+
+            guard !Task.isCancelled else { return }
+
+            try await pollForCompletion(id: id)
+
+            guard !Task.isCancelled else { return }
+
+            let result = try await mealRepository.getAnalysisResult(id: id)
+
+            // インデックスでマッチングしてmicronutrientsのみを反映する
+            // （カロリー等の手動入力値は上書きしない）
+            for (index, analysisFood) in result.result.foods.enumerated() {
+                guard index < foodItems.count else { break }
+                if let micros = analysisFood.micronutrients, !micros.isEmpty {
+                    foodItems[index].micronutrients = micros
+                }
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            // 分析失敗時はmicronutrientsなしで保存を続行（エラーは無視してユーザーの操作を妨げない）
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients error: \(error)")
+            #endif
         }
     }
 }
