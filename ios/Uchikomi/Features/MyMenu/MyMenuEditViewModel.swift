@@ -1,6 +1,8 @@
 import Foundation
 import UIKit
 
+// MARK: - MyMenuEditViewModel
+
 @Observable
 final class MyMenuEditViewModel {
     // MARK: - Constants
@@ -17,6 +19,8 @@ final class MyMenuEditViewModel {
     var isLoading = false
     var isSaving = false
     var errorMessage: String?
+    /// 保存は成功したがmicronutrientsの自動分析に失敗した場合のノンブロッキング警告
+    var analysisWarning: String?
     var shouldDismiss = false
 
     // Analysis properties
@@ -65,6 +69,11 @@ final class MyMenuEditViewModel {
     }
 
     var totalMicronutrients: [String: Double] {
+        // 編集モードかつAPIから取得したマイクロニュートリエント合計がある場合は、それを優先して使用する
+        // （保存時にバックエンドで集計・永続化された値がFirestoreの状態と一致しているため）
+        if isEditMode, let micros = existingMenuItem?.totalMicronutrients, !micros.isEmpty {
+            return micros
+        }
         var result: [String: Double] = [:]
         for item in foodItems {
             for (key, value) in item.micronutrients {
@@ -86,7 +95,17 @@ final class MyMenuEditViewModel {
 
         isSaving = true
         errorMessage = nil
+        analysisWarning = nil
         defer { isSaving = false }
+
+        // 新規作成時のみ: micronutrientsがない食品があれば自動的にGemini分析を実行してから保存する
+        // 分析に失敗した場合はmicronutrientsなしで保存を続行し、analysisWarningがセットされる
+        if !isEditMode {
+            let needsAnalysis = foodItems.contains { $0.micronutrients.isEmpty }
+            if needsAnalysis {
+                await autoAnalyzeForMicronutrients()
+            }
+        }
 
         let foods = foodItems.map { item in
             NutritionInfo(
@@ -106,10 +125,13 @@ final class MyMenuEditViewModel {
             } else {
                 _ = try await repository.createMyMenu(name: menuName, foods: foods)
             }
-            shouldDismiss = true // 成功フラグ（画面を閉じるため）
+            shouldDismiss = true
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] save unexpected error: \(error)")
+            #endif
             errorMessage = "保存に失敗しました"
         }
     }
@@ -127,6 +149,9 @@ final class MyMenuEditViewModel {
         } catch let error as APIError {
             errorMessage = error.localizedDescription
         } catch {
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] delete unexpected error: \(error)")
+            #endif
             errorMessage = "削除に失敗しました"
         }
     }
@@ -148,23 +173,14 @@ final class MyMenuEditViewModel {
         manualFoods.contains { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    private func buildInputText(from foods: [FoodEditItem]) -> String {
-        foods
-            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .map { food in
-                let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                let quantity = food.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
-                return quantity.isEmpty ? name : "\(name) \(quantity)"
-            }
-            .joined(separator: ", ")
-    }
-
     var canAnalyze: Bool {
         selectedImage != nil || hasValidManualInput
     }
+}
 
-    // MARK: - Analysis
+// MARK: - Analysis
 
+extension MyMenuEditViewModel {
     func analyze() async {
         if selectedImage != nil {
             await analyzeImage()
@@ -274,7 +290,7 @@ final class MyMenuEditViewModel {
         }
     }
 
-    private func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
+    func pollForCompletion(id: String, maxAttempts: Int = Constants.maxPollingAttempts) async throws {
         for attempt in 0 ..< maxAttempts {
             let status = try await mealRepository.checkAnalysisStatus(id: id)
 
@@ -299,7 +315,18 @@ final class MyMenuEditViewModel {
         throw APIError.serverError("分析がタイムアウトしました。時間をおいてやり直してください。")
     }
 
-    private func applyAnalysisResult() {
+    func buildInputText(from foods: [FoodEditItem]) -> String {
+        foods
+            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .map { food in
+                let name = food.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let quantity = food.quantity.trimmingCharacters(in: .whitespacesAndNewlines)
+                return quantity.isEmpty ? name : "\(name) \(quantity)"
+            }
+            .joined(separator: ", ")
+    }
+
+    func applyAnalysisResult() {
         guard let result = analysisResult else {
             // 分析成功後に結果がないのはロジックエラー
             #if DEBUG
@@ -322,6 +349,58 @@ final class MyMenuEditViewModel {
                 carbohydrates: nutritionInfo.carbohydratesG,
                 micronutrients: nutritionInfo.micronutrients ?? [:]
             )
+        }
+    }
+
+    /// 全食品をGemini分析してmicronutrientsをfoodItemsに反映する。
+    /// 実際には全食品を一括送信し、APIのレスポンス順序がfoodItemsと一致することを前提としてインデックスで突き合わせる。
+    /// 分析に失敗した場合はmicronutrientsなしで保存を続行し、analysisWarningにメッセージをセットする。
+    func autoAnalyzeForMicronutrients() async {
+        let inputText = buildInputText(from: foodItems)
+        guard !inputText.isEmpty else { return }
+
+        isAnalyzing = true
+        defer { isAnalyzing = false }
+
+        do {
+            let id = try await mealRepository.analyzeText(
+                inputText: inputText,
+                mealType: .lunch, // ダミー値（マイメニューでは使用しない）
+                mealDate: Date() // ダミー値（マイメニューでは使用しない）
+            )
+
+            guard !Task.isCancelled else { return }
+
+            try await pollForCompletion(id: id)
+
+            guard !Task.isCancelled else { return }
+
+            let result = try await mealRepository.getAnalysisResult(id: id)
+
+            // インデックスでマッチングしてmicronutrientsのみを反映する
+            // （カロリー等の手動入力値は上書きしない）
+            // APIがfoodsを追加・統合した場合でもfoodItemsの個数を超えるレスポンスは無視する（意図的）
+            for (index, analysisFood) in result.result.foods.enumerated() {
+                guard index < foodItems.count else { break }
+                if let micros = analysisFood.micronutrients, !micros.isEmpty {
+                    foodItems[index].micronutrients = micros
+                }
+            }
+        } catch is CancellationError {
+            analysisWarning = "ビタミン・ミネラルの自動分析がキャンセルされました。保存後に手動で再分析できます。"
+            return
+        } catch let error as APIError {
+            // 既知のAPIエラー - micronutrientsなしで保存を続行
+            analysisWarning = "ビタミン・ミネラルの自動分析に失敗しました。保存後に手動で再分析できます。"
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients APIError: \(error)")
+            #endif
+        } catch {
+            // 予期しないエラー - micronutrientsなしで保存を続行
+            analysisWarning = "ビタミン・ミネラルの自動分析に失敗しました。保存後に手動で再分析できます。"
+            #if DEBUG
+            debugPrint("[MyMenuEditViewModel] autoAnalyzeForMicronutrients unexpected error: \(error)")
+            #endif
         }
     }
 }

@@ -152,6 +152,15 @@ struct MyMenuEditView: View {
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
                             }
+
+                            // Analysis Warning (non-blocking, shown after successful save attempt)
+                            if let warning = viewModel.analysisWarning {
+                                Text(warning)
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
                         }
                         .padding(.vertical)
                     }

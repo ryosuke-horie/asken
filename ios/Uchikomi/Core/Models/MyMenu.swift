@@ -10,6 +10,7 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
     let totalProtein: Double
     let totalFat: Double
     let totalCarbohydrates: Double
+    let totalMicronutrients: [String: Double]?
     let createdAt: Date
     let updatedAt: Date
 
@@ -21,6 +22,7 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
         case totalProtein
         case totalFat
         case totalCarbohydrates
+        case totalMicronutrients
         case createdAt
         case updatedAt
     }
@@ -34,6 +36,7 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
         totalProtein = try container.decode(Double.self, forKey: .totalProtein)
         totalFat = try container.decode(Double.self, forKey: .totalFat)
         totalCarbohydrates = try container.decode(Double.self, forKey: .totalCarbohydrates)
+        totalMicronutrients = try container.decodeIfPresent([String: Double].self, forKey: .totalMicronutrients)
 
         let dateFormatter = ISO8601DateFormatter()
         let createdAtString = try container.decode(String.self, forKey: .createdAt)
@@ -51,6 +54,7 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
         totalProtein: Double,
         totalFat: Double,
         totalCarbohydrates: Double,
+        totalMicronutrients: [String: Double]? = nil,
         createdAt: Date,
         updatedAt: Date
     ) {
@@ -61,6 +65,7 @@ struct MyMenuItem: Identifiable, Codable, Equatable {
         self.totalProtein = totalProtein
         self.totalFat = totalFat
         self.totalCarbohydrates = totalCarbohydrates
+        self.totalMicronutrients = totalMicronutrients
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
