@@ -54,7 +54,7 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
-| `task lint` | Goリントを実行（デッドコード検知を含む） |
+| `task lint` | Goリントを実行 |
 | `task format` | Goコードを整形 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |
@@ -69,7 +69,7 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task ios:lint` | SwiftLintを実行 |
 | `task ios:deadcode` | Swiftデッドコード検知（Periphery）を実行 |
 | `task ios:format` | SwiftFormatを実行（コード整形） |
-| `task ios:format-check` | SwiftFormatチェック（CI用） |
+| `task ios:format-check` | SwiftFormatチェック（ローカル検証用） |
 | `task ios:clean` | DerivedDataを削除 |
 | `task ios:clean-all` | SPMキャッシュを含む完全クリア |
 | `task ios:reset-packages` | Package.resolvedを削除して再解決 |
