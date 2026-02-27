@@ -1,49 +1,27 @@
-# コードマップ更新レポート
+CodeMap Update Report
+Date: 2026-02-27
+Branch: utk-44
+Issue: UTK-44
 
-更新日時: 2026-02-10
+Summary:
+- Updated freshness timestamps in CODEMAPS documents to 2026-02-27.
+- Reflected MyMenu micronutrient aggregation (`totalMicronutrients`) in data/backend/ios codemaps.
 
-## 変更サマリー
+Changed files:
+- docs/CODEMAPS/INDEX.md
+- docs/CODEMAPS/architecture.md
+- docs/CODEMAPS/backend.md
+- docs/CODEMAPS/data.md
+- docs/CODEMAPS/ios.md
 
-| ファイル | 変更内容 | 差分率 |
-|:---|:---|:---|
-| ios.md | 体重リマインダー通知機能の追加を反映 | ~5% |
+Diff stats:
+- Files changed: 5
+- Insertions: 9
+- Deletions: 8
+- Total changed lines: 17
+- Baseline lines (docs/CODEMAPS/*.md): 1316
+- Estimated change rate: ~1.29%
 
-## ios.md の詳細変更
-
-### 1. 最終更新日時
-- 2026-02-08 → 2026-02-10
-
-### 2. ディレクトリ構造の追加
-- `Core/Notification/` - 通知機能モジュール
-- `Features/Settings/` - 設定UIモジュール
-- `Shared/Models/NotificationSettings.swift` - 通知設定モデル
-
-### 3. 機能モジュールの追加
-- `Settings` セクションを追加
-  - NotificationSettingsView.swift
-  - NotificationSettingsViewModel.swift
-
-### 4. Core層の追加
-- `Notification (Core/Notification/)` セクションを追加
-  - NotificationManager.swift
-
-### 5. データモデルの追加
-- `通知設定関連 (NotificationSettings.swift)` セクションを追加
-  - MealNotificationSetting
-  - WeightNotificationSetting
-  - NotificationSettings
-
-## 更新理由
-
-EDG-699: 体重記録のリマインダーPush通知を実装
-- 食事リマインダーと同じUI/UXパターンで体重リマインダーを追加
-- 通知設定画面に体重リマインダーの設定項目を追加
-- ユーザーが時間をカスタマイズ可能
-
-## 未変更ファイル
-
-| ファイル | 状態 |
-|:---|:---|
-| architecture.md | 変更なし（全体構造に変更なし） |
-| backend.md | 変更なし（バックエンドに変更なし） |
-| data.md | 変更なし（Firestoreスキーマに変更なし） |
+Approval threshold check:
+- Threshold: 30%
+- Result: Below threshold (no pre-update approval required)
