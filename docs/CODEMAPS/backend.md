@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-22
+最終更新: 2026-02-27
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -179,8 +179,8 @@ Context に firebase_uid を設定
 | weight_repository_firestore.go | 体重記録・目標（Firestore実装） |
 | nutrition_goal_models.go | 栄養目標の型定義・インターフェース・PFC計算 |
 | nutrition_goal_repository_firestore.go | 栄養目標（Firestore実装） |
-| my_menu_repository.go | マイメニュー型定義・インターフェース |
-| my_menu_repository_firestore.go | マイメニュー（Firestore実装） |
+| my_menu_repository.go | マイメニュー型定義・インターフェース（`totalMicronutrients` を含む） |
+| my_menu_repository_firestore.go | マイメニュー（Firestore実装、微量栄養素合算を保存） |
 | ingredient_models.go | 食材型定義・カテゴリ・インターフェース |
 | ingredient_repository_firestore.go | 食材CRUD（Firestore実装） |
 | menu_suggestion_models.go | メニューサジェスト型定義・インターフェース |

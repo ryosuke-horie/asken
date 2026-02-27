@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-22
+最終更新: 2026-02-27
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -313,7 +313,7 @@ enum AuthServiceProvider {
 | Meal.swift | Uchikomi | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
 | MenuSuggestion.swift | Uchikomi | メニューサジェストモデル (MenuSuggestion, EstimatedNutrition) |
 | Micronutrient.swift | Uchikomi | 微量栄養素モデル (MicronutrientType, MicronutrientInfo) |
-| MyMenu.swift | Uchikomi | マイメニューモデル |
+| MyMenu.swift | Uchikomi | マイメニューモデル（`totalMicronutrients` を含む） |
 | NutritionGoal.swift | Uchikomi | 栄養目標モデル (NutritionGoal, NutritionPhase, PFCRatios, NutritionGoalCalculator) |
 | UserProfile.swift | Uchikomi | ユーザー属性モデル (Gender, ActivityLevel, RecommendedCaloriesCalculator) |
 | NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
