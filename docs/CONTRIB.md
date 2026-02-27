@@ -1,6 +1,6 @@
 # 開発者ガイド（CONTRIB）
 
-最終更新: 2026-02-22
+最終更新: 2026-02-27
 
 このドキュメントは、ウチコミプロジェクトの開発ワークフロー、利用可能なコマンド、環境セットアップ、テスト手順を説明します。
 
@@ -15,7 +15,7 @@
 | Task | 3.x | タスクランナー |
 | Lefthook | 2.x | Gitフック（lint/test/format） |
 | golangci-lint | 最新 | Goリント |
-| Xcode | 16以上 | iOS開発 |
+| Xcode | 15以上 | iOS開発 |
 | Mockolo | 最新 | iOSモック生成 |
 | 1Password CLI | 最新 | シークレット管理（オプション） |
 
@@ -173,7 +173,7 @@ Firestoreエミュレータを使用している場合は、エミュレータ�
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
-| `task lint` | golangci-lintを実行（デッドコード検知を含む） |
+| `task lint` | golangci-lintを実行 |
 | `task format` | Goコードを整形 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |

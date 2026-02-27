@@ -57,7 +57,7 @@ utikomi/
 |:---|:---|:---|
 | mise | 最新 | ツール管理（Go/Terraform/Lefthook） |
 | Go | 1.25以上 | バックエンド開発 |
-| Xcode | 16以上 | iOS開発 |
+| Xcode | 15以上 | iOS開発 |
 | Task | 3.x | タスクランナー |
 | Lefthook | 2.x | Gitフック（lint/test/format） |
 
