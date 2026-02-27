@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-22
+最終更新: 2026-02-27
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -114,6 +114,7 @@ PFC値（たんぱく質・脂質・炭水化物の目標グラム数）はリ�
 | totalProtein | number | 総タンパク質 (g) |
 | totalFat | number | 総脂質 (g) |
 | totalCarbohydrates | number | 総炭水化物 (g) |
+| totalMicronutrients | map<string, number> | 微量栄養素合計（キー: nutrient code、値: 量） |
 | createdAt | timestamp | 作成日時 |
 | updatedAt | timestamp | 更新日時 |
 
