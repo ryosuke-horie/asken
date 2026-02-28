@@ -63,6 +63,7 @@ final class ExerciseInputViewModel {
         }
 
         isSaving = true
+        defer { isSaving = false }
         errorMessage = nil
 
         do {
@@ -79,7 +80,5 @@ final class ExerciseInputViewModel {
             logger.error("運動記録保存で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "保存に失敗しました"
         }
-
-        isSaving = false
     }
 }
