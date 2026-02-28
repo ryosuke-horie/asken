@@ -153,6 +153,7 @@ struct DailyMeals: Codable {
     let date: String
     let meals: MealsByType
     let dailyTotal: DailyTotal
+    let totalBurnedCaloriesKcal: Double
 }
 
 // MARK: - AnalysisStatusResponse

@@ -6,9 +6,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
+
+// AnalysisResult は分析結果を表す構造体
+type AnalysisResult struct {
+	Foods               []gemini.NutritionInfo `json:"foods"`
+	TotalCalories       float64                `json:"total_calories"`
+	TotalProtein        float64                `json:"total_protein"`
+	TotalFat            float64                `json:"total_fat"`
+	TotalCarbohydrates  float64                `json:"total_carbohydrates"`
+	TotalMicronutrients map[string]float64     `json:"total_micronutrients,omitempty"`
+}
 
 // ErrNotFound はリソースが見つからない場合のエラー
 var ErrNotFound = errors.New("resource not found")
@@ -92,10 +101,10 @@ type AnalysisRepository interface {
 	UpdateStatus(ctx context.Context, id uuid.UUID, status AnalysisStatus, errorMessage string) error
 
 	// SaveResult は分析結果を保存し、ステータスをcompletedに更新します（ワーカー用: 全ユーザー横断）
-	SaveResult(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	SaveResult(ctx context.Context, requestID uuid.UUID, result *AnalysisResult) error
 
 	// GetResult は指定されたリクエストIDの分析結果を取得します（userIDでスコープ）
-	GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error)
+	GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*AnalysisResult, error)
 
 	// GetPendingRequests はpending状態のリクエストを取得します（ワーカー用: 全ユーザー横断）
 	GetPendingRequests(ctx context.Context, limit int) ([]AnalysisRequest, error)
@@ -114,7 +123,7 @@ type AnalysisRepository interface {
 	GetDailyMeals(ctx context.Context, userID string, date string, tz string) (map[string][]HistoryDetail, DailyTotal, error)
 
 	// CreateRequestFromMylist はマイリストからの食事記録を作成します
-	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error)
+	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *AnalysisResult) (uuid.UUID, error)
 
 	// CreateSkippedMeal は「食べなかった」記録を作成します
 	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)

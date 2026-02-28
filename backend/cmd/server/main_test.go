@@ -33,10 +33,10 @@ func (s *stubAnalysisRepository) GetRequest(_ context.Context, _ string, _ uuid.
 func (s *stubAnalysisRepository) UpdateStatus(_ context.Context, _ uuid.UUID, _ repository.AnalysisStatus, _ string) error {
 	return nil
 }
-func (s *stubAnalysisRepository) SaveResult(_ context.Context, _ uuid.UUID, _ *service.AnalysisResult) error {
+func (s *stubAnalysisRepository) SaveResult(_ context.Context, _ uuid.UUID, _ *repository.AnalysisResult) error {
 	return nil
 }
-func (s *stubAnalysisRepository) GetResult(_ context.Context, _ string, _ uuid.UUID) (*service.AnalysisResult, error) {
+func (s *stubAnalysisRepository) GetResult(_ context.Context, _ string, _ uuid.UUID) (*repository.AnalysisResult, error) {
 	return nil, nil
 }
 func (s *stubAnalysisRepository) GetPendingRequests(_ context.Context, _ int) ([]repository.AnalysisRequest, error) {
@@ -54,7 +54,7 @@ func (s *stubAnalysisRepository) DeleteHistory(_ context.Context, _ string, _ uu
 func (s *stubAnalysisRepository) GetDailyMeals(_ context.Context, _ string, _ string, _ string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	return nil, repository.DailyTotal{}, nil
 }
-func (s *stubAnalysisRepository) CreateRequestFromMylist(_ context.Context, _ string, _ string, _ string, _ *string, _ *service.AnalysisResult) (uuid.UUID, error) {
+func (s *stubAnalysisRepository) CreateRequestFromMylist(_ context.Context, _ string, _ string, _ string, _ *string, _ *repository.AnalysisResult) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 func (s *stubAnalysisRepository) CreateSkippedMeal(_ context.Context, _ string, _ string, _ *string) (uuid.UUID, error) {
@@ -67,10 +67,10 @@ func (s *stubAnalysisRepository) UpdateResult(_ context.Context, _ string, _ uui
 // stubFoodService はテスト用のスタブ
 type stubFoodService struct{}
 
-func (s *stubFoodService) AnalyzeFoodImage(_ context.Context, _ string) (*service.AnalysisResult, error) {
+func (s *stubFoodService) AnalyzeFoodImage(_ context.Context, _ string) (*repository.AnalysisResult, error) {
 	return nil, nil
 }
-func (s *stubFoodService) AnalyzeFoodText(_ context.Context, _ string) (*service.AnalysisResult, error) {
+func (s *stubFoodService) AnalyzeFoodText(_ context.Context, _ string) (*repository.AnalysisResult, error) {
 	return nil, nil
 }
 
@@ -124,6 +124,32 @@ func (s *stubMyMenuRepository) Delete(_ context.Context, _ string, _ string) err
 	return nil
 }
 
+// stubExerciseRepository はテスト用のスタブ
+type stubExerciseRepository struct{}
+
+func (s *stubExerciseRepository) Create(_ context.Context, _ string, _ repository.CreateExerciseInput) (*repository.ExerciseRecord, error) {
+	return nil, nil
+}
+func (s *stubExerciseRepository) ListByDate(_ context.Context, _ string, _ string) ([]repository.ExerciseRecord, error) {
+	return nil, nil
+}
+func (s *stubExerciseRepository) Delete(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
+// stubExerciseService はテスト用のスタブ
+type stubExerciseService struct{}
+
+func (s *stubExerciseService) CreateExerciseRecord(_ context.Context, _ string, _ service.CreateExerciseInput, _ string) (*repository.ExerciseRecord, error) {
+	return nil, nil
+}
+func (s *stubExerciseService) GetDailyExercise(_ context.Context, _ string, _ string) (*repository.ExerciseDailyResult, error) {
+	return nil, nil
+}
+func (s *stubExerciseService) DeleteExerciseRecord(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 	// 認証なしで画像エンドポイントにアクセスすると401が返ることを検証
 	analysisRepo := &stubAnalysisRepository{}
@@ -136,10 +162,11 @@ func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 		history:       handler.NewHistoryHandler(analysisRepo, nil),
 		historyDelete: handler.NewHistoryDeleteHandler(analysisRepo),
 		image:         handler.NewImageHandler(storageRepo),
-		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo),
+		dailyMeals:    handler.NewDailyMealsHandler(analysisRepo, &stubExerciseRepository{}),
 		skipMeal:      handler.NewSkipMealHandler(analysisRepo),
 		weightRecord:  handler.NewWeightRecordHandler(&stubWeightRecordRepository{}, &stubWeightGoalRepository{}),
 		weightGoal:    handler.NewWeightGoalHandler(&stubWeightGoalRepository{}),
+		exercise:      handler.NewExerciseHandler(&stubExerciseService{}),
 	}
 
 	authMiddleware := middleware.NewAuthMiddleware(&testutil.MockTokenVerifier{
