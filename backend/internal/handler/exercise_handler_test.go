@@ -306,6 +306,33 @@ func TestExerciseHandler_HandleListByDate_MissingDate(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestExerciseHandler_HandleListByDate_InvalidDateFormat(t *testing.T) {
+	testUserID := "test-user-123"
+	handler := NewExerciseHandler(&MockExerciseService{})
+
+	tests := []struct {
+		name string
+		date string
+	}{
+		{"スラッシュ区切り", "2026/02/28"},
+		{"フォーマット不正", "26-02-28"},
+		{"日付なし文字列", "not-a-date"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/api/exercise/daily?date="+tt.date, nil)
+			ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+			req = req.WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			handler.HandleListByDate(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	}
+}
+
 func TestExerciseHandler_HandleListByDate_ServiceError(t *testing.T) {
 	testUserID := "test-user-123"
 

@@ -129,6 +129,10 @@ func (h *ExerciseHandler) HandleListByDate(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "dateパラメータは必須です", http.StatusBadRequest)
 		return
 	}
+	if err := repository.ValidateRecordedDate(date); err != nil {
+		http.Error(w, "dateはYYYY-MM-DD形式で指定してください", http.StatusBadRequest)
+		return
+	}
 
 	result, err := h.service.GetDailyExercise(r.Context(), userID, date)
 	if err != nil {

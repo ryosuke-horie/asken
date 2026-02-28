@@ -86,7 +86,7 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			records, err := h.exerciseRepo.ListByDate(r.Context(), userID, date)
 			if err != nil {
-				log.Printf("Error getting daily exercise: %v", err)
+				log.Printf("DailyMealsHandler: 運動記録取得エラー userID=%s date=%s: %v", userID, date, err)
 				return
 			}
 			for _, rec := range records {
