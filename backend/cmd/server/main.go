@@ -67,6 +67,7 @@ type handlers struct {
 	ingredient     *handler.IngredientHandler
 	scanReceipt    *handler.ScanReceiptHandler
 	menuSuggestion *handler.MenuSuggestionHandler
+	exercise       *handler.ExerciseHandler
 }
 
 func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -85,6 +86,7 @@ func setupRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authe
 	setupMyMenuRoutes(mux, h, authMiddleware, rl)
 	setupIngredientRoutes(mux, h, authMiddleware, rl)
 	setupMenuSuggestionRoutes(mux, h, authMiddleware, rl)
+	setupExerciseRoutes(mux, h, authMiddleware, rl)
 }
 
 func setupAnalyzeRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
@@ -291,6 +293,38 @@ func setupMenuSuggestionRoutes(mux *http.ServeMux, h handlers, authMiddleware mi
 	mux.Handle("/api/menu/suggestions/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(suggestionsDetailRouteHandler))))
 }
 
+func setupExerciseRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
+	exerciseRecordsRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			h.exercise.HandleCreate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/exercise/records", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(exerciseRecordsRouteHandler))))
+
+	exerciseRecordDetailRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			h.exercise.HandleDelete(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/exercise/records/", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(exerciseRecordDetailRouteHandler))))
+
+	exerciseDailyRouteHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			h.exercise.HandleListByDate(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
+	mux.Handle("/api/exercise/daily", authMiddleware.Authenticate(rl.LimitByUser(http.HandlerFunc(exerciseDailyRouteHandler))))
+}
+
 func setupIngredientRoutes(mux *http.ServeMux, h handlers, authMiddleware middleware.Authenticator, rl *middleware.RateLimitMiddleware) {
 	ingredientListRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -338,6 +372,7 @@ type repositories struct {
 	myMenu         repository.MyMenuRepository
 	ingredient     repository.IngredientRepository
 	menuSuggestion repository.MenuSuggestionRepository
+	exercise       repository.ExerciseRepository
 }
 
 func initRepositories(firestoreClient *firestore.Client, storageRepo repository.StorageRepository) repositories {
@@ -371,6 +406,11 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		log.Fatalf("Failed to initialize MenuSuggestionRepository: %v", err)
 	}
 
+	exerciseRepo, err := repository.NewExerciseRepository(firestoreClient)
+	if err != nil {
+		log.Fatalf("Failed to initialize ExerciseRepository: %v", err)
+	}
+
 	return repositories{
 		analysis:       analysisRepo,
 		storage:        storageRepo,
@@ -380,6 +420,7 @@ func initRepositories(firestoreClient *firestore.Client, storageRepo repository.
 		myMenu:         myMenuRepo,
 		ingredient:     ingredientRepo,
 		menuSuggestion: menuSuggestionRepo,
+		exercise:       exerciseRepo,
 	}
 }
 
@@ -390,6 +431,15 @@ func initReceiptParser() *gemini.ReceiptParser {
 	}
 	log.Println("Gemini ReceiptParser initialized")
 	return parser
+}
+
+func initExerciseEstimator() *gemini.ExerciseEstimator {
+	estimator, err := gemini.NewExerciseEstimator(120 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to initialize ExerciseEstimator: %v", err)
+	}
+	log.Println("Gemini ExerciseEstimator initialized")
+	return estimator
 }
 
 func initMenuSuggester() *gemini.MenuSuggester {
@@ -477,7 +527,9 @@ func run() error {
 	geminiClient := initGeminiClient()
 	menuSuggester := initMenuSuggester()
 	receiptParser := initReceiptParser()
+	exerciseEstimator := initExerciseEstimator()
 	foodService := service.NewFoodService(geminiClient, storageRepo)
+	exerciseService := service.NewExerciseService(repos.exercise, exerciseEstimator)
 	authMiddleware := initAuthMiddleware(ctx, firebaseCredentials)
 
 	// ハンドラーの初期化
@@ -488,7 +540,7 @@ func run() error {
 		history:       handler.NewHistoryHandler(repos.analysis, geminiClient),
 		historyDelete: handler.NewHistoryDeleteHandler(repos.analysis),
 		image:         handler.NewImageHandler(storageRepo),
-		dailyMeals:    handler.NewDailyMealsHandler(repos.analysis),
+		dailyMeals:    handler.NewDailyMealsHandler(repos.analysis, repos.exercise),
 		skipMeal:      handler.NewSkipMealHandler(repos.analysis),
 		weightRecord:  handler.NewWeightRecordHandler(repos.weightRecord, repos.weightGoal),
 		weightGoal:    handler.NewWeightGoalHandler(repos.weightGoal),
@@ -504,6 +556,7 @@ func run() error {
 			repos.analysis,
 			menuSuggester,
 		),
+		exercise: handler.NewExerciseHandler(exerciseService),
 	}
 
 	// ワーカーの初期化

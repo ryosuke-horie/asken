@@ -66,7 +66,7 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
 	// コンテキストにユーザーIDを設定
@@ -90,7 +90,7 @@ func TestDailyMealsHandler_Handle_Success(t *testing.T) {
 
 func TestDailyMealsHandler_Handle_MethodNotAllowed(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/meals/daily", nil)
 	w := httptest.NewRecorder()
@@ -118,7 +118,7 @@ func TestDailyMealsHandler_Handle_DefaultDate(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	// dateパラメータなしでリクエスト
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily", nil)
@@ -140,7 +140,7 @@ func TestDailyMealsHandler_Handle_RepositoryError(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
 	// コンテキストにユーザーIDを設定
@@ -166,7 +166,7 @@ func TestDailyMealsHandler_Handle_EmptyMeals(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
 	// コンテキストにユーザーIDを設定
@@ -206,7 +206,7 @@ func TestDailyMealsHandler_Handle_WithTimezone(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21&tz=Asia/Tokyo", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -241,7 +241,7 @@ func TestDailyMealsHandler_Handle_DefaultDateWithTimezone(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?tz=Asia/Tokyo", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -270,7 +270,7 @@ func TestDailyMealsHandler_Handle_InvalidTimezone(t *testing.T) {
 		},
 	}
 
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?tz=Invalid/Zone", nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
@@ -284,7 +284,7 @@ func TestDailyMealsHandler_Handle_InvalidTimezone(t *testing.T) {
 
 func TestDailyMealsHandler_Handle_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
-	handler := NewDailyMealsHandler(mockRepo)
+	handler := NewDailyMealsHandler(mockRepo, nil)
 
 	// コンテキストにユーザーIDを設定しない
 	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
@@ -293,4 +293,73 @@ func TestDailyMealsHandler_Handle_Unauthorized(t *testing.T) {
 	handler.Handle(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestDailyMealsHandler_Handle_WithExercise_TotalBurnedCaloriesIncluded(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockAnalysisRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{TotalCalories: 2000.0}, nil
+		},
+	}
+
+	mockExerciseRepo := &MockExerciseRepository{
+		ListByDateFunc: func(ctx context.Context, userID string, recordedDate string) ([]repository.ExerciseRecord, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "2026-02-28", recordedDate)
+			return []repository.ExerciseRecord{
+				{ID: "rec-1", BurnedCaloriesKcal: 1102.5},
+				{ID: "rec-2", BurnedCaloriesKcal: 720.3},
+			}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockAnalysisRepo, mockExerciseRepo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-02-28", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DailyMealsResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.InDelta(t, 1822.8, response.TotalBurnedCaloriesKcal, 0.01)
+	assert.Equal(t, 2000.0, response.DailyTotal.TotalCalories)
+}
+
+func TestDailyMealsHandler_Handle_ExerciseRepoNil_ZeroBurnedCalories(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockAnalysisRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			return map[string][]repository.HistoryDetail{}, repository.DailyTotal{}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockAnalysisRepo, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-02-28", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DailyMealsResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+	assert.Equal(t, 0.0, response.TotalBurnedCaloriesKcal)
 }

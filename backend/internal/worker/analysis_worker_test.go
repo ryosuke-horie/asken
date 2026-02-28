@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,18 +15,18 @@ import (
 
 // MockFoodService はテスト用のモックFoodService
 type MockFoodService struct {
-	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
-	AnalyzeFoodTextFunc  func(ctx context.Context, inputText string) (*service.AnalysisResult, error)
+	AnalyzeFoodImageFunc func(ctx context.Context, imagePath string) (*repository.AnalysisResult, error)
+	AnalyzeFoodTextFunc  func(ctx context.Context, inputText string) (*repository.AnalysisResult, error)
 }
 
-func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error) {
+func (m *MockFoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*repository.AnalysisResult, error) {
 	if m.AnalyzeFoodImageFunc != nil {
 		return m.AnalyzeFoodImageFunc(ctx, imagePath)
 	}
 	return nil, nil
 }
 
-func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error) {
+func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*repository.AnalysisResult, error) {
 	if m.AnalyzeFoodTextFunc != nil {
 		return m.AnalyzeFoodTextFunc(ctx, inputText)
 	}
@@ -38,7 +37,7 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 type MockAnalysisRepository struct {
 	GetPendingRequestsFunc func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
 	UpdateStatusFunc       func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
-	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error
+	SaveResultFunc         func(ctx context.Context, requestID uuid.UUID, result *repository.AnalysisResult) error
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
@@ -60,14 +59,14 @@ func (m *MockAnalysisRepository) UpdateStatus(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-func (m *MockAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error {
+func (m *MockAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.UUID, result *repository.AnalysisResult) error {
 	if m.SaveResultFunc != nil {
 		return m.SaveResultFunc(ctx, requestID, result)
 	}
 	return nil
 }
 
-func (m *MockAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+func (m *MockAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*repository.AnalysisResult, error) {
 	return nil, nil
 }
 
@@ -94,7 +93,7 @@ func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID strin
 	return nil, repository.DailyTotal{}, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error) {
+func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *repository.AnalysisResult) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
 
@@ -112,9 +111,9 @@ func TestProcessRequest_Success(t *testing.T) {
 
 	// AnalyzeFoodImageが成功するケース
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
 			assert.Equal(t, imagePath, path)
-			return &service.AnalysisResult{
+			return &repository.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
 						Name:            "白米",
@@ -147,7 +146,7 @@ func TestProcessRequest_Success(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			assert.Equal(t, requestID, id)
 			assert.NotNil(t, result)
@@ -181,7 +180,7 @@ func TestProcessRequest_AnalysisError(t *testing.T) {
 	// AnalyzeFoodImageが失敗するケース
 	analysisError := errors.New("Gemini API タイムアウト")
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
 			return nil, analysisError
 		},
 	}
@@ -203,7 +202,7 @@ func TestProcessRequest_AnalysisError(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			return nil
 		},
@@ -250,8 +249,8 @@ func TestProcessPendingRequests_WithPendingRequests(t *testing.T) {
 	requestID := uuid.New()
 
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
-			return &service.AnalysisResult{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
+			return &repository.AnalysisResult{
 				Foods:              []gemini.NutritionInfo{},
 				TotalCalories:      100,
 				TotalProtein:       10,
@@ -277,7 +276,7 @@ func TestProcessPendingRequests_WithPendingRequests(t *testing.T) {
 		UpdateStatusFunc: func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error {
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			return nil
 		},
 	}
@@ -321,9 +320,9 @@ func TestProcessRequest_TextInput_Success(t *testing.T) {
 
 	// AnalyzeFoodTextが成功するケース
 	mockService := &MockFoodService{
-		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*service.AnalysisResult, error) {
+		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*repository.AnalysisResult, error) {
 			assert.Equal(t, inputText, text)
-			return &service.AnalysisResult{
+			return &repository.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
 						Name:            "白米",
@@ -363,7 +362,7 @@ func TestProcessRequest_TextInput_Success(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			assert.Equal(t, requestID, id)
 			assert.NotNil(t, result)
@@ -397,7 +396,7 @@ func TestProcessRequest_TextInput_AnalysisError(t *testing.T) {
 	// AnalyzeFoodTextが失敗するケース
 	analysisError := errors.New("Gemini API タイムアウト")
 	mockService := &MockFoodService{
-		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*service.AnalysisResult, error) {
+		AnalyzeFoodTextFunc: func(ctx context.Context, text string) (*repository.AnalysisResult, error) {
 			return nil, analysisError
 		},
 	}
@@ -417,7 +416,7 @@ func TestProcessRequest_TextInput_AnalysisError(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			return nil
 		},
@@ -462,7 +461,7 @@ func TestProcessRequest_UnknownInputType(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			return nil
 		},
@@ -492,8 +491,8 @@ func TestProcessRequest_SaveResultError(t *testing.T) {
 	// AnalyzeFoodImageは成功するが、SaveResultが失敗するケース
 	analysisError := errors.New("データベース保存エラー")
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
-			return &service.AnalysisResult{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
+			return &repository.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
 						Name:            "白米",
@@ -521,7 +520,7 @@ func TestProcessRequest_SaveResultError(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			saveResultCalled = true
 			return analysisError // SaveResult を失敗させる
 		},
@@ -586,7 +585,7 @@ func TestProcessRequest_AnalysisErrorAndUpdateStatusFailed(t *testing.T) {
 	updateStatusError := errors.New("Firestore connection error")
 
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
 			return nil, analysisError
 		},
 	}
@@ -628,8 +627,8 @@ func TestProcessRequest_SaveResultErrorAndUpdateStatusFailed(t *testing.T) {
 	updateStatusError := errors.New("Firestore connection error")
 
 	mockService := &MockFoodService{
-		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*service.AnalysisResult, error) {
-			return &service.AnalysisResult{
+		AnalyzeFoodImageFunc: func(ctx context.Context, path string) (*repository.AnalysisResult, error) {
+			return &repository.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
 						Name:            "白米",
@@ -653,7 +652,7 @@ func TestProcessRequest_SaveResultErrorAndUpdateStatusFailed(t *testing.T) {
 			}
 			return nil
 		},
-		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *service.AnalysisResult) error {
+		SaveResultFunc: func(ctx context.Context, id uuid.UUID, result *repository.AnalysisResult) error {
 			return saveResultError
 		},
 	}

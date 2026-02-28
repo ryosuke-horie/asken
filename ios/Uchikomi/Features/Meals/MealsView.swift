@@ -11,6 +11,14 @@ private let logger = Logger(
 struct MealsView: View {
     @State private var viewModel = MealsViewModel()
     @State private var selectedMealTypeForInput: MealType?
+    @State private var isExerciseInputPresented = false
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }()
 
     var body: some View {
         NavigationStack {
@@ -44,6 +52,7 @@ struct MealsView: View {
                                 fat: dailyMeals.dailyTotal.totalFat,
                                 carbohydrates: dailyMeals.dailyTotal.totalCarbohydrates,
                                 micronutrients: dailyMeals.dailyTotal.totalMicronutrients,
+                                burnedCalories: dailyMeals.totalBurnedCaloriesKcal,
                                 goal: viewModel.nutritionGoal
                             )
 
@@ -70,10 +79,18 @@ struct MealsView: View {
             .navigationTitle("食事記録")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink {
-                        SuggestionRequestView()
-                    } label: {
-                        Image(systemName: "sparkles")
+                    HStack(spacing: 16) {
+                        Button {
+                            isExerciseInputPresented = true
+                        } label: {
+                            Image(systemName: "flame")
+                        }
+
+                        NavigationLink {
+                            SuggestionRequestView()
+                        } label: {
+                            Image(systemName: "sparkles")
+                        }
                     }
                 }
             }
@@ -86,6 +103,13 @@ struct MealsView: View {
                     Task {
                         await viewModel.loadMeals()
                         await cancelNotificationIfToday(for: mealType)
+                    }
+                }
+            }
+            .sheet(isPresented: $isExerciseInputPresented) {
+                ExerciseInputView(recordedDate: dateFormatter.string(from: viewModel.selectedDate)) {
+                    Task {
+                        await viewModel.loadMeals()
                     }
                 }
             }
