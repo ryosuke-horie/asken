@@ -44,6 +44,10 @@ struct MenuSuggestion: Identifiable, Decodable, Equatable, Hashable {
     let status: MenuSuggestionStatus
     let createdAt: Date
 
+    private enum CodingKeys: String, CodingKey {
+        case id, title, description, reason, ingredientsUsed, recipe, estimatedNutrition, mealType, status, createdAt
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
