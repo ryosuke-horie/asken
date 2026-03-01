@@ -6,6 +6,7 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi
 // MARK: - ExerciseInputViewModel
 
 @Observable
+@MainActor
 final class ExerciseInputViewModel {
     var exerciseName: String = ""
     var durationText: String = "60"

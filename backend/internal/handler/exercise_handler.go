@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
@@ -199,10 +200,15 @@ func (h *ExerciseHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 // /api/exercise/records/{id} の形式を想定
 func extractExerciseRecordID(path string) string {
 	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
-	if len(parts) == 0 {
+	// /api/exercise/records/{id} → ["", "api", "exercise", "records", "{id}"] = 5要素以上必要
+	if len(parts) < 5 {
 		return ""
 	}
-	return parts[len(parts)-1]
+	id := parts[len(parts)-1]
+	if _, err := uuid.Parse(id); err != nil {
+		return ""
+	}
+	return id
 }
 
 // toExerciseRecordResponse はExerciseRecordをレスポンスに変換する

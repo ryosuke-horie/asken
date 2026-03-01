@@ -149,6 +149,8 @@ func TestCreateExerciseRecord_ValidationError(t *testing.T) {
 			DurationMinutes: 60,
 		}, "2026-02-28")
 		assert.Error(t, err)
+		var validErr *ValidationError
+		assert.True(t, errors.As(err, &validErr), "ValidationError型であるべき")
 	})
 
 	t.Run("時間が短すぎる", func(t *testing.T) {
@@ -157,6 +159,8 @@ func TestCreateExerciseRecord_ValidationError(t *testing.T) {
 			DurationMinutes: 4,
 		}, "2026-02-28")
 		assert.Error(t, err)
+		var validErr *ValidationError
+		assert.True(t, errors.As(err, &validErr), "ValidationError型であるべき")
 	})
 }
 
