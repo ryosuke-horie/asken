@@ -58,17 +58,17 @@ struct RecordMealIntent: AppIntent {
     static var openAppWhenRun: Bool = false
 
     @Parameter(title: "食事タイプ")
-    var mealType: String
+    var mealType: WidgetMealType
 
     @Parameter(title: "食事内容")
     var foodDescription: String
 
     init() {
-        mealType = "breakfast"
+        mealType = .breakfast
         foodDescription = ""
     }
 
-    init(mealType: String, foodDescription: String) {
+    init(mealType: WidgetMealType, foodDescription: String) {
         self.mealType = mealType
         self.foodDescription = foodDescription
     }
@@ -81,7 +81,7 @@ struct RecordMealIntent: AppIntent {
         let client = WidgetAPIClient()
         let analysisID = try await client.analyzeText(
             inputText: foodDescription,
-            mealType: mealType,
+            mealType: mealType.rawValue,
             mealDate: Date()
         )
 

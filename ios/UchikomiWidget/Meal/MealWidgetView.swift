@@ -129,7 +129,7 @@ struct MealWidgetView: View {
     private var recordButton: some View {
         Button(
             intent: RecordMealIntent(
-                mealType: entry.configuration.mealType.rawValue,
+                mealType: entry.configuration.mealType,
                 foodDescription: entry.configuration.foodDescription
             )
         ) {

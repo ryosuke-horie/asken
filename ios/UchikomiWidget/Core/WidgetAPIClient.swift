@@ -38,12 +38,6 @@ struct WidgetAPIClient {
         encoder = JSONEncoder()
     }
 
-    // MARK: - SharedDefaults Accessors
-
-    var isLoggedIn: Bool {
-        SharedDefaults.authToken != nil
-    }
-
     // MARK: - Weight API
 
     func createWeightRecord(weightKg: Double, recordedAt: Date, note: String) async throws -> WidgetWeightRecord {
@@ -136,7 +130,7 @@ struct WidgetAPIClient {
         return try await get(path: "analyze/\(safeID)/status")
     }
 
-    /// 分析が完了するまでポーリングする（最大 maxPollingAttempts 回 x 2秒 = 12秒）
+    /// 分析が完了するまでポーリングする（最大 maxPollingAttempts 回 x 2.5秒 = 25秒）
     func waitForAnalysisCompletion(id: String) async throws {
         for attempt in 0 ..< Self.maxPollingAttempts {
             try await Task.sleep(nanoseconds: Self.pollingIntervalNanoseconds)

@@ -1,5 +1,8 @@
+import OSLog
 import SwiftUI
 import WidgetKit
+
+private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "MealWidget")
 
 // MARK: - MealEntry
 
@@ -75,6 +78,7 @@ struct MealProvider: AppIntentTimelineProvider {
             // 更新は記録後（RecordMealIntent）とアプリ起動時（UchikomiApp）に限定する。
             return Timeline(entries: [entry], policy: .never)
         } catch {
+            logger.error("食事データ取得失敗: \(error.localizedDescription)")
             let entry = MealEntry(
                 date: Date(),
                 totalCalories: nil,

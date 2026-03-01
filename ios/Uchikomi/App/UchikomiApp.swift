@@ -55,7 +55,7 @@ struct UchikomiApp: App {
             SharedDefaults.authToken = token
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
-            // トークン取得失敗は無視（次回起動時にリトライ）
+            logger.error("ウィジェット向けトークン同期失敗: \(error.localizedDescription)")
         }
     }
 }
@@ -111,7 +111,7 @@ struct MainTabView: View {
             SharedDefaults.authToken = token
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
-            // ログアウト済みの場合は無視
+            logger.error("フォアグラウンド復帰時のトークン更新失敗: \(error.localizedDescription)")
         }
     }
 
