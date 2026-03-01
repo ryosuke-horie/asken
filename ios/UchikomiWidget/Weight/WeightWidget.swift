@@ -1,5 +1,8 @@
+import OSLog
 import SwiftUI
 import WidgetKit
+
+private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "WeightWidget")
 
 // MARK: - WeightEntry
 
@@ -51,6 +54,7 @@ struct WeightProvider: TimelineProvider {
                 // 更新は記録後（RecordWeightIntent）とアプリ起動時（UchikomiApp）に限定する。
                 completion(Timeline(entries: [entry], policy: .never))
             } catch {
+                logger.error("体重データ取得失敗: \(error.localizedDescription)")
                 let entry = WeightEntry(
                     date: Date(),
                     latestWeightKg: SharedDefaults.latestWeightKg,

@@ -1,4 +1,7 @@
 import Foundation
+import OSLog
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "dev.exe.uchikomi", category: "SharedDefaults")
 
 // MARK: - SharedDefaults
 
@@ -13,7 +16,11 @@ enum SharedDefaults {
     static let appGroupID = "group.dev.exe.uchikomi"
 
     private static var defaults: UserDefaults {
-        UserDefaults(suiteName: appGroupID) ?? .standard
+        if let suite = UserDefaults(suiteName: appGroupID) {
+            return suite
+        }
+        logger.fault("App Groups UserDefaults の初期化に失敗。entitlements を確認してください: \(appGroupID)")
+        return .standard
     }
 
     // MARK: - Keys
