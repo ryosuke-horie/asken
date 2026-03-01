@@ -97,6 +97,11 @@ struct HistoryDetail: Codable, Identifiable {
     let totalMicronutrients: [String: Double]?
     let foods: [NutritionInfo]
 
+    private enum CodingKeys: String, CodingKey {
+        case id, inputType, imagePath, inputText, createdAt, mealType, mealDate
+        case totalCalories, totalProtein, totalFat, totalCarbohydrates, totalMicronutrients, foods
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
