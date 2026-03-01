@@ -234,6 +234,16 @@ func TestExerciseRecords_Delete_Success(t *testing.T) {
 	}
 }
 
+func TestExerciseRecords_Delete_InvalidIDFormat(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// UUID形式でないIDを渡す（ハンドラーでUUID検証し400を返す）
+	deleteResp, err := client.Request(ctx, http.MethodDelete, "/api/exercise/records/not-a-uuid", nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, deleteResp.StatusCode)
+}
+
 func TestExerciseRecords_Delete_NotFound(t *testing.T) {
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
