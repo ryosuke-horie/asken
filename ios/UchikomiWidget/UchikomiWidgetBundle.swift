@@ -7,6 +7,7 @@ import WidgetKit
 struct UchikomiWidgetBundle: WidgetBundle {
     var body: some Widget {
         WeightWidget()
+        WeightHistoryWidget()
         MealWidget()
     }
 }
