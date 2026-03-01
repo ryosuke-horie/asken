@@ -4,7 +4,9 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,8 +64,8 @@ func TestMyMenu_List_Success(t *testing.T) {
 
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
-	// 事前に1件作成
-	createTestMyMenu(t, client, ctx)
+	// 事前に1件作成してIDを保存
+	menuID := createTestMyMenu(t, client, ctx)
 
 	resp, err := client.Get(ctx, "/api/my-menu")
 	require.NoError(t, err)
@@ -76,6 +78,20 @@ func TestMyMenu_List_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.GreaterOrEqual(t, len(body), 1, "Response should contain at least 1 item")
+
+	// 作成したメニューのIDが一覧に含まれることを確認
+	foundID := false
+	for _, item := range body {
+		itemMap, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if id, ok := itemMap["id"].(string); ok && id == menuID {
+			foundID = true
+			break
+		}
+	}
+	assert.True(t, foundID, "Created menu %s should be in the list", menuID)
 }
 
 func TestMyMenu_List_Unauthorized(t *testing.T) {
@@ -142,6 +158,63 @@ func TestMyMenu_Create_EmptyFoods(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMyMenu_Create_NameTooLong(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 51文字のメニュー名（上限50文字を超える）
+	longName := strings.Repeat("あ", 51)
+	reqBody := map[string]any{
+		"name":  longName,
+		"foods": testMyMenuFoods(),
+	}
+
+	resp, err := client.Post(ctx, "/api/my-menu", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMyMenu_Create_TooManyFoods(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 101件の食品リスト（上限100件を超える）
+	foods := make([]map[string]any, 101)
+	for i := range foods {
+		foods[i] = map[string]any{
+			"name":            fmt.Sprintf("食品%d", i),
+			"calories_kcal":   100.0,
+			"protein_g":       5.0,
+			"fat_g":           3.0,
+			"carbohydrates_g": 10.0,
+		}
+	}
+	reqBody := map[string]any{
+		"name":  "テスト定食",
+		"foods": foods,
+	}
+
+	resp, err := client.Post(ctx, "/api/my-menu", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMyMenu_Create_NameExactlyMaxLength(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 50文字（上限ちょうど）のメニュー名は受け入れられるべき
+	name := strings.Repeat("あ", 50)
+	reqBody := map[string]any{
+		"name":  name,
+		"foods": testMyMenuFoods(),
+	}
+
+	resp, err := client.Post(ctx, "/api/my-menu", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 }
 
 func TestMyMenu_Create_Unauthorized(t *testing.T) {
@@ -283,6 +356,22 @@ func TestMyMenu_Update_EmptyFoods(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+func TestMyMenu_Update_NameTooLong(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// バリデーションは存在確認より先に行われるため、実在しないIDでも400が返る
+	longName := strings.Repeat("あ", 51)
+	reqBody := map[string]any{
+		"name":  longName,
+		"foods": testMyMenuFoods(),
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/my-menu/00000000-0000-0000-0000-000000000000", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
 func TestMyMenu_Update_Unauthorized(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -411,6 +500,50 @@ func TestMyMenu_Record_MissingMealType(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMyMenu_Record_InvalidMealDate(t *testing.T) {
+	waitForUserRateLimit()
+
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	menuID := createTestMyMenu(t, client, ctx)
+
+	// YYYY-MM-DD 形式でない日付
+	reqBody := map[string]any{
+		"meal_type": "lunch",
+		"meal_date": "2024/01/15",
+	}
+
+	resp, err := client.Post(ctx, "/api/my-menu/"+menuID+"/record", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMyMenu_Record_DefaultMealDate(t *testing.T) {
+	waitForUserRateLimit()
+
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	menuID := createTestMyMenu(t, client, ctx)
+
+	// meal_date を省略（今日の日付がデフォルトとして使用される）
+	reqBody := map[string]any{
+		"meal_type": "dinner",
+	}
+
+	resp, err := client.Post(ctx, "/api/my-menu/"+menuID+"/record", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Contains(t, resp.Headers.Get("Content-Type"), "application/json")
+
+	var body map[string]any
+	err = resp.JSON(&body)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, body["id"], "Response should contain analysis id")
 }
 
 func TestMyMenu_Record_Unauthorized(t *testing.T) {
