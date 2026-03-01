@@ -79,6 +79,7 @@ func waitForGeminiRateLimit() {
 
 ```go
 func TestAnalyze_GetStatus_Success(t *testing.T) {
+    skipIfGeminiDisabled(t)
     // 前のテストからのレート制限リセットを待つ
     waitForGeminiRateLimit()
 
@@ -90,7 +91,7 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 ### 注意点
 
 - 複数のテストが連続してGemini APIを呼び出す場合、各テストの先頭で待機する
-- 待機時間は5秒を推奨（レート制限のリセット期間）
+- 待機時間は10秒を推奨（GeminiRateLimit=0.2 の逆数5秒に余裕を持たせた値）
 - テストUIDは固定値 (`e2e-test-user`) を使用しているため、同じUIDでのリクエストが累積する
 
 ## Gemini APIテストの制御
@@ -108,6 +109,14 @@ Gemini APIを呼び出すテストはデフォルトでスキップされる。A
 - `TestMenuSuggest_GetDetail_Success`（`menu_test.go`）
 - `TestMenuSuggest_Accept_Success`（`menu_test.go`）
 - `TestMenuSuggest_Dismiss_Success`（`menu_test.go`）
+- `TestHistory_List_Success`（`history_test.go`）
+- `TestHistory_Detail_Success`（`history_test.go`）
+- `TestHistory_Update_Success`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_EmptyFoods`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_NegativeCalories`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_EmptyName`（`history_test.go`）
+- `TestHistory_Delete_Success`（`history_test.go`）
+- `TestIngredients_ScanReceipt_Success`（`ingredients_test.go`）
 
 ### Geminiテストを有効化する方法
 
