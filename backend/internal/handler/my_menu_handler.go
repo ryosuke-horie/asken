@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
@@ -394,7 +395,7 @@ func validateMyMenuName(name string) error {
 	if name == "" {
 		return fmt.Errorf("メニュー名は必須です")
 	}
-	if len(name) > 50 {
+	if utf8.RuneCountInString(name) > 50 {
 		return fmt.Errorf("メニュー名は50文字以内である必要があります")
 	}
 	return nil
