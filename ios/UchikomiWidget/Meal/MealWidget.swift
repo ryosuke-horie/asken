@@ -70,9 +70,7 @@ struct MealProvider: AppIntentTimelineProvider {
                 configuration: configuration,
                 isLoggedIn: true
             )
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date())
-                ?? Date().addingTimeInterval(1_800)
-            return Timeline(entries: [entry], policy: .after(nextRefresh))
+            return Timeline(entries: [entry], policy: .never)
         } catch {
             let entry = MealEntry(
                 date: Date(),
@@ -83,7 +81,7 @@ struct MealProvider: AppIntentTimelineProvider {
                 configuration: configuration,
                 isLoggedIn: true
             )
-            return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(300)))
+            return Timeline(entries: [entry], policy: .never)
         }
     }
 }
