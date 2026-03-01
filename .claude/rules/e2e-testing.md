@@ -117,6 +117,7 @@ Gemini APIを呼び出すテストはデフォルトでスキップされる。A
 - `TestHistory_Update_InvalidRequest_EmptyName`（`history_test.go`）
 - `TestHistory_Delete_Success`（`history_test.go`）
 - `TestIngredients_ScanReceipt_Success`（`ingredients_test.go`）
+- `TestExerciseRecords_Create_WithGemini_Success`（`exercise_test.go`）
 
 ### Geminiテストを有効化する方法
 
