@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
@@ -352,7 +351,7 @@ func (h *MyMenuHandler) HandleRecord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 既存のCreateRequestFromMylistメソッドを使用
-	analysisResult := &service.AnalysisResult{
+	analysisResult := &repository.AnalysisResult{
 		Foods:               menu.Foods,
 		TotalCalories:       menu.TotalCalories,
 		TotalProtein:        menu.TotalProtein,

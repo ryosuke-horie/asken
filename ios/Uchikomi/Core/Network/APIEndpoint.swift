@@ -305,3 +305,29 @@ struct APIEndpoint {
         )
     }
 }
+
+// MARK: - Exercise Endpoints
+
+extension APIEndpoint {
+    static let createExerciseRecord = APIEndpoint(
+        path: "exercise/records",
+        method: .post,
+        requiresAuth: true
+    )
+
+    static func deleteExerciseRecord(id: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "exercise/records/\(sanitizedPathID(id))",
+            method: .delete,
+            requiresAuth: true
+        )
+    }
+
+    static func dailyExercise(date: String) -> APIEndpoint {
+        APIEndpoint(
+            path: "exercise/daily?date=\(date)",
+            method: .get,
+            requiresAuth: true
+        )
+    }
+}

@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,7 +161,7 @@ func TestMyMenuHandler_HandleRecord_TotalMicronutrientsPassedToMealRecord(t *tes
 		"iron_mg": 5.0,
 	}
 
-	var capturedResult *service.AnalysisResult
+	var capturedResult *repository.AnalysisResult
 
 	mockMenuRepo := &MockMyMenuRepository{
 		GetFunc: func(_ context.Context, _, _ string) (*repository.MyMenuItem, error) {
@@ -179,7 +178,7 @@ func TestMyMenuHandler_HandleRecord_TotalMicronutrientsPassedToMealRecord(t *tes
 	}
 
 	mockAnalysisRepo := &MockAnalysisRepository{
-		CreateRequestFromMylistFunc: func(_ context.Context, _ string, _, _ string, _ *string, result *service.AnalysisResult) (uuid.UUID, error) {
+		CreateRequestFromMylistFunc: func(_ context.Context, _ string, _, _ string, _ *string, result *repository.AnalysisResult) (uuid.UUID, error) {
 			capturedResult = result
 			return uuid.New(), nil
 		},

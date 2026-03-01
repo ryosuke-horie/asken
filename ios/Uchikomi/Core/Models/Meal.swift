@@ -97,6 +97,11 @@ struct HistoryDetail: Codable, Identifiable {
     let totalMicronutrients: [String: Double]?
     let foods: [NutritionInfo]
 
+    private enum CodingKeys: String, CodingKey {
+        case id, inputType, imagePath, inputText, createdAt, mealType, mealDate
+        case totalCalories, totalProtein, totalFat, totalCarbohydrates, totalMicronutrients, foods
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -153,6 +158,19 @@ struct DailyMeals: Codable {
     let date: String
     let meals: MealsByType
     let dailyTotal: DailyTotal
+    let totalBurnedCaloriesKcal: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case date, meals, dailyTotal, totalBurnedCaloriesKcal
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        date = try container.decode(String.self, forKey: .date)
+        meals = try container.decode(MealsByType.self, forKey: .meals)
+        dailyTotal = try container.decode(DailyTotal.self, forKey: .dailyTotal)
+        totalBurnedCaloriesKcal = try container.decodeIfPresent(Double.self, forKey: .totalBurnedCaloriesKcal) ?? 0.0
+    }
 }
 
 // MARK: - AnalysisStatusResponse

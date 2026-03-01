@@ -8,7 +8,6 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"google.golang.org/api/iterator"
@@ -211,7 +210,7 @@ func (r *firestoreAnalysisRepository) UpdateStatus(ctx context.Context, id uuid.
 }
 
 // SaveResult は分析結果を保存し、ステータスをcompletedに更新します
-func (r *firestoreAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.UUID, result *service.AnalysisResult) error {
+func (r *firestoreAnalysisRepository) SaveResult(ctx context.Context, requestID uuid.UUID, result *AnalysisResult) error {
 	// コレクショングループクエリで対象ドキュメントを検索
 	iter := r.client.CollectionGroup("analysisRequests").Where("id", "==", requestID.String()).Documents(ctx)
 	defer iter.Stop()
@@ -246,7 +245,7 @@ func (r *firestoreAnalysisRepository) SaveResult(ctx context.Context, requestID 
 }
 
 // GetResult は指定されたリクエストIDの分析結果を取得します（userIDでスコープ）
-func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID string, requestID uuid.UUID) (*AnalysisResult, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userIDが必要です")
 	}
@@ -269,7 +268,7 @@ func (r *firestoreAnalysisRepository) GetResult(ctx context.Context, userID stri
 		return nil, fmt.Errorf("結果が見つかりません: %s: %w", requestID, ErrNotFound)
 	}
 
-	return &service.AnalysisResult{
+	return &AnalysisResult{
 		Foods:               fsDoc.Result.Foods,
 		TotalCalories:       fsDoc.Result.TotalCalories,
 		TotalProtein:        fsDoc.Result.TotalProtein,
@@ -520,7 +519,7 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID 
 }
 
 // CreateRequestFromMylist はマイリストからの食事記録を作成します
-func (r *firestoreAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *string, result *service.AnalysisResult) (uuid.UUID, error) {
+func (r *firestoreAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *string, result *AnalysisResult) (uuid.UUID, error) {
 	if userID == nil || *userID == "" {
 		return uuid.Nil, fmt.Errorf("userIDが必要です")
 	}

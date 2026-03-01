@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -117,9 +116,9 @@ func TestStatusHandler_Completed(t *testing.T) {
 				UpdatedAt: time.Now(),
 			}, nil
 		},
-		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*repository.AnalysisResult, error) {
 			assert.Equal(t, testUserID, userID)
-			return &service.AnalysisResult{
+			return &repository.AnalysisResult{
 				Foods: []gemini.NutritionInfo{
 					{
 						Name:            "白米",
@@ -211,7 +210,7 @@ func TestStatusHandler_Completed_GetResultError(t *testing.T) {
 				UpdatedAt: time.Now(),
 			}, nil
 		},
-		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*service.AnalysisResult, error) {
+		GetResultFunc: func(ctx context.Context, userID string, requestID uuid.UUID) (*repository.AnalysisResult, error) {
 			return nil, assert.AnError
 		},
 	}

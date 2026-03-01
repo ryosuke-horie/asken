@@ -16,14 +16,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 )
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
-	AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
-	AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error)
+	AnalyzeFoodImage(ctx context.Context, imagePath string) (*repository.AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*repository.AnalysisResult, error)
 }
 
 // AnalyzeHandler は画像分析エンドポイントのハンドラー

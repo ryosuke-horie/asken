@@ -7,14 +7,13 @@ import (
 	"time"
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/util"
 )
 
 // FoodService は食品分析サービスのインターフェース
 type FoodService interface {
-	AnalyzeFoodImage(ctx context.Context, imagePath string) (*service.AnalysisResult, error)
-	AnalyzeFoodText(ctx context.Context, inputText string) (*service.AnalysisResult, error)
+	AnalyzeFoodImage(ctx context.Context, imagePath string) (*repository.AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*repository.AnalysisResult, error)
 }
 
 // AnalysisWorker は非同期分析ワーカー
@@ -102,7 +101,7 @@ func (w *AnalysisWorker) processRequest(ctx context.Context, request *repository
 	log.Printf("Status updated to processing for request: %s", request.ID)
 
 	// 2. input_typeに応じて処理を分岐
-	var result *service.AnalysisResult
+	var result *repository.AnalysisResult
 	var err error
 
 	switch request.InputType {

@@ -72,3 +72,31 @@ func (m *MockWeightGoalRepository) SetGoal(ctx context.Context, userID string, t
 	}
 	return nil, nil
 }
+
+// MockExerciseRepository はExerciseRepository用テストモック
+type MockExerciseRepository struct {
+	CreateFunc     func(ctx context.Context, userID string, input repository.CreateExerciseInput) (*repository.ExerciseRecord, error)
+	ListByDateFunc func(ctx context.Context, userID string, recordedDate string) ([]repository.ExerciseRecord, error)
+	DeleteFunc     func(ctx context.Context, userID string, recordID string) error
+}
+
+func (m *MockExerciseRepository) Create(ctx context.Context, userID string, input repository.CreateExerciseInput) (*repository.ExerciseRecord, error) {
+	if m.CreateFunc != nil {
+		return m.CreateFunc(ctx, userID, input)
+	}
+	return nil, nil
+}
+
+func (m *MockExerciseRepository) ListByDate(ctx context.Context, userID string, recordedDate string) ([]repository.ExerciseRecord, error) {
+	if m.ListByDateFunc != nil {
+		return m.ListByDateFunc(ctx, userID, recordedDate)
+	}
+	return []repository.ExerciseRecord{}, nil
+}
+
+func (m *MockExerciseRepository) Delete(ctx context.Context, userID string, recordID string) error {
+	if m.DeleteFunc != nil {
+		return m.DeleteFunc(ctx, userID, recordID)
+	}
+	return nil
+}
