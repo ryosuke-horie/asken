@@ -2,6 +2,7 @@ import GoogleSignIn
 import os
 import SwiftUI
 import UchikomiCore
+import WidgetKit
 
 private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi",
@@ -30,6 +31,31 @@ struct UchikomiApp: App {
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
+                .task {
+                    SharedDefaults.apiBaseURL = AppEnvironment.current.apiBaseURL.absoluteString
+                }
+                .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
+                    Task {
+                        await syncAuthTokenToWidget(isAuthenticated: isAuthenticated)
+                    }
+                }
+        }
+    }
+
+    // MARK: - App Groups Integration
+
+    private func syncAuthTokenToWidget(isAuthenticated: Bool) async {
+        guard isAuthenticated else {
+            SharedDefaults.clearAuthToken()
+            WidgetCenter.shared.reloadAllTimelines()
+            return
+        }
+        do {
+            let token = try await AuthServiceProvider.shared.getIDToken()
+            SharedDefaults.authToken = token
+            WidgetCenter.shared.reloadAllTimelines()
+        } catch {
+            logger.error("ウィジェット向けトークン同期失敗: \(error.localizedDescription)")
         }
     }
 }
@@ -73,8 +99,19 @@ struct MainTabView: View {
             if newPhase == .active {
                 Task {
                     await refreshTodayNotifications()
+                    await refreshWidgetToken()
                 }
             }
+        }
+    }
+
+    private func refreshWidgetToken() async {
+        do {
+            let token = try await AuthServiceProvider.shared.getIDToken()
+            SharedDefaults.authToken = token
+            WidgetCenter.shared.reloadAllTimelines()
+        } catch {
+            logger.error("フォアグラウンド復帰時のトークン更新失敗: \(error.localizedDescription)")
         }
     }
 
