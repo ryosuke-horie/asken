@@ -18,8 +18,8 @@ enum WidgetAPIError: Error {
 /// ウィジェット拡張用の軽量 HTTP クライアント（Firebase SDK 非依存）
 /// App Groups UserDefaults (SharedDefaults) から認証トークンと API ベース URL を読み取る
 struct WidgetAPIClient {
-    private static let maxPollingAttempts = 6
-    private static let pollingIntervalNanoseconds: UInt64 = 2_000_000_000 // 2秒
+    private static let maxPollingAttempts = 10
+    private static let pollingIntervalNanoseconds: UInt64 = 2_500_000_000 // 2.5秒
 
     private let session: URLSession
     private let decoder: JSONDecoder
