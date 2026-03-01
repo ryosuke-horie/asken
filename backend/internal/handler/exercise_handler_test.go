@@ -186,6 +186,33 @@ func TestExerciseHandler_HandleCreate_ServiceError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestExerciseHandler_HandleCreate_InternalServerError(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockSvc := &MockExerciseService{
+		CreateExerciseRecordFunc: func(ctx context.Context, userID string, input service.CreateExerciseInput, recordedDate string) (*repository.ExerciseRecord, error) {
+			return nil, errors.New("database connection error")
+		},
+	}
+	handler := NewExerciseHandler(mockSvc)
+
+	body := CreateExerciseRecordRequest{
+		ExerciseName:    "柔術",
+		DurationMinutes: 90,
+		RecordedDate:    "2026-02-28",
+	}
+	bodyBytes, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/exercise/records", bytes.NewReader(bodyBytes))
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleCreate(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
 func TestExerciseHandler_HandleListByDate_Success(t *testing.T) {
 	testUserID := "test-user-123"
 	now := time.Now()
@@ -355,18 +382,19 @@ func TestExerciseHandler_HandleListByDate_ServiceError(t *testing.T) {
 
 func TestExerciseHandler_HandleDelete_Success(t *testing.T) {
 	testUserID := "test-user-123"
+	validID := "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 	mockSvc := &MockExerciseService{
 		DeleteExerciseRecordFunc: func(ctx context.Context, userID string, recordID string) error {
 			assert.Equal(t, testUserID, userID)
-			assert.Equal(t, "record-001", recordID)
+			assert.Equal(t, validID, recordID)
 			return nil
 		},
 	}
 
 	handler := NewExerciseHandler(mockSvc)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/record-001", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/"+validID, nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -400,6 +428,7 @@ func TestExerciseHandler_HandleDelete_MethodNotAllowed(t *testing.T) {
 
 func TestExerciseHandler_HandleDelete_NotFound(t *testing.T) {
 	testUserID := "test-user-123"
+	validID := "00000000-0000-0000-0000-000000000001"
 
 	mockSvc := &MockExerciseService{
 		DeleteExerciseRecordFunc: func(ctx context.Context, userID string, recordID string) error {
@@ -408,7 +437,7 @@ func TestExerciseHandler_HandleDelete_NotFound(t *testing.T) {
 	}
 	handler := NewExerciseHandler(mockSvc)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/non-existent", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/"+validID, nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -418,8 +447,23 @@ func TestExerciseHandler_HandleDelete_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestExerciseHandler_HandleDelete_InvalidID(t *testing.T) {
+	testUserID := "test-user-123"
+	handler := NewExerciseHandler(&MockExerciseService{})
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/not-a-uuid", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.HandleDelete(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
 func TestExerciseHandler_HandleDelete_ServiceError(t *testing.T) {
 	testUserID := "test-user-123"
+	validID := "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 	mockSvc := &MockExerciseService{
 		DeleteExerciseRecordFunc: func(ctx context.Context, userID string, recordID string) error {
@@ -428,7 +472,7 @@ func TestExerciseHandler_HandleDelete_ServiceError(t *testing.T) {
 	}
 	handler := NewExerciseHandler(mockSvc)
 
-	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/record-001", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/exercise/records/"+validID, nil)
 	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()

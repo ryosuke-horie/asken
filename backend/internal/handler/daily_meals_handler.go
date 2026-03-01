@@ -19,6 +19,9 @@ type DailyMealsHandler struct {
 
 // NewDailyMealsHandler は新しいDailyMealsHandlerを作成
 func NewDailyMealsHandler(repo repository.AnalysisRepository, exerciseRepo repository.ExerciseRepository) *DailyMealsHandler {
+	if repo == nil {
+		panic("daily meals handler: repository must not be nil")
+	}
 	return &DailyMealsHandler{repository: repo, exerciseRepo: exerciseRepo}
 }
 
@@ -58,7 +61,8 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if date == "" {
 		loc, err := time.LoadLocation(tz)
 		if err != nil {
-			loc = time.UTC
+			http.Error(w, "tzに無効なタイムゾーンが指定されました", http.StatusBadRequest)
+			return
 		}
 		date = time.Now().In(loc).Format("2006-01-02")
 	}
