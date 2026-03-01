@@ -66,6 +66,17 @@ func waitForGeminiRateLimit() {
 	time.Sleep(10 * time.Second)
 }
 
+// skipIfGeminiDisabled はGemini APIを使用するテストをスキップする
+//
+// デフォルトではGemini APIを呼び出すテストをスキップし、APIコストとレート制限を回避する。
+// E2E_RUN_GEMINI=true を設定することでGeminiテストを有効化できる。
+func skipIfGeminiDisabled(t *testing.T) {
+	t.Helper()
+	if os.Getenv("E2E_RUN_GEMINI") != "true" {
+		t.Skip("Skipping Gemini API test (set E2E_RUN_GEMINI=true to enable)")
+	}
+}
+
 // testUID はE2Eテスト用のユーザーIDを返す
 func testUID() string {
 	if uid := os.Getenv("E2E_TEST_UID"); uid != "" {

@@ -13,6 +13,7 @@ import (
 )
 
 func TestMenuSuggest_Generate_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// Gemini APIを使用するためレート制限待機
 	waitForGeminiRateLimit()
 
@@ -96,6 +97,7 @@ func TestMenuSuggest_Generate_Unauthorized(t *testing.T) {
 }
 
 func TestMenuSuggest_List_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// 前のテストからのレート制限リセットを待つ
 	waitForGeminiRateLimit()
 
@@ -188,6 +190,7 @@ func TestMenuSuggest_List_Unauthorized(t *testing.T) {
 }
 
 func TestMenuSuggest_GetDetail_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// Gemini APIを使用するためレート制限待機
 	waitForGeminiRateLimit()
 
@@ -251,6 +254,7 @@ func TestMenuSuggest_GetDetail_Unauthorized(t *testing.T) {
 }
 
 func TestMenuSuggest_Accept_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// Gemini APIを使用するためレート制限待機
 	waitForGeminiRateLimit()
 
@@ -332,6 +336,7 @@ func TestMenuSuggest_Accept_Unauthorized(t *testing.T) {
 }
 
 func TestMenuSuggest_Dismiss_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// Gemini APIを使用するためレート制限待機
 	waitForGeminiRateLimit()
 

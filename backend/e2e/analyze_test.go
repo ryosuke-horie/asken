@@ -13,6 +13,7 @@ import (
 )
 
 func TestAnalyze_TextInput_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	waitForUserRateLimit()
 
 	client, ctx := authenticatedClient(t, 30*time.Second)
@@ -66,6 +67,7 @@ func TestAnalyze_TextInput_InvalidMealType(t *testing.T) {
 }
 
 func TestAnalyze_GetStatus_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// 前のテスト(TestAnalyze_TextInput_Success)からのレート制限リセットを待つ
 	waitForGeminiRateLimit()
 
