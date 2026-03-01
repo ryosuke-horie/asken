@@ -339,6 +339,7 @@ func TestIngredients_Delete_Unauthorized(t *testing.T) {
 }
 
 func TestIngredients_ScanReceipt_Success(t *testing.T) {
+	skipIfGeminiDisabled(t)
 	// Gemini APIを使用するためレート制限待機
 	waitForGeminiRateLimit()
 

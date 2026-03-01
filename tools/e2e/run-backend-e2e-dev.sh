@@ -15,11 +15,15 @@ Options:
   --region <region>        GCP region (default: GCP_REGION or asia-northeast1)
   --service-name <name>    Cloud Run service name (base URL auto-resolveに使用)
   --test-uid <uid>         Test UID (default: E2E_TEST_UID or e2e-test-user)
+  --run-gemini             Enable Gemini API tests (default: skipped)
   --help                   Show this help
 
 Environment variable fallback:
   E2E_BASE_URL, GCP_PROJECT_ID, GCP_REGION, CLOUD_RUN_SERVICE_NAME,
-  E2E_FIREBASE_API_KEY, SERVICE_ACCOUNT_EMAIL, E2E_TEST_UID
+  E2E_FIREBASE_API_KEY, SERVICE_ACCOUNT_EMAIL, E2E_TEST_UID, E2E_RUN_GEMINI
+
+Note: Gemini API tests are skipped by default to avoid API costs and rate limits.
+      Set E2E_RUN_GEMINI=true or pass --run-gemini to enable them.
 USAGE
 }
 
@@ -47,6 +51,7 @@ PROJECT_ID="${GCP_PROJECT_ID:-$(tf_output project_id)}"
 REGION="${GCP_REGION:-asia-northeast1}"
 CLOUD_RUN_SERVICE_NAME="${CLOUD_RUN_SERVICE_NAME:-$(tf_output cloud_run_service_name)}"
 TEST_UID="${E2E_TEST_UID:-e2e-test-user}"
+RUN_GEMINI="${E2E_RUN_GEMINI:-}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -69,6 +74,10 @@ while [ $# -gt 0 ]; do
     --test-uid)
       TEST_UID="$2"
       shift 2
+      ;;
+    --run-gemini)
+      RUN_GEMINI="true"
+      shift
       ;;
     --help|-h)
       usage
@@ -112,6 +121,11 @@ if [ -n "${E2E_FIREBASE_API_KEY:-}" ]; then
 else
   echo "Auth E2E: partial mode (E2E_FIREBASE_API_KEY is not set)"
 fi
+if [ "${RUN_GEMINI}" = "true" ]; then
+  echo "Gemini E2E: enabled (E2E_RUN_GEMINI=true)"
+else
+  echo "Gemini E2E: skipped (set E2E_RUN_GEMINI=true or --run-gemini to enable)"
+fi
 
 echo "=== Run backend E2E tests ==="
 (
@@ -120,5 +134,6 @@ echo "=== Run backend E2E tests ==="
   E2E_FIREBASE_API_KEY="${E2E_FIREBASE_API_KEY:-}" \
   SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_EMAIL:-}" \
   E2E_TEST_UID="${TEST_UID}" \
+  E2E_RUN_GEMINI="${RUN_GEMINI}" \
   go test -v -tags=e2e ./e2e/...
 )

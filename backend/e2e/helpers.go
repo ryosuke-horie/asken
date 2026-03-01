@@ -61,9 +61,22 @@ func waitForUserRateLimit() {
 // waitForGeminiRateLimit はGemini APIのレート制限リセットを待つ
 //
 // レート制限設定: GeminiRateLimit=0.2 (5秒に1回), GeminiBurstSize=2
-// バーストを使い切った後は10秒待つ（余裕を持たせるため5秒→10秒に増量）
+// バースト(2リクエスト)を消費した後のトークン補充に余裕を持たせるため10秒待機する。
 func waitForGeminiRateLimit() {
 	time.Sleep(10 * time.Second)
+}
+
+// skipIfGeminiDisabled はGemini APIを使用するテストをスキップする
+//
+// デフォルトではGemini APIを呼び出すテストをスキップし、APIコストとレート制限を回避する。
+// E2E_RUN_GEMINI=true を設定することでGeminiテストを有効化できる。
+//
+// Gemini APIを呼び出すテストでは、この関数の直後に waitForGeminiRateLimit() も呼ぶこと。
+func skipIfGeminiDisabled(t *testing.T) {
+	t.Helper()
+	if os.Getenv("E2E_RUN_GEMINI") != "true" {
+		t.Skip("Skipping Gemini API test (set E2E_RUN_GEMINI=true to enable)")
+	}
 }
 
 // testUID はE2Eテスト用のユーザーIDを返す
