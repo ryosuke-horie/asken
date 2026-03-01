@@ -54,7 +54,7 @@ FIRESTORE_EMULATOR_HOST=localhost:8080 task test
 | `task clean` | ビルド成果物を削除 |
 | `task test` | Goテストを実行 |
 | `task test:coverage` | Goカバレッジ計測付きテスト |
-| `task lint` | Goリントを実行 |
+| `task lint` | golangci-lintを実行 |
 | `task format` | Goコードを整形 |
 | `task build` | Goバイナリをビルド |
 | `task run` | バックエンドサーバーを起動 |

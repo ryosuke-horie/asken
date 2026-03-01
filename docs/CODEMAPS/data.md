@@ -1,6 +1,6 @@
 # データモデルとスキーマ
 
-最終更新: 2026-02-27
+最終更新: 2026-03-01
 データベース: Firestore
 認証: Firebase Authentication（ユーザーIDはFirebase UID）
 
@@ -14,6 +14,7 @@ users/{userId}/nutritionGoal/current
 users/{userId}/myMenu/{menuId}
 users/{userId}/ingredients/{ingredientId}
 users/{userId}/menuSuggestions/{suggestionId}
+users/{userId}/exerciseRecords/{recordId}
 ```
 
 ## ドキュメント定義
@@ -183,6 +184,25 @@ ingredientsUsed 配列要素:
 - `accepted`: ユーザーが採用 → 食事記録作成 + 使用食材の数量控除（トランザクション）
 - `dismissed`: ユーザーが却下
 
+### exerciseRecords/{recordId}
+
+運動記録（消費カロリー）
+
+| フィールド | 型 | 説明 |
+|:---|:---|:---|
+| id | string | レコードID |
+| exerciseName | string | 運動種目名（最大100文字） |
+| durationMinutes | int | 実施時間（分、5〜600） |
+| burnedCaloriesKcal | number | 消費カロリー (kcal) |
+| estimationMethod | string | 推定方法 (met/gemini) |
+| recordedDate | string | 記録日 (YYYY-MM-DD) |
+| createdAt | timestamp | 作成日時 |
+| updatedAt | timestamp | 更新日時 |
+
+推定方法の動作:
+- `met`: プリセット種目（柔術、ランニング等）はMET値テーブルで計算（体重70kg基準）
+- `gemini`: プリセット外の種目はGemini APIで推定
+
 ## インデックス
 
 Firestoreの複合インデックスは`firestore.indexes.json`で管理されています。
@@ -201,6 +221,7 @@ Firestoreの複合インデックスは`firestore.indexes.json`で管理され�
 | ingredients | category, expiryDate | カテゴリ別食材一覧（賞味期限順） |
 | menuSuggestions | status, createdAt DESC | ステータス別サジェスト一覧 |
 | weightRecords | recordedAt | 期間別体重記録取得 |
+| exerciseRecords | recordedDate, createdAt | 日次運動記録取得（日付・時刻順） |
 
 インデックス更新手順は[docs/CONTRIB.md](../CONTRIB.md#firestoreインデックス管理)を参照。
 

@@ -1,6 +1,6 @@
 # ウチコミ コードマップ INDEX
 
-最終更新: 2026-02-27
+最終更新: 2026-03-01
 
 ## 概要
 
@@ -26,5 +26,6 @@ GoバックエンドとSwiftUI iOSアプリで構成され、Gemini APIによる
 | マイメニュー | my_menu handler | MyMenu feature | myMenu |
 | 食材管理 | ingredient/scan_receipt handler | Pantry feature | ingredients |
 | メニューサジェスト | menu_suggestion handler | CookingSuggestion feature | menuSuggestions |
+| 消費カロリー記録 | exercise handler | Exercise feature | exerciseRecords |
 | 認証 | auth/dev_auth middleware | Auth feature (UchikomiCore) | Firebase Auth |
 | 通知 | - | Notification (ローカル) | UserDefaults |

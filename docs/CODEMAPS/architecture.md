@@ -1,6 +1,6 @@
 # 全体アーキテクチャ
 
-最終更新: 2026-02-27
+最終更新: 2026-03-01
 
 ## システム概要
 
@@ -107,6 +107,17 @@ DevAuthMiddlewareはビルドタグで制御:
 5. iOSアプリ → Go Backend: サジェスト一覧取得 (GET /api/menu/suggestions)
 6. iOSアプリ → Go Backend: 採用 (POST /api/menu/suggestions/{id}/accept)
 7. Go Backend: 食事記録作成 + 食材控除（トランザクション）
+```
+
+### 消費カロリー記録フロー
+
+```
+1. iOSアプリ → Go Backend: 運動種目・実施時間を送信 (POST /api/exercise/records)
+2. Go Backend: プリセット種目（柔術等）はMET値テーブルで消費カロリー計算
+3. Go Backend (プリセット外の種目): Gemini APIで消費カロリー推定
+4. Go Backend → Firestore: exerciseRecords に保存
+5. iOSアプリ → Go Backend: 日次記録取得 (GET /api/exercise/daily)
+6. iOSアプリ: CalorieBalanceBarViewで摂取・消費カロリーを色分け表示
 ```
 
 ### レシート読取フロー

@@ -56,6 +56,9 @@
 | 複雑な機能リクエスト | planner |
 | コード作成/修正後 | code-reviewer |
 | バグ修正または新機能 | tdd-guide |
+| ビルドエラー発生時 | build-error-resolver |
+| セキュリティ関連コード作成後 | security-reviewer |
+| ドキュメント・コードマップ更新 | doc-updater |
 
 利用可能なエージェント一覧は `.claude/agents/` を参照。
 

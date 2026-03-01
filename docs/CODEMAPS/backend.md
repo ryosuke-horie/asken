@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-02-27
+最終更新: 2026-03-01
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -140,6 +140,14 @@ Context に firebase_uid を設定
 | POST | /api/menu/suggestions/{id}/accept | MenuSuggestionHandler | サジェスト採用 |
 | POST | /api/menu/suggestions/{id}/dismiss | MenuSuggestionHandler | サジェスト却下 |
 
+### 消費カロリー記録 (認証必要)
+
+| メソッド | パス | ハンドラ | 用途 |
+|:---|:---|:---|:---|
+| POST | /api/exercise/records | ExerciseHandler | 運動記録作成（Gemini APIまたはMET値で消費カロリー推定） |
+| DELETE | /api/exercise/records/{id} | ExerciseHandler | 運動記録削除 |
+| GET | /api/exercise/daily | ExerciseHandler | 日次運動一覧・消費カロリー合計取得 |
+
 ### 画像配信 (認証必要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -167,6 +175,7 @@ Context に firebase_uid を設定
 | ingredient_handler.go | 食材CRUD |
 | scan_receipt_handler.go | レシート読取（Gemini API経由） |
 | menu_suggestion_handler.go | メニューサジェスト（提案・一覧・詳細・採用・却下） |
+| exercise_handler.go | 消費カロリー記録CRUD・日次取得 |
 
 ### Repositories (internal/repository/)
 
@@ -185,6 +194,8 @@ Context に firebase_uid を設定
 | ingredient_repository_firestore.go | 食材CRUD（Firestore実装） |
 | menu_suggestion_models.go | メニューサジェスト型定義・インターフェース |
 | menu_suggestion_repository_firestore.go | メニューサジェストCRUD（Firestore実装） |
+| exercise_models.go | 運動記録型定義・インターフェース・バリデーション |
+| exercise_repository_firestore.go | 運動記録CRUD（Firestore実装） |
 
 ### Middleware (internal/middleware/)
 
@@ -203,6 +214,7 @@ Context に firebase_uid を設定
 |:---|:---|
 | firebase_auth_service.go | Firebase Admin SDKラッパー |
 | food_service.go | 食品分析ロジック |
+| exercise_service.go | 運動記録作成・消費カロリー推定ロジック（METテーブルまたはGemini API） |
 
 ### Utility (internal/util/)
 
@@ -224,6 +236,7 @@ Context に firebase_uid を設定
 | schema.go | Gemini APIレスポンスのJSONスキーマ定義 |
 | receipt_parser.go | レシート画像解析 |
 | menu_suggester.go | メニューサジェスト生成 |
+| exercise_estimator.go | Gemini APIによる消費カロリー推定（プリセット外の運動種目に使用） |
 | mock_http_client.go | テスト用HTTPクライアントモック |
 
 ### Worker (internal/worker/)
@@ -292,13 +305,17 @@ cmd/server/main.go
 │   │   └── repository.IngredientRepository
 │   ├── scan_receipt_handler.go
 │   │   └── pkg/gemini/receipt_parser.go
-│   └── menu_suggestion_handler.go
-│       ├── repository.MenuSuggestionRepository
-│       ├── repository.IngredientRepository
-│       ├── repository.NutritionGoalRepository
-│       ├── repository.WeightRecordRepository
-│       ├── repository.AnalysisRepository
-│       └── pkg/gemini/menu_suggester.go
+│   ├── menu_suggestion_handler.go
+│   │   ├── repository.MenuSuggestionRepository
+│   │   ├── repository.IngredientRepository
+│   │   ├── repository.NutritionGoalRepository
+│   │   ├── repository.WeightRecordRepository
+│   │   ├── repository.AnalysisRepository
+│   │   └── pkg/gemini/menu_suggester.go
+│   └── exercise_handler.go
+│       └── service.ExerciseService
+│           ├── repository.ExerciseRepository
+│           └── pkg/gemini/exercise_estimator.go
 ├── internal/worker/analysis_worker.go
 │   ├── internal/service/food_service.go
 │   └── internal/repository/analysis_repository_firestore.go
@@ -313,7 +330,9 @@ cmd/server/main.go
     │   └── pkg/database/firestore.go
     ├── ingredient_repository_firestore.go
     │   └── pkg/database/firestore.go
-    └── menu_suggestion_repository_firestore.go
+    ├── menu_suggestion_repository_firestore.go
+    │   └── pkg/database/firestore.go
+    └── exercise_repository_firestore.go
         └── pkg/database/firestore.go
 ```
 

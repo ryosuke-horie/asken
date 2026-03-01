@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-02-27
+最終更新: 2026-03-01
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -37,6 +37,7 @@ ios/
 │   │   ├── Views/              # 共通ビュー
 │   │   │   └── CameraView.swift      # カメラ撮影UI
 │   │   └── Repositories/       # データアクセス
+│   │       ├── ExerciseRepository.swift
 │   │       ├── IngredientRepository.swift
 │   │       ├── MealRepository.swift
 │   │       ├── MenuSuggestionRepository.swift
@@ -46,6 +47,8 @@ ios/
 │   ├── Features/               # 機能モジュール
 │   │   ├── Auth/               # 認証UI
 │   │   ├── CookingSuggestion/  # メニューサジェストUI
+│   │   ├── Exercise/           # 消費カロリー記録UI
+│   │   │   └── Models/         # ExerciseRecord, DailyExerciseResponse
 │   │   ├── Meals/              # 食事
 │   │   ├── MyMenu/             # マイメニュー
 │   │   ├── Pantry/             # 食材管理（パントリー）
@@ -53,6 +56,7 @@ ios/
 │   │   └── Weight/             # 体重
 │   ├── Shared/
 │   │   ├── Components/
+│   │   │   ├── CalorieBalanceBarView.swift
 │   │   │   ├── CalorieProgressView.swift
 │   │   │   ├── MicronutrientProgressSection.swift
 │   │   │   ├── NutritionSummaryCard.swift
@@ -261,6 +265,14 @@ enum AuthServiceProvider {
 | SuggestionRequestView.swift | サジェストリクエストUI |
 | RecipeDetailView.swift | レシピ詳細UI |
 
+### 消費カロリー記録 (Features/Exercise/)
+
+| ファイル | 責務 |
+|:---|:---|
+| ExerciseInputView.swift | 運動記録入力UI（種目名・実施時間） |
+| ExerciseInputViewModel.swift | 運動記録入力ロジック（バリデーション・保存） |
+| Models/ExerciseRecord.swift | ExerciseRecord, DailyExerciseResponse, CreateExerciseRecordRequest |
+
 ### 食材管理 (Features/Pantry/)
 
 | ファイル | 責務 |
@@ -354,6 +366,7 @@ NotificationSchedulerProtocolの主要メソッド:
 
 | ファイル | 責務 |
 |:---|:---|
+| ExerciseRepository.swift | 運動記録・日次消費カロリーデータアクセス |
 | IngredientRepository.swift | 食材データアクセス |
 | MealRepository.swift | 食事データアクセス |
 | MenuSuggestionRepository.swift | メニューサジェストデータアクセス |
@@ -365,9 +378,10 @@ NotificationSchedulerProtocolの主要メソッド:
 
 | ファイル | 用途 |
 |:---|:---|
+| CalorieBalanceBarView.swift | 摂取・消費カロリーを色分けバーで視覚的に表示 |
 | CalorieProgressView.swift | カロリー進捗バー |
 | MicronutrientProgressSection.swift | 微量栄養素進捗表示セクション |
-| NutritionSummaryCard.swift | 栄養素サマリーカード |
+| NutritionSummaryCard.swift | 栄養素サマリーカード（消費カロリー表示含む） |
 | PFCPieChart.swift | PFCバランス円グラフ |
 | PFCProgressBar.swift | PFC進捗バー |
 | Theme.swift | アプリテーマ定義 |
