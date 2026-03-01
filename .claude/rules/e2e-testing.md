@@ -36,10 +36,13 @@ Deploy ワークフロー (`.github/workflows/deploy.yml`) で自動実行され
     E2E_BASE_URL: ${{ steps.get-url.outputs.url }}
     E2E_FIREBASE_API_KEY: ${{ secrets.E2E_FIREBASE_API_KEY }}
     E2E_TEST_UID: "e2e-test-user"
+    # E2E_RUN_GEMINI: "true"  # Gemini APIテストを有効化する場合
   working-directory: backend
   run: |
     go test -v -tags=e2e ./e2e/...
 ```
+
+デプロイ時のGeminiテスト実行方針: デフォルトはスキップ。必要に応じて `E2E_RUN_GEMINI: "true"` を追加することで有効化できる。
 
 ## レート制限への対応
 
@@ -66,9 +69,9 @@ Gemini APIを呼び出すテストケースでは、テストの先頭で以下�
 // waitForGeminiRateLimit はGemini APIのレート制限リセットを待つ
 //
 // レート制限設定: GeminiRateLimit=0.2 (5秒に1回), GeminiBurstSize=2
-// バーストを使い切った後は5秒待つ必要がある
+// バーストを使い切った後は10秒待つ（余裕を持たせるため5秒→10秒に増量）
 func waitForGeminiRateLimit() {
-    time.Sleep(5 * time.Second)
+    time.Sleep(10 * time.Second)
 }
 ```
 
@@ -76,6 +79,7 @@ func waitForGeminiRateLimit() {
 
 ```go
 func TestAnalyze_GetStatus_Success(t *testing.T) {
+    skipIfGeminiDisabled(t)
     // 前のテストからのレート制限リセットを待つ
     waitForGeminiRateLimit()
 
@@ -87,8 +91,55 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 ### 注意点
 
 - 複数のテストが連続してGemini APIを呼び出す場合、各テストの先頭で待機する
-- 待機時間は5秒を推奨（レート制限のリセット期間）
+- 待機時間は10秒を推奨（GeminiRateLimit=0.2 の逆数5秒に余裕を持たせた値）
 - テストUIDは固定値 (`e2e-test-user`) を使用しているため、同じUIDでのリクエストが累積する
+
+## Gemini APIテストの制御
+
+Gemini APIを呼び出すテストはデフォルトでスキップされる。APIコストとレート制限を回避するためのオプトイン方式。
+
+### スキップ対象テスト
+
+`skipIfGeminiDisabled(t)` が先頭に追加されており、`E2E_RUN_GEMINI=true` でなければスキップされる:
+
+- `TestAnalyze_TextInput_Success`（`analyze_test.go`）
+- `TestAnalyze_GetStatus_Success`（`analyze_test.go`）
+- `TestMenuSuggest_Generate_Success`（`menu_test.go`）
+- `TestMenuSuggest_List_Success`（`menu_test.go`）
+- `TestMenuSuggest_GetDetail_Success`（`menu_test.go`）
+- `TestMenuSuggest_Accept_Success`（`menu_test.go`）
+- `TestMenuSuggest_Dismiss_Success`（`menu_test.go`）
+- `TestHistory_List_Success`（`history_test.go`）
+- `TestHistory_Detail_Success`（`history_test.go`）
+- `TestHistory_Update_Success`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_EmptyFoods`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_NegativeCalories`（`history_test.go`）
+- `TestHistory_Update_InvalidRequest_EmptyName`（`history_test.go`）
+- `TestHistory_Delete_Success`（`history_test.go`）
+- `TestIngredients_ScanReceipt_Success`（`ingredients_test.go`）
+
+### Geminiテストを有効化する方法
+
+```bash
+# 環境変数で有効化
+export E2E_RUN_GEMINI=true
+go test -v -tags=e2e ./e2e/...
+
+# または実行スクリプトでオプション指定
+tools/e2e/run-backend-e2e-dev.sh --run-gemini
+```
+
+### Geminiテストを新規追加する場合
+
+Gemini APIを呼び出すテストを追加する際は、テストの先頭に以下を追加すること:
+
+```go
+func TestSomething_WithGemini(t *testing.T) {
+    skipIfGeminiDisabled(t)
+    waitForGeminiRateLimit()
+    // ... テストコード
+}
+```
 
 ## 環境変数
 
@@ -97,6 +148,7 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 | `E2E_BASE_URL` | Yes | デプロイされたAPIのベースURL |
 | `E2E_FIREBASE_API_KEY` | Yes | Firebase APIキー |
 | `E2E_TEST_UID` | Yes | テスト用ユーザーUID（認証済みとして扱われる） |
+| `E2E_RUN_GEMINI` | No | `true` に設定するとGemini APIテストを有効化（デフォルト: スキップ） |
 
 ## テストの命名規則
 
@@ -118,7 +170,17 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 backend/
 ├── e2e/
 │   ├── analyze_test.go      # 分析APIのE2Eテスト
-│   └── client.go            # E2Eテスト用HTTPクライアント
+│   ├── menu_test.go         # メニューサジェストAPIのE2Eテスト
+│   ├── meals_test.go        # 食事APIのE2Eテスト
+│   ├── history_test.go      # 分析履歴APIのE2Eテスト
+│   ├── image_test.go        # 画像APIのE2Eテスト
+│   ├── ingredients_test.go  # 食材APIのE2Eテスト
+│   ├── weight_test.go       # 体重管理APIのE2Eテスト
+│   ├── health_test.go       # ヘルスチェックのE2Eテスト
+│   ├── helpers.go           # E2Eテスト用ヘルパー関数
+│   ├── auth.go              # Firebase認証ヘルパー
+│   ├── cleanup.go           # テストデータクリーンアップ
+│   └── e2e_test.go          # TestMain・共通初期化
 └── cmd/server/
     └── main.go              # 本番コード
 ```
