@@ -37,15 +37,24 @@ func TestNutritionGoal_Set_Success(t *testing.T) {
 	require.True(t, ok, "target_calories should be a float64")
 	assertFloat64Equal(t, 2000.0, targetCalories, "target_calories should match")
 
-	// PFC が自動計算されること
-	assert.NotNil(t, body["target_protein"], "target_protein should be present")
-	assert.NotNil(t, body["target_fat"], "target_fat should be present")
-	assert.NotNil(t, body["target_carbohydrates"], "target_carbohydrates should be present")
-
-	// phase が設定されること
+	// SetGoal は体重情報なしで実行されるため、常に維持期（maintenance）を返すこと
 	phase, ok := body["phase"].(string)
 	require.True(t, ok, "phase should be a string")
-	assert.NotEmpty(t, phase, "phase should not be empty")
+	assert.Equal(t, "maintenance", phase, "SET endpoint should always return maintenance phase")
+
+	// 維持期（maintenance）のPFC比率: Protein=0.20, Fat=0.25, Carbs=0.55
+	// 2000kcal → protein=100.0g, fat=55.6g, carbs=275.0g
+	targetProtein, ok := body["target_protein"].(float64)
+	require.True(t, ok, "target_protein should be a float64")
+	assertFloat64Equal(t, 100.0, targetProtein, "target_protein should match maintenance ratio")
+
+	targetFat, ok := body["target_fat"].(float64)
+	require.True(t, ok, "target_fat should be a float64")
+	assertFloat64Equal(t, 55.6, targetFat, "target_fat should match maintenance ratio")
+
+	targetCarbs, ok := body["target_carbohydrates"].(float64)
+	require.True(t, ok, "target_carbohydrates should be a float64")
+	assertFloat64Equal(t, 275.0, targetCarbs, "target_carbohydrates should match maintenance ratio")
 
 	// updated_at が設定されること
 	assert.NotEmpty(t, body["updated_at"], "updated_at should be present")
@@ -85,7 +94,10 @@ func TestNutritionGoal_Get_Success(t *testing.T) {
 	assert.NotEmpty(t, goal["updated_at"], "updated_at should be present")
 }
 
-func TestNutritionGoal_Get_DefaultResponse(t *testing.T) {
+// TestNutritionGoal_Get_ResponseShape は目標の有無にかかわらずレスポンス形式が正しいことを確認する。
+// E2Eテストは共有ユーザー（e2e-test-user）を使用するため、前のテストで目標が設定されることがある。
+// このテストは goal フィールドが常に存在すること（null または設定済みオブジェクト）を検証する。
+func TestNutritionGoal_Get_ResponseShape(t *testing.T) {
 	waitForUserRateLimit()
 
 	client, ctx := authenticatedClient(t, 30*time.Second)
@@ -102,10 +114,10 @@ func TestNutritionGoal_Get_DefaultResponse(t *testing.T) {
 
 	// goal フィールドが存在すること（値は null または設定済みオブジェクト）
 	_, exists := body["goal"]
-	assert.True(t, exists, "Response should contain 'goal' field")
+	assert.True(t, exists, "Response should always contain 'goal' field (null or object)")
 }
 
-func TestNutritionGoal_Get_WithWeightParams_Success(t *testing.T) {
+func TestNutritionGoal_Get_WithWeightParams_WeightLoss(t *testing.T) {
 	waitForUserRateLimit()
 
 	client, ctx := authenticatedClient(t, 30*time.Second)
@@ -134,9 +146,116 @@ func TestNutritionGoal_Get_WithWeightParams_Success(t *testing.T) {
 	phase, ok := goal["phase"].(string)
 	require.True(t, ok, "phase should be a string")
 	assert.Equal(t, "weight_loss", phase, "phase should be weight_loss when current_weight > target_weight + 1.0")
+
+	// 減量期のPFC比率: Protein=0.30, Fat=0.20, Carbs=0.50
+	// 2200kcal → protein=165.0g, fat=48.9g, carbs=275.0g
+	targetProtein, ok := goal["target_protein"].(float64)
+	require.True(t, ok, "target_protein should be a float64")
+	assertFloat64Equal(t, 165.0, targetProtein, "target_protein should match weight_loss ratio")
+
+	targetFat, ok := goal["target_fat"].(float64)
+	require.True(t, ok, "target_fat should be a float64")
+	assertFloat64Equal(t, 48.9, targetFat, "target_fat should match weight_loss ratio")
+
+	targetCarbs, ok := goal["target_carbohydrates"].(float64)
+	require.True(t, ok, "target_carbohydrates should be a float64")
+	assertFloat64Equal(t, 275.0, targetCarbs, "target_carbohydrates should match weight_loss ratio")
+}
+
+func TestNutritionGoal_Get_WithWeightParams_WeightGain(t *testing.T) {
+	waitForUserRateLimit()
+
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 事前に目標カロリーを設定
+	setReq := map[string]any{
+		"target_calories": 2200.0,
+	}
+	setResp, err := client.Request(ctx, http.MethodPut, "/api/nutrition/goal", setReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, setResp.StatusCode)
+
+	// 増量期（current_weight < target_weight - 1.0）で取得
+	getResp, err := client.Get(ctx, "/api/nutrition/goal?current_weight=60.0&target_weight=75.0")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
+
+	var body map[string]any
+	err = getResp.JSON(&body)
+	require.NoError(t, err)
+
+	goal, ok := body["goal"].(map[string]any)
+	require.True(t, ok, "goal should be an object")
+
+	phase, ok := goal["phase"].(string)
+	require.True(t, ok, "phase should be a string")
+	assert.Equal(t, "weight_gain", phase, "phase should be weight_gain when current_weight < target_weight - 1.0")
+
+	// 増量期のPFC比率: Protein=0.20, Fat=0.30, Carbs=0.50
+	// 2200kcal → protein=110.0g, fat=73.3g, carbs=275.0g
+	targetProtein, ok := goal["target_protein"].(float64)
+	require.True(t, ok, "target_protein should be a float64")
+	assertFloat64Equal(t, 110.0, targetProtein, "target_protein should match weight_gain ratio")
+
+	targetFat, ok := goal["target_fat"].(float64)
+	require.True(t, ok, "target_fat should be a float64")
+	assertFloat64Equal(t, 73.3, targetFat, "target_fat should match weight_gain ratio")
+
+	targetCarbs, ok := goal["target_carbohydrates"].(float64)
+	require.True(t, ok, "target_carbohydrates should be a float64")
+	assertFloat64Equal(t, 275.0, targetCarbs, "target_carbohydrates should match weight_gain ratio")
+}
+
+func TestNutritionGoal_Get_WithWeightParams_Maintenance(t *testing.T) {
+	waitForUserRateLimit()
+
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	// 事前に目標カロリーを設定
+	setReq := map[string]any{
+		"target_calories": 2200.0,
+	}
+	setResp, err := client.Request(ctx, http.MethodPut, "/api/nutrition/goal", setReq)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, setResp.StatusCode)
+
+	// 維持期（|current_weight - target_weight| <= 1.0）で取得
+	getResp, err := client.Get(ctx, "/api/nutrition/goal?current_weight=70.0&target_weight=70.0")
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
+
+	var body map[string]any
+	err = getResp.JSON(&body)
+	require.NoError(t, err)
+
+	goal, ok := body["goal"].(map[string]any)
+	require.True(t, ok, "goal should be an object")
+
+	phase, ok := goal["phase"].(string)
+	require.True(t, ok, "phase should be a string")
+	assert.Equal(t, "maintenance", phase, "phase should be maintenance when |current_weight - target_weight| <= 1.0")
+
+	// 維持期のPFC比率: Protein=0.20, Fat=0.25, Carbs=0.55
+	// 2200kcal → protein=110.0g, fat=61.1g, carbs=302.5g
+	targetProtein, ok := goal["target_protein"].(float64)
+	require.True(t, ok, "target_protein should be a float64")
+	assertFloat64Equal(t, 110.0, targetProtein, "target_protein should match maintenance ratio")
+
+	targetFat, ok := goal["target_fat"].(float64)
+	require.True(t, ok, "target_fat should be a float64")
+	assertFloat64Equal(t, 61.1, targetFat, "target_fat should match maintenance ratio")
+
+	targetCarbs, ok := goal["target_carbohydrates"].(float64)
+	require.True(t, ok, "target_carbohydrates should be a float64")
+	assertFloat64Equal(t, 302.5, targetCarbs, "target_carbohydrates should match maintenance ratio")
 }
 
 func TestNutritionGoal_Set_InvalidCalories_TooLow(t *testing.T) {
+	// 前の成功系テスト群でレート制限バケットが枯渇している可能性があるため待機
+	waitForUserRateLimit()
+
 	client, ctx := authenticatedClient(t, 30*time.Second)
 
 	reqBody := map[string]any{
@@ -224,4 +343,33 @@ func TestNutritionGoal_Set_Unauthorized(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestNutritionGoal_Set_BoundaryCalories_MinValid(t *testing.T) {
+	// バリデーション系テスト群でレート制限バケットが枯渇している可能性があるため待機
+	waitForUserRateLimit()
+
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"target_calories": 800.0, // 最小有効値
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/nutrition/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestNutritionGoal_Set_BoundaryCalories_MaxValid(t *testing.T) {
+	client, ctx := authenticatedClient(t, 30*time.Second)
+
+	reqBody := map[string]any{
+		"target_calories": 5000.0, // 最大有効値
+	}
+
+	resp, err := client.Request(ctx, http.MethodPut, "/api/nutrition/goal", reqBody)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
