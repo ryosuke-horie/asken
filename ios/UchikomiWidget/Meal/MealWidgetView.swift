@@ -25,10 +25,11 @@ struct MealWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             mealTypeHeader
 
-            if !entry.isLoggedIn {
+            switch entry.state {
+            case .notLoggedIn:
                 notLoggedInView
-            } else {
-                caloriesSummaryView
+            case let .loaded(nutrition):
+                caloriesSummaryView(calories: nutrition?.calories)
                 recordButton
             }
         }
@@ -42,14 +43,15 @@ struct MealWidgetView: View {
             VStack(alignment: .leading, spacing: 6) {
                 mealTypeHeader
 
-                if !entry.isLoggedIn {
+                switch entry.state {
+                case .notLoggedIn:
                     notLoggedInView
-                } else {
-                    nutritionSummaryView
+                case let .loaded(nutrition):
+                    nutritionSummaryView(nutrition: nutrition)
                 }
             }
 
-            if entry.isLoggedIn {
+            if case .loaded = entry.state {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 8) {
                     foodDescriptionPreview
@@ -68,9 +70,9 @@ struct MealWidgetView: View {
             .foregroundStyle(.secondary)
     }
 
-    private var caloriesSummaryView: some View {
+    private func caloriesSummaryView(calories: Double?) -> some View {
         Group {
-            if let calories = entry.totalCalories {
+            if let calories {
                 HStack(alignment: .lastTextBaseline, spacing: 2) {
                     Text("\(Int(calories))")
                         .font(.system(.title2, design: .rounded, weight: .bold))
@@ -86,17 +88,15 @@ struct MealWidgetView: View {
         }
     }
 
-    private var nutritionSummaryView: some View {
+    private func nutritionSummaryView(nutrition: NutritionSummary?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            caloriesSummaryView
+            caloriesSummaryView(calories: nutrition?.calories)
 
-            if let protein = entry.totalProtein,
-               let fat = entry.totalFat,
-               let carbs = entry.totalCarbs {
+            if let nutrition {
                 HStack(spacing: 6) {
-                    nutrientLabel(value: protein, unit: "P", color: .blue)
-                    nutrientLabel(value: fat, unit: "F", color: .orange)
-                    nutrientLabel(value: carbs, unit: "C", color: .green)
+                    nutrientLabel(value: nutrition.protein, unit: "P", color: .blue)
+                    nutrientLabel(value: nutrition.fat, unit: "F", color: .orange)
+                    nutrientLabel(value: nutrition.carbs, unit: "C", color: .green)
                 }
             }
         }

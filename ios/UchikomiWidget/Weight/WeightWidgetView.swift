@@ -27,13 +27,14 @@ struct WeightWidgetView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            if !entry.isLoggedIn {
+            switch entry.state {
+            case .notLoggedIn:
                 notLoggedInView
-            } else if let weight = entry.latestWeightKg {
-                weightDisplayView(weight: weight)
-                recordButtonsSmall
-            } else {
+            case .noRecord:
                 noRecordView
+            case let .loaded(weightKg, _):
+                weightDisplayView(weight: weightKg)
+                recordButtonsSmall
             }
         }
         .padding(12)
@@ -48,23 +49,24 @@ struct WeightWidgetView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
-                if !entry.isLoggedIn {
+                switch entry.state {
+                case .notLoggedIn:
                     notLoggedInView
-                } else if let weight = entry.latestWeightKg {
-                    weightDisplayView(weight: weight)
-                    if let target = entry.targetWeightKg {
+                case .noRecord:
+                    noRecordView
+                case let .loaded(weightKg, targetWeightKg):
+                    weightDisplayView(weight: weightKg)
+                    if let target = targetWeightKg {
                         Text("目標: \(target, format: .number.precision(.fractionLength(1)))kg")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                } else {
-                    noRecordView
                 }
             }
 
             Spacer()
 
-            if entry.isLoggedIn, entry.latestWeightKg != nil {
+            if case .loaded = entry.state {
                 recordButtonsMedium
             }
         }

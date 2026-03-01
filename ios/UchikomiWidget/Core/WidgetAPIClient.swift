@@ -136,11 +136,11 @@ struct WidgetAPIClient {
             try await Task.sleep(nanoseconds: Self.pollingIntervalNanoseconds)
             let status = try await checkAnalysisStatus(id: id)
             switch status.status {
-            case "completed":
+            case .completed:
                 return
-            case "failed":
-                throw WidgetAPIError.analysisFailed(status.error ?? "分析に失敗しました")
-            default:
+            case let .failed(reason):
+                throw WidgetAPIError.analysisFailed(reason)
+            case .processing, .unknown:
                 if attempt == Self.maxPollingAttempts - 1 {
                     throw WidgetAPIError.analysisTimeout
                 }
