@@ -7,10 +7,19 @@ private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "Wei
 // MARK: - DailyWeightData
 
 struct DailyWeightData: Identifiable {
-    let id: String
+    /// date を id として使用。同一カレンダー日は常に同一 id となりアイデンティティが安定する
+    var id: Date {
+        date
+    }
+
     let date: Date
-    let hasRecord: Bool
+
+    /// nil = 記録なし、非nil = 記録あり（latestWeightKg から導出される計算プロパティ）
     let latestWeightKg: Double?
+
+    var hasRecord: Bool {
+        latestWeightKg != nil
+    }
 }
 
 // MARK: - WeightHistoryEntry
@@ -19,6 +28,7 @@ struct WeightHistoryEntry: TimelineEntry {
     enum State {
         case notLoggedIn
         case noData
+        /// weeklyData は日付昇順・最大7要素（直近7日間）
         case loaded(weeklyData: [DailyWeightData])
     }
 
@@ -44,6 +54,7 @@ struct WeightHistoryProvider: TimelineProvider {
             return
         }
 
+        // Task キャンセル時は WidgetKit がタイムライン更新を再スケジュールするため completion 未呼び出しは許容される
         Task {
             let client = WidgetAPIClient()
             do {
@@ -51,12 +62,15 @@ struct WeightHistoryProvider: TimelineProvider {
                 let weeklyData = Self.buildWeeklyData(from: response.records)
                 let entry = WeightHistoryEntry(date: Date(), state: .loaded(weeklyData: weeklyData))
                 completion(Timeline(entries: [entry], policy: .never))
+            } catch is CancellationError {
+                // Task がキャンセルされた場合は WidgetKit が再スケジュールするため何もしない
             } catch WidgetAPIError.unauthorized {
                 SharedDefaults.clearAuthToken()
                 let entry = WeightHistoryEntry(date: Date(), state: .notLoggedIn)
+                // ユーザーが再ログインするまで更新しない
                 completion(Timeline(entries: [entry], policy: .never))
             } catch {
-                logger.error("体重履歴データ取得失敗: \(error.localizedDescription)")
+                logger.error("体重履歴データ取得失敗: \(String(describing: error))")
                 let entry = WeightHistoryEntry(date: Date(), state: .noData)
                 completion(Timeline(entries: [entry], policy: .never))
             }
@@ -89,7 +103,10 @@ struct WeightHistoryProvider: TimelineProvider {
         // 日付ごとに記録をグループ化
         var recordsByDay: [Date: [WidgetWeightRecord]] = [:]
         for record in records {
-            guard let recordDate = parseRecordedAt(record.recordedAt) else { continue }
+            guard let recordDate = parseRecordedAt(record.recordedAt) else {
+                logger.warning("recordedAt の日付パース失敗: '\(record.recordedAt)' (id=\(record.id))")
+                continue
+            }
             let dayStart = calendar.startOfDay(for: recordDate)
             recordsByDay[dayStart, default: []].append(record)
         }
@@ -97,18 +114,14 @@ struct WeightHistoryProvider: TimelineProvider {
         // 過去7日間（今日を含む）のDailyWeightDataを生成
         return (0 ..< 7).reversed().compactMap { offset -> DailyWeightData? in
             guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: today) else {
+                logger.error("日付計算失敗: offset=\(offset)")
                 return nil
             }
             let dayRecords = recordsByDay[dayStart] ?? []
             let latestWeight = dayRecords
                 .sorted { $0.recordedAt < $1.recordedAt }
                 .last?.weightKg
-            return DailyWeightData(
-                id: "\(offset)",
-                date: dayStart,
-                hasRecord: !dayRecords.isEmpty,
-                latestWeightKg: latestWeight
-            )
+            return DailyWeightData(date: dayStart, latestWeightKg: latestWeight)
         }
     }
 
@@ -120,12 +133,7 @@ struct WeightHistoryProvider: TimelineProvider {
             guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: today) else {
                 return nil
             }
-            return DailyWeightData(
-                id: "\(offset)",
-                date: dayStart,
-                hasRecord: weights[index] != nil,
-                latestWeightKg: weights[index]
-            )
+            return DailyWeightData(date: dayStart, latestWeightKg: weights[index])
         }
     }
 }

@@ -126,39 +126,45 @@ struct WeightHistoryWidgetView: View {
 private struct WeightMiniChart: View {
     let weeklyData: [DailyWeightData]
 
-    private var points: [DailyWeightData] {
-        weeklyData.filter { $0.latestWeightKg != nil }
+    private struct ChartPoint: Identifiable {
+        let id: Date
+        let date: Date
+        let weight: Double
     }
 
-    private var weights: [Double] {
-        points.compactMap(\.latestWeightKg)
+    private var chartPoints: [ChartPoint] {
+        weeklyData.compactMap { day in
+            guard let weight = day.latestWeightKg else { return nil }
+            return ChartPoint(id: day.date, date: day.date, weight: weight)
+        }
     }
 
     private var yDomain: ClosedRange<Double> {
+        let weights = chartPoints.map(\.weight)
         let minW = (weights.min() ?? 60) - 0.5
         let maxW = (weights.max() ?? 70) + 0.5
         return minW ... maxW
     }
 
     var body: some View {
-        if points.isEmpty {
+        if chartPoints.isEmpty {
             Text("データなし")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             Chart {
-                ForEach(points) { point in
+                ForEach(chartPoints) { point in
                     LineMark(
                         x: .value("日付", point.date),
-                        y: .value("体重", point.latestWeightKg ?? 0)
+                        y: .value("体重", point.weight)
                     )
                     .foregroundStyle(Color.blue)
                     .interpolationMethod(.catmullRom)
 
                     PointMark(
                         x: .value("日付", point.date),
-                        y: .value("体重", point.latestWeightKg ?? 0)
+                        y: .value("体重", point.weight)
                     )
                     .foregroundStyle(Color.blue)
                     .symbolSize(16)
