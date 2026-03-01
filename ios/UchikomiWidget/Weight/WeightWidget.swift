@@ -7,26 +7,30 @@ private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "Wei
 // MARK: - WeightEntry
 
 struct WeightEntry: TimelineEntry {
+    enum State {
+        case notLoggedIn
+        case noRecord(targetWeightKg: Double?)
+        case loaded(weightKg: Double, targetWeightKg: Double?)
+    }
+
     let date: Date
-    let latestWeightKg: Double?
-    let targetWeightKg: Double?
-    let isLoggedIn: Bool
+    let state: State
 }
 
 // MARK: - WeightProvider
 
 struct WeightProvider: TimelineProvider {
     func placeholder(in _: Context) -> WeightEntry {
-        WeightEntry(date: Date(), latestWeightKg: 65.0, targetWeightKg: 63.0, isLoggedIn: true)
+        WeightEntry(date: Date(), state: .loaded(weightKg: 65.0, targetWeightKg: 63.0))
     }
 
     func getSnapshot(in _: Context, completion: @escaping (WeightEntry) -> Void) {
-        completion(WeightEntry(date: Date(), latestWeightKg: 65.0, targetWeightKg: 63.0, isLoggedIn: true))
+        completion(WeightEntry(date: Date(), state: .loaded(weightKg: 65.0, targetWeightKg: 63.0)))
     }
 
     func getTimeline(in _: Context, completion: @escaping (Timeline<WeightEntry>) -> Void) {
         guard SharedDefaults.authToken != nil else {
-            let entry = WeightEntry(date: Date(), latestWeightKg: nil, targetWeightKg: nil, isLoggedIn: false)
+            let entry = WeightEntry(date: Date(), state: .notLoggedIn)
             completion(Timeline(entries: [entry], policy: .never))
             return
         }
@@ -43,24 +47,24 @@ struct WeightProvider: TimelineProvider {
                     SharedDefaults.latestWeightKg = latestWeight
                 }
 
-                let entry = WeightEntry(
-                    date: Date(),
-                    latestWeightKg: latestWeight,
-                    targetWeightKg: targetWeight,
-                    isLoggedIn: true
-                )
+                let state: WeightEntry.State = if let weight = latestWeight {
+                    .loaded(weightKg: weight, targetWeightKg: targetWeight)
+                } else {
+                    .noRecord(targetWeightKg: targetWeight)
+                }
+                let entry = WeightEntry(date: Date(), state: state)
                 // .never: 自動バックグラウンド更新を行わない。
                 // Cloud Run のコールドスタートによるレイテンシとリクエスト費用を抑えるため、
                 // 更新は記録後（RecordWeightIntent）とアプリ起動時（UchikomiApp）に限定する。
                 completion(Timeline(entries: [entry], policy: .never))
             } catch {
                 logger.error("体重データ取得失敗: \(error.localizedDescription)")
-                let entry = WeightEntry(
-                    date: Date(),
-                    latestWeightKg: SharedDefaults.latestWeightKg,
-                    targetWeightKg: nil,
-                    isLoggedIn: true
-                )
+                let state: WeightEntry.State = if let cached = SharedDefaults.latestWeightKg {
+                    .loaded(weightKg: cached, targetWeightKg: nil)
+                } else {
+                    .noRecord(targetWeightKg: nil)
+                }
+                let entry = WeightEntry(date: Date(), state: state)
                 completion(Timeline(entries: [entry], policy: .never))
             }
         }

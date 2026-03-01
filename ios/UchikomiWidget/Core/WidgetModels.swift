@@ -27,9 +27,38 @@ struct WidgetWeightRecordsResponse: Decodable {
 // MARK: - WidgetAnalysisStatus
 
 struct WidgetAnalysisStatus: Decodable {
-    let status: String
-    let error: String?
-    let message: String?
+    enum Status {
+        case completed
+        case failed(reason: String)
+        case processing
+        case unknown(String)
+    }
+
+    let status: Status
+
+    private enum CodingKeys: String, CodingKey {
+        case status
+        case error
+        case message
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let raw = try container.decode(String.self, forKey: .status)
+        let errorMsg = try container.decodeIfPresent(String.self, forKey: .error)
+        let message = try container.decodeIfPresent(String.self, forKey: .message)
+
+        switch raw {
+        case "completed":
+            status = .completed
+        case "failed":
+            status = .failed(reason: errorMsg ?? message ?? "分析に失敗しました")
+        case "processing":
+            status = .processing
+        default:
+            status = .unknown(raw)
+        }
+    }
 }
 
 // MARK: - WidgetAnalyzeResponse
