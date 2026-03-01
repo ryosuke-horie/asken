@@ -1,5 +1,8 @@
 import AppIntents
+import OSLog
 import WidgetKit
+
+private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "RecordWeightIntent")
 
 // MARK: - RecordWeightIntent
 
@@ -28,6 +31,10 @@ struct RecordWeightIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         guard let lastWeight = SharedDefaults.latestWeightKg, lastWeight > 0 else {
+            logger
+                .warning(
+                    "RecordWeightIntent: キャッシュ体重が存在しない（アプリを開いて体重を記録してください）。latestWeightKg=\(String(describing: SharedDefaults.latestWeightKg))"
+                )
             return .result()
         }
 
