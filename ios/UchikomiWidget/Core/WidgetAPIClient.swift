@@ -71,6 +71,12 @@ struct WidgetAPIClient {
         return try await get(path: "weight/records?from=\(thirtyDaysAgo)&to=\(today)&tz=\(percentEncodedTimezone)")
     }
 
+    func getWeeklyWeightRecords() async throws -> WidgetWeightRecordsResponse {
+        let today = localDateString(from: Date())
+        let sixDaysAgo = localDateString(from: Date().addingTimeInterval(-6 * 24 * 60 * 60))
+        return try await get(path: "weight/records?from=\(sixDaysAgo)&to=\(today)&tz=\(percentEncodedTimezone)")
+    }
+
     // MARK: - Meal API
 
     func getDailyMeals(date: Date) async throws -> WidgetDailyMeals {
