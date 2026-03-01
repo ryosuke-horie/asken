@@ -8,6 +8,7 @@ struct NutritionSummaryCard: View {
     let fat: Double
     let carbohydrates: Double
     var micronutrients: [String: Double]?
+    var burnedCalories: Double = 0
 
     var goal: NutritionGoal?
 
@@ -15,7 +16,7 @@ struct NutritionSummaryCard: View {
         VStack(spacing: 12) {
             // Calories (main)
             HStack {
-                Text("カロリー")
+                Text("摂取カロリー")
                     .font(.headline)
                 Spacer()
                 Text("\(Int(calories))")
@@ -28,9 +29,31 @@ struct NutritionSummaryCard: View {
                     .opacity(0.5)
             }
 
-            // カロリープログレスバー（目標がある場合）
+            // カロリーバー（消費あり：2本バー、消費なし：摂取のみ）
             if let goal {
-                CalorieProgressView(current: calories, goal: goal.calories)
+                if burnedCalories > 0 {
+                    CalorieBalanceBarView(
+                        intake: calories,
+                        burned: burnedCalories,
+                        goal: goal.calories
+                    )
+                } else {
+                    CalorieProgressView(current: calories, goal: goal.calories)
+                }
+            } else if burnedCalories > 0 {
+                HStack {
+                    Text("消費カロリー")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("-\(Int(burnedCalories))")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.blue)
+                    Text("kcal")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Divider()

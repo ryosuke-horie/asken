@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/ryosuke-horie/uchikomi/backend/internal/middleware"
@@ -12,19 +13,24 @@ import (
 
 // DailyMealsHandler は日次食事データ取得エンドポイントのハンドラー
 type DailyMealsHandler struct {
-	repository repository.AnalysisRepository
+	repository   repository.AnalysisRepository
+	exerciseRepo repository.ExerciseRepository
 }
 
 // NewDailyMealsHandler は新しいDailyMealsHandlerを作成
-func NewDailyMealsHandler(repository repository.AnalysisRepository) *DailyMealsHandler {
-	return &DailyMealsHandler{repository: repository}
+func NewDailyMealsHandler(repo repository.AnalysisRepository, exerciseRepo repository.ExerciseRepository) *DailyMealsHandler {
+	if repo == nil {
+		panic("daily meals handler: repository must not be nil")
+	}
+	return &DailyMealsHandler{repository: repo, exerciseRepo: exerciseRepo}
 }
 
 // DailyMealsResponse は日次食事データのレスポンス
 type DailyMealsResponse struct {
-	Date       string                                `json:"date"`
-	Meals      map[string][]repository.HistoryDetail `json:"meals"`
-	DailyTotal repository.DailyTotal                 `json:"daily_total"`
+	Date                    string                                `json:"date"`
+	Meals                   map[string][]repository.HistoryDetail `json:"meals"`
+	DailyTotal              repository.DailyTotal                 `json:"daily_total"`
+	TotalBurnedCaloriesKcal float64                               `json:"total_burned_calories_kcal"`
 }
 
 // Handle はGET /api/meals/dailyリクエストを処理
@@ -55,25 +61,57 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	if date == "" {
 		loc, err := time.LoadLocation(tz)
 		if err != nil {
-			loc = time.UTC
+			http.Error(w, "tzに無効なタイムゾーンが指定されました", http.StatusBadRequest)
+			return
 		}
 		date = time.Now().In(loc).Format("2006-01-02")
 	}
 
 	log.Printf("Getting daily meals for userID: %s, date: %s, tz: %s", userID, date, tz)
 
-	// リポジトリから取得（userIDでスコープ）
-	meals, total, err := h.repository.GetDailyMeals(r.Context(), userID, date, tz)
-	if err != nil {
-		log.Printf("Error getting daily meals: %v", err)
+	// 食事記録と運動記録を並列取得
+	var (
+		meals               map[string][]repository.HistoryDetail
+		total               repository.DailyTotal
+		mealsErr            error
+		totalBurnedCalories float64
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		meals, total, mealsErr = h.repository.GetDailyMeals(r.Context(), userID, date, tz)
+	}()
+
+	if h.exerciseRepo != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			records, err := h.exerciseRepo.ListByDate(r.Context(), userID, date)
+			if err != nil {
+				log.Printf("DailyMealsHandler: 運動記録取得エラー userID=%s date=%s: %v", userID, date, err)
+				return
+			}
+			for _, rec := range records {
+				totalBurnedCalories += rec.BurnedCaloriesKcal
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if mealsErr != nil {
+		log.Printf("Error getting daily meals: %v", mealsErr)
 		http.Error(w, "Failed to get daily meals", http.StatusInternalServerError)
 		return
 	}
 
 	response := DailyMealsResponse{
-		Date:       date,
-		Meals:      meals,
-		DailyTotal: total,
+		Date:                    date,
+		Meals:                   meals,
+		DailyTotal:              total,
+		TotalBurnedCaloriesKcal: totalBurnedCalories,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

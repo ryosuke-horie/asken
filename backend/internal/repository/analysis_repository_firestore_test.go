@@ -10,7 +10,6 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
-	"github.com/ryosuke-horie/uchikomi/backend/internal/service"
 	"github.com/ryosuke-horie/uchikomi/backend/internal/testutil"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 	"github.com/stretchr/testify/assert"
@@ -216,7 +215,7 @@ func TestSaveResultAndGetResult(t *testing.T) {
 		require.NoError(t, err)
 
 		// 結果を保存
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods: []gemini.NutritionInfo{
 				{Name: "鶏むね肉", Calories: 200, Protein: 40, Fat: 5, Carbohydrates: 0},
 				{Name: "白米", Calories: 250, Protein: 5, Fat: 1, Carbohydrates: 55},
@@ -287,7 +286,7 @@ func TestGetHistoryListAndDetail(t *testing.T) {
 		id, err := repo.CreateRequest(ctx, "/test.jpg", "breakfast", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods: []gemini.NutritionInfo{
 				{Name: "テスト食品", Calories: 100, Protein: 10, Fat: 5, Carbohydrates: 10},
 			},
@@ -332,7 +331,7 @@ func TestDeleteHistory(t *testing.T) {
 		id, err := repo.CreateRequest(ctx, "/test.jpg", "breakfast", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods:         []gemini.NutritionInfo{},
 			TotalCalories: 0,
 		}
@@ -373,7 +372,7 @@ func TestDeleteHistory_StorageDeleteFailure(t *testing.T) {
 		id, err := repo.CreateRequest(ctx, "uploads/test-image.jpg", "breakfast", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods:         []gemini.NutritionInfo{},
 			TotalCalories: 0,
 		}
@@ -408,7 +407,7 @@ func TestGetDailyMeals(t *testing.T) {
 		id, err := repo.CreateRequest(ctx, "/breakfast.jpg", "breakfast", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods: []gemini.NutritionInfo{
 				{Name: "朝食", Calories: 300, Protein: 15, Fat: 10, Carbohydrates: 40},
 			},
@@ -466,7 +465,7 @@ func TestCreateSkippedMeal(t *testing.T) {
 		id1, err := repo.CreateRequest(ctx, "/test.jpg", "lunch", "2024-01-16", &userID)
 		require.NoError(t, err)
 
-		result := &service.AnalysisResult{
+		result := &AnalysisResult{
 			Foods:         []gemini.NutritionInfo{{Name: "テスト", Calories: 500}},
 			TotalCalories: 500,
 		}
@@ -502,7 +501,7 @@ func TestUpdateResult(t *testing.T) {
 		id, err := repo.CreateRequest(ctx, "/test.jpg", "breakfast", "2024-01-15", &userID)
 		require.NoError(t, err)
 
-		initialResult := &service.AnalysisResult{
+		initialResult := &AnalysisResult{
 			Foods: []gemini.NutritionInfo{
 				{Name: "食品1", Calories: 100, Protein: 10, Fat: 5, Carbohydrates: 10},
 			},

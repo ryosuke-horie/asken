@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ryosuke-horie/uchikomi/backend/internal/repository"
 	"github.com/ryosuke-horie/uchikomi/backend/pkg/gemini"
 )
 
@@ -21,20 +22,10 @@ type ImageDownloader interface {
 	Download(ctx context.Context, objectName string) ([]byte, error)
 }
 
-// AnalysisResult は分析結果を表す構造体
-type AnalysisResult struct {
-	Foods               []gemini.NutritionInfo `json:"foods"`
-	TotalCalories       float64                `json:"total_calories"`
-	TotalProtein        float64                `json:"total_protein"`
-	TotalFat            float64                `json:"total_fat"`
-	TotalCarbohydrates  float64                `json:"total_carbohydrates"`
-	TotalMicronutrients map[string]float64     `json:"total_micronutrients,omitempty"`
-}
-
 // FoodServiceInterface は食品分析サービスのインターフェース
 type FoodServiceInterface interface {
-	AnalyzeFoodImage(ctx context.Context, imagePath string) (*AnalysisResult, error)
-	AnalyzeFoodText(ctx context.Context, inputText string) (*AnalysisResult, error)
+	AnalyzeFoodImage(ctx context.Context, imagePath string) (*repository.AnalysisResult, error)
+	AnalyzeFoodText(ctx context.Context, inputText string) (*repository.AnalysisResult, error)
 }
 
 // FoodService は食品分析サービス
@@ -52,7 +43,7 @@ func NewFoodService(geminiClient GeminiClient, imageDownloader ImageDownloader) 
 }
 
 // AnalyzeFoodImage は画像から食材を分析し、栄養素を計算する
-func (s *FoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*AnalysisResult, error) {
+func (s *FoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*repository.AnalysisResult, error) {
 	var foods []gemini.FoodItem
 	var err error
 
@@ -87,8 +78,7 @@ func (s *FoodService) AnalyzeFoodImage(ctx context.Context, imagePath string) (*
 	// 合計カロリー・栄養素を計算
 	totalCal, totalPro, totalFat, totalCarbs, totalMicro := calculateTotals(nutritionList)
 
-	// AnalysisResultを返却
-	return &AnalysisResult{
+	return &repository.AnalysisResult{
 		Foods:               nutritionList,
 		TotalCalories:       totalCal,
 		TotalProtein:        totalPro,
@@ -116,7 +106,7 @@ func detectMimeTypeFromPath(filePath string) string {
 }
 
 // AnalyzeFoodText はテキストから食材を分析し、栄養素を計算する
-func (s *FoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*AnalysisResult, error) {
+func (s *FoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*repository.AnalysisResult, error) {
 	// Step 1: テキストから食材リストを生成
 	foods, err := s.geminiClient.ParseTextToFoods(ctx, inputText)
 	if err != nil {
@@ -132,7 +122,7 @@ func (s *FoodService) AnalyzeFoodText(ctx context.Context, inputText string) (*A
 	// 合計カロリー・栄養素を計算
 	totalCal, totalPro, totalFat, totalCarbs, totalMicro := calculateTotals(nutritionList)
 
-	return &AnalysisResult{
+	return &repository.AnalysisResult{
 		Foods:               nutritionList,
 		TotalCalories:       totalCal,
 		TotalProtein:        totalPro,
