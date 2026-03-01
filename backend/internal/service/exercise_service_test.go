@@ -203,6 +203,21 @@ func TestGetDailyExercise(t *testing.T) {
 	assert.InDelta(t, 810.0, result.TotalBurnedCaloriesKcal, 0.001)
 }
 
+func TestGetDailyExercise_RepositoryError(t *testing.T) {
+	ctx := context.Background()
+	repo := &MockExerciseRepo{
+		ListByDateFunc: func(ctx context.Context, userID string, recordedDate string) ([]repository.ExerciseRecord, error) {
+			return nil, errors.New("firestore unavailable")
+		},
+	}
+	svc := newTestExerciseService(repo, &MockEstimator{})
+
+	_, err := svc.GetDailyExercise(ctx, "test-user", "2026-02-28")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "運動記録の取得に失敗")
+}
+
 func TestGetDailyExercise_Empty(t *testing.T) {
 	ctx := context.Background()
 	repo := &MockExerciseRepo{}

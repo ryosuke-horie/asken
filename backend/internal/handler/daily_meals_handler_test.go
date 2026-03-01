@@ -270,6 +270,35 @@ func TestDailyMealsHandler_Handle_InvalidTimezone(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestDailyMealsHandler_Handle_InvalidTimezone_WithDateSpecified(t *testing.T) {
+	// 仕様: date指定あり + 無効なtz の場合はtzバリデーションをスキップして200を返す
+	// (tzはdate未指定時の現在日付計算にのみ使用される)
+	testUserID := "test-user-123"
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			assert.Equal(t, "2026-01-21", date)
+			assert.Equal(t, "Invalid/Zone", tz)
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21&tz=Invalid/Zone", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 func TestDailyMealsHandler_Handle_Unauthorized(t *testing.T) {
 	mockRepo := &MockAnalysisRepository{}
 	handler := NewDailyMealsHandler(mockRepo, nil)
