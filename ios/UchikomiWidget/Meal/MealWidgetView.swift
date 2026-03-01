@@ -28,8 +28,11 @@ struct MealWidgetView: View {
             switch entry.state {
             case .notLoggedIn:
                 notLoggedInView
+            case .noRecord:
+                noRecordView
+                recordButton
             case let .loaded(nutrition):
-                caloriesSummaryView(calories: nutrition?.calories)
+                caloriesSummaryView(calories: nutrition.calories)
                 recordButton
             }
         }
@@ -46,6 +49,8 @@ struct MealWidgetView: View {
                 switch entry.state {
                 case .notLoggedIn:
                     notLoggedInView
+                case .noRecord:
+                    noRecordView
                 case let .loaded(nutrition):
                     nutritionSummaryView(nutrition: nutrition)
                 }
@@ -70,36 +75,31 @@ struct MealWidgetView: View {
             .foregroundStyle(.secondary)
     }
 
-    private func caloriesSummaryView(calories: Double?) -> some View {
-        Group {
-            if let calories {
-                HStack(alignment: .lastTextBaseline, spacing: 2) {
-                    Text("\(Int(calories))")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                    Text("kcal")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Text("本日の記録なし")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private func caloriesSummaryView(calories: Double) -> some View {
+        HStack(alignment: .lastTextBaseline, spacing: 2) {
+            Text("\(Int(calories))")
+                .font(.system(.title2, design: .rounded, weight: .bold))
+            Text("kcal")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func nutritionSummaryView(nutrition: NutritionSummary) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            caloriesSummaryView(calories: nutrition.calories)
+            HStack(spacing: 6) {
+                nutrientLabel(value: nutrition.protein, unit: "P", color: .blue)
+                nutrientLabel(value: nutrition.fat, unit: "F", color: .orange)
+                nutrientLabel(value: nutrition.carbs, unit: "C", color: .green)
             }
         }
     }
 
-    private func nutritionSummaryView(nutrition: NutritionSummary?) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            caloriesSummaryView(calories: nutrition?.calories)
-
-            if let nutrition {
-                HStack(spacing: 6) {
-                    nutrientLabel(value: nutrition.protein, unit: "P", color: .blue)
-                    nutrientLabel(value: nutrition.fat, unit: "F", color: .orange)
-                    nutrientLabel(value: nutrition.carbs, unit: "C", color: .green)
-                }
-            }
-        }
+    private var noRecordView: some View {
+        Text("本日の記録なし")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 
     private func nutrientLabel(value: Double, unit: String, color: Color) -> some View {

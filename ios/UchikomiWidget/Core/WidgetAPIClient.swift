@@ -7,6 +7,7 @@ enum WidgetAPIError: Error {
     case noBaseURL
     case invalidURL
     case invalidResponse
+    case unauthorized
     case httpError(statusCode: Int)
     case decodingError(Error)
     case analysisFailed(String)
@@ -65,35 +66,15 @@ struct WidgetAPIClient {
     }
 
     func getLatestWeightRecord() async throws -> WidgetWeightRecordsResponse {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone.current
-
-        let today = dateFormatter.string(from: Date())
-        let thirtyDaysAgo = dateFormatter.string(from: Date().addingTimeInterval(-30 * 24 * 60 * 60))
-
-        var allowedChars = CharacterSet.urlQueryAllowed
-        allowedChars.remove(charactersIn: "/")
-        let tz = TimeZone.current.identifier
-            .addingPercentEncoding(withAllowedCharacters: allowedChars) ?? TimeZone.current.identifier
-
-        return try await get(path: "weight/records?from=\(thirtyDaysAgo)&to=\(today)&tz=\(tz)")
+        let today = localDateString(from: Date())
+        let thirtyDaysAgo = localDateString(from: Date().addingTimeInterval(-30 * 24 * 60 * 60))
+        return try await get(path: "weight/records?from=\(thirtyDaysAgo)&to=\(today)&tz=\(percentEncodedTimezone)")
     }
 
     // MARK: - Meal API
 
     func getDailyMeals(date: Date) async throws -> WidgetDailyMeals {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone.current
-
-        var allowedChars = CharacterSet.urlQueryAllowed
-        allowedChars.remove(charactersIn: "/")
-        let tz = TimeZone.current.identifier
-            .addingPercentEncoding(withAllowedCharacters: allowedChars) ?? TimeZone.current.identifier
-
-        let dateString = dateFormatter.string(from: date)
-        return try await get(path: "meals/daily?date=\(dateString)&tz=\(tz)")
+        try await get(path: "meals/daily?date=\(localDateString(from: date))&tz=\(percentEncodedTimezone)")
     }
 
     func analyzeText(inputText: String, mealType: String, mealDate: Date) async throws -> String {
@@ -111,14 +92,10 @@ struct WidgetAPIClient {
             }
         }
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone.current
-
         let body = Request(
             inputText: inputText,
             mealType: mealType,
-            mealDate: dateFormatter.string(from: mealDate),
+            mealDate: localDateString(from: mealDate),
             tz: TimeZone.current.identifier
         )
         let response: WidgetAnalyzeResponse = try await post(path: "analyze", body: body)
@@ -191,9 +168,25 @@ struct WidgetAPIClient {
             } catch {
                 throw WidgetAPIError.decodingError(error)
             }
+        case 401:
+            throw WidgetAPIError.unauthorized
         default:
             throw WidgetAPIError.httpError(statusCode: httpResponse.statusCode)
         }
+    }
+
+    private func localDateString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = .current
+        return f.string(from: date)
+    }
+
+    private var percentEncodedTimezone: String {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "/")
+        return TimeZone.current.identifier
+            .addingPercentEncoding(withAllowedCharacters: allowed) ?? TimeZone.current.identifier
     }
 
     private func sanitizePathID(_ id: String) -> String {

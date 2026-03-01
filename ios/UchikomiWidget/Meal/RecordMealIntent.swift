@@ -1,5 +1,8 @@
 import AppIntents
+import OSLog
 import WidgetKit
+
+private let logger = Logger(subsystem: "dev.exe.uchikomi.widget", category: "RecordMealIntent")
 
 // MARK: - WidgetMealType
 
@@ -75,6 +78,7 @@ struct RecordMealIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         guard !foodDescription.isEmpty else {
+            logger.warning("RecordMealIntent: 食事内容が未設定のためスキップ。mealType=\(mealType.rawValue)")
             return .result()
         }
 
@@ -85,7 +89,15 @@ struct RecordMealIntent: AppIntent {
             mealDate: Date()
         )
 
-        try await client.waitForAnalysisCompletion(id: analysisID)
+        do {
+            try await client.waitForAnalysisCompletion(id: analysisID)
+        } catch WidgetAPIError.analysisTimeout {
+            // タイムアウト時もウィジェットを更新（サーバー側で分析が完了している可能性がある）
+            logger.warning("RecordMealIntent: 分析タイムアウト。analysisID=\(analysisID)")
+            WidgetCenter.shared.reloadTimelines(ofKind: "MealWidget")
+            return .result()
+        }
+
         WidgetCenter.shared.reloadTimelines(ofKind: "MealWidget")
         return .result()
     }

@@ -57,6 +57,10 @@ struct WeightProvider: TimelineProvider {
                 // Cloud Run のコールドスタートによるレイテンシとリクエスト費用を抑えるため、
                 // 更新は記録後（RecordWeightIntent）とアプリ起動時（UchikomiApp）に限定する。
                 completion(Timeline(entries: [entry], policy: .never))
+            } catch WidgetAPIError.unauthorized {
+                SharedDefaults.clearAuthToken()
+                let entry = WeightEntry(date: Date(), state: .notLoggedIn)
+                completion(Timeline(entries: [entry], policy: .never))
             } catch {
                 logger.error("体重データ取得失敗: \(error.localizedDescription)")
                 let state: WeightEntry.State = if let cached = SharedDefaults.latestWeightKg {

@@ -18,7 +18,8 @@ struct NutritionSummary {
 struct MealEntry: TimelineEntry {
     enum State {
         case notLoggedIn
-        case loaded(NutritionSummary?)
+        case noRecord
+        case loaded(NutritionSummary)
     }
 
     let date: Date
@@ -63,9 +64,13 @@ struct MealProvider: AppIntentTimelineProvider {
             // Cloud Run のコールドスタートによるレイテンシとリクエスト費用を抑えるため、
             // 更新は記録後（RecordMealIntent）とアプリ起動時（UchikomiApp）に限定する。
             return Timeline(entries: [entry], policy: .never)
+        } catch WidgetAPIError.unauthorized {
+            SharedDefaults.clearAuthToken()
+            let entry = MealEntry(date: Date(), state: .notLoggedIn, configuration: configuration)
+            return Timeline(entries: [entry], policy: .never)
         } catch {
             logger.error("食事データ取得失敗: \(error.localizedDescription)")
-            let entry = MealEntry(date: Date(), state: .loaded(nil), configuration: configuration)
+            let entry = MealEntry(date: Date(), state: .noRecord, configuration: configuration)
             return Timeline(entries: [entry], policy: .never)
         }
     }
