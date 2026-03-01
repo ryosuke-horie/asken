@@ -96,6 +96,7 @@
 		F1092E945197F08988E31888 /* KeyedDecodingContainer+ISO8601.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0D11C996677E9D4DEBA2E2 /* KeyedDecodingContainer+ISO8601.swift */; };
 		F57ECB73B55F60AC68F6610C /* MeasurementUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E2610614116D5AB2DB9B01 /* MeasurementUnit.swift */; };
 		F72A429C892F12634139B75B /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD04E0A1E562544A36F2565 /* SettingsViewModel.swift */; };
+		F73A67D2F906B36348BF24DA /* CalorieBalanceBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44025F96ADF544B0BC03CA67 /* CalorieBalanceBarView.swift */; };
 		FAC41EDA4BBDF0D5AC9EEB20 /* ExerciseInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797439273979197BD7551336 /* ExerciseInputViewModel.swift */; };
 /* End PBXBuildFile section */
 
@@ -160,6 +161,7 @@
 		3F864042A2DAA5493CF60924 /* PantryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PantryListView.swift; sourceTree = "<group>"; };
 		403F558A61BBFE489C45B03F /* MyMenuEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyMenuEditViewModel.swift; sourceTree = "<group>"; };
 		40DD825CA751911140028549 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		44025F96ADF544B0BC03CA67 /* CalorieBalanceBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieBalanceBarView.swift; sourceTree = "<group>"; };
 		4C9657FA9AD5AFD84385A165 /* PFCPieChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PFCPieChart.swift; sourceTree = "<group>"; };
 		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
@@ -301,6 +303,7 @@
 		12042A58C9A5CFE1847BA3BC /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				44025F96ADF544B0BC03CA67 /* CalorieBalanceBarView.swift */,
 				8E8E3330F9D642785CE702EA /* CalorieProgressView.swift */,
 				2D92CF8A21E8A6955173F555 /* MicronutrientProgressSection.swift */,
 				A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */,
@@ -829,6 +832,7 @@
 				5480C2A55D426869ACF0E45B /* AppDelegate.swift in Sources */,
 				BF2DEC59EAA4AEE081186399 /* AppEnvironment.swift in Sources */,
 				11289E4A7F0B4068E62C9064 /* AppleSignInManager.swift in Sources */,
+				F73A67D2F906B36348BF24DA /* CalorieBalanceBarView.swift in Sources */,
 				48688F6D0B6A51776A4A4EAD /* CalorieProgressView.swift in Sources */,
 				B935F83561A31C3BD0133FFD /* CameraView.swift in Sources */,
 				980D77DCB56BCBF841493D8A /* CookingSuggestionViewModel.swift in Sources */,

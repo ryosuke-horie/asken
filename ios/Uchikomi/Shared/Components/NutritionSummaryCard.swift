@@ -29,8 +29,18 @@ struct NutritionSummaryCard: View {
                     .opacity(0.5)
             }
 
-            // 消費カロリー（記録がある場合のみ表示）
-            if burnedCalories > 0 {
+            // カロリーバー（消費あり：2本バー、消費なし：摂取のみ）
+            if let goal {
+                if burnedCalories > 0 {
+                    CalorieBalanceBarView(
+                        intake: calories,
+                        burned: burnedCalories,
+                        goal: goal.calories
+                    )
+                } else {
+                    CalorieProgressView(current: calories, goal: goal.calories)
+                }
+            } else if burnedCalories > 0 {
                 HStack {
                     Text("消費カロリー")
                         .font(.subheadline)
@@ -44,11 +54,6 @@ struct NutritionSummaryCard: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-
-            // カロリープログレスバー（目標がある場合）
-            if let goal {
-                CalorieProgressView(current: calories, goal: goal.calories)
             }
 
             Divider()
