@@ -70,6 +70,9 @@ struct MealProvider: AppIntentTimelineProvider {
                 configuration: configuration,
                 isLoggedIn: true
             )
+            // .never: 自動バックグラウンド更新を行わない。
+            // Cloud Run のコールドスタートによるレイテンシとリクエスト費用を抑えるため、
+            // 更新は記録後（RecordMealIntent）とアプリ起動時（UchikomiApp）に限定する。
             return Timeline(entries: [entry], policy: .never)
         } catch {
             let entry = MealEntry(
