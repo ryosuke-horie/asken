@@ -1,27 +1,40 @@
-CodeMap Update Report
-Date: 2026-02-27
-Branch: utk-44
-Issue: UTK-44
+コードマップ更新レポート
+生成日: 2026-03-01
 
-Summary:
-- Updated freshness timestamps in CODEMAPS documents to 2026-02-27.
-- Reflected MyMenu micronutrient aggregation (`totalMicronutrients`) in data/backend/ios codemaps.
+## 更新トリガー
 
-Changed files:
-- docs/CODEMAPS/INDEX.md
-- docs/CODEMAPS/architecture.md
-- docs/CODEMAPS/backend.md
-- docs/CODEMAPS/data.md
-- docs/CODEMAPS/ios.md
+2026-02-27以降にマージされた消費カロリー記録機能 (UTK-39) の実装。
 
-Diff stats:
-- Files changed: 5
-- Insertions: 9
-- Deletions: 8
-- Total changed lines: 17
-- Baseline lines (docs/CODEMAPS/*.md): 1316
-- Estimated change rate: ~1.29%
+## 変更ファイル一覧
 
-Approval threshold check:
-- Threshold: 30%
-- Result: Below threshold (no pre-update approval required)
+| ファイル | 変更内容 |
+|:---|:---|
+| docs/CODEMAPS/INDEX.md | 消費カロリー記録機能エリアを追加 |
+| docs/CODEMAPS/architecture.md | 消費カロリー記録フローを追加 |
+| docs/CODEMAPS/backend.md | exercise handler/service/repository/estimator を追加 |
+| docs/CODEMAPS/ios.md | Exercise feature/repository/shared component を追加 |
+| docs/CODEMAPS/data.md | exerciseRecords コレクション定義・インデックスを追加 |
+
+## 主な追加内容
+
+### バックエンド
+- ExerciseHandler: POST/DELETE /api/exercise/records, GET /api/exercise/daily
+- ExerciseService: METテーブルまたはGemini APIで消費カロリー推定
+- ExerciseRepository: Firestoreへの運動記録CRUD
+- exercise_estimator.go: Gemini APIによるカロリー推定（プリセット外種目用）
+
+### iOS
+- Features/Exercise/: ExerciseInputView, ExerciseInputViewModel, ExerciseRecord model
+- Core/Repositories/ExerciseRepository.swift: 運動記録・日次データアクセス
+- Shared/Components/CalorieBalanceBarView.swift: 摂取・消費カロリー色分けバー
+
+### データ
+- exerciseRecords コレクション: exerciseName, durationMinutes, burnedCaloriesKcal, estimationMethod等
+- インデックス: recordedDate + createdAt (日次取得用)
+
+## 差分率（前バージョン比）
+- INDEX.md: 約8%
+- architecture.md: 約6%
+- backend.md: 約5%
+- ios.md: 約5%
+- data.md: 約15%
