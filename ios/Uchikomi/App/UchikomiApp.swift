@@ -109,6 +109,7 @@ struct MainTabView: View {
         do {
             let token = try await AuthServiceProvider.shared.getIDToken()
             SharedDefaults.authToken = token
+            WidgetCenter.shared.reloadAllTimelines()
         } catch {
             // ログアウト済みの場合は無視
         }

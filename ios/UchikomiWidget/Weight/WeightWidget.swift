@@ -46,9 +46,7 @@ struct WeightProvider: TimelineProvider {
                     targetWeightKg: targetWeight,
                     isLoggedIn: true
                 )
-                let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date())
-                    ?? Date().addingTimeInterval(1_800)
-                completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+                completion(Timeline(entries: [entry], policy: .never))
             } catch {
                 let entry = WeightEntry(
                     date: Date(),
@@ -56,7 +54,7 @@ struct WeightProvider: TimelineProvider {
                     targetWeightKg: nil,
                     isLoggedIn: true
                 )
-                completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(300))))
+                completion(Timeline(entries: [entry], policy: .never))
             }
         }
     }
