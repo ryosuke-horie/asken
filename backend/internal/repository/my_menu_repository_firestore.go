@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"cloud.google.com/go/firestore"
 	"github.com/google/uuid"
@@ -257,7 +258,7 @@ func validateMyMenuName(name string) error {
 	if name == "" {
 		return fmt.Errorf("メニュー名は必須です")
 	}
-	if len(name) > 50 {
+	if utf8.RuneCountInString(name) > 50 {
 		return fmt.Errorf("メニュー名は50文字以内である必要があります")
 	}
 	return nil
