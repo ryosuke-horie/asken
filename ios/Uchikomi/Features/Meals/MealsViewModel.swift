@@ -179,14 +179,14 @@ final class MealsViewModel {
             let result = try await repository.getAnalysisResult(id: entry.id)
             pendingEditorFoods = result.result.foods
             pendingEditorEntry = entry
-        } catch let error as APIError {
-            pendingEditorFoods = []
-            logger.error("確認待ち分析結果の取得に失敗: \(error.localizedDescription)")
-            errorMessage = "分析結果の取得に失敗しました"
         } catch {
             pendingEditorFoods = []
-            logger.error("確認待ち分析結果の取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "分析結果の取得に失敗しました"
+            if let apiError = error as? APIError {
+                logger.error("確認待ち分析結果の取得に失敗: \(apiError.localizedDescription)")
+            } else {
+                logger.error("確認待ち分析結果の取得で予期しないエラー: \(error.localizedDescription)")
+            }
         }
     }
 
