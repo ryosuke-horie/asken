@@ -128,11 +128,6 @@ struct MealInputView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .disabled(!canAnalyze || viewModel.isAnalyzing)
 
-                    // Analysis Result
-                    if let result = viewModel.analysisResult {
-                        AnalysisResultSection(response: result)
-                    }
-
                     // Error Message
                     if let error = viewModel.errorMessage {
                         Text(error)
@@ -198,17 +193,6 @@ struct MealInputView: View {
             .fullScreenCover(isPresented: $showingCamera) {
                 CameraView { image in
                     viewModel.selectedImage = image
-                }
-            }
-            .sheet(isPresented: $viewModel.showEditor) {
-                if let analysisId = viewModel.analysisId,
-                   let result = viewModel.analysisResult {
-                    NutritionEditorView(
-                        historyId: analysisId,
-                        foods: result.result.foods
-                    ) {
-                        viewModel.markCompleted()
-                    }
                 }
             }
             .sheet(item: $editingMeal) { meal in
