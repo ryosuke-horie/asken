@@ -141,6 +141,10 @@ final class MealsViewModel {
                     break
                 }
             }
+            // maxAttemptsに達してもpendingが残る場合はユーザーに通知
+            guard let self, self.hasPendingAnalyses, !Task.isCancelled else { return }
+            logger.warning("自動更新タイムアウト: \(attempts)回試行後も分析中エントリーが残存")
+            self.errorMessage = "分析が完了しませんでした。しばらくしてから画面を更新してください"
         }
     }
 
@@ -148,7 +152,18 @@ final class MealsViewModel {
         do {
             let meals = try await repository.getDailyMeals(date: selectedDate)
             dailyMeals = meals
-            startAutoRefreshIfNeeded()
+        } catch is CancellationError {
+            return
+        } catch let error as APIError {
+            switch error {
+            case .unauthorized:
+                logger.error("自動更新: 認証エラーが発生。自動更新を停止します: \(error.localizedDescription)")
+                autoRefreshTask?.cancel()
+                autoRefreshTask = nil
+                errorMessage = "セッションが切れました。再度ログインしてください"
+            default:
+                logger.warning("サイレント更新に失敗: \(error.localizedDescription)")
+            }
         } catch {
             logger.warning("サイレント更新に失敗: \(error.localizedDescription)")
         }
@@ -165,9 +180,11 @@ final class MealsViewModel {
             pendingEditorFoods = result.result.foods
             pendingEditorEntry = entry
         } catch let error as APIError {
+            pendingEditorFoods = []
             logger.error("確認待ち分析結果の取得に失敗: \(error.localizedDescription)")
             errorMessage = "分析結果の取得に失敗しました"
         } catch {
+            pendingEditorFoods = []
             logger.error("確認待ち分析結果の取得で予期しないエラー: \(error.localizedDescription)")
             errorMessage = "分析結果の取得に失敗しました"
         }

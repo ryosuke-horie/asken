@@ -890,7 +890,8 @@ func (r *firestoreAnalysisRepository) GetPendingAnalysesForDate(ctx context.Cont
 
 		var fsDoc firestoreAnalysisDocument
 		if err := doc.DataTo(&fsDoc); err != nil {
-			return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
+			log.Printf("GetPendingAnalysesForDate: ドキュメントのパースに失敗（スキップ）: %v", err)
+			continue
 		}
 
 		// スキップ記録は除外（skipは即座に確定するので通常ここには来ないが念のため）
@@ -901,8 +902,8 @@ func (r *firestoreAnalysisRepository) GetPendingAnalysesForDate(ctx context.Cont
 		entries = append(entries, PendingAnalysisEntry{
 			ID:           fsDoc.ID,
 			MealType:     fsDoc.MealType,
-			Status:       string(fsDoc.Status),
-			InputType:    string(fsDoc.InputType),
+			Status:       fsDoc.Status,
+			InputType:    fsDoc.InputType,
 			ErrorMessage: fsDoc.ErrorMessage,
 			CreatedAt:    fsDoc.CreatedAt,
 		})

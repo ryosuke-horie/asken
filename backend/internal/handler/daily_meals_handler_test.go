@@ -409,8 +409,8 @@ func TestDailyMealsHandler_Handle_WithPendingAnalyses(t *testing.T) {
 				{
 					ID:        pendingID,
 					MealType:  "lunch",
-					Status:    "processing",
-					InputType: "text",
+					Status:    repository.StatusProcessing,
+					InputType: repository.InputTypeText,
 					CreatedAt: time.Date(2026, 1, 21, 12, 0, 0, 0, time.UTC),
 				},
 			}, nil
@@ -435,7 +435,7 @@ func TestDailyMealsHandler_Handle_WithPendingAnalyses(t *testing.T) {
 	assert.Len(t, response.PendingAnalyses, 1)
 	assert.Equal(t, pendingID, response.PendingAnalyses[0].ID)
 	assert.Equal(t, "lunch", response.PendingAnalyses[0].MealType)
-	assert.Equal(t, "processing", response.PendingAnalyses[0].Status)
+	assert.Equal(t, repository.StatusProcessing, response.PendingAnalyses[0].Status)
 }
 
 func TestDailyMealsHandler_Handle_PendingAnalysesError_FallbackToEmpty(t *testing.T) {
@@ -466,6 +466,7 @@ func TestDailyMealsHandler_Handle_PendingAnalysesError_FallbackToEmpty(t *testin
 	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
 
+	assert.NotNil(t, response.Meals)
 	assert.Empty(t, response.PendingAnalyses)
 	assert.Equal(t, 1000.0, response.DailyTotal.TotalCalories)
 }
