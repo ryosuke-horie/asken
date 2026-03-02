@@ -407,11 +407,12 @@ func TestDailyMealsHandler_Handle_WithPendingAnalyses(t *testing.T) {
 			assert.Equal(t, "2026-01-21", date)
 			return []repository.PendingAnalysisEntry{
 				{
-					ID:        pendingID,
-					MealType:  "lunch",
-					Status:    repository.StatusProcessing,
-					InputType: repository.InputTypeText,
-					CreatedAt: time.Date(2026, 1, 21, 12, 0, 0, 0, time.UTC),
+					ID:           pendingID,
+					MealType:     "lunch",
+					Status:       repository.StatusProcessing,
+					InputType:    repository.InputTypeText,
+					ErrorMessage: "",
+					CreatedAt:    time.Date(2026, 1, 21, 12, 0, 0, 0, time.UTC),
 				},
 			}, nil
 		},
@@ -436,6 +437,8 @@ func TestDailyMealsHandler_Handle_WithPendingAnalyses(t *testing.T) {
 	assert.Equal(t, pendingID, response.PendingAnalyses[0].ID)
 	assert.Equal(t, "lunch", response.PendingAnalyses[0].MealType)
 	assert.Equal(t, repository.StatusProcessing, response.PendingAnalyses[0].Status)
+	assert.Equal(t, repository.InputTypeText, response.PendingAnalyses[0].InputType)
+	assert.Equal(t, "", response.PendingAnalyses[0].ErrorMessage)
 }
 
 func TestDailyMealsHandler_Handle_PendingAnalysesError_FallbackToEmpty(t *testing.T) {

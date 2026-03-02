@@ -560,6 +560,23 @@ func TestGetPendingAnalysesForDate(t *testing.T) {
 		assert.Empty(t, entries)
 	})
 
+	t.Run("正常系: failedステータスのエントリーを取得できる", func(t *testing.T) {
+		// テキスト記録を作成してfailed状態に更新
+		id, err := repo.CreateRequestWithText(ctx, "失敗テスト", "snack", "2024-06-06", &userID)
+		require.NoError(t, err)
+
+		err = repo.UpdateStatus(ctx, id, StatusFailed, "分析に失敗しました")
+		require.NoError(t, err)
+
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-06", "UTC")
+		require.NoError(t, err)
+
+		assert.Len(t, entries, 1)
+		assert.Equal(t, id.String(), entries[0].ID)
+		assert.Equal(t, StatusFailed, entries[0].Status)
+		assert.Equal(t, "分析に失敗しました", entries[0].ErrorMessage)
+	})
+
 	t.Run("異常系: userIDが空の場合エラー", func(t *testing.T) {
 		_, err := repo.GetPendingAnalysesForDate(ctx, "", "2024-06-01", "UTC")
 		assert.Error(t, err)

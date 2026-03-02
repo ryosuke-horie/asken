@@ -60,7 +60,7 @@ struct MealsView: View {
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
-                                    pendingAnalyses: dailyMeals.pendingAnalyses(for: mealType),
+                                    pendingAnalyses: dailyMeals.pendingEntries(for: mealType),
                                     isSkipped: dailyMeals.meals.isSkipped(for: mealType),
                                     loadingPendingEntryId: viewModel.loadingPendingEntryId,
                                     onTapped: {

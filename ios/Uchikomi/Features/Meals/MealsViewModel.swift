@@ -5,6 +5,7 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi
 
 // MARK: - MealsViewModel
 
+@MainActor
 @Observable
 final class MealsViewModel {
     var selectedDate = Date()
@@ -53,6 +54,8 @@ final class MealsViewModel {
     }
 
     func loadMeals() async {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
