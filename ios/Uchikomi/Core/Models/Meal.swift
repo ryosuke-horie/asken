@@ -46,6 +46,21 @@ enum InputType: String, Codable {
     case skipped
 }
 
+// MARK: - AnalysisStatus
+
+enum AnalysisStatus: String, Codable {
+    case pending
+    case processing
+    case completed
+    case failed
+    case unknown
+
+    init(from decoder: Decoder) throws {
+        let rawValue = try decoder.singleValueContainer().decode(String.self)
+        self = AnalysisStatus(rawValue: rawValue) ?? .unknown
+    }
+}
+
 // MARK: - NutritionInfo
 
 struct NutritionInfo: Codable, Identifiable, Equatable {
@@ -174,7 +189,7 @@ struct DailyMeals: Codable {
         pendingAnalyses = try container.decodeIfPresent([PendingAnalysisEntry].self, forKey: .pendingAnalyses) ?? []
     }
 
-    func pendingAnalyses(for mealType: MealType) -> [PendingAnalysisEntry] {
+    func pendingEntries(for mealType: MealType) -> [PendingAnalysisEntry] {
         pendingAnalyses.filter { $0.mealType == mealType }
     }
 }
@@ -184,21 +199,21 @@ struct DailyMeals: Codable {
 struct PendingAnalysisEntry: Codable, Identifiable {
     let id: String
     let mealType: MealType?
-    let status: String // "pending", "processing", "completed", "failed"
+    let status: AnalysisStatus
     let inputType: String
     let errorMessage: String?
     let createdAt: String
 
     var isAnalyzing: Bool {
-        status == "pending" || status == "processing"
+        status == .pending || status == .processing
     }
 
     var isReadyToConfirm: Bool {
-        status == "completed"
+        status == .completed
     }
 
     var isFailed: Bool {
-        status == "failed"
+        status == .failed
     }
 }
 

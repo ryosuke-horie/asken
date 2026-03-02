@@ -80,8 +80,13 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		totalBurnedCalories float64
 	)
 
+	goroutineCount := 2
+	if h.exerciseRepo != nil {
+		goroutineCount++
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(goroutineCount)
 	go func() {
 		defer wg.Done()
 		meals, total, mealsErr = h.repository.GetDailyMeals(r.Context(), userID, date, tz)
@@ -92,7 +97,6 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if h.exerciseRepo != nil {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			records, err := h.exerciseRepo.ListByDate(r.Context(), userID, date)
