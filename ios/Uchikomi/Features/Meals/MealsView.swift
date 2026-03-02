@@ -60,9 +60,16 @@ struct MealsView: View {
                                 MealTypeSection(
                                     mealType: mealType,
                                     meals: dailyMeals.meals.meals(for: mealType),
+                                    pendingAnalyses: dailyMeals.pendingAnalyses(for: mealType),
                                     isSkipped: dailyMeals.meals.isSkipped(for: mealType),
+                                    loadingPendingEntryId: viewModel.loadingPendingEntryId,
                                     onTapped: {
                                         selectedMealTypeForInput = mealType
+                                    },
+                                    onPendingTapped: { entry in
+                                        Task {
+                                            await viewModel.openPendingEditor(entry: entry)
+                                        }
                                     }
                                 )
                             }
@@ -104,6 +111,28 @@ struct MealsView: View {
                         await viewModel.loadMeals()
                         await cancelNotificationIfToday(for: mealType)
                     }
+                }
+            }
+            .sheet(item: $viewModel.pendingEditorEntry) { entry in
+                NutritionEditorView(
+                    historyId: entry.id,
+                    foods: viewModel.pendingEditorFoods
+                ) {
+                    Task {
+                        await viewModel.loadMeals()
+                    }
+                }
+            }
+            .overlay {
+                if viewModel.loadingPendingEntryId != nil {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .overlay {
+                            ProgressView("読み込み中...")
+                                .padding()
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                 }
             }
             .sheet(isPresented: $isExerciseInputPresented) {
@@ -187,8 +216,11 @@ private struct DateNavigationBar: View {
 private struct MealTypeSection: View {
     let mealType: MealType
     let meals: [HistoryDetail]
+    let pendingAnalyses: [PendingAnalysisEntry]
     let isSkipped: Bool
+    let loadingPendingEntryId: String?
     let onTapped: () -> Void
+    let onPendingTapped: (PendingAnalysisEntry) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -217,28 +249,38 @@ private struct MealTypeSection: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
-            } else if meals.isEmpty {
-                Text("記録なし")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 4)
             } else {
-                let allFoods = meals.flatMap(\.foods)
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
-                        HStack {
-                            Text(food.name)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Text("\(Int(food.caloriesKcal)) kcal")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                if meals.isEmpty, pendingAnalyses.isEmpty {
+                    Text("記録なし")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                } else {
+                    let allFoods = meals.flatMap(\.foods)
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(allFoods.enumerated()), id: \.offset) { _, food in
+                            HStack {
+                                Text(food.name)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Text("\(Int(food.caloriesKcal)) kcal")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                        ForEach(pendingAnalyses) { entry in
+                            PendingAnalysisRow(
+                                entry: entry,
+                                isLoading: loadingPendingEntryId == entry.id,
+                                onTapped: { onPendingTapped(entry) }
+                            )
+                        }
                     }
                 }
             }
@@ -246,6 +288,77 @@ private struct MealTypeSection: View {
         .padding()
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - PendingAnalysisRow
+
+private struct PendingAnalysisRow: View {
+    let entry: PendingAnalysisEntry
+    let isLoading: Bool
+    let onTapped: () -> Void
+
+    var body: some View {
+        if entry.isAnalyzing {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .scaleEffect(0.8)
+                Text("分析中...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if entry.isReadyToConfirm {
+            Button(action: onTapped) {
+                HStack {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundStyle(.green)
+                    Text("確認待ち - タップして確認")
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .disabled(isLoading)
+        } else if entry.isFailed {
+            HStack {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("分析失敗")
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                    if let msg = entry.errorMessage, !msg.isEmpty {
+                        Text(msg)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color.red.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
     }
 }
 

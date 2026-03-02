@@ -858,6 +858,59 @@ func (r *firestoreAnalysisRepository) deleteExistingMealRecords(ctx context.Cont
 	return nil
 }
 
+// GetPendingAnalysesForDate は指定された日付の未確定分析エントリーを取得します（userIDでスコープ）
+func (r *firestoreAnalysisRepository) GetPendingAnalysesForDate(ctx context.Context, userID string, date string, tz string) ([]PendingAnalysisEntry, error) {
+	if userID == "" {
+		return nil, fmt.Errorf("userIDが必要です")
+	}
+
+	startOfDay, endOfDay, err := util.GetDayRangeInTimezone(date, tz)
+	if err != nil {
+		return nil, err
+	}
+
+	// confirmed=false のエントリーを取得（日付範囲でフィルタリング）
+	iter := r.getUserAnalysisCollection(userID).
+		Where("mealDate", ">=", startOfDay).
+		Where("mealDate", "<", endOfDay).
+		Where("confirmed", "==", false).
+		OrderBy("mealDate", firestore.Asc).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var entries []PendingAnalysisEntry
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("未確定分析エントリーの取得に失敗: %w", err)
+		}
+
+		var fsDoc firestoreAnalysisDocument
+		if err := doc.DataTo(&fsDoc); err != nil {
+			return nil, fmt.Errorf("ドキュメントのパースに失敗: %w", err)
+		}
+
+		// スキップ記録は除外（skipは即座に確定するので通常ここには来ないが念のため）
+		if fsDoc.InputType == InputTypeSkipped {
+			continue
+		}
+
+		entries = append(entries, PendingAnalysisEntry{
+			ID:           fsDoc.ID,
+			MealType:     fsDoc.MealType,
+			Status:       string(fsDoc.Status),
+			InputType:    string(fsDoc.InputType),
+			ErrorMessage: fsDoc.ErrorMessage,
+			CreatedAt:    fsDoc.CreatedAt,
+		})
+	}
+
+	return entries, nil
+}
+
 // toAnalysisRequest はFirestoreドキュメントをAnalysisRequestに変換
 func (r *firestoreAnalysisRepository) toAnalysisRequest(doc *firestoreAnalysisDocument) (*AnalysisRequest, error) {
 	id, err := uuid.Parse(doc.ID)
