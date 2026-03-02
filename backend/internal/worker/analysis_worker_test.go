@@ -105,6 +105,10 @@ func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string
 	return nil
 }
 
+func (m *MockAnalysisRepository) GetPendingAnalysesForDate(ctx context.Context, userID string, date string, tz string) ([]repository.PendingAnalysisEntry, error) {
+	return []repository.PendingAnalysisEntry{}, nil
+}
+
 func TestProcessRequest_Success(t *testing.T) {
 	requestID := uuid.New()
 	imagePath := "/uploads/test.jpg"

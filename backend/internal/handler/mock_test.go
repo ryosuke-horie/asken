@@ -35,20 +35,21 @@ func (m *MockFoodService) AnalyzeFoodText(ctx context.Context, inputText string)
 
 // MockAnalysisRepository はテスト用のモックAnalysisRepository
 type MockAnalysisRepository struct {
-	CreateRequestFunc           func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
-	CreateRequestWithTextFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
-	GetRequestFunc              func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error)
-	UpdateStatusFunc            func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
-	SaveResultFunc              func(ctx context.Context, requestID uuid.UUID, result *repository.AnalysisResult) error
-	GetResultFunc               func(ctx context.Context, userID string, requestID uuid.UUID) (*repository.AnalysisResult, error)
-	GetPendingRequestsFunc      func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
-	GetHistoryListFunc          func(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error)
-	GetHistoryDetailFunc        func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error)
-	DeleteHistoryFunc           func(ctx context.Context, userID string, id uuid.UUID) error
-	GetDailyMealsFunc           func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
-	CreateRequestFromMylistFunc func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *repository.AnalysisResult) (uuid.UUID, error)
-	CreateSkippedMealFunc       func(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
-	UpdateResultFunc            func(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error
+	CreateRequestFunc             func(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
+	CreateRequestWithTextFunc     func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string) (uuid.UUID, error)
+	GetRequestFunc                func(ctx context.Context, userID string, id uuid.UUID) (*repository.AnalysisRequest, error)
+	UpdateStatusFunc              func(ctx context.Context, id uuid.UUID, status repository.AnalysisStatus, errorMessage string) error
+	SaveResultFunc                func(ctx context.Context, requestID uuid.UUID, result *repository.AnalysisResult) error
+	GetResultFunc                 func(ctx context.Context, userID string, requestID uuid.UUID) (*repository.AnalysisResult, error)
+	GetPendingRequestsFunc        func(ctx context.Context, limit int) ([]repository.AnalysisRequest, error)
+	GetHistoryListFunc            func(ctx context.Context, userID string, page, limit int) ([]repository.HistoryItem, int, error)
+	GetHistoryDetailFunc          func(ctx context.Context, userID string, id uuid.UUID) (*repository.HistoryDetail, error)
+	DeleteHistoryFunc             func(ctx context.Context, userID string, id uuid.UUID) error
+	GetDailyMealsFunc             func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error)
+	CreateRequestFromMylistFunc   func(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *repository.AnalysisResult) (uuid.UUID, error)
+	CreateSkippedMealFunc         func(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
+	UpdateResultFunc              func(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error
+	GetPendingAnalysesForDateFunc func(ctx context.Context, userID string, date string, tz string) ([]repository.PendingAnalysisEntry, error)
 }
 
 func (m *MockAnalysisRepository) CreateRequest(ctx context.Context, imagePath string, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
@@ -147,4 +148,11 @@ func (m *MockAnalysisRepository) UpdateResult(ctx context.Context, userID string
 		return m.UpdateResultFunc(ctx, userID, historyID, foods)
 	}
 	return nil
+}
+
+func (m *MockAnalysisRepository) GetPendingAnalysesForDate(ctx context.Context, userID string, date string, tz string) ([]repository.PendingAnalysisEntry, error) {
+	if m.GetPendingAnalysesForDateFunc != nil {
+		return m.GetPendingAnalysesForDateFunc(ctx, userID, date, tz)
+	}
+	return []repository.PendingAnalysisEntry{}, nil
 }

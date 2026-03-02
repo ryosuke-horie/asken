@@ -485,6 +485,105 @@ func TestCreateSkippedMeal(t *testing.T) {
 	})
 }
 
+func TestGetPendingAnalysesForDate(t *testing.T) {
+	client := getTestFirestoreClient(t)
+	ctx := context.Background()
+	repo, err := NewAnalysisRepositoryFirestore(client, &mockStorageRepositoryForAnalysis{})
+	require.NoError(t, err)
+	userID := "test-user-" + uuid.New().String()
+
+	t.Cleanup(func() {
+		cleanupTestData(ctx, client, userID)
+	})
+
+	t.Run("正常系: 未確定エントリーを取得できる", func(t *testing.T) {
+		// pending状態のリクエストを作成（confirmed=false）
+		id, err := repo.CreateRequestWithText(ctx, "鶏むね肉", "lunch", "2024-06-01", &userID)
+		require.NoError(t, err)
+
+		// 処理中にステータス更新
+		err = repo.UpdateStatus(ctx, id, StatusProcessing, "")
+		require.NoError(t, err)
+
+		// 未確定エントリーを取得
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-01", "UTC")
+		require.NoError(t, err)
+
+		assert.Len(t, entries, 1)
+		assert.Equal(t, id.String(), entries[0].ID)
+		assert.Equal(t, "lunch", entries[0].MealType)
+		assert.Equal(t, StatusProcessing, entries[0].Status)
+		assert.Equal(t, InputTypeText, entries[0].InputType)
+	})
+
+	t.Run("正常系: confirmed=trueのエントリーは除外される", func(t *testing.T) {
+		// テキスト記録を作成（confirmed=false状態）
+		id, err := repo.CreateRequestWithText(ctx, "白米", "breakfast", "2024-06-02", &userID)
+		require.NoError(t, err)
+
+		// 完了して確定（UpdateResultでconfirmed=trueになる）
+		err = repo.SaveResult(ctx, id, &AnalysisResult{
+			Foods: []gemini.NutritionInfo{
+				{Name: "白米", Calories: 250},
+			},
+			TotalCalories: 250,
+		})
+		require.NoError(t, err)
+
+		// confirmed=trueに更新（UpdateResultが内部でconfirmed=trueにする）
+		err = repo.UpdateResult(ctx, userID, id, []gemini.NutritionInfo{
+			{Name: "白米", Calories: 250},
+		})
+		require.NoError(t, err)
+
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-02", "UTC")
+		require.NoError(t, err)
+		assert.Empty(t, entries)
+	})
+
+	t.Run("正常系: スキップ記録は除外される", func(t *testing.T) {
+		_, err := repo.CreateSkippedMeal(ctx, "dinner", "2024-06-03", &userID)
+		require.NoError(t, err)
+
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-03", "UTC")
+		require.NoError(t, err)
+		assert.Empty(t, entries)
+	})
+
+	t.Run("正常系: 対象外の日付のエントリーは除外される", func(t *testing.T) {
+		_, err := repo.CreateRequestWithText(ctx, "ラーメン", "lunch", "2024-06-05", &userID)
+		require.NoError(t, err)
+
+		// 別日付を指定
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-04", "UTC")
+		require.NoError(t, err)
+		assert.Empty(t, entries)
+	})
+
+	t.Run("正常系: failedステータスのエントリーを取得できる", func(t *testing.T) {
+		// テキスト記録を作成してfailed状態に更新
+		id, err := repo.CreateRequestWithText(ctx, "失敗テスト", "snack", "2024-06-06", &userID)
+		require.NoError(t, err)
+
+		err = repo.UpdateStatus(ctx, id, StatusFailed, "分析に失敗しました")
+		require.NoError(t, err)
+
+		entries, err := repo.GetPendingAnalysesForDate(ctx, userID, "2024-06-06", "UTC")
+		require.NoError(t, err)
+
+		assert.Len(t, entries, 1)
+		assert.Equal(t, id.String(), entries[0].ID)
+		assert.Equal(t, StatusFailed, entries[0].Status)
+		assert.Equal(t, "分析に失敗しました", entries[0].ErrorMessage)
+	})
+
+	t.Run("異常系: userIDが空の場合エラー", func(t *testing.T) {
+		_, err := repo.GetPendingAnalysesForDate(ctx, "", "2024-06-01", "UTC")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "userIDが必要です")
+	})
+}
+
 func TestUpdateResult(t *testing.T) {
 	client := getTestFirestoreClient(t)
 	ctx := context.Background()

@@ -31,6 +31,7 @@ type DailyMealsResponse struct {
 	Meals                   map[string][]repository.HistoryDetail `json:"meals"`
 	DailyTotal              repository.DailyTotal                 `json:"daily_total"`
 	TotalBurnedCaloriesKcal float64                               `json:"total_burned_calories_kcal"`
+	PendingAnalyses         []repository.PendingAnalysisEntry     `json:"pending_analyses"`
 }
 
 // Handle はGET /api/meals/dailyリクエストを処理
@@ -69,23 +70,33 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Getting daily meals for userID: %s, date: %s, tz: %s", userID, date, tz)
 
-	// 食事記録と運動記録を並列取得
+	// 食事記録・運動記録・未確定分析エントリーを並列取得
 	var (
 		meals               map[string][]repository.HistoryDetail
 		total               repository.DailyTotal
 		mealsErr            error
+		pendingAnalyses     []repository.PendingAnalysisEntry
+		pendingErr          error
 		totalBurnedCalories float64
 	)
 
+	goroutineCount := 2
+	if h.exerciseRepo != nil {
+		goroutineCount++
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(goroutineCount)
 	go func() {
 		defer wg.Done()
 		meals, total, mealsErr = h.repository.GetDailyMeals(r.Context(), userID, date, tz)
 	}()
+	go func() {
+		defer wg.Done()
+		pendingAnalyses, pendingErr = h.repository.GetPendingAnalysesForDate(r.Context(), userID, date, tz)
+	}()
 
 	if h.exerciseRepo != nil {
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			records, err := h.exerciseRepo.ListByDate(r.Context(), userID, date)
@@ -106,12 +117,21 @@ func (h *DailyMealsHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get daily meals", http.StatusInternalServerError)
 		return
 	}
+	if pendingErr != nil {
+		log.Printf("Error getting pending analyses: %v", pendingErr)
+		// 未確定エントリーの取得失敗は非致命的: 空リストとして続行
+		pendingAnalyses = []repository.PendingAnalysisEntry{}
+	}
+	if pendingAnalyses == nil {
+		pendingAnalyses = []repository.PendingAnalysisEntry{}
+	}
 
 	response := DailyMealsResponse{
 		Date:                    date,
 		Meals:                   meals,
 		DailyTotal:              total,
 		TotalBurnedCaloriesKcal: totalBurnedCalories,
+		PendingAnalyses:         pendingAnalyses,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -389,6 +389,91 @@ func TestDailyMealsHandler_Handle_ExerciseRepoError_ZeroBurnedCalories(t *testin
 	assert.Equal(t, 1500.0, response.DailyTotal.TotalCalories)
 }
 
+func TestDailyMealsHandler_Handle_WithPendingAnalyses(t *testing.T) {
+	testUserID := "test-user-123"
+	pendingID := uuid.New().String()
+
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			return map[string][]repository.HistoryDetail{
+				"breakfast": {},
+				"lunch":     {},
+				"dinner":    {},
+				"snack":     {},
+			}, repository.DailyTotal{}, nil
+		},
+		GetPendingAnalysesForDateFunc: func(ctx context.Context, userID string, date string, tz string) ([]repository.PendingAnalysisEntry, error) {
+			assert.Equal(t, testUserID, userID)
+			assert.Equal(t, "2026-01-21", date)
+			return []repository.PendingAnalysisEntry{
+				{
+					ID:           pendingID,
+					MealType:     "lunch",
+					Status:       repository.StatusProcessing,
+					InputType:    repository.InputTypeText,
+					ErrorMessage: "",
+					CreatedAt:    time.Date(2026, 1, 21, 12, 0, 0, 0, time.UTC),
+				},
+			}, nil
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DailyMealsResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+
+	assert.Len(t, response.PendingAnalyses, 1)
+	assert.Equal(t, pendingID, response.PendingAnalyses[0].ID)
+	assert.Equal(t, "lunch", response.PendingAnalyses[0].MealType)
+	assert.Equal(t, repository.StatusProcessing, response.PendingAnalyses[0].Status)
+	assert.Equal(t, repository.InputTypeText, response.PendingAnalyses[0].InputType)
+	assert.Equal(t, "", response.PendingAnalyses[0].ErrorMessage)
+}
+
+func TestDailyMealsHandler_Handle_PendingAnalysesError_FallbackToEmpty(t *testing.T) {
+	testUserID := "test-user-123"
+
+	mockRepo := &MockAnalysisRepository{
+		GetDailyMealsFunc: func(ctx context.Context, userID string, date string, tz string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
+			return map[string][]repository.HistoryDetail{}, repository.DailyTotal{TotalCalories: 1000.0}, nil
+		},
+		GetPendingAnalysesForDateFunc: func(ctx context.Context, userID string, date string, tz string) ([]repository.PendingAnalysisEntry, error) {
+			return nil, assert.AnError
+		},
+	}
+
+	handler := NewDailyMealsHandler(mockRepo, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/meals/daily?date=2026-01-21", nil)
+	ctx := middleware.SetFirebaseUIDToContext(req.Context(), testUserID)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler.Handle(w, req)
+
+	// pending分析取得エラーは非致命的: 200 + 空リストを返す
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response DailyMealsResponse
+	err := json.NewDecoder(w.Body).Decode(&response)
+	require.NoError(t, err)
+
+	assert.NotNil(t, response.Meals)
+	assert.Empty(t, response.PendingAnalyses)
+	assert.Equal(t, 1000.0, response.DailyTotal.TotalCalories)
+}
+
 func TestDailyMealsHandler_Handle_ExerciseRepoNil_ZeroBurnedCalories(t *testing.T) {
 	testUserID := "test-user-123"
 

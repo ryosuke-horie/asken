@@ -86,6 +86,16 @@ type DailyTotal struct {
 	TotalMicronutrients map[string]float64 `json:"total_micronutrients,omitempty"`
 }
 
+// PendingAnalysisEntry は未確定（分析中・確認待ち・失敗）の分析エントリーを表す構造体
+type PendingAnalysisEntry struct {
+	ID           string         `json:"id"`
+	MealType     string         `json:"meal_type"`
+	Status       AnalysisStatus `json:"status"`
+	InputType    InputType      `json:"input_type"`
+	ErrorMessage string         `json:"error_message,omitempty"`
+	CreatedAt    time.Time      `json:"created_at"`
+}
+
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
 type AnalysisRepository interface {
 	// CreateRequest は新しい画像分析リクエストを作成します
@@ -130,4 +140,8 @@ type AnalysisRepository interface {
 
 	// UpdateResult は分析結果を更新します（userIDでスコープ、foods配列と合計値を再計算）
 	UpdateResult(ctx context.Context, userID string, historyID uuid.UUID, foods []gemini.NutritionInfo) error
+
+	// GetPendingAnalysesForDate は指定された日付の未確定分析エントリーを取得します（userIDでスコープ）
+	// 対象: confirmed=false かつ inputType != skipped のエントリー
+	GetPendingAnalysesForDate(ctx context.Context, userID string, date string, tz string) ([]PendingAnalysisEntry, error)
 }
