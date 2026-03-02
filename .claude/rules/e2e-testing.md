@@ -117,6 +117,7 @@ Gemini APIを呼び出すテストはデフォルトでスキップされる。A
 - `TestHistory_Update_InvalidRequest_EmptyName`（`history_test.go`）
 - `TestHistory_Delete_Success`（`history_test.go`）
 - `TestIngredients_ScanReceipt_Success`（`ingredients_test.go`）
+- `TestExerciseRecords_Create_WithGemini_Success`（`exercise_test.go`）
 
 ### Geminiテストを有効化する方法
 
@@ -176,6 +177,7 @@ backend/
 │   ├── image_test.go        # 画像APIのE2Eテスト
 │   ├── ingredients_test.go  # 食材APIのE2Eテスト
 │   ├── weight_test.go       # 体重管理APIのE2Eテスト
+│   ├── exercise_test.go     # 運動記録APIのE2Eテスト
 │   ├── health_test.go       # ヘルスチェックのE2Eテスト
 │   ├── helpers.go           # E2Eテスト用ヘルパー関数
 │   ├── auth.go              # Firebase認証ヘルパー

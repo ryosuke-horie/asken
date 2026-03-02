@@ -81,13 +81,15 @@ func (r *firestoreNutritionGoalRepository) SetGoal(ctx context.Context, userID s
 
 	now := time.Now()
 
-	doc := firestoreNutritionGoalDocument{
-		TargetCalories: targetCalories,
-		UpdatedAt:      now,
+	// MergeAll はmap型にしか使えないため、更新対象フィールドのみのmapを使用する
+	// これにより既存のmicronutrientTargetsを保持したまま targetCalories と updatedAt のみ更新できる
+	docData := map[string]any{
+		"targetCalories": targetCalories,
+		"updatedAt":      now,
 	}
 
 	// targetCaloriesとupdatedAtのみ更新し、既存のmicronutrientTargetsを保持する
-	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, doc, firestore.MergeAll)
+	_, err := r.getUserNutritionGoalDoc(userID).Set(ctx, docData, firestore.MergeAll)
 	if err != nil {
 		return nil, fmt.Errorf("栄養目標の設定に失敗: %w", err)
 	}
