@@ -63,6 +63,9 @@ func (s *stubAnalysisRepository) CreateSkippedMeal(_ context.Context, _ string, 
 func (s *stubAnalysisRepository) UpdateResult(_ context.Context, _ string, _ uuid.UUID, _ []gemini.NutritionInfo) error {
 	return nil
 }
+func (s *stubAnalysisRepository) GetPendingAnalysesForDate(_ context.Context, _ string, _ string, _ string) ([]repository.PendingAnalysisEntry, error) {
+	return []repository.PendingAnalysisEntry{}, nil
+}
 
 // stubFoodService はテスト用のスタブ
 type stubFoodService struct{}

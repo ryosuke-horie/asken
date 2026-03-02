@@ -5,6 +5,7 @@ private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Uchikomi
 
 // MARK: - MealsViewModel
 
+@MainActor
 @Observable
 final class MealsViewModel {
     var selectedDate = Date()
@@ -13,9 +14,19 @@ final class MealsViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    // 確認待ちエントリーからエディタを開くための状態
+    var pendingEditorEntry: PendingAnalysisEntry?
+    var pendingEditorFoods: [NutritionInfo] = []
+    var loadingPendingEntryId: String?
+
     private let repository: MealRepositoryProtocol
     private let nutritionGoalRepository: NutritionGoalRepositoryProtocol
     private let weightRepository: WeightRepositoryProtocol
+    private var autoRefreshTask: Task<Void, Never>?
+
+    private var hasPendingAnalyses: Bool {
+        dailyMeals?.pendingAnalyses.contains { $0.isAnalyzing } ?? false
+    }
 
     init(
         repository: MealRepositoryProtocol = MealRepository(),
@@ -25,6 +36,10 @@ final class MealsViewModel {
         self.repository = repository
         self.nutritionGoalRepository = nutritionGoalRepository
         self.weightRepository = weightRepository
+    }
+
+    deinit {
+        autoRefreshTask?.cancel()
     }
 
     var formattedDate: String {
@@ -39,6 +54,8 @@ final class MealsViewModel {
     }
 
     func loadMeals() async {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -98,6 +115,81 @@ final class MealsViewModel {
             // 栄養目標取得に失敗した場合はnilを使用（目標なし表示になる）
             logger.warning("栄養目標取得に失敗（目標なし表示にフォールバック）: \(error.localizedDescription)")
             nutritionGoal = nil
+        }
+
+        // 分析中エントリーがある場合は自動更新を開始
+        startAutoRefreshIfNeeded()
+    }
+
+    // MARK: - Auto Refresh
+
+    private func startAutoRefreshIfNeeded() {
+        guard hasPendingAnalyses else {
+            autoRefreshTask?.cancel()
+            autoRefreshTask = nil
+            return
+        }
+        guard autoRefreshTask == nil || autoRefreshTask?.isCancelled == true else { return }
+
+        autoRefreshTask = Task { [weak self] in
+            var attempts = 0
+            let maxAttempts = 60 // 3秒 × 60 = 最大3分
+            while !Task.isCancelled, attempts < maxAttempts {
+                try? await Task.sleep(nanoseconds: 3_000_000_000) // 3秒ごと
+                guard !Task.isCancelled else { break }
+                guard let self else { break }
+                attempts += 1
+                await self.loadMealsQuietly()
+                if !self.hasPendingAnalyses {
+                    break
+                }
+            }
+            // maxAttemptsに達してもpendingが残る場合はユーザーに通知
+            guard let self, self.hasPendingAnalyses, !Task.isCancelled else { return }
+            logger.warning("自動更新タイムアウト: \(attempts)回試行後も分析中エントリーが残存")
+            self.errorMessage = "分析が完了しませんでした。しばらくしてから画面を更新してください"
+        }
+    }
+
+    private func loadMealsQuietly() async {
+        do {
+            let meals = try await repository.getDailyMeals(date: selectedDate)
+            dailyMeals = meals
+        } catch is CancellationError {
+            return
+        } catch let error as APIError {
+            switch error {
+            case .unauthorized:
+                logger.error("自動更新: 認証エラーが発生。自動更新を停止します: \(error.localizedDescription)")
+                autoRefreshTask?.cancel()
+                autoRefreshTask = nil
+                errorMessage = "セッションが切れました。再度ログインしてください"
+            default:
+                logger.warning("サイレント更新に失敗: \(error.localizedDescription)")
+            }
+        } catch {
+            logger.warning("サイレント更新に失敗: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Pending Analysis Result
+
+    func openPendingEditor(entry: PendingAnalysisEntry) async {
+        loadingPendingEntryId = entry.id
+        defer { loadingPendingEntryId = nil }
+
+        do {
+            let result = try await repository.getAnalysisResult(id: entry.id)
+            pendingEditorFoods = result.result.foods
+            pendingEditorEntry = entry
+        } catch {
+            pendingEditorFoods = []
+            errorMessage = "分析結果の取得に失敗しました"
+            if let apiError = error as? APIError {
+                logger.error("確認待ち分析結果の取得に失敗: \(apiError.localizedDescription)")
+            } else {
+                logger.error("確認待ち分析結果の取得で予期しないエラー: \(error.localizedDescription)")
+            }
         }
     }
 
