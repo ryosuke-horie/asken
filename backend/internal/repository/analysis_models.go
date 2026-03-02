@@ -88,12 +88,12 @@ type DailyTotal struct {
 
 // PendingAnalysisEntry は未確定（分析中・確認待ち・失敗）の分析エントリーを表す構造体
 type PendingAnalysisEntry struct {
-	ID           string    `json:"id"`
-	MealType     string    `json:"meal_type"`
-	Status       string    `json:"status"` // "pending", "processing", "completed", "failed"
-	InputType    string    `json:"input_type"`
-	ErrorMessage string    `json:"error_message,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           string         `json:"id"`
+	MealType     string         `json:"meal_type"`
+	Status       AnalysisStatus `json:"status"`
+	InputType    InputType      `json:"input_type"`
+	ErrorMessage string         `json:"error_message,omitempty"`
+	CreatedAt    time.Time      `json:"created_at"`
 }
 
 // AnalysisRepository は分析リクエストと結果の永続化を担当するインターフェース
