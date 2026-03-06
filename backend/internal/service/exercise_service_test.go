@@ -104,6 +104,36 @@ func TestCreateExerciseRecord_PresetMET(t *testing.T) {
 	assert.Greater(t, capturedInput.BurnedCaloriesKcal, 0.0)
 }
 
+func TestCreateExerciseRecord_Jitensha_UsesMET(t *testing.T) {
+	ctx := context.Background()
+	var capturedInput repository.CreateExerciseInput
+
+	repo := &MockExerciseRepo{
+		CreateFunc: func(ctx context.Context, userID string, input repository.CreateExerciseInput) (*repository.ExerciseRecord, error) {
+			capturedInput = input
+			return &repository.ExerciseRecord{
+				ID:                 "test-id",
+				ExerciseName:       input.ExerciseName,
+				DurationMinutes:    input.DurationMinutes,
+				BurnedCaloriesKcal: input.BurnedCaloriesKcal,
+				EstimationMethod:   input.EstimationMethod,
+			}, nil
+		},
+	}
+	estimator := &MockEstimator{}
+	svc := newTestExerciseService(repo, estimator)
+
+	// 自転車: MET 4.5 × 70kg × 1h × 1.05 = 330.75 kcal
+	_, err := svc.CreateExerciseRecord(ctx, "test-user", CreateExerciseInput{
+		ExerciseName:    "自転車",
+		DurationMinutes: 60,
+	}, "2026-02-28")
+
+	require.NoError(t, err)
+	assert.Equal(t, repository.EstimationMethodMET, capturedInput.EstimationMethod)
+	assert.InDelta(t, 330.75, capturedInput.BurnedCaloriesKcal, 0.01)
+}
+
 func TestCreateExerciseRecord_GeminiEstimation(t *testing.T) {
 	ctx := context.Background()
 	var capturedInput repository.CreateExerciseInput
