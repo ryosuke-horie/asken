@@ -64,6 +64,7 @@ func TestCalculateByMET(t *testing.T) {
 		{"柔術90分", 10.0, 90, 1102.5},     // 10 * 70 * 1.5 * 1.05
 		{"ランニング60分", 9.8, 60, 720.3},    // 9.8 * 70 * 1.0 * 1.05
 		{"ウォーキング30分", 3.5, 30, 128.625}, // 3.5 * 70 * 0.5 * 1.05
+		{"自転車60分", 4.5, 60, 330.75},     // 4.5 * 70 * 1.0 * 1.05
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,6 +118,7 @@ func TestCreateExerciseRecord_Jitensha_UsesMET(t *testing.T) {
 				DurationMinutes:    input.DurationMinutes,
 				BurnedCaloriesKcal: input.BurnedCaloriesKcal,
 				EstimationMethod:   input.EstimationMethod,
+				RecordedDate:       input.RecordedDate,
 			}, nil
 		},
 	}
@@ -124,12 +126,13 @@ func TestCreateExerciseRecord_Jitensha_UsesMET(t *testing.T) {
 	svc := newTestExerciseService(repo, estimator)
 
 	// 自転車: MET 4.5 × 70kg × 1h × 1.05 = 330.75 kcal
-	_, err := svc.CreateExerciseRecord(ctx, "test-user", CreateExerciseInput{
+	record, err := svc.CreateExerciseRecord(ctx, "test-user", CreateExerciseInput{
 		ExerciseName:    "自転車",
 		DurationMinutes: 60,
 	}, "2026-02-28")
 
 	require.NoError(t, err)
+	assert.Equal(t, "自転車", record.ExerciseName)
 	assert.Equal(t, repository.EstimationMethodMET, capturedInput.EstimationMethod)
 	assert.InDelta(t, 330.75, capturedInput.BurnedCaloriesKcal, 0.01)
 }
