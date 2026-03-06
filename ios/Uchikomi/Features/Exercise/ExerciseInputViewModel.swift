@@ -23,7 +23,7 @@ final class ExerciseInputViewModel {
 
     static let quickPickNames: [String] = [
         "柔術", "柔道", "レスリング", "MMA", "ボクシング", "キックボクシング",
-        "ランニング", "筋トレ",
+        "ランニング", "自転車", "筋トレ",
     ]
 
     init(
