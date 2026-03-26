@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0153D39C159F6F3787853E15 /* WeightHistoryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01430150B492681FF32F464 /* WeightHistoryWidget.swift */; };
 		015FF3F34FD2CCF947EA9F9A /* SuggestionRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5D85FD1DA749BC32943B95 /* SuggestionRequestView.swift */; };
 		02AA3868F22B4D497DF98C4A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3CC9C3274E6A4F254CEAA6A1 /* GoogleService-Info.plist */; };
 		033D4810DBEAB94C447E274A /* RecordMealIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E13295C91CC47FD7AED13FB /* RecordMealIntent.swift */; };
@@ -100,6 +101,7 @@
 		DBF053677A86FE18A6355286 /* WeightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C411576F8A2792EAE54992C0 /* WeightWidget.swift */; };
 		DC2E8F059156BD564A17EDBF /* QuantityParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6B8DB6DEF861594C8FEDA15 /* QuantityParser.swift */; };
 		DDB1AFFB4C81FA04CAC6F380 /* MyMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F318F350E924138601873A5 /* MyMenu.swift */; };
+		DEBFB4052DE2F20F9F390F7C /* WeightHistoryWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABDC12540CAF11551623527A /* WeightHistoryWidgetView.swift */; };
 		E278AC45E79840257F8A1253 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35059CC7496A739452218269 /* SettingsView.swift */; };
 		E3FDEFB853D4ED8616F5DAD9 /* MyMenuSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E875AF5DBFFDB82CEE140301 /* MyMenuSelectionView.swift */; };
 		E589AED03CA259EC5A36A703 /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0796326A7B14A89BAA8D42CD /* WidgetModels.swift */; };
@@ -198,7 +200,7 @@
 		44025F96ADF544B0BC03CA67 /* CalorieBalanceBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieBalanceBarView.swift; sourceTree = "<group>"; };
 		4550DDEDF766E3A94E57F005 /* RecordWeightIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordWeightIntent.swift; sourceTree = "<group>"; };
 		4C9657FA9AD5AFD84385A165 /* PFCPieChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PFCPieChart.swift; sourceTree = "<group>"; };
-		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D88D46424FDDACFA2C4BE21 /* Uchikomi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uchikomi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F83FFA56C96BF2C9839FE5A /* MealWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealWidgetView.swift; sourceTree = "<group>"; };
 		51EF1CA05F42093F7BCC75CA /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		5458CC3DF20BF66229BBBBC4 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
@@ -234,14 +236,16 @@
 		A2108431E68C118FBD21C98F /* ExerciseInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseInputView.swift; sourceTree = "<group>"; };
 		A21E7FB1D3B311EA8DA5DA4F /* NutritionSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionSummaryCard.swift; sourceTree = "<group>"; };
 		A242F1146048C21E683E0344 /* IngredientEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngredientEditView.swift; sourceTree = "<group>"; };
+		ABDC12540CAF11551623527A /* WeightHistoryWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightHistoryWidgetView.swift; sourceTree = "<group>"; };
 		B35C15EC738FAEE58F76C129 /* NutritionEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionEditorViewModel.swift; sourceTree = "<group>"; };
 		B6654808A0D988114BDF0EFF /* NutritionGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionGoal.swift; sourceTree = "<group>"; };
 		BB97F37288E662D82E4D89B3 /* NotificationSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsViewModel.swift; sourceTree = "<group>"; };
 		BB9B889F094B7078D80B6774 /* WeightRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightRecord.swift; sourceTree = "<group>"; };
 		BC80D1D6059A1E46F995AFDA /* SuggestionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionListView.swift; sourceTree = "<group>"; };
-		BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UchikomiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BD355DA0540544BEEB3C6D99 /* UchikomiWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UchikomiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BDFB317F298304ADE5A541E1 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		BFA2222E86DCD9A696476C35 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		C01430150B492681FF32F464 /* WeightHistoryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightHistoryWidget.swift; sourceTree = "<group>"; };
 		C24F2CA7351F04E395DC332D /* ReceiptScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptScanView.swift; sourceTree = "<group>"; };
 		C26810857AE4CD3913C6ED63 /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
 		C411576F8A2792EAE54992C0 /* WeightWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightWidget.swift; sourceTree = "<group>"; };
@@ -496,6 +500,7 @@
 				10A6441DD75221518AC961CB /* Core */,
 				F70BED335033231B10C2310D /* Meal */,
 				B8490C98F876FDE77FB170DE /* Weight */,
+				D73A7E5804F0C382E80D7473 /* WeightHistory */,
 			);
 			path = UchikomiWidget;
 			sourceTree = "<group>";
@@ -691,6 +696,15 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		D73A7E5804F0C382E80D7473 /* WeightHistory */ = {
+			isa = PBXGroup;
+			children = (
+				C01430150B492681FF32F464 /* WeightHistoryWidget.swift */,
+				ABDC12540CAF11551623527A /* WeightHistoryWidgetView.swift */,
+			);
+			path = WeightHistory;
+			sourceTree = "<group>";
+		};
 		D8029759CF573960BBD421D6 /* CookingSuggestion */ = {
 			isa = PBXGroup;
 			children = (
@@ -860,11 +874,9 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					04C65093A4929E413A52D0B2 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					B600300EE7A5CB7D431959E3 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C53720A77BB7F46352985FE6 = {
@@ -892,7 +904,6 @@
 				210E3921DA83E5D403E3D7B7 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				B9897A2270BD29BAFFDDF63F /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -952,6 +963,8 @@
 				6C05756258AF4BED2BA6642B /* RecordWeightIntent.swift in Sources */,
 				CB9C0646EDAC8DAAFE89756C /* SharedDefaults.swift in Sources */,
 				B40A43ADCE60CDABC046867E /* UchikomiWidgetBundle.swift in Sources */,
+				0153D39C159F6F3787853E15 /* WeightHistoryWidget.swift in Sources */,
+				DEBFB4052DE2F20F9F390F7C /* WeightHistoryWidgetView.swift in Sources */,
 				DBF053677A86FE18A6355286 /* WeightWidget.swift in Sources */,
 				ADF71ABE27A83B2C5CB0B3E9 /* WeightWidgetView.swift in Sources */,
 				03693B48D76960BD5F060CD1 /* WidgetAPIClient.swift in Sources */,
@@ -1078,6 +1091,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1112,6 +1126,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = UchikomiWidget/UchikomiWidget.entitlements;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = UchikomiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1133,6 +1148,7 @@
 				CODE_SIGN_ENTITLEMENTS = Uchikomi/Uchikomi.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = Uchikomi/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1167,6 +1183,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = UchikomiWidget/UchikomiWidget.entitlements;
+				DEVELOPMENT_TEAM = 8A3CRD2W9N;
 				INFOPLIST_FILE = UchikomiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
