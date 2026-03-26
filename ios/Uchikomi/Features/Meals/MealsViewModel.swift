@@ -22,7 +22,7 @@ final class MealsViewModel {
     private let repository: MealRepositoryProtocol
     private let nutritionGoalRepository: NutritionGoalRepositoryProtocol
     private let weightRepository: WeightRepositoryProtocol
-    private var autoRefreshTask: Task<Void, Never>?
+    private nonisolated(unsafe) var autoRefreshTask: Task<Void, Never>?
 
     private var hasPendingAnalyses: Bool {
         dailyMeals?.pendingAnalyses.contains { $0.isAnalyzing } ?? false
