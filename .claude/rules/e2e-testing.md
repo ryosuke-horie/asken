@@ -104,11 +104,6 @@ Gemini APIを呼び出すテストはデフォルトでスキップされる。A
 
 - `TestAnalyze_TextInput_Success`（`analyze_test.go`）
 - `TestAnalyze_GetStatus_Success`（`analyze_test.go`）
-- `TestMenuSuggest_Generate_Success`（`menu_test.go`）
-- `TestMenuSuggest_List_Success`（`menu_test.go`）
-- `TestMenuSuggest_GetDetail_Success`（`menu_test.go`）
-- `TestMenuSuggest_Accept_Success`（`menu_test.go`）
-- `TestMenuSuggest_Dismiss_Success`（`menu_test.go`）
 - `TestHistory_List_Success`（`history_test.go`）
 - `TestHistory_Detail_Success`（`history_test.go`）
 - `TestHistory_Update_Success`（`history_test.go`）
@@ -116,7 +111,6 @@ Gemini APIを呼び出すテストはデフォルトでスキップされる。A
 - `TestHistory_Update_InvalidRequest_NegativeCalories`（`history_test.go`）
 - `TestHistory_Update_InvalidRequest_EmptyName`（`history_test.go`）
 - `TestHistory_Delete_Success`（`history_test.go`）
-- `TestIngredients_ScanReceipt_Success`（`ingredients_test.go`）
 - `TestExerciseRecords_Create_WithGemini_Success`（`exercise_test.go`）
 
 ### Geminiテストを有効化する方法
@@ -171,11 +165,9 @@ func TestAnalyze_GetStatus_Success(t *testing.T) {
 backend/
 ├── e2e/
 │   ├── analyze_test.go      # 分析APIのE2Eテスト
-│   ├── menu_test.go         # メニューサジェストAPIのE2Eテスト
 │   ├── meals_test.go        # 食事APIのE2Eテスト
 │   ├── history_test.go      # 分析履歴APIのE2Eテスト
 │   ├── image_test.go        # 画像APIのE2Eテスト
-│   ├── ingredients_test.go  # 食材APIのE2Eテスト
 │   ├── weight_test.go       # 体重管理APIのE2Eテスト
 │   ├── exercise_test.go     # 運動記録APIのE2Eテスト
 │   ├── health_test.go       # ヘルスチェックのE2Eテスト

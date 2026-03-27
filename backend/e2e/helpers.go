@@ -235,35 +235,3 @@ func (c *Client) UploadImage(ctx context.Context, path string, imageData []byte,
 		Headers:    resp.Header,
 	}, nil
 }
-
-// createTestIngredient はテスト用の食材を作成するヘルパー
-// 作成した食材のIDを返す
-func createTestIngredient(t *testing.T, client *Client, ctx context.Context, name, category string, quantity float64, unit string) string {
-	t.Helper()
-
-	reqBody := map[string]any{
-		"name":     name,
-		"category": category,
-		"quantity": quantity,
-		"unit":     unit,
-		"source":   "manual",
-	}
-	resp, err := client.Post(ctx, "/api/ingredients", reqBody)
-	if err != nil {
-		t.Fatalf("createTestIngredient: failed to create ingredient: %v", err)
-	}
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("createTestIngredient: expected 201, got %d (body: %s)", resp.StatusCode, string(resp.Body))
-	}
-
-	var body map[string]any
-	if err := resp.JSON(&body); err != nil {
-		t.Fatalf("createTestIngredient: failed to parse response: %v", err)
-	}
-
-	id, ok := body["id"].(string)
-	if !ok || id == "" {
-		t.Fatalf("createTestIngredient: ingredient id is empty or not a string")
-	}
-	return id
-}
