@@ -375,8 +375,6 @@ func TestIsGeminiEndpoint(t *testing.T) {
 		{"POST /api/meals/skip はGemini対象外", http.MethodPost, "/api/meals/skip", false},
 		{"POST /api/upload-image はGemini対象外", http.MethodPost, "/api/upload-image", false},
 		{"GET /api/weight/records はGemini対象外", http.MethodGet, "/api/weight/records", false},
-		{"POST /api/ingredients/scan-receipt はGemini対象", http.MethodPost, "/api/ingredients/scan-receipt", true},
-		{"GET /api/ingredients/scan-receipt はGemini対象外", http.MethodGet, "/api/ingredients/scan-receipt", false},
 	}
 
 	for _, tt := range tests {

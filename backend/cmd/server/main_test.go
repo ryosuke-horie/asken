@@ -54,9 +54,6 @@ func (s *stubAnalysisRepository) DeleteHistory(_ context.Context, _ string, _ uu
 func (s *stubAnalysisRepository) GetDailyMeals(_ context.Context, _ string, _ string, _ string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	return nil, repository.DailyTotal{}, nil
 }
-func (s *stubAnalysisRepository) CreateRequestFromMylist(_ context.Context, _ string, _ string, _ string, _ *string, _ *repository.AnalysisResult) (uuid.UUID, error) {
-	return uuid.Nil, nil
-}
 func (s *stubAnalysisRepository) CreateSkippedMeal(_ context.Context, _ string, _ string, _ *string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }

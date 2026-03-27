@@ -23,7 +23,7 @@ users/{userId}/exerciseRecords/{recordId}
 | フィールド | 型 | 説明 |
 |:---|:---|:---|
 | status | string | ステータス (pending/processing/completed/failed) |
-| inputType | string | 入力タイプ (image/text/mylist/skipped) |
+| inputType | string | 入力タイプ (image/text/skipped) |
 | imagePath | string | 画像パス |
 | inputText | string | テキスト入力 |
 | mealType | string | 食事タイプ (breakfast/lunch/dinner/snack) |
@@ -37,7 +37,7 @@ users/{userId}/exerciseRecords/{recordId}
 confirmedフィールドの動作:
 - 分析開始時: `confirmed: false`（一覧に表示されない）
 - ユーザーが「保存」: `confirmed: true`（一覧に表示される）
-- マイリスト/スキップ記録: 即座に`confirmed: true`
+- スキップ記録: 即座に`confirmed: true`
 
 ### result フィールド構造
 
@@ -128,7 +128,7 @@ Firestoreの複合インデックスは`firestore.indexes.json`で管理され�
 | analysisRequests | status, confirmed, createdAt DESC | 履歴一覧（confirmed=true のみ） |
 | analysisRequests | confirmed, status, mealDate | 日次食事取得（confirmed=true のみ） |
 | analysisRequests | mealType, confirmed, mealDate | 未確定レコード削除用 |
-| analysisRequests | inputType, mealType, mealDate | 既存マイリスト/スキップ検索 |
+| analysisRequests | inputType, mealType, mealDate | スキップ記録検索 |
 | analysisRequests | mealType, mealDate, inputType | スキップ記録削除用 |
 | analysisRequests | status, mealDate | ステータス別日次検索 |
 | analysisRequests | mealType, mealDate | 食事タイプ別日次検索 |
