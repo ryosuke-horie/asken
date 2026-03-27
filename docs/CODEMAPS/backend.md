@@ -1,6 +1,6 @@
 # バックエンドアーキテクチャ
 
-最終更新: 2026-03-01
+最終更新: 2026-03-27
 フレームワーク: Golang (標準ライブラリ)
 エントリーポイント: backend/cmd/server/main.go
 デプロイ先: Cloud Run (asia-northeast1)
@@ -12,9 +12,7 @@ backend/
 ├── Dockerfile              # マルチステージビルド (distroless/nonroot)
 ├── .dockerignore           # Docker除外設定
 ├── cmd/
-│   ├── server/main.go      # HTTPサーバーエントリーポイント
-│   └── ops/                # 運用スクリプト
-│       └── 20250219/       # 微量栄養素バックフィルスクリプト
+│   └── server/main.go      # HTTPサーバーエントリーポイント
 ├── internal/
 │   ├── handler/            # HTTPハンドラ
 │   ├── middleware/         # ミドルウェア（認証、レート制限、セキュリティ）
@@ -35,7 +33,7 @@ backend/
 ```
 Handler → Service → Repository → Firestore
            ↓
-        Gemini HTTP API (分類・栄養計算・レシート解析・メニューサジェスト)
+        Gemini HTTP API (分類・栄養計算・消費カロリー推定)
 
 Middleware (Authenticator)
 ├── AuthMiddleware      # Firebase Auth (本番)
@@ -109,37 +107,6 @@ Context に firebase_uid を設定
 | GET | /api/nutrition/goal | NutritionGoalHandler | 栄養目標取得 |
 | PUT | /api/nutrition/goal | NutritionGoalHandler | 栄養目標設定 |
 
-### マイメニュー (認証必要)
-
-| メソッド | パス | ハンドラ | 用途 |
-|:---|:---|:---|:---|
-| GET | /api/my-menu | MyMenuHandler | マイメニュー一覧 |
-| POST | /api/my-menu | MyMenuHandler | マイメニュー作成 |
-| GET | /api/my-menu/{id} | MyMenuHandler | マイメニュー詳細 |
-| PUT | /api/my-menu/{id} | MyMenuHandler | マイメニュー更新 |
-| DELETE | /api/my-menu/{id} | MyMenuHandler | マイメニュー削除 |
-| POST | /api/my-menu/{id}/record | MyMenuHandler | マイメニューから食事記録 |
-
-### 食材管理 (認証必要)
-
-| メソッド | パス | ハンドラ | 用途 |
-|:---|:---|:---|:---|
-| GET | /api/ingredients | IngredientHandler | 食材一覧 |
-| POST | /api/ingredients | IngredientHandler | 食材作成 |
-| PUT | /api/ingredients/{id} | IngredientHandler | 食材更新 |
-| DELETE | /api/ingredients/{id} | IngredientHandler | 食材削除 |
-| POST | /api/ingredients/scan-receipt | ScanReceiptHandler | レシート読取 |
-
-### メニューサジェスト (認証必要)
-
-| メソッド | パス | ハンドラ | 用途 |
-|:---|:---|:---|:---|
-| POST | /api/menu/suggest | MenuSuggestionHandler | サジェストリクエスト |
-| GET | /api/menu/suggestions | MenuSuggestionHandler | サジェスト一覧 |
-| GET | /api/menu/suggestions/{id} | MenuSuggestionHandler | サジェスト詳細 |
-| POST | /api/menu/suggestions/{id}/accept | MenuSuggestionHandler | サジェスト採用 |
-| POST | /api/menu/suggestions/{id}/dismiss | MenuSuggestionHandler | サジェスト却下 |
-
 ### 消費カロリー記録 (認証必要)
 
 | メソッド | パス | ハンドラ | 用途 |
@@ -171,10 +138,6 @@ Context に firebase_uid を設定
 | weight_record_handler.go | 体重記録CRUD |
 | weight_goal_handler.go | 目標体重取得・設定 |
 | nutrition_goal_handler.go | 栄養目標取得・設定 |
-| my_menu_handler.go | マイメニューCRUD・食事記録 |
-| ingredient_handler.go | 食材CRUD |
-| scan_receipt_handler.go | レシート読取（Gemini API経由） |
-| menu_suggestion_handler.go | メニューサジェスト（提案・一覧・詳細・採用・却下） |
 | exercise_handler.go | 消費カロリー記録CRUD・日次取得 |
 
 ### Repositories (internal/repository/)
@@ -188,12 +151,6 @@ Context に firebase_uid を設定
 | weight_repository_firestore.go | 体重記録・目標（Firestore実装） |
 | nutrition_goal_models.go | 栄養目標の型定義・インターフェース・PFC計算 |
 | nutrition_goal_repository_firestore.go | 栄養目標（Firestore実装） |
-| my_menu_repository.go | マイメニュー型定義・インターフェース（`totalMicronutrients` を含む） |
-| my_menu_repository_firestore.go | マイメニュー（Firestore実装、微量栄養素合算を保存） |
-| ingredient_models.go | 食材型定義・カテゴリ・インターフェース |
-| ingredient_repository_firestore.go | 食材CRUD（Firestore実装） |
-| menu_suggestion_models.go | メニューサジェスト型定義・インターフェース |
-| menu_suggestion_repository_firestore.go | メニューサジェストCRUD（Firestore実装） |
 | exercise_models.go | 運動記録型定義・インターフェース・バリデーション |
 | exercise_repository_firestore.go | 運動記録CRUD（Firestore実装） |
 
@@ -234,8 +191,6 @@ Context に firebase_uid を設定
 | nutrition.go | 栄養素計算 |
 | micronutrients.go | 微量栄養素メタデータ（鉄、カルシウム、亜鉛、食物繊維、ビタミンA/B1/B2/B6/B12/C/D/E） |
 | schema.go | Gemini APIレスポンスのJSONスキーマ定義 |
-| receipt_parser.go | レシート画像解析 |
-| menu_suggester.go | メニューサジェスト生成 |
 | exercise_estimator.go | Gemini APIによる消費カロリー推定（プリセット外の運動種目に使用） |
 | mock_http_client.go | テスト用HTTPクライアントモック |
 
@@ -257,12 +212,6 @@ Context に firebase_uid を設定
 |:---|:---|
 | firestore.go | Firestoreクライアント初期化 |
 
-### Operations (cmd/ops/)
-
-| ディレクトリ | 責務 |
-|:---|:---|
-| 20250219/ | 既存MyMenuデータへの微量栄養素バックフィルスクリプト |
-
 ### E2Eテスト (e2e/)
 
 | ファイル | 責務 |
@@ -277,8 +226,6 @@ Context に firebase_uid を設定
 | meals_test.go | 食事API E2Eテスト |
 | weight_test.go | 体重API E2Eテスト（記録CRUD、目標設定） |
 | image_test.go | 画像配信API E2Eテスト |
-| ingredients_test.go | 食材管理API E2Eテスト |
-| menu_test.go | メニューサジェストAPI E2Eテスト |
 
 ## 依存関係図
 
@@ -301,17 +248,6 @@ cmd/server/main.go
 │   │   └── pkg/database/firestore.go
 │   ├── history_handler.go
 │   │   └── NutritionRecalculator (pkg/gemini/nutrition.go)
-│   ├── ingredient_handler.go
-│   │   └── repository.IngredientRepository
-│   ├── scan_receipt_handler.go
-│   │   └── pkg/gemini/receipt_parser.go
-│   ├── menu_suggestion_handler.go
-│   │   ├── repository.MenuSuggestionRepository
-│   │   ├── repository.IngredientRepository
-│   │   ├── repository.NutritionGoalRepository
-│   │   ├── repository.WeightRecordRepository
-│   │   ├── repository.AnalysisRepository
-│   │   └── pkg/gemini/menu_suggester.go
 │   └── exercise_handler.go
 │       └── service.ExerciseService
 │           ├── repository.ExerciseRepository
@@ -325,12 +261,6 @@ cmd/server/main.go
     ├── weight_repository_firestore.go
     │   └── pkg/database/firestore.go
     ├── nutrition_goal_repository_firestore.go
-    │   └── pkg/database/firestore.go
-    ├── my_menu_repository_firestore.go
-    │   └── pkg/database/firestore.go
-    ├── ingredient_repository_firestore.go
-    │   └── pkg/database/firestore.go
-    ├── menu_suggestion_repository_firestore.go
     │   └── pkg/database/firestore.go
     └── exercise_repository_firestore.go
         └── pkg/database/firestore.go

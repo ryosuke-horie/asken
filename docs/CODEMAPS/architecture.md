@@ -1,10 +1,10 @@
 # 全体アーキテクチャ
 
-最終更新: 2026-03-01
+最終更新: 2026-03-27
 
 ## システム概要
 
-ウチコミは格闘技の減量・体重コントロール支援アプリケーション。日々の記録（体重、食事、体調、トレーニング）とAI相談で減量を支援する。食材管理（パントリー）とAIメニューサジェスト機能により、栄養目標に沿った食事提案も行う。
+ウチコミは格闘技の減量・体重コントロール支援アプリケーション。日々の記録（体重、食事、運動）とAI食事分析で減量を支援する。
 
 ## 技術スタック
 
@@ -97,18 +97,6 @@ DevAuthMiddlewareはビルドタグで制御:
 - `!production`: 開発用実装が有効（トークン検証あり）
 - `production`: スタブ実装（常に403を返す、本番ビルドへの混入防止）
 
-### メニューサジェストフロー
-
-```
-1. iOSアプリ → Go Backend: サジェストリクエスト (POST /api/menu/suggest)
-2. Go Backend: ユーザーの食材・栄養目標・体重・食事履歴を収集
-3. Go Backend → Gemini API: メニュー提案リクエスト
-4. Go Backend → Firestore: サジェスト結果保存
-5. iOSアプリ → Go Backend: サジェスト一覧取得 (GET /api/menu/suggestions)
-6. iOSアプリ → Go Backend: 採用 (POST /api/menu/suggestions/{id}/accept)
-7. Go Backend: 食事記録作成 + 食材控除（トランザクション）
-```
-
 ### 消費カロリー記録フロー
 
 ```
@@ -120,23 +108,13 @@ DevAuthMiddlewareはビルドタグで制御:
 6. iOSアプリ: CalorieBalanceBarViewで摂取・消費カロリーを色分け表示
 ```
 
-### レシート読取フロー
-
-```
-1. iOSアプリ → Go Backend: レシート画像送信 (POST /api/ingredients/scan-receipt)
-2. Go Backend → Gemini API: レシート解析リクエスト
-3. Go Backend → iOSアプリ: 解析された食材リストを返却
-4. iOSアプリ: ユーザーが確認・編集後に食材登録
-```
-
 ## ディレクトリ構造
 
 ```
 utikomi/
 ├── backend/           # Goバックエンド (Cloud Run)
 │   ├── cmd/          # エントリーポイント
-│   │   ├── server/   # HTTPサーバー
-│   │   └── ops/      # 運用スクリプト
+│   │   └── server/   # HTTPサーバー
 │   ├── internal/     # 内部パッケージ
 │   └── pkg/          # 共有パッケージ
 ├── ios/               # iOSアプリ
@@ -166,7 +144,7 @@ utikomi/
 | Cloud Storage | 画像保存 |
 | Secret Manager | APIキー等のシークレット管理 |
 | Firebase Auth | ユーザー認証 |
-| Gemini API | AI画像分析・栄養素計算・レシート解析・メニューサジェスト |
+| Gemini API | AI画像分析・栄養素計算・消費カロリー推定 |
 | Workload Identity Federation | Terraform管理（既存構成） |
 
 ## インフラ構成（Terraform）
