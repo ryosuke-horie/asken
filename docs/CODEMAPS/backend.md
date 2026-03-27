@@ -85,7 +85,7 @@ Context に firebase_uid を設定
 |:---|:---|:---|:---|
 | GET | /api/history | HistoryHandler | 履歴一覧 |
 | GET | /api/history/{id} | HistoryHandler | 履歴詳細 |
-| PUT | /api/history/{id} | HistoryHandler | 履歴更新（食材編集） |
+| PUT | /api/history/{id} | HistoryHandler | 履歴更新（栄養素編集） |
 | DELETE | /api/history/{id} | HistoryDeleteHandler | 履歴削除 |
 
 ### 体重 (認証必要)

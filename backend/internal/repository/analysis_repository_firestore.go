@@ -518,53 +518,6 @@ func (r *firestoreAnalysisRepository) GetDailyMeals(ctx context.Context, userID 
 	return meals, dailyTotal, nil
 }
 
-// CreateRequestFromMylist はマイリストからの食事記録を作成します
-func (r *firestoreAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText, mealType, mealDate string, userID *string, result *AnalysisResult) (uuid.UUID, error) {
-	if userID == nil || *userID == "" {
-		return uuid.Nil, fmt.Errorf("userIDが必要です")
-	}
-
-	now := time.Now()
-	id := uuid.New()
-
-	mealDateTime, err := time.Parse("2006-01-02", mealDate)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("日付のパースに失敗: %w", err)
-	}
-
-	// 既存のskipped記録を削除
-	if err := r.deleteSkippedRecords(ctx, *userID, mealType, mealDateTime); err != nil {
-		return uuid.Nil, err
-	}
-
-	doc := firestoreAnalysisDocument{
-		ID:        id.String(),
-		Status:    StatusCompleted,
-		InputType: InputTypeMylist,
-		InputText: inputText,
-		MealType:  mealType,
-		MealDate:  mealDateTime,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Confirmed: true, // マイリストからの記録は即座に確定
-		Result: &firestoreAnalysisResult{
-			Foods:               result.Foods,
-			TotalCalories:       result.TotalCalories,
-			TotalProtein:        result.TotalProtein,
-			TotalFat:            result.TotalFat,
-			TotalCarbohydrates:  result.TotalCarbohydrates,
-			TotalMicronutrients: result.TotalMicronutrients,
-		},
-	}
-
-	_, err = r.getUserAnalysisCollection(*userID).Doc(id.String()).Set(ctx, doc)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("マイリストからのリクエスト作成に失敗: %w", err)
-	}
-
-	return id, nil
-}
-
 // CreateSkippedMeal は「食べなかった」記録を作成します
 func (r *firestoreAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType, mealDate string, userID *string) (uuid.UUID, error) {
 	if userID == nil || *userID == "" {

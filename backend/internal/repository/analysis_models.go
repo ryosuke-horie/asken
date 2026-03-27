@@ -36,11 +36,9 @@ const (
 type InputType string
 
 const (
-	InputTypeImage      InputType = "image"
-	InputTypeText       InputType = "text"
-	InputTypeMylist     InputType = "mylist"
-	InputTypeSkipped    InputType = "skipped"
-	InputTypeSuggestion InputType = "suggestion"
+	InputTypeImage   InputType = "image"
+	InputTypeText    InputType = "text"
+	InputTypeSkipped InputType = "skipped"
 )
 
 // AnalysisRequest は分析リクエストを表す構造体
@@ -131,9 +129,6 @@ type AnalysisRepository interface {
 	// GetDailyMeals は指定された日付の食事データを取得します（userIDでスコープ）
 	// tz: IANAタイムゾーン名（例: "Asia/Tokyo"）。空文字の場合はUTCとして処理
 	GetDailyMeals(ctx context.Context, userID string, date string, tz string) (map[string][]HistoryDetail, DailyTotal, error)
-
-	// CreateRequestFromMylist はマイリストからの食事記録を作成します
-	CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *AnalysisResult) (uuid.UUID, error)
 
 	// CreateSkippedMeal は「食べなかった」記録を作成します
 	CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error)
