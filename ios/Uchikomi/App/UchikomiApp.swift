@@ -87,10 +87,6 @@ struct MainTabView: View {
                 .tabItem { Label("食事", systemImage: "fork.knife") }
             WeightView()
                 .tabItem { Label("体重", systemImage: "scalemass") }
-            PantryListView()
-                .tabItem { Label("食材", systemImage: "refrigerator") }
-            MyMenuListView()
-                .tabItem { Label("マイメニュー", systemImage: "star") }
             SettingsView()
                 .tabItem { Label("設定", systemImage: "gearshape") }
         }

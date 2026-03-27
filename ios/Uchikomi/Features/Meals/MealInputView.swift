@@ -20,8 +20,6 @@ struct MealInputView: View {
     @State private var deletingMeal: HistoryDetail?
     @State private var showingImagePreview: URL?
     @State private var showingSkipConfirmation = false
-    @State private var showingMyMenuSelection = false
-
     let mealDate: Date
     let initialMealType: MealType
     let existingMeals: [HistoryDetail]
@@ -64,25 +62,6 @@ struct MealInputView: View {
                     Text("新しく記録する")
                         .font(.headline)
                         .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // MyMenu Selection Section
-                    Button {
-                        showingMyMenuSelection = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .foregroundStyle(.orange)
-                            Text("マイメニューから選択")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
 
                     // Manual Food Input Section
                     ManualFoodInputSection(
@@ -201,15 +180,6 @@ struct MealInputView: View {
                     foods: meal.foods
                 ) {
                     onSaved()
-                }
-            }
-            .sheet(isPresented: $showingMyMenuSelection) {
-                MyMenuSelectionView(
-                    selectedMealType: viewModel.selectedMealType,
-                    mealDate: mealDate
-                ) {
-                    onSaved()
-                    showingMyMenuSelection = false
                 }
             }
             .sheet(item: $showingImagePreview) { url in

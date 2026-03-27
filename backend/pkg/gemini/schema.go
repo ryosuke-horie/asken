@@ -130,47 +130,6 @@ func FoodItemSchema() *Schema {
 	}
 }
 
-// validIngredientCategories はReceiptParserで使用するカテゴリ一覧
-var validIngredientCategories = []string{
-	"meat", "fish", "vegetable", "fruit", "dairy", "grain", "seasoning", "beverage", "other",
-}
-
-// receiptParserResponseItem はGemini ReceiptParserのレスポンス構造体
-// responseSchemaで制約されたJSON出力をデシリアライズする
-type receiptParserResponseItem struct {
-	Name          string  `json:"name"`
-	Category      string  `json:"category"`
-	QuantityValue float64 `json:"quantity_value"`
-	QuantityUnit  string  `json:"quantity_unit"`
-}
-
-// toReceiptIngredient はreceiptParserResponseItemをReceiptIngredientに変換する
-func (r receiptParserResponseItem) toReceiptIngredient() ReceiptIngredient {
-	return ReceiptIngredient{
-		Name:     r.Name,
-		Category: r.Category,
-		Quantity: r.QuantityValue,
-		Unit:     r.QuantityUnit,
-	}
-}
-
-// ReceiptIngredientSchema はReceiptParser用のresponseSchema
-func ReceiptIngredientSchema() *Schema {
-	return &Schema{
-		Type: SchemaTypeArray,
-		Items: &Schema{
-			Type: SchemaTypeObject,
-			Properties: map[string]*Schema{
-				"name":           {Type: SchemaTypeString},
-				"category":       {Type: SchemaTypeString, Enum: validIngredientCategories},
-				"quantity_value": {Type: SchemaTypeNumber},
-				"quantity_unit":  {Type: SchemaTypeString, Enum: SupportedUnits()},
-			},
-			Required: []string{"name", "category", "quantity_value", "quantity_unit"},
-		},
-	}
-}
-
 // NutritionInfoSchema はNutritionCalculator用のresponseSchema
 // マイクロニュートリエントのプロパティはAllMicronutrientsレジストリから自動生成される
 func NutritionInfoSchema() *Schema {
