@@ -34,10 +34,7 @@ utikomi/
 │   ├── Uchikomi/              # メインアプリ（SwiftUI）
 │   │   └── Features/          # 機能モジュール
 │   │       ├── Auth/          # 認証
-│   │       ├── CookingSuggestion/ # メニューサジェスト
 │   │       ├── Meals/         # 食事記録
-│   │       ├── MyMenu/        # マイメニュー
-│   │       ├── Pantry/        # 食材管理
 │   │       ├── Settings/      # 設定
 │   │       └── Weight/        # 体重記録
 │   ├── UchikomiCore/          # コアフレームワーク
@@ -171,24 +168,11 @@ cd backend && go test ./... -cover
 | DELETE | /api/weight/records/{id} | 体重記録削除 |
 | GET | /api/weight/goal | 体重目標取得 |
 | PUT | /api/weight/goal | 体重目標更新 |
-| GET | /api/my-menu | マイメニュー一覧 |
-| POST | /api/my-menu | マイメニュー作成 |
-| GET | /api/my-menu/{id} | マイメニュー詳細 |
-| PUT | /api/my-menu/{id} | マイメニュー更新 |
-| DELETE | /api/my-menu/{id} | マイメニュー削除 |
-| POST | /api/my-menu/{id}/record | マイメニューから食事記録 |
 | GET | /api/nutrition/goal | 栄養目標取得 |
 | PUT | /api/nutrition/goal | 栄養目標設定 |
-| GET | /api/ingredients | 食材一覧 |
-| POST | /api/ingredients | 食材作成 |
-| PUT | /api/ingredients/{id} | 食材更新 |
-| DELETE | /api/ingredients/{id} | 食材削除 |
-| POST | /api/ingredients/scan-receipt | レシート読取 |
-| POST | /api/menu/suggest | メニューサジェストリクエスト |
-| GET | /api/menu/suggestions | サジェスト一覧 |
-| GET | /api/menu/suggestions/{id} | サジェスト詳細 |
-| POST | /api/menu/suggestions/{id}/accept | サジェスト採用 |
-| POST | /api/menu/suggestions/{id}/dismiss | サジェスト却下 |
+| POST | /api/exercise/records | 運動記録作成 |
+| DELETE | /api/exercise/records/{id} | 運動記録削除 |
+| GET | /api/exercise/daily | 日別運動記録取得 |
 
 ### POST /api/analyze
 
@@ -245,12 +229,9 @@ image: <画像ファイル（JPEG, PNG, HEIC、最大10MB）>
 - [x] 食事履歴保存
 - [ ] 栄養バランス分析
 - [x] 体重記録・推移グラフ
-- [x] マイメニュー機能
 - [x] 食事・体重リマインダー通知
 - [x] 栄養目標設定（PFC計算）
-- [x] 食材管理（パントリー）
-- [x] レシート読取（Gemini API）
-- [x] AIメニューサジェスト
+- [x] 運動記録・消費カロリー推定
 - [ ] AIエージェントによる減量サポート
 
 ## 開発者

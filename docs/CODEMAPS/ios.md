@@ -1,6 +1,6 @@
 # iOSアプリアーキテクチャ
 
-最終更新: 2026-03-01
+最終更新: 2026-03-27
 フレームワーク: Swift, SwiftUI
 エントリーポイント: ios/Uchikomi/App/UchikomiApp.swift
 
@@ -19,11 +19,8 @@ ios/
 │   │   │   ├── AppleSignInManager.swift     # Apple Sign-In
 │   │   │   └── MockFirebaseAuthService.swift # 開発用モック (#if DEBUG)
 │   │   ├── Models/             # データモデル
-│   │   │   ├── Ingredient.swift
 │   │   │   ├── Meal.swift
-│   │   │   ├── MenuSuggestion.swift
 │   │   │   ├── Micronutrient.swift
-│   │   │   ├── MyMenu.swift
 │   │   │   ├── NutritionGoal.swift
 │   │   │   └── UserProfile.swift
 │   │   ├── Extensions/         # Swift拡張
@@ -38,20 +35,14 @@ ios/
 │   │   │   └── CameraView.swift      # カメラ撮影UI
 │   │   └── Repositories/       # データアクセス
 │   │       ├── ExerciseRepository.swift
-│   │       ├── IngredientRepository.swift
 │   │       ├── MealRepository.swift
-│   │       ├── MenuSuggestionRepository.swift
-│   │       ├── MyMenuRepository.swift
 │   │       ├── NutritionGoalRepository.swift
 │   │       └── WeightRepository.swift
 │   ├── Features/               # 機能モジュール
 │   │   ├── Auth/               # 認証UI
-│   │   ├── CookingSuggestion/  # メニューサジェストUI
 │   │   ├── Exercise/           # 消費カロリー記録UI
 │   │   │   └── Models/         # ExerciseRecord, DailyExerciseResponse
 │   │   ├── Meals/              # 食事
-│   │   ├── MyMenu/             # マイメニュー
-│   │   ├── Pantry/             # 食材管理（パントリー）
 │   │   ├── Settings/           # 設定
 │   │   └── Weight/             # 体重
 │   ├── Shared/
@@ -214,9 +205,7 @@ enum AuthServiceProvider {
 - 認証済み: MainTabView
   - タブ1: MealsView（食事記録画面）
   - タブ2: WeightView（体重記録画面）
-  - タブ3: PantryListView（食材管理画面）
-  - タブ4: MyMenuListView（マイメニュー画面）
-  - タブ5: SettingsView（設定画面）
+  - タブ3: SettingsView（設定画面）
 
 ## 機能モジュール
 
@@ -245,7 +234,7 @@ enum AuthServiceProvider {
 | MealsViewModel.swift | 食事一覧ロジック |
 | MealInputViewModel.swift | 食事入力ロジック |
 | NutritionEditorViewModel.swift | 栄養素編集ロジック |
-| MealsView.swift | 食事一覧UI（メニューサジェストへの導線含む） |
+| MealsView.swift | 食事一覧UI |
 | MealInputView.swift | 食事入力UI |
 | NutritionEditorView.swift | 栄養素編集UI |
 | NutritionGoalSettingView.swift | 栄養目標設定UI（推奨カロリー計算機能付き） |
@@ -255,16 +244,6 @@ enum AuthServiceProvider {
 | MeasurementUnit.swift | 計量単位定義（g, ml, 杯, 人前, 個, 枚, 本, 切, 匹, 尾, パック, 袋, 束, 丁, 缶, 合, 玉, 粒） |
 | QuantityParser.swift | 量の文字列パーサー（数値と単位の抽出） |
 
-### メニューサジェスト (Features/CookingSuggestion/)
-
-| ファイル | 責務 |
-|:---|:---|
-| CookingSuggestionViewModel.swift | サジェスト一覧・リクエストロジック |
-| RecipeDetailViewModel.swift | レシピ詳細・採用・却下ロジック |
-| SuggestionListView.swift | サジェスト一覧UI |
-| SuggestionRequestView.swift | サジェストリクエストUI |
-| RecipeDetailView.swift | レシピ詳細UI |
-
 ### 消費カロリー記録 (Features/Exercise/)
 
 | ファイル | 責務 |
@@ -272,25 +251,6 @@ enum AuthServiceProvider {
 | ExerciseInputView.swift | 運動記録入力UI（種目名・実施時間） |
 | ExerciseInputViewModel.swift | 運動記録入力ロジック（バリデーション・保存） |
 | Models/ExerciseRecord.swift | ExerciseRecord, DailyExerciseResponse, CreateExerciseRecordRequest |
-
-### 食材管理 (Features/Pantry/)
-
-| ファイル | 責務 |
-|:---|:---|
-| PantryViewModel.swift | 食材一覧・管理ロジック |
-| PantryListView.swift | 食材一覧UI |
-| IngredientEditView.swift | 食材編集UI |
-| ReceiptScanView.swift | レシート読取UI |
-
-### マイメニュー (Features/MyMenu/)
-
-| ファイル | 責務 |
-|:---|:---|
-| MyMenuListView.swift | マイメニュー一覧UI |
-| MyMenuListViewModel.swift | マイメニュー一覧ロジック |
-| MyMenuEditView.swift | マイメニュー編集UI |
-| MyMenuEditViewModel.swift | マイメニュー編集ロジック |
-| MyMenuSelectionView.swift | マイメニュー選択UI |
 
 ### 体重 (Features/Weight/)
 
@@ -321,11 +281,8 @@ enum AuthServiceProvider {
 | ファイル | 場所 | 内容 |
 |:---|:---|:---|
 | Auth.swift | UchikomiCore | User, FirebaseAuthUser, GoogleCredential, FirebaseAuthError |
-| Ingredient.swift | Uchikomi | 食材モデル (Ingredient, IngredientCategory) |
 | Meal.swift | Uchikomi | 食事・栄養素モデル (MealType, NutritionInfo, DailyMeals) |
-| MenuSuggestion.swift | Uchikomi | メニューサジェストモデル (MenuSuggestion, EstimatedNutrition) |
 | Micronutrient.swift | Uchikomi | 微量栄養素モデル (MicronutrientType, MicronutrientInfo) |
-| MyMenu.swift | Uchikomi | マイメニューモデル（`totalMicronutrients` を含む） |
 | NutritionGoal.swift | Uchikomi | 栄養目標モデル (NutritionGoal, NutritionPhase, PFCRatios, NutritionGoalCalculator) |
 | UserProfile.swift | Uchikomi | ユーザー属性モデル (Gender, ActivityLevel, RecommendedCaloriesCalculator) |
 | NotificationSettings.swift | Shared | 通知設定モデル (MealNotificationSetting, WeightNotificationSetting) |
@@ -367,10 +324,7 @@ NotificationSchedulerProtocolの主要メソッド:
 | ファイル | 責務 |
 |:---|:---|
 | ExerciseRepository.swift | 運動記録・日次消費カロリーデータアクセス |
-| IngredientRepository.swift | 食材データアクセス |
 | MealRepository.swift | 食事データアクセス |
-| MenuSuggestionRepository.swift | メニューサジェストデータアクセス |
-| MyMenuRepository.swift | マイメニューデータアクセス |
 | NutritionGoalRepository.swift | 栄養目標取得・設定 |
 | WeightRepository.swift | 体重記録・目標データアクセス |
 
@@ -410,9 +364,6 @@ UchikomiApp.swift
         │   ├── MealInputView
         │   │   └── MealInputViewModel
         │   │       └── MealRepository
-        │   └── SuggestionRequestView (メニューサジェスト導線)
-        │       └── CookingSuggestionViewModel
-        │           └── MenuSuggestionRepository
         ├── WeightView (タブ2)
         │   ├── WeightViewModel
         │   │   └── WeightRepository
@@ -420,15 +371,7 @@ UchikomiApp.swift
         │   └── WeightInputView
         │       └── WeightInputViewModel
         │           └── WeightRepository
-        ├── PantryListView (タブ3)
-        │   └── PantryViewModel
-        │       └── IngredientRepository
-        │           └── APIClient
-        ├── MyMenuListView (タブ4)
-        │   └── MyMenuListViewModel
-        │       └── MyMenuRepository
-        │           └── APIClient
-        └── SettingsView (タブ5)
+        └── SettingsView (タブ3)
             ├── SettingsViewModel
             │   └── AuthManager
             ├── NutritionGoalSettingView
