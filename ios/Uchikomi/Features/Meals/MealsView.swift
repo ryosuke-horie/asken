@@ -92,12 +92,6 @@ struct MealsView: View {
                         } label: {
                             Image(systemName: "flame")
                         }
-
-                        NavigationLink {
-                            SuggestionRequestView()
-                        } label: {
-                            Image(systemName: "sparkles")
-                        }
                     }
                 }
             }
