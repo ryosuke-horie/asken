@@ -93,10 +93,6 @@ func (m *MockAnalysisRepository) GetDailyMeals(ctx context.Context, userID strin
 	return nil, repository.DailyTotal{}, nil
 }
 
-func (m *MockAnalysisRepository) CreateRequestFromMylist(ctx context.Context, inputText string, mealType string, mealDate string, userID *string, result *repository.AnalysisResult) (uuid.UUID, error) {
-	return uuid.Nil, nil
-}
-
 func (m *MockAnalysisRepository) CreateSkippedMeal(ctx context.Context, mealType string, mealDate string, userID *string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }

@@ -54,9 +54,6 @@ func (s *stubAnalysisRepository) DeleteHistory(_ context.Context, _ string, _ uu
 func (s *stubAnalysisRepository) GetDailyMeals(_ context.Context, _ string, _ string, _ string) (map[string][]repository.HistoryDetail, repository.DailyTotal, error) {
 	return nil, repository.DailyTotal{}, nil
 }
-func (s *stubAnalysisRepository) CreateRequestFromMylist(_ context.Context, _ string, _ string, _ string, _ *string, _ *repository.AnalysisResult) (uuid.UUID, error) {
-	return uuid.Nil, nil
-}
 func (s *stubAnalysisRepository) CreateSkippedMeal(_ context.Context, _ string, _ string, _ *string) (uuid.UUID, error) {
 	return uuid.Nil, nil
 }
@@ -107,24 +104,6 @@ func (s *stubWeightGoalRepository) GetGoal(_ context.Context, _ string) (*reposi
 }
 func (s *stubWeightGoalRepository) SetGoal(_ context.Context, _ string, _ float64) (*repository.WeightGoal, error) {
 	return nil, nil
-}
-
-type stubMyMenuRepository struct{}
-
-func (s *stubMyMenuRepository) Create(_ context.Context, _ string, _ string, _ []gemini.NutritionInfo) (*repository.MyMenuItem, error) {
-	return nil, nil
-}
-func (s *stubMyMenuRepository) List(_ context.Context, _ string) ([]repository.MyMenuItem, error) {
-	return nil, nil
-}
-func (s *stubMyMenuRepository) Get(_ context.Context, _ string, _ string) (*repository.MyMenuItem, error) {
-	return nil, repository.ErrNotFound
-}
-func (s *stubMyMenuRepository) Update(_ context.Context, _ string, _ string, _ string, _ []gemini.NutritionInfo) (*repository.MyMenuItem, error) {
-	return nil, repository.ErrNotFound
-}
-func (s *stubMyMenuRepository) Delete(_ context.Context, _ string, _ string) error {
-	return nil
 }
 
 // stubExerciseRepository はテスト用のスタブ
@@ -192,47 +171,6 @@ func TestSetupRoutes_ImageEndpointRequiresAuth(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Contains(t, w.Body.String(), "認証が必要です")
-}
-
-func TestSetupMyMenuRoutes_RecordPathMethodNotAllowed(t *testing.T) {
-	analysisRepo := &stubAnalysisRepository{}
-
-	h := handlers{
-		myMenu: handler.NewMyMenuHandler(&stubMyMenuRepository{}, analysisRepo),
-	}
-
-	authMiddleware := middleware.NewAuthMiddleware(&testutil.MockTokenVerifier{
-		VerifyFunc: func(token string) (string, error) {
-			return "test-user", nil
-		},
-	})
-
-	rateLimitConfig := middleware.LoadRateLimitConfig()
-	rl := middleware.NewRateLimitMiddleware(rateLimitConfig)
-	defer rl.Stop()
-
-	mux := http.NewServeMux()
-	setupMyMenuRoutes(mux, h, authMiddleware, rl)
-
-	t.Run("GET /record は405になる", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/my-menu/"+uuid.New().String()+"/record", nil)
-		req.Header.Set("Authorization", "Bearer test-token")
-		w := httptest.NewRecorder()
-
-		mux.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
-	})
-
-	t.Run("GET /record/ も405になる", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/my-menu/"+uuid.New().String()+"/record/", nil)
-		req.Header.Set("Authorization", "Bearer test-token")
-		w := httptest.NewRecorder()
-
-		mux.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
-	})
 }
 
 func TestEnableCORS_VaryHeader(t *testing.T) {

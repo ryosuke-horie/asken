@@ -1,11 +1,11 @@
 # ウチコミ コードマップ INDEX
 
-最終更新: 2026-03-01
+最終更新: 2026-03-27
 
 ## 概要
 
 ウチコミは格闘技の減量・体重コントロール支援iOSアプリケーション。
-GoバックエンドとSwiftUI iOSアプリで構成され、Gemini APIによるAI食事分析・メニューサジェスト機能を持つ。
+GoバックエンドとSwiftUI iOSアプリで構成され、Gemini APIによるAI食事分析機能を持つ。
 
 ## コードマップ一覧
 
@@ -23,9 +23,6 @@ GoバックエンドとSwiftUI iOSアプリで構成され、Gemini APIによる
 | 食事分析 | analyze/status/history handler | Meals feature | analysisRequests |
 | 体重管理 | weight handler | Weight feature | weightRecords/weightGoal |
 | 栄養目標 | nutrition_goal handler | NutritionGoalSettingView | nutritionGoal |
-| マイメニュー | my_menu handler | MyMenu feature | myMenu |
-| 食材管理 | ingredient/scan_receipt handler | Pantry feature | ingredients |
-| メニューサジェスト | menu_suggestion handler | CookingSuggestion feature | menuSuggestions |
 | 消費カロリー記録 | exercise handler | Exercise feature | exerciseRecords |
 | 認証 | auth/dev_auth middleware | Auth feature (UchikomiCore) | Firebase Auth |
 | 通知 | - | Notification (ローカル) | UserDefaults |
