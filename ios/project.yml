@@ -59,9 +59,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Uchikomi/Uchikomi.entitlements
     entitlements:
       path: Uchikomi/Uchikomi.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.dev.exe.uchikomi
+      properties: {}
     dependencies:
       - target: UchikomiCore
         embed: true
@@ -72,32 +70,8 @@ targets:
         product: GoogleSignIn
       - package: GoogleSignIn
         product: GoogleSignInSwift
-      - target: UchikomiWidget
-        embed: true
-        link: false
     # Info.plist is managed directly at Uchikomi/Resources/Info.plist
     # URL Schemes and GIDClientID are configured there for Google Sign-In
-
-  UchikomiWidget:
-    type: app-extension
-    platform: iOS
-    sources:
-      - path: UchikomiWidget
-        excludes:
-          - "**/.DS_Store"
-      - path: Uchikomi/Core/Shared/SharedDefaults.swift
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.exe.uchikomi.widget
-        INFOPLIST_FILE: UchikomiWidget/Info.plist
-        SKIP_INSTALL: "YES"
-        CODE_SIGN_ENTITLEMENTS: UchikomiWidget/UchikomiWidget.entitlements
-        SWIFT_VERSION: "5.9"
-    entitlements:
-      path: UchikomiWidget/UchikomiWidget.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.dev.exe.uchikomi
 
   UchikomiTests:
     type: bundle.unit-test
@@ -129,7 +103,6 @@ schemes:
     build:
       targets:
         Uchikomi: all
-        UchikomiWidget: all
     run:
       config: Debug
     test:

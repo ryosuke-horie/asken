@@ -21,20 +21,6 @@
                ReferencedContainer = "container:Uchikomi.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "04C65093A4929E413A52D0B2"
-               BuildableName = "UchikomiWidget.appex"
-               BlueprintName = "UchikomiWidget"
-               ReferencedContainer = "container:Uchikomi.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
