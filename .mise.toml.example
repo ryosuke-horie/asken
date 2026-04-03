@@ -1,0 +1,33 @@
+[tools]
+go = "1.25.6"
+terraform = "1.10"
+lefthook = "2.1.1"
+
+[env]
+# GCP設定
+GCP_PROJECT_ID = "utikomi-dev"
+GCP_REGION = "asia-northeast1"
+GCP_ZONE = "asia-northeast1-a"
+
+# gcloud構成の自動切り替え（このディレクトリに入ると自動的にこの構成が使われる）
+CLOUDSDK_ACTIVE_CONFIG_NAME = "utikomi-dev"
+
+# Terraform用のサービスアカウント認証
+GOOGLE_APPLICATION_CREDENTIALS = "{{config_root}}/sa-key.json"
+
+# Terraform変数（TF_VAR_プレフィックス）
+TF_VAR_gcp_project_id = "utikomi-dev"
+TF_VAR_gcp_region = "asia-northeast1"
+
+# tfstateバケット
+TFSTATE_BUCKET = "utikomi-dev-tfstate"
+
+# GitHub設定
+TF_VAR_github_repository = "ryosuke-horie/utikomi"
+# 1Password から各シークレットを取得
+# 以下のアイテムIDは自身の1Passwordに合わせて変更すること
+TF_VAR_github_token = "{{ exec(command='op read op://Personal/YOUR_ITEM_ID/token') }}"
+TF_VAR_gcp_sa_key = "{{ exec(command='op read op://Personal/YOUR_ITEM_ID/credential') }}"
+TF_VAR_gemini_api_key = "{{ exec(command='op read op://Personal/YOUR_ITEM_ID/password') }}"
+GEMINI_API_KEY = "{{ exec(command='op read op://Personal/YOUR_ITEM_ID/password') }}"
+TF_VAR_e2e_firebase_api_key = "{{ exec(command='op read op://Personal/YOUR_ITEM_ID/credential') }}"
